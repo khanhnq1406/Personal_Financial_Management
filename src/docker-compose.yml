@@ -1,0 +1,51 @@
+version: "3.7"
+
+services:
+  server:
+    build:
+      context: ./wj-server
+      dockerfile: Dockerfile
+    image: wj-server
+    container_name: wj-server
+    command: npm run dev
+    volumes:
+      - ./wj-server/:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./wj-server/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app-network
+
+  client:
+    build:
+      context: ./wj-client
+      dockerfile: Dockerfile
+    image: wj-client
+    container_name: wj-client
+    command: npm run dev
+    volumes:
+      - ./wj-client/:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - server
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=development
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  data-volume:
+  node_modules:
+  web-root:
+    driver: local
