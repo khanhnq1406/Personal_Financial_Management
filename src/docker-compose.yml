@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     image: wj-client
     container_name: wj-client
-    command: npm run dev
+    command: yarn dev
     volumes:
       - ./wj-client/:/app
       - /app/node_modules
@@ -35,6 +35,7 @@ services:
       - server
     ports:
       - "3000:3000"
+      - "49153:49153"
     networks:
       - app-network
     environment:
