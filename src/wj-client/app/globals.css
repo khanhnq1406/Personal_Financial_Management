@@ -5,6 +5,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --btn-green: #00a445;
+  --white: #f5f7fd;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,4 +20,23 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-jakarta-sans);
+}
+
+.custom-input {
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
+  border: none;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.custom-btn {
+  background-color: var(--btn-green);
+  color: var(--white);
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: 600;
+  margin: 10px 0px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
 }

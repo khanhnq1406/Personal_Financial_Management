@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
 };
 module.exports = {
-  webpackDevMiddleware: (config) => {
+  webpackDevMiddleware: (config: any) => {
     config.watchOptions = {
       poll: 800,
       aggregateTimeout: 300,

@@ -4,8 +4,8 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 import { FormEvent } from "react";
 
-export default function Login() {
-  async function handleUserLogin(event: FormEvent<HTMLFormElement>) {
+export default function Register() {
+  async function handleUserRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     console.log(formData);
@@ -20,14 +20,14 @@ export default function Login() {
     <div className="flex items-center h-screen">
       <div className="flex justify-center items-center flex-col w-full">
         <div className="w-2/3 max-w-lg">
-          <p className="text-[30px] font-extrabold">Login to continue</p>
+          <p className="text-[30px] font-extrabold">Get Started for Free</p>
           <p className="my-3">
-            New here?{" "}
-            <Link className="underline font-bold" href="register">
-              Sign up now
+            Already a member?{" "}
+            <Link className="underline font-bold" href="/auth/login">
+              Login
             </Link>
           </p>
-          <form onSubmit={handleUserLogin} className="flex flex-col mb-3">
+          <form onSubmit={handleUserRegister} className="flex flex-col mb-3">
             <label>Username</label>
             <input
               className="custom-input"
@@ -44,17 +44,27 @@ export default function Login() {
               placeholder="Enter your password"
               required
             />
+            <label>Retype password</label>
+            <input
+              className="custom-input"
+              type="password"
+              name="password"
+              placeholder="Retype your password"
+              required
+            />
             <button className="custom-btn" type="submit">
-              Login
+              Get started
             </button>
+
+            <label className="mb-1">Or log in via</label>
             <GoogleOAuthProvider clientId="<your_client_id>">
               <GoogleLogin
                 onSuccess={handleGoogleLogin}
                 onError={handleGoogleLoginError}
+                text="signup_with"
               />
             </GoogleOAuthProvider>
           </form>
-          <Link href={"#"}>Forgot Password?</Link>
         </div>
       </div>
     </div>
