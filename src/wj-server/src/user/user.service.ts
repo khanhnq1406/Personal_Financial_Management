@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ProvidersName } from 'src/constants';
 import { DataSource } from 'typeorm';
+import { isEmail } from 'class-validator';
+import { UserDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -14,5 +16,22 @@ export class UserService {
     return {
       result,
     };
+  }
+
+  async findUser(email: string): Promise<{}[]> {
+    if (!isEmail(email)) {
+      return [
+        {
+          error: 'Invalid email',
+        },
+      ];
+    }
+    return await this.dataSource.query(
+      `
+      SELECT * FROM user
+      WHERE email = ?
+      `,
+      [email],
+    );
   }
 }

@@ -1,12 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { UserService } from './user.service';
+// import { Param } from 'express';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  getUser(): {} {
+  getUser(@Query() param: string[]): {} {
+    console.log(param);
+
     return this.userService.getUser();
   }
 }
