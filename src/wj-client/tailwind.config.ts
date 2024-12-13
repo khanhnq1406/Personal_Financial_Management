@@ -13,6 +13,8 @@ export default {
         foreground: "var(--foreground)",
         bg: "#008148",
         fg: "#F7F8FC",
+        hgreen: "var(--btn-green)",
+        lred: "#C3151C",
       },
     },
   },

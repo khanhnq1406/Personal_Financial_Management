@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ProvidersName } from 'src/constants';
+import { ProvidersName } from 'src/utils/constants';
 import { DataSource } from 'typeorm';
 import { isEmail } from 'class-validator';
 import { UserDto } from './dto/user.dto';
+import { User } from './interfaces/user.interface';
 
 @Injectable()
 export class UserService {
@@ -32,6 +33,17 @@ export class UserService {
       WHERE email = ?
       `,
       [email],
+    );
+  }
+
+  async createUser(user: UserDto) {
+    const { email, name, picture } = user;
+    return await this.dataSource.query(
+      `
+      INSERT INTO user (email, name, picture)
+      VALUES (?, ?, ?)
+      `,
+      [email, name, picture],
     );
   }
 }

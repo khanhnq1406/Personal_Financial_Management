@@ -1,4 +1,4 @@
-import { ProvidersName } from 'src/constants';
+import { ProvidersName } from 'src/utils/constants';
 import { DataSource } from 'typeorm';
 
 export const databaseProviders = [
