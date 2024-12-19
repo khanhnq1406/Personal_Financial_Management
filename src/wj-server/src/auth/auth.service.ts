@@ -2,8 +2,9 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/user/interfaces/user.interface';
 import { UserService } from 'src/user/user.service';
-import { jwtConstants } from 'src/utils/constants';
 import { ReturnInterface } from 'src/utils/return.interface';
+import { RedisRepository } from 'src/database/redis.repository';
+import { redisExpiry, redisPrefix } from 'src/utils/constants';
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private redis: RedisRepository,
   ) {}
 
   async register(googleToken): Promise<ReturnInterface> {
@@ -76,14 +78,26 @@ export class AuthService {
       sub: findUserResult[0]['id'],
       email: findUserResult[0]['email'],
     };
+    const token = await this.jwtService.signAsync(jwtPayload);
+    // await this.redis.setWithExpiry(
+    //   redisPrefix.WhiteList,
+    //   findUserResult[0]['email'],
+    //   token,
+    //   redisExpiry,
+    // );
     return {
       status: HttpStatus.OK,
       message: {
-        accessToken: await this.jwtService.signAsync(jwtPayload),
+        accessToken: token,
         email: findUserResult[0]['email'],
         fullname: findUserResult[0]['name'],
         picture: findUserResult[0]['picture'],
       },
     };
+  }
+
+  async redisTesting(): Promise<any> {
+    console.log('Redis: ', await this.redis.get('test', '*'));
+    return;
   }
 }

@@ -1,12 +1,14 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { jwtConstants } from 'src/utils/constants';
+import { jwtConstants, ProvidersName, redisPrefix } from 'src/utils/constants';
 import { Request } from 'express';
+import { RedisRepository } from 'src/database/redis.repository';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -22,7 +24,13 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
-
+      // const redisToken = await this.redis.get(
+      //   redisPrefix.WhiteList,
+      //   payload.email,
+      // );
+      // if (!redisToken || redisToken !== token) {
+      //   throw new UnauthorizedException();
+      // }
       request['user'] = payload;
     } catch {
       throw new UnauthorizedException();
