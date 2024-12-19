@@ -2,5 +2,5 @@ import { HttpStatus } from '@nestjs/common';
 
 export interface ReturnInterface {
   status: HttpStatus;
-  message: string | null;
+  message: string | null | object;
 }

@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-import { GoogleClientId } from "@/app/hideConstants";
 import { BACKEND_URL, HttpStatus, NotificationCode } from "@/app/constants";
 import { useState } from "react";
 import Notification from "@/components/notification";
@@ -94,8 +93,8 @@ export default function Register() {
       );
     }
   };
-  const handleGoogleLoginError = (err: any) => {
-    console.log("Login Failed");
+  const handleGoogleLoginError = () => {
+    console.log("Register Failed");
   };
   return (
     <div className="flex items-center h-screen relative justify-center">
@@ -105,7 +104,13 @@ export default function Register() {
             <p className="text-[30px] font-extrabold my-1">
               Get Started for Free
             </p>
-            <GoogleOAuthProvider clientId={GoogleClientId}>
+            <GoogleOAuthProvider
+              clientId={
+                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== undefined
+                  ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+                  : ""
+              }
+            >
               <GoogleLogin
                 onSuccess={handleGoogleLogin}
                 onError={handleGoogleLoginError}

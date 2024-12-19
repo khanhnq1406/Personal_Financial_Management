@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 @Controller('auth')
 export class AuthController {
@@ -7,5 +7,10 @@ export class AuthController {
   @Post('register')
   async register(@Body() googleToken: any) {
     return this.authService.register(googleToken);
+  }
+
+  @Post('login')
+  async login(@Body() googleToken: any) {
+    return this.authService.login(googleToken);
   }
 }
