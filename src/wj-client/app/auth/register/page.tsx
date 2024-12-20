@@ -25,7 +25,7 @@ export default function Register() {
   );
   const [state, setState] = useState(RegisterState.Start);
   const [notification, setNotification] = useState(notificationSuccess);
-  const handleGoogleLogin = async (credentialResponse: any) => {
+  const handleGoogleLogin = async (credentialResponse: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
       const res = await fetch(`${BACKEND_URL}/auth/register`, {
         method: "POST",
@@ -71,6 +71,7 @@ export default function Register() {
         );
       }
     } catch (err) {
+      console.log(err)
       setNotification(
         <div className="flex flex-col justify-center">
           <Notification

@@ -12,15 +12,9 @@ import { setAuth } from "@/redux/actions";
 import { redirect } from "next/navigation";
 import { useState } from "react";
 
-enum LoginState {
-  START,
-  FAILED,
-}
 export default function Login() {
-  console.log(store.getState());
-
   const [error, setError] = useState(<></>);
-  const handleGoogleLogin = async (credentialResponse: any) => {
+  const handleGoogleLogin = async (credentialResponse: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
       const res = await fetch(`${BACKEND_URL}/auth/login`, {
         method: "POST",
@@ -64,6 +58,7 @@ export default function Login() {
         return;
       }
     } catch (error) {
+      console.log(error);
       setError(
         <>
           <p>Opps, Something went wrong. Please try again.</p>
