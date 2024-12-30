@@ -1,9 +1,23 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './auth.guard';
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UseGuards(AuthGuard)
+  @Get()
+  async auth() {
+    return { status: HttpStatus.OK };
+  }
   @Post('register')
   async register(@Body() googleToken: any) {
     return this.authService.register(googleToken);

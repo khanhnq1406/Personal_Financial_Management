@@ -53,7 +53,6 @@ export class AuthService {
   }
 
   async login(googleToken): Promise<any> {
-    console.log('There');
     const ticket = await client.verifyIdToken({
       idToken: googleToken.token,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -79,12 +78,12 @@ export class AuthService {
       email: findUserResult[0]['email'],
     };
     const token = await this.jwtService.signAsync(jwtPayload);
-    // await this.redis.setWithExpiry(
-    //   redisPrefix.WhiteList,
-    //   findUserResult[0]['email'],
-    //   token,
-    //   redisExpiry,
-    // );
+    await this.redis.setWithExpiry(
+      redisPrefix.WhiteList,
+      findUserResult[0]['email'],
+      token,
+      redisExpiry,
+    );
     return {
       status: HttpStatus.OK,
       message: {

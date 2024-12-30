@@ -10,11 +10,17 @@ import {
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
 import { redirect } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Login() {
   const [error, setError] = useState(<></>);
-  const handleGoogleLogin = async (credentialResponse: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  useEffect(() => {
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+    if (token) {
+      redirect("/dashboard");
+    }
+  }, []);
+  const handleGoogleLogin = async (credentialResponse: any) => {
     try {
       const res = await fetch(`${BACKEND_URL}/auth/login`, {
         method: "POST",

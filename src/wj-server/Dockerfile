@@ -5,10 +5,9 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Install Dependencies
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock ./
 
-RUN npm install -g @nestjs/cli @nestjs/common
-RUN npm install
+RUN yarn install
 
 # Copy app source code
 COPY . .

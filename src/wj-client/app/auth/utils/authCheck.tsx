@@ -1,13 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
+import fetcher from "@/utils/fetcher";
 import { redirect } from "next/navigation";
-import { LOCAL_STORAGE_TOKEN_NAME } from "../../constants";
-import { isClient } from "@/utils/isClient";
 
-export const AuthCheck = (props: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-  const isAuthenticated = isClient && localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
-  if (!isAuthenticated) {
-    redirect("/auth/login");
+export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+
+    if (storedToken) {
+      fetcher(`${BACKEND_URL}/auth`).then((res) => {
+        if (res.ok) {
+          setToken(storedToken);
+        } else {
+          localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
+          redirect("/auth/login");
+        }
+      });
+    } else {
+      redirect("/auth/login");
+    }
+  }, []);
+  if (token === null) {
+    return <div>Loading...</div>;
   }
-  return props.children;
+
+  return <>{children}</>;
 };
