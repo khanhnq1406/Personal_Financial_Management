@@ -18,6 +18,7 @@ export class AuthController {
   async auth() {
     return { status: HttpStatus.OK };
   }
+
   @Post('register')
   async register(@Body() googleToken: any) {
     return this.authService.register(googleToken);
