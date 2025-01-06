@@ -6,6 +6,7 @@ import {
   BACKEND_URL,
   HttpStatus,
   LOCAL_STORAGE_TOKEN_NAME,
+  routes,
 } from "@/app/constants";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
@@ -17,12 +18,12 @@ export default function Login() {
   useEffect(() => {
     const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     if (token) {
-      redirect("/dashboard");
+      redirect(routes.home);
     }
   }, []);
   const handleGoogleLogin = async (credentialResponse: any) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+      const res = await fetch(`${BACKEND_URL}${routes.login}`, {
         method: "POST",
         body: JSON.stringify({ token: credentialResponse.credential }),
         headers: { "Content-Type": "application/json" },
@@ -48,7 +49,7 @@ export default function Login() {
               <p>This user does not exist.</p>
               <p>
                 Enter a different account or{" "}
-                <Link href={"/auth/register"} className="text-blue-600">
+                <Link href={routes.register} className="text-blue-600">
                   create a new one
                 </Link>
               </p>
@@ -72,7 +73,7 @@ export default function Login() {
       );
       return;
     }
-    redirect("/dashboard");
+    redirect(routes.home);
   };
   const handleGoogleLoginError = () => {
     console.log("Login Failed");
@@ -89,7 +90,7 @@ export default function Login() {
           <p className="text-[30px] font-extrabold">Login to continue</p>
           <p className="my-3">
             New here?{" "}
-            <Link className="underline font-bold" href="/auth/register">
+            <Link className="underline font-bold" href={routes.register}>
               Sign up now
             </Link>
           </p>

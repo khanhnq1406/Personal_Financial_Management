@@ -1,5 +1,6 @@
 import ActiveLink from "@/components/activeLink";
-import Link from "next/link";
+import { Logout } from "../auth/utils/logout";
+import { routes } from "../constants";
 
 export default function DashboardLayout({
   children,
@@ -17,27 +18,30 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex flex-wrap gap-3 mx-4">
-            <ActiveLink href="/dashboard/home">
+            <ActiveLink href={routes.home}>
               <img className="w-[20px] h-[20px]" src="/home.png" />
               <div>Home</div>
             </ActiveLink>
-            <ActiveLink href="/dashboard/transaction">
+            <ActiveLink href={routes.transaction}>
               <img className="w-[20px] h-[20px]" src="/transaction.png" />
               <div>Transaction</div>
             </ActiveLink>
-            <ActiveLink href="/dashboard/report">
+            <ActiveLink href={routes.report}>
               <img className="w-[20px] h-[20px]" src="/report.png" />
               <div>Report</div>
             </ActiveLink>
-            <ActiveLink href="/dashboard/budget">
+            <ActiveLink href={routes.budget}>
               <img className="w-[20px] h-[20px]" src="/budget.png" />
               <div>Budget</div>
             </ActiveLink>
-            <ActiveLink href="/dashboard/wallets">
+            <ActiveLink href={routes.wallets}>
               <img className="w-[20px] h-[20px]" src="/wallet-white.png" />
               <div>Wallets</div>
             </ActiveLink>
-            <button className="text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)]">
+            <button
+              className="text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)]"
+              onClick={Logout}
+            >
               <img className="w-[20px] h-[20px]" src="/logout(white).png" />
               <div>Logout</div>
             </button>

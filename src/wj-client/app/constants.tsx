@@ -67,3 +67,14 @@ export enum REDUX_TYPE {
   SET_AUTH = "SET_AUTH",
   REMOVE_AUTH = "REMOVE_AUTH",
 }
+
+export const routes = {
+  login: "/auth/login",
+  register: "/auth/register",
+  dashboard: "/dashboard",
+  home: `/dashboard/home`,
+  transaction: `/dashboard/transaction`,
+  report: `/dashboard/report`,
+  budget: `/dashboard/budget`,
+  wallets: `/dashboard/wallets`,
+};

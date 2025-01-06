@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
+import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
 import fetcher from "@/utils/fetcher";
 import { redirect } from "next/navigation";
 
@@ -17,11 +17,11 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
           setToken(storedToken);
         } else {
           localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
-          redirect("/auth/login");
+          redirect(routes.login);
         }
       });
     } else {
-      redirect("/auth/login");
+      redirect(routes.login);
     }
   }, []);
   if (token === null) {

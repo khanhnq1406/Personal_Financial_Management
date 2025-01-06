@@ -95,6 +95,27 @@ export class AuthService {
     };
   }
 
+  async logout(jwtToken, res) {
+    try {
+      console.log(jwtToken);
+      const decoded = await this.jwtService.verifyAsync(jwtToken.token);
+      console.log(decoded);
+      const isDeleted = await this.redis.delete(
+        redisPrefix.WhiteList,
+        decoded.email,
+      );
+      if (isDeleted) {
+        return {
+          status: HttpStatus.OK,
+        };
+      } else {
+        res.status(HttpStatus.BAD_REQUEST).send();
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+    }
+  }
   async redisTesting(): Promise<any> {
     console.log('Redis: ', await this.redis.get('test', '*'));
     return;

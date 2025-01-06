@@ -2,7 +2,12 @@
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-import { BACKEND_URL, HttpStatus, NotificationCode } from "@/app/constants";
+import {
+  BACKEND_URL,
+  HttpStatus,
+  NotificationCode,
+  routes,
+} from "@/app/constants";
 import { useState } from "react";
 import Notification from "@/components/notification";
 
@@ -19,15 +24,16 @@ export default function Register() {
         message: "Congratulations, your account has been successfully created",
         submessage: "Please login to access the website",
         button: "Go to login",
-        navigate: "/auth/login",
+        navigate: routes.login,
       }}
     />
   );
   const [state, setState] = useState(RegisterState.Start);
   const [notification, setNotification] = useState(notificationSuccess);
-  const handleGoogleLogin = async (credentialResponse: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/register`, {
+      const res = await fetch(`${BACKEND_URL}${routes.register}`, {
         method: "POST",
         body: JSON.stringify({ token: credentialResponse.credential }),
         headers: { "Content-Type": "application/json" },
@@ -44,7 +50,7 @@ export default function Register() {
               message: "Oops, User already exists.",
               submessage: "Please login to access the website.",
               button: "Go to login",
-              navigate: "/auth/login",
+              navigate: routes.login,
             }}
           />
         );
@@ -71,7 +77,7 @@ export default function Register() {
         );
       }
     } catch (err) {
-      console.log(err)
+      console.log(err);
       setNotification(
         <div className="flex flex-col justify-center">
           <Notification
@@ -120,7 +126,7 @@ export default function Register() {
             </GoogleOAuthProvider>
             <p className="my-2">
               Already a member?{" "}
-              <Link className="underline font-bold" href="/auth/login">
+              <Link className="underline font-bold" href={routes.login}>
                 Login
               </Link>
             </p>

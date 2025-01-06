@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -27,6 +28,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() googleToken: any) {
     return this.authService.login(googleToken);
+  }
+
+  @Post('logout')
+  async logout(@Body() jwtToken: any, @Res() res: Response) {
+    return this.authService.logout(jwtToken, res);
   }
 
   @Get('test')
