@@ -1,17 +1,30 @@
 "use client";
 
-import { AuthCheck } from "@/app/auth/utils/authCheck";
+import { BaseCard } from "@/components/baseCard";
 import { Logout } from "../../auth/utils/logout";
+import { Wallets } from "./walllets";
+import { Balance } from "./balance";
 
 export default function Home() {
-  const logoutHandle = (event: React.SyntheticEvent) => {
-    event.preventDefault();
-    Logout();
-  };
   return (
-    <AuthCheck>
-      <h1>This is Dashboard!!!!!</h1>
-      <button onClick={logoutHandle}>Logout</button>
-    </AuthCheck>
+    <div className="grid grid-cols-[70%_30%] divide-x-2 h-full">
+      <div className="flex justify-center py-2">
+        <div className="w-[80%]">
+          <div className="font-semibold my-2">My Wallets</div>
+          <BaseCard>
+            <Wallets />
+          </BaseCard>
+          <div className="font-semibold mt-4 mb-2">
+            Report balance fluctuation
+          </div>
+          <BaseCard>
+            <Balance />
+          </BaseCard>
+        </div>
+      </div>
+      <div className="px-3">
+        <div>Hihi</div>
+      </div>
+    </div>
   );
 }

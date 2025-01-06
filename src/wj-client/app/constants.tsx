@@ -78,3 +78,6 @@ export const routes = {
   budget: `/dashboard/budget`,
   wallets: `/dashboard/wallets`,
 };
+
+export const resources =
+  "https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/";
