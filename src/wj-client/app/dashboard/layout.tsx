@@ -10,8 +10,8 @@ export default function DashboardLayout({
 }>) {
   return (
     <AuthCheck>
-      <div className="bg-bg h-full p-3">
-        <div className="block sm:grid grid-cols-[250px_auto] h-full">
+      <div className="bg-bg min-h-full p-3">
+        <div className="block sm:grid grid-cols-[250px_auto] min-h-full">
           <div className="hidden sm:flex flex-wrap justify-center h-fit">
             <div className="flex h-fit items-center gap-2 my-8">
               <img alt="logo" src="/logo.png" className="w-[50px] h-[50px]" />
@@ -49,7 +49,7 @@ export default function DashboardLayout({
               </button>
             </div>
           </div>
-          <div className="bg-fg h-full rounded-md">{children}</div>
+          <div className="bg-fg rounded-md">{children}</div>
         </div>
       </div>
     </AuthCheck>

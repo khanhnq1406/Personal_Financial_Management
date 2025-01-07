@@ -94,3 +94,16 @@ export const chartColors = [
   "#a1bfff", // Pastel Periwinkle
   "#b495ff", // Pastel Violet (similar to #8C52FF)
 ];
+
+export const pieChartColors = [
+  "#1E90FF",
+  "#32CD32",
+  "#FFD700",
+  "#FF6347",
+  "#8A2BE2",
+  "#FF1493",
+  "#00FA9A",
+  "#FFD700",
+  "#FF4500",
+  "#ADFF2F",
+];
