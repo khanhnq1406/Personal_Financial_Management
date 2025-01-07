@@ -81,3 +81,16 @@ export const routes = {
 
 export const resources =
   "https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/";
+
+export const chartColors = [
+  "#66bfff", // Pastel Blue (similar to #0090FF)
+  "#95a8ff", // Pastel Indigo
+  "#66ffcc", // Pastel Teal
+  "#95e6ff", // Pastel Sky Blue
+  "#d1a9ff", // Pastel Lavender
+  "#66cfff", // Light Pastel Aqua
+  "#66d6ff", // Pastel Cyan (similar to #00BCFF)
+  "#b5d1ff", // Soft Pastel Blue
+  "#a1bfff", // Pastel Periwinkle
+  "#b495ff", // Pastel Violet (similar to #8C52FF)
+];

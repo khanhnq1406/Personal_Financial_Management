@@ -15,7 +15,7 @@ export default function Home() {
             <Wallets />
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">
-            Report balance fluctuation
+            Total balance fluctuation
           </div>
           <BaseCard>
             <Balance />
@@ -23,7 +23,7 @@ export default function Home() {
         </div>
       </div>
       <div className="px-3">
-        <div>Hihi</div>
+        <div></div>
       </div>
     </div>
   );

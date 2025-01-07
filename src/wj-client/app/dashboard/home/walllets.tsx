@@ -10,7 +10,7 @@ export function Wallets() {
     <div className="px-2 py-1">
       {wallets.map((wallet) => {
         return (
-          <div className="flex flex-nowrap justify-between m-3">
+          <div className="flex flex-nowrap justify-between m-3" key={wallet.id}>
             <div className="flex flex-nowrap gap-3">
               <img className="w-[25px]" src={`${resources}/wallet.png`} />
               <div className="font-semibold">{wallet.name}</div>
