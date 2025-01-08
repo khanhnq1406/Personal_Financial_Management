@@ -98,12 +98,12 @@ export const chartColors = [
 export const pieChartColors = [
   "#1E90FF",
   "#32CD32",
-  "#FFD700",
   "#FF6347",
   "#8A2BE2",
   "#FF1493",
   "#00FA9A",
   "#FFD700",
   "#FF4500",
+  "#FFD700",
   "#ADFF2F",
 ];

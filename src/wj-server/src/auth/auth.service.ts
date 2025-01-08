@@ -105,12 +105,26 @@ export class AuthService {
         decoded.email,
       );
       if (isDeleted) {
-        return {
-          status: HttpStatus.OK,
-        };
+        res.status(HttpStatus.OK).send();
       } else {
         res.status(HttpStatus.BAD_REQUEST).send();
       }
+    } catch (error) {
+      console.log(error);
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+    }
+  }
+
+  async auth(req, res) {
+    try {
+      const findUserResult = await this.userService.findUser(req.email);
+      if (findUserResult.length === 0) {
+        res.status(HttpStatus.NOT_FOUND).json({ message: 'User not found' });
+      }
+      if (findUserResult[0]['error']) {
+        res.status(HttpStatus.BAD_REQUEST).send();
+      }
+      res.status(HttpStatus.OK).json(findUserResult[0]);
     } catch (error) {
       console.log(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();

@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Post,
+  Request,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,8 +17,8 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Get()
-  async auth() {
-    return { status: HttpStatus.OK };
+  async auth(@Request() req: any, @Res() res: Response) {
+    return this.authService.auth(req.user, res);
   }
 
   @Post('register')
