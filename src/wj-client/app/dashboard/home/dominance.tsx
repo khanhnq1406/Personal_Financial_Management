@@ -1,4 +1,5 @@
 import { pieChartColors } from "@/app/constants";
+import { memo } from "react";
 import { PieChart, ResponsiveContainer, Pie, Legend, Cell } from "recharts";
 
 type CustomizedLableType = {
@@ -10,7 +11,7 @@ type CustomizedLableType = {
   percent: number;
   index: number | string;
 };
-export function Dominance() {
+export const Dominance = memo(function Dominance() {
   const data = [
     { name: "Wallet 1", value: 10 },
     { name: "Wallet 2", value: 20 },
@@ -25,7 +26,6 @@ export function Dominance() {
     innerRadius,
     outerRadius,
     percent,
-    index,
   }: CustomizedLableType) => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.45;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -71,4 +71,4 @@ export function Dominance() {
       </ResponsiveContainer>
     </div>
   );
-}
+});

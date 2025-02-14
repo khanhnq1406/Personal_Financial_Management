@@ -2,6 +2,7 @@ import ActiveLink from "@/components/activeLink";
 import { Logout } from "../auth/utils/logout";
 import { routes } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
+import { ButtonGroup } from "@/components/buttonGroup";
 
 export default function DashboardLayout({
   children,
@@ -52,6 +53,7 @@ export default function DashboardLayout({
           <div className="bg-fg rounded-md">{children}</div>
         </div>
       </div>
+      <ButtonGroup />
     </AuthCheck>
   );
 }

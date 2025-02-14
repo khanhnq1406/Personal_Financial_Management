@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   ComposedChart,
   Line,
@@ -10,7 +11,7 @@ import {
   Bar,
 } from "recharts";
 
-export function Balance() {
+export const Balance = memo(function Balance() {
   const years = [2024, 2023];
   const wallets = ["Wallet 1", "Wallet 2", "Wallet 3"];
   const generateRandomYearData = () => {
@@ -95,4 +96,4 @@ export function Balance() {
       </ResponsiveContainer>
     </div>
   );
-}
+});

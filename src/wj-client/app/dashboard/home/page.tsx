@@ -1,17 +1,18 @@
 "use client";
 
 import { BaseCard } from "@/components/baseCard";
-import { Logout } from "../../auth/utils/logout";
 import { Wallets } from "./walllets";
 import { Balance } from "./balance";
 import { Dominance } from "./dominance";
 import { MonthlyDominance } from "./monthlyDominance";
 import { AccountBalance } from "./accountBalance";
 import { User } from "./user";
+import { TotalBalance } from "./totalBalance";
+import { FunctionalButton } from "./functionalButtons";
 
 export default function Home() {
   return (
-    <div className="sm:grid grid-cols-[70%_30%] divide-x-2">
+    <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
       <div className="flex justify-center py-2">
         <div className="w-[80%] mb-3">
           <div className="font-semibold my-2">My Wallets</div>
@@ -39,8 +40,10 @@ export default function Home() {
         </div>
       </div>
       <div className="px-3">
-        <div className="grid grid-rows-3 divide-x-2">
+        <div className="grid divide-y-2">
           <User />
+          <TotalBalance />
+          <FunctionalButton />
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -7,7 +8,7 @@ import {
   YAxis,
   XAxis,
 } from "recharts";
-export function MonthlyDominance() {
+export const MonthlyDominance = memo(function MonthlyDominance() {
   const data = [
     {
       month: "Jan",
@@ -74,4 +75,4 @@ export function MonthlyDominance() {
       </ResponsiveContainer>
     </div>
   );
-}
+});

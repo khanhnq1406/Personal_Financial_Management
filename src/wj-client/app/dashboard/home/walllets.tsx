@@ -1,6 +1,7 @@
 import { resources } from "@/app/constants";
+import { memo } from "react";
 
-export function Wallets() {
+export const Wallets = memo(function Wallets() {
   const wallets = [
     { id: 1, name: "Wallet 1", balance: 100 },
     { id: 2, name: "Wallet 2", balance: 200 },
@@ -21,4 +22,4 @@ export function Wallets() {
       })}
     </div>
   );
-}
+});

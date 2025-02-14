@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   ComposedChart,
   Line,
@@ -9,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export function AccountBalance() {
+export const AccountBalance = memo(function AccountBalance() {
   const years = [2024, 2023];
   const data = [
     { id: 1, month: "January", balance: 100 },
@@ -61,4 +62,4 @@ export function AccountBalance() {
       </div>
     </div>
   );
-}
+});

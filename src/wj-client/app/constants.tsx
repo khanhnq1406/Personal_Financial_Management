@@ -107,3 +107,9 @@ export const pieChartColors = [
   "#FFD700",
   "#ADFF2F",
 ];
+
+export const ButtonType = {
+  PRIMARY: "primary",
+  SECONDARY: "secondary",
+  IMG: "img",
+};
