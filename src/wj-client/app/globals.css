@@ -41,3 +41,21 @@ body {
   margin: 10px 0px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
 }
+
+.btn-transaction {
+  opacity: 0;
+  transform: translateY(14px) translateX(37px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.btn-transfer {
+  opacity: 0;
+  transform: translateY(38px) translateX(5px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.btn-transaction.show,
+.btn-transfer.show {
+  opacity: 1;
+  transform: translateY(0);
+}

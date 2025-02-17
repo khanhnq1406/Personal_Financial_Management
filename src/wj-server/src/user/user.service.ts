@@ -20,20 +20,29 @@ export class UserService {
   }
 
   async findUser(email: string): Promise<{}[]> {
-    if (!isEmail(email)) {
-      return [
-        {
-          error: 'Invalid email',
-        },
-      ];
-    }
-    return await this.dataSource.query(
-      `
+    try {
+      if (!isEmail(email)) {
+        return [
+          {
+            error: 'Invalid email',
+          },
+        ];
+      }
+      return await this.dataSource.query(
+        `
       SELECT * FROM user
       WHERE email = ?
       `,
-      [email],
-    );
+        [email],
+      );
+    } catch (error) {
+      console.log(error);
+      return [
+        {
+          error: 'Error while searching user',
+        },
+      ];
+    }
   }
 
   async createUser(user: UserDto) {
