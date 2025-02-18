@@ -16,6 +16,7 @@ export default {
         hgreen: "var(--btn-green)",
         lred: "#C3151C",
         hover: "#c5c5c9",
+        modal: "rgba(0, 0, 0, 0.5)",
       },
       dropShadow: {
         round: "0px 0px 3px rgb(0 0 0 / 0.4)",

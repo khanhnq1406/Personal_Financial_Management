@@ -5,6 +5,7 @@ import { UserService } from 'src/user/user.service';
 import { ReturnInterface } from 'src/utils/return.interface';
 import { RedisRepository } from 'src/database/redis.repository';
 import { redisExpiry, redisPrefix } from 'src/utils/constants';
+import { find } from 'rxjs';
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -119,12 +120,14 @@ export class AuthService {
     try {
       const findUserResult = await this.userService.findUser(req.email);
       if (findUserResult.length === 0) {
-        res.status(HttpStatus.NOT_FOUND).json({ message: 'User not found' });
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ message: 'User not found' });
       }
       if (findUserResult[0]['error']) {
-        res.status(HttpStatus.BAD_REQUEST).send();
+        return res.status(HttpStatus.BAD_REQUEST).send();
       }
-      res.status(HttpStatus.OK).json(findUserResult[0]);
+      return res.status(HttpStatus.OK).json(findUserResult[0]);
     } catch (error) {
       console.log(error);
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();

@@ -13,3 +13,11 @@ export interface AuthPayload {
 export interface AuthAction extends ReduxAction {
   payload: AuthPayload;
 }
+
+export interface ModalPayload {
+  isOpen: boolean;
+  type: string; // 'Add' or 'Transfer' or 'Create'
+}
+export interface ModalAction extends ReduxAction {
+  payload: ModalPayload;
+}

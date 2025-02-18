@@ -1,5 +1,5 @@
 import { REDUX_TYPE } from "@/app/constants";
-import { AuthAction } from "./interface";
+import { AuthAction, ModalAction } from "./interface";
 
 export const setAuthReducer = (
   state = { email: null, isAuthenticated: null, fullname: null, picture: null },
@@ -21,6 +21,19 @@ export const setAuthReducer = (
         fullname: null,
         picture: null,
       };
+    }
+    default:
+      return state;
+  }
+};
+
+export const setModalReducer = (
+  state = { isOpen: false, type: null },
+  action: ModalAction
+) => {
+  switch (action.type) {
+    case REDUX_TYPE.SET_MODAL: {
+      return action.payload;
     }
     default:
       return state;

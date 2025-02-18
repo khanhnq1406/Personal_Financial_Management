@@ -3,6 +3,7 @@ import { Logout } from "../auth/utils/logout";
 import { routes } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
 import { ButtonGroup } from "@/components/buttonGroup";
+import { BaseModal } from "@/components/modals/baseModal";
 
 export default function DashboardLayout({
   children,
@@ -54,6 +55,7 @@ export default function DashboardLayout({
         </div>
       </div>
       <ButtonGroup />
+      <BaseModal />
     </AuthCheck>
   );
 }

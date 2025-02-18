@@ -17,7 +17,7 @@ export const TotalBalance = memo(function TotalBalance() {
   return (
     <div className="py-5">
       <BaseCard>
-        <div className="flex items-center justify-around py-5 flex-wrap">
+        <div className="flex items-center justify-between py-5 flex-wrap px-5">
           <div>
             <div className="text-[#99A3A5] font-semibold mb-2">
               Total balance
