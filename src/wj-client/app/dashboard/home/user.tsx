@@ -22,7 +22,7 @@ export const User = memo(function User() {
       </div>
       <div>
         <p className="text-lg font-bold text-center">{user.fullname}</p>
-        <p className="text-sm">{user.email}</p>
+        <p className="text-sm break-all text-center">{user.email}</p>
       </div>
       <div>
         <Button

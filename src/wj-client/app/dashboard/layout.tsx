@@ -1,15 +1,22 @@
+"use client";
 import ActiveLink from "@/components/activeLink";
 import { Logout } from "../auth/utils/logout";
 import { routes } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
 import { ButtonGroup } from "@/components/buttonGroup";
 import { BaseModal } from "@/components/modals/baseModal";
+import { store } from "@/redux/store";
+import { useState } from "react";
 
 export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [modal, setModal] = useState(store.getState().setModalReducer);
+  store.subscribe(() => {
+    setModal(store.getState().setModalReducer);
+  });
   return (
     <AuthCheck>
       <div className="bg-bg min-h-full p-3">
@@ -55,7 +62,7 @@ export default function DashboardLayout({
         </div>
       </div>
       <ButtonGroup />
-      <BaseModal />
+      {modal.isOpen && <BaseModal modal={modal} />}
     </AuthCheck>
   );
 }

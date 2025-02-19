@@ -66,7 +66,8 @@ export const LOCAL_STORAGE_TOKEN_NAME = "token";
 export enum REDUX_TYPE {
   SET_AUTH = "SET_AUTH",
   REMOVE_AUTH = "REMOVE_AUTH",
-  SET_MODAL = "SET_MODAL",
+  OPEN_MODAL = "OPEN_MODAL",
+  CLOSE_MODAL = "CLOSE_MODAL",
 }
 
 export const routes = {
@@ -118,5 +119,5 @@ export const ButtonType = {
 export const ModalType = {
   ADD_TRANSACTION: "Add Transaction",
   TRANSFER_MONEY: "Transfer Money",
-  CREATE_WALLET: "Create Wallet",
+  CREATE_WALLET: "Create New Wallet",
 };

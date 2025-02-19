@@ -19,9 +19,15 @@ export const removeAuth = () => {
   };
 };
 
-export const setModal = (payload: ModalPayload): ModalAction => {
+export const openModal = (payload: ModalPayload): ModalAction => {
   return {
-    type: REDUX_TYPE.SET_MODAL,
+    type: REDUX_TYPE.OPEN_MODAL,
     payload: payload,
+  };
+};
+
+export const closeModal = () => {
+  return {
+    type: REDUX_TYPE.CLOSE_MODAL,
   };
 };

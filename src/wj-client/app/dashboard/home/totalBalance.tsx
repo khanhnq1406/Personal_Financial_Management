@@ -22,7 +22,7 @@ export const TotalBalance = memo(function TotalBalance() {
             <div className="text-[#99A3A5] font-semibold mb-2">
               Total balance
             </div>
-            <div className="font-bold text-2xl text-wrap">
+            <div className="font-bold text-2xl break-all">
               {isHide ? "*****" : balance}
             </div>
           </div>

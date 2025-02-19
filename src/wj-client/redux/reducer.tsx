@@ -32,8 +32,14 @@ export const setModalReducer = (
   action: ModalAction
 ) => {
   switch (action.type) {
-    case REDUX_TYPE.SET_MODAL: {
+    case REDUX_TYPE.OPEN_MODAL: {
       return action.payload;
+    }
+    case REDUX_TYPE.CLOSE_MODAL: {
+      return {
+        isOpen: false,
+        type: null,
+      };
     }
     default:
       return state;

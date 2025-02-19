@@ -19,14 +19,20 @@ export const Button = (props: PropType) => {
 
     case ButtonType.PRIMARY:
       return (
-        <button className="bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round">
+        <button
+          className="bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round"
+          onClick={onClick}
+        >
           {children}
         </button>
       );
 
     case ButtonType.SECONDARY:
       return (
-        <button className="bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen">
+        <button
+          className="bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen"
+          onClick={onClick}
+        >
           {children}
         </button>
       );
