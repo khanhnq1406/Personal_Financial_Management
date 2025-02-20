@@ -10,7 +10,7 @@ export const FunctionalButton = memo(function FunctionalButton() {
       <div className="mb-5">
         <Button
           type={ButtonType.PRIMARY}
-          onClick={(e) => {
+          onClick={() => {
             store.dispatch(
               openModal({ isOpen: true, type: ModalType.ADD_TRANSACTION })
             );
@@ -22,7 +22,7 @@ export const FunctionalButton = memo(function FunctionalButton() {
       <div className="mb-5">
         <Button
           type={ButtonType.SECONDARY}
-          onClick={(e) => {
+          onClick={() => {
             store.dispatch(
               openModal({ isOpen: true, type: ModalType.TRANSFER_MONEY })
             );
@@ -34,7 +34,7 @@ export const FunctionalButton = memo(function FunctionalButton() {
       <div>
         <Button
           type={ButtonType.SECONDARY}
-          onClick={(e) => {
+          onClick={() => {
             store.dispatch(
               openModal({ isOpen: true, type: ModalType.CREATE_WALLET })
             );

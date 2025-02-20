@@ -30,7 +30,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           <Button
             type={ButtonType.IMG}
             src={`${resources}/close.png`}
-            onClick={(e) => {
+            onClick={() => {
               store.dispatch(closeModal());
             }}
           />

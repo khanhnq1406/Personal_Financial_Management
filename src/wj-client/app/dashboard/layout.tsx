@@ -1,26 +1,60 @@
 "use client";
 import ActiveLink from "@/components/activeLink";
 import { Logout } from "../auth/utils/logout";
-import { routes } from "../constants";
+import { routes, ButtonType, resources } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
 import { ButtonGroup } from "@/components/buttonGroup";
 import { BaseModal } from "@/components/modals/baseModal";
 import { store } from "@/redux/store";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/Button";
 
 export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const path = usePathname();
   const [modal, setModal] = useState(store.getState().setModalReducer);
+  const [user, setUser] = useState(store.getState().setAuthReducer);
+
   store.subscribe(() => {
     setModal(store.getState().setModalReducer);
+    if (!user.picture) {
+      setUser(store.getState().setAuthReducer);
+    }
   });
+
+  const pathname = useMemo(() => {
+    const lastWord = path.split("/").filter(Boolean).pop();
+    const formattedWord = lastWord
+      ? lastWord.charAt(0).toUpperCase() + lastWord.slice(1)
+      : "";
+    return formattedWord;
+  }, [path]);
+
   return (
     <AuthCheck>
-      <div className="bg-bg min-h-full p-3">
+      <div className="bg-bg min-h-full sm:p-3">
         <div className="block sm:grid grid-cols-[250px_auto] min-h-full">
+          <div className="sm:hidden bg-bg flex justify-between p-3">
+            <div>
+              <div>
+                <Button type={ButtonType.IMG} src={`${resources}/menu.png`} />
+              </div>
+              <div className="text-fg font-semibold text-lg">{pathname}</div>
+            </div>
+            <div>
+              <img
+                src={
+                  user.picture !== null ? user.picture : `${resources}/user.png`
+                }
+                alt=""
+                className="rounded-full h-9"
+              />
+            </div>
+          </div>
           <div className="hidden sm:flex flex-wrap justify-center h-fit">
             <div className="flex h-fit items-center gap-2 my-8">
               <img alt="logo" src="/logo.png" className="w-[50px] h-[50px]" />
@@ -58,7 +92,7 @@ export default function DashboardLayout({
               </button>
             </div>
           </div>
-          <div className="bg-fg rounded-md">{children}</div>
+          <div className="bg-fg sm:rounded-md">{children}</div>
         </div>
       </div>
       <ButtonGroup />

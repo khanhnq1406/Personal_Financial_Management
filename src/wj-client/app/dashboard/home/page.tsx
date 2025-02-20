@@ -13,6 +13,11 @@ import { FunctionalButton } from "./functionalButtons";
 export default function Home() {
   return (
     <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
+      <div className="sm:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center">
+        <div className="w-4/5">
+          <TotalBalance />
+        </div>
+      </div>
       <div className="flex justify-center py-2">
         <div className="w-[80%] mb-3">
           <div className="font-semibold my-2">My Wallets</div>

@@ -1,16 +1,17 @@
 "use client";
 
-import { ButtonType, ModalType, resources } from "@/app/constants";
+import { ModalType, resources } from "@/app/constants";
 import { openModal } from "@/redux/actions";
 import { store } from "@/redux/store";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 
-export const ButtonGroup = memo(() => {
+export const ButtonGroup = memo(function ButtonGroup() {
   const [extend, setExtend] = useState(false);
-  const transactionButtonRef = useRef(null);
-  const transferButtonRef = useRef(null);
+  const transactionButtonRef = useRef<HTMLButtonElement>(null);
+  const transferButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleExtend = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     setExtend(!extend);
     if (extend) {
       if (transferButtonRef.current) {
@@ -41,7 +42,7 @@ export const ButtonGroup = memo(() => {
         <button
           className="btn-transaction fixed hover:drop-shadow-round bottom-8 right-14 bg-bg rounded-full w-8"
           ref={transactionButtonRef}
-          onClick={(e) => {
+          onClick={() => {
             store.dispatch(
               openModal({ isOpen: true, type: ModalType.ADD_TRANSACTION })
             );
@@ -52,7 +53,7 @@ export const ButtonGroup = memo(() => {
         <button
           className="btn-transfer fixed hover:drop-shadow-round bottom-14 right-6 bg-bg rounded-full w-8 p-1"
           ref={transferButtonRef}
-          onClick={(e) => {
+          onClick={() => {
             store.dispatch(
               openModal({ isOpen: true, type: ModalType.TRANSFER_MONEY })
             );

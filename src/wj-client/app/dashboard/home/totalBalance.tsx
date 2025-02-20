@@ -13,6 +13,7 @@ export const TotalBalance = memo(function TotalBalance() {
     event.preventDefault();
     setHide(!isHide);
     setDisplayImg(displayImgList[Number(!isHide)]);
+    setBalance(currencyFormatter.format(123456789));
   };
   return (
     <div className="py-5">
