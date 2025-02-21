@@ -16,7 +16,7 @@ export const TotalBalance = memo(function TotalBalance() {
     setBalance(currencyFormatter.format(123456789));
   };
   return (
-    <div className="py-5">
+    <div className="py-5 hidden sm:block">
       <BaseCard>
         <div className="flex items-center justify-between py-5 flex-wrap px-5">
           <div>

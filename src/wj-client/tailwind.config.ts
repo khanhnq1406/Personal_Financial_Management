@@ -21,6 +21,9 @@ export default {
       dropShadow: {
         round: "0px 0px 3px rgb(0 0 0 / 0.4)",
       },
+      screens: {
+        sm: '800px',
+      },
     },
   },
   plugins: [],
