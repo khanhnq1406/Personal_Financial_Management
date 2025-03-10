@@ -18,7 +18,7 @@ export default function Home() {
           <TotalBalance />
         </div>
       </div>
-      <div className="flex justify-center py-2">
+      <div className="flex justify-center py-2 border-none">
         <div className="w-[80%] mb-3">
           <div className="font-semibold my-2">My Wallets</div>
           <BaseCard>

@@ -1,12 +1,21 @@
-import { Dispatch, SetStateAction } from "react";
+import { ModalType } from "@/app/constants";
+import { Dispatch, SetStateAction, useEffect } from "react";
+import { CreateWalletType } from "./baseModal";
 
 interface CreateWalletFormProps {
-  setInput: Dispatch<SetStateAction<object>>;
+  setInput: Dispatch<SetStateAction<{ type: string }>>;
 }
 
 export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({
   setInput,
 }) => {
+  useEffect(() => {
+    setInput((input) => ({
+      ...input,
+      type: ModalType.CREATE_WALLET,
+      initialBalance: 0,
+    }));
+  }, []);
   return (
     <div>
       <div>Name</div>
