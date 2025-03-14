@@ -1,7 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
+import { TransferMoneyType } from "./baseModal";
 
 interface TransferMoneyFormProps {
-  setInput: Dispatch<SetStateAction<{ type: string }>>;
+  setInput: Dispatch<SetStateAction<TransferMoneyType>>;
 }
 
 export const TransferMoneyForm: React.FC<TransferMoneyFormProps> = ({

@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction, useEffect } from "react";
 import { CreateWalletType } from "./baseModal";
 
 interface CreateWalletFormProps {
-  setInput: Dispatch<SetStateAction<{ type: string }>>;
+  setInput: Dispatch<SetStateAction<CreateWalletType>>;
 }
 
 export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({

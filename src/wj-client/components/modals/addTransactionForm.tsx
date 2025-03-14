@@ -1,7 +1,8 @@
 import { Dispatch, SetStateAction } from "react";
+import { AddTransactionType } from "./baseModal";
 
 interface AddTransactionFormProps {
-  setInput: Dispatch<SetStateAction<object>>;
+  setInput: Dispatch<SetStateAction<AddTransactionType>>;
 }
 
 export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({

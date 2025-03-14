@@ -18,7 +18,7 @@ export default function DashboardLayout({
   const path = usePathname();
   const [modal, setModal] = useState(store.getState().setModalReducer);
   const [user, setUser] = useState(store.getState().setAuthReducer);
-  const menuRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   store.subscribe(() => {
     setModal(store.getState().setModalReducer);
@@ -71,6 +71,7 @@ export default function DashboardLayout({
   }, [path])
 
   const handleExtend = () => {
+    if (!menuRef.current) return;
     menuRef.current.classList.toggle("opacity-0");
     menuRef.current.classList.toggle("scale-95");
     menuRef.current.classList.toggle("pointer-events-none");

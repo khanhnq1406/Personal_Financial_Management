@@ -15,19 +15,37 @@ type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null };
 };
 
-export interface BaseType {
+export interface CreateWalletType {
   type: string;
-}
-export interface CreateWalletType extends BaseType {
   name: string;
   initialBalance: number;
 }
 
-const initialInput = (): BaseType | CreateWalletType | undefined => {
+export interface AddTransactionType {
+  type: string;
+  name: string;
+  initialBalance: number;
+}
+
+export interface TransferMoneyType {
+  type: string;
+  name: string;
+  initialBalance: number;
+}
+
+const initialInput = (): CreateWalletType | AddTransactionType | TransferMoneyType => {
   if (store.getState().setModalReducer.type === ModalType.CREATE_WALLET) {
     return { type: ModalType.CREATE_WALLET, name: "", initialBalance: 0 };
   }
+  if (store.getState().setModalReducer.type === ModalType.ADD_TRANSACTION) {
+    return { type: ModalType.ADD_TRANSACTION, name: "", initialBalance: 0 };
+  }
+  if (store.getState().setModalReducer.type === ModalType.TRANSFER_MONEY) {
+    return { type: ModalType.TRANSFER_MONEY, name: "", initialBalance: 0 };
+  }
+  return { type: "", name: "", initialBalance: 0 };
 };
+
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const [input, setInput] = useState(initialInput);
   useEffect(() => {
