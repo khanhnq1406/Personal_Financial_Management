@@ -56,18 +56,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     console.log(input);
     if (input) {
       if (input.type === ModalType.CREATE_WALLET) {
-        fetcher(`${BACKEND_URL}/auth/logout`, {
+        // TODO: Log error if input.name is empty
+        fetcher(`${BACKEND_URL}/wallet/create`, {
           method: "POST",
           body: JSON.stringify({
             name: input.name,
-            initialBalance: input.initialBalance,
+            balance: input.initialBalance,
           }),
           headers: { "Content-Type": "application/json" },
         })
           .then((res) => {
-            console.log(res);
             if (res.ok) {
+              store.dispatch(closeModal());
             }
+            // TODO: Log error if creating wallet fails
           })
           .catch((err) => console.log(err));
       }
@@ -99,6 +101,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         {modal.type === ModalType.CREATE_WALLET && (
           <CreateWalletForm setInput={setInput} />
         )}
+        {/* TODO: Create error message component */}
         <div>
           <Button type={ButtonType.PRIMARY} onClick={handleSubmit}>
             Save
