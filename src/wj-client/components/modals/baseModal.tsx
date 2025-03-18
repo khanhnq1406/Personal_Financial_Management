@@ -33,7 +33,10 @@ export interface TransferMoneyType {
   initialBalance: number;
 }
 
-const initialInput = (): CreateWalletType | AddTransactionType | TransferMoneyType => {
+const initialInput = ():
+  | CreateWalletType
+  | AddTransactionType
+  | TransferMoneyType => {
   if (store.getState().setModalReducer.type === ModalType.CREATE_WALLET) {
     return { type: ModalType.CREATE_WALLET, name: "", initialBalance: 0 };
   }
@@ -52,11 +55,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     console.log(input);
   }, [input]);
 
+  const [error, setError] = useState("");
+
   const handleSubmit = () => {
     console.log(input);
     if (input) {
       if (input.type === ModalType.CREATE_WALLET) {
-        // TODO: Log error if input.name is empty
+        if (!input.name) {
+          setError("Name is required");
+          return;
+        }
         fetcher(`${BACKEND_URL}/wallet/create`, {
           method: "POST",
           body: JSON.stringify({
@@ -68,10 +76,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           .then((res) => {
             if (res.ok) {
               store.dispatch(closeModal());
+            } else {
+              setError("Create wallet fail! Please try again");
             }
-            // TODO: Log error if creating wallet fails
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            console.log(err);
+            setError("Create wallet fail! Please try again");
+          });
       }
     }
   };
@@ -101,7 +113,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         {modal.type === ModalType.CREATE_WALLET && (
           <CreateWalletForm setInput={setInput} />
         )}
-        {/* TODO: Create error message component */}
+        <div className="text-red-600 mb-2">{error}</div>
         <div>
           <Button type={ButtonType.PRIMARY} onClick={handleSubmit}>
             Save

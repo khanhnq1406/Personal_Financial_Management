@@ -59,3 +59,8 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
+.required {
+  color: #c3151c;
+  font-size: 0.9em;
+}

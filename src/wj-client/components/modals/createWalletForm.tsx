@@ -18,7 +18,8 @@ export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({
   }, []);
   return (
     <div>
-      <div>Name</div>
+      <div>Name<span className="required">*</span>
+      </div>
       <input
         className="p-2 drop-shadow-round rounded-lg w-full mt-1 mb-2"
         type="text"
