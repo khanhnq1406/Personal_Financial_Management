@@ -120,4 +120,5 @@ export const ModalType = {
   ADD_TRANSACTION: "Add Transaction",
   TRANSFER_MONEY: "Transfer Money",
   CREATE_WALLET: "Create New Wallet",
+  SUCCESS: "Success",
 };

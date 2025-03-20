@@ -5,11 +5,12 @@ import { Button } from "../Button";
 import { useEffect, useState } from "react";
 import { AddTransactionForm } from "./addTransactionForm";
 import { store } from "@/redux/store";
-import { closeModal } from "@/redux/actions";
+import { closeModal, openModal } from "@/redux/actions";
 import { ModalPayload } from "@/redux/interface";
 import { TransferMoneyForm } from "./transferMoneyForm";
 import { CreateWalletForm } from "./createWalletForm";
 import fetcher from "@/utils/fetcher";
+import { Success } from "./success";
 
 type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null };
@@ -51,6 +52,7 @@ const initialInput = ():
 
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const [input, setInput] = useState(initialInput);
+  const [successMessage, setSuccessMessage] = useState("");
   useEffect(() => {
     console.log(input);
   }, [input]);
@@ -58,6 +60,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
+    if (modal.type === ModalType.SUCCESS) {
+      store.dispatch(closeModal());
+      return;
+    }
+    setError(""); // reset error message
     console.log(input);
     if (input) {
       if (input.type === ModalType.CREATE_WALLET) {
@@ -76,6 +83,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           .then((res) => {
             if (res.ok) {
               store.dispatch(closeModal());
+              setSuccessMessage("Wallet has been created successfully");
+              store.dispatch(
+                openModal({ isOpen: true, type: ModalType.SUCCESS })
+              );
             } else {
               setError("Create wallet fail! Please try again");
             }
@@ -94,16 +105,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       }
     >
       <div className={"bg-fg p-5 rounded-lg drop-shadow-round"}>
-        <div>
-          <Button
-            type={ButtonType.IMG}
-            src={`${resources}/close.png`}
-            onClick={() => {
-              store.dispatch(closeModal());
-            }}
-          />
-        </div>
-        <div className="font-bold text-lg">{modal.type}</div>
+        {modal.type !== ModalType.SUCCESS && (
+          <div>
+            <div>
+              <Button
+                type={ButtonType.IMG}
+                src={`${resources}/close.png`}
+                onClick={() => {
+                  store.dispatch(closeModal());
+                }}
+              />
+            </div>
+            <div className="font-bold text-lg">{modal.type}</div>
+          </div>
+        )}
         {modal.type === ModalType.ADD_TRANSACTION && (
           <AddTransactionForm setInput={setInput} />
         )}
@@ -113,10 +128,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         {modal.type === ModalType.CREATE_WALLET && (
           <CreateWalletForm setInput={setInput} />
         )}
+        {modal.type === ModalType.SUCCESS && (
+          <Success message={successMessage} />
+        )}
         <div className="text-red-600 mb-2">{error}</div>
         <div>
           <Button type={ButtonType.PRIMARY} onClick={handleSubmit}>
-            Save
+            {modal.type === ModalType.SUCCESS ? "Close" : "Save"}
           </Button>
         </div>
       </div>
