@@ -1,6 +1,45 @@
 version: "3.7"
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: wealthjourney_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootroot
+      MYSQL_DATABASE: wealthjourney
+      MYSQL_USER: wealthjourney_user
+      MYSQL_PASSWORD: rootroot
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./wj-server/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: wealthjourney_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  adminer:
+    image: adminer
+    container_name: wealthjourney_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
   server:
     build:
       context: ./wj-server
@@ -18,6 +57,9 @@ services:
     environment:
       - NODE_ENV=development
       - NODE_TLS_REJECT_UNAUTHORIZED=0
+    depends_on:
+      - mysql
+      - redis
     networks:
       - app-network
 
@@ -47,6 +89,8 @@ networks:
     driver: bridge
 
 volumes:
+  mysql_data:
+  redis_data:
   data-volume:
   node_modules:
   web-root:
