@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { jwtConstants, ProvidersName, redisPrefix } from 'src/utils/constants';
+import { jwtConstants, redisPrefix } from 'src/utils/constants';
 import { Request } from 'express';
 import { RedisRepository } from 'src/database/redis.repository';
 

@@ -4,12 +4,12 @@ import { store } from "@/redux/store";
 import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { memo, useCallback } from "react";
-import { Logout } from "@/app/auth/utils/logout";
+import { logout } from "@/app/auth/utils/logout";
 
 export const User = memo(function User() {
   const user = store.getState().setAuthReducer;
   const handleLogout = useCallback(() => {
-    Logout();
+    logout();
   }, [user]);
   return (
     <div className="flex flex-wrap justify-center items-center gap-3 my-5">

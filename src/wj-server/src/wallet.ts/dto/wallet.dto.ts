@@ -1,12 +1,9 @@
-import { IsEmail, IsInt, IsString } from 'class-validator';
-import { isFloat } from 'validator';
+import { IsString, IsNumber } from 'class-validator';
 
 export class CreateWalletDto {
-  @IsEmail()
-  email?: string;
-
   @IsString()
   name: string;
 
-  balance?: number;
+  @IsNumber()
+  balance: number;
 }

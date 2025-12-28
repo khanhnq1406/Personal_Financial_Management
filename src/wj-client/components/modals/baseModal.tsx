@@ -9,8 +9,9 @@ import { closeModal, openModal } from "@/redux/actions";
 import { ModalPayload } from "@/redux/interface";
 import { TransferMoneyForm } from "./transferMoneyForm";
 import { CreateWalletForm } from "./createWalletForm";
-import fetcher from "@/utils/fetcher";
 import { Success } from "./success";
+import { usePost } from "@/hooks";
+import type { CreateWalletResponseData } from "@/types/api";
 
 type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null };
@@ -59,42 +60,36 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const [error, setError] = useState("");
 
+  const { post } = usePost<CreateWalletResponseData>(
+    `${BACKEND_URL}/wallet/create`,
+    {
+      onSuccess: () => {
+        store.dispatch(closeModal());
+        setSuccessMessage("Wallet has been created successfully");
+        store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+      },
+      onError: () => {
+        setError("Create wallet fail! Please try again");
+      },
+    }
+  );
+
   const handleSubmit = () => {
     if (modal.type === ModalType.SUCCESS) {
       store.dispatch(closeModal());
       return;
     }
     setError(""); // reset error message
-    console.log(input);
     if (input) {
       if (input.type === ModalType.CREATE_WALLET) {
         if (!input.name) {
           setError("Name is required");
           return;
         }
-        fetcher(`${BACKEND_URL}/wallet/create`, {
-          method: "POST",
-          body: JSON.stringify({
-            name: input.name,
-            balance: input.initialBalance,
-          }),
-          headers: { "Content-Type": "application/json" },
-        })
-          .then((res) => {
-            if (res.ok) {
-              store.dispatch(closeModal());
-              setSuccessMessage("Wallet has been created successfully");
-              store.dispatch(
-                openModal({ isOpen: true, type: ModalType.SUCCESS })
-              );
-            } else {
-              setError("Create wallet fail! Please try again");
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-            setError("Create wallet fail! Please try again");
-          });
+        post({
+          name: input.name,
+          balance: input.initialBalance,
+        });
       }
     }
   };

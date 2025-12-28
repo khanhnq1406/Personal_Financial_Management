@@ -2,13 +2,14 @@ import {
   Controller,
   Post,
   Body,
-  Request,
   UseGuards,
-  Res,
+  Get,
+  HttpStatus,
 } from '@nestjs/common';
 import { CreateWalletDto } from './dto/wallet.dto';
 import { WalletService } from './wallet.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUser } from '../common/decorators/api-response.decorator';
 
 @Controller('wallet')
 export class WalletController {
@@ -18,13 +19,22 @@ export class WalletController {
   @Post('create')
   async createWallet(
     @Body() createWalletDto: CreateWalletDto,
-    @Request() req: any,
-    @Res() res: Response,
+    @CurrentUser() user: { userId: number; email: string },
   ) {
-    const data = {
-      ...createWalletDto,
-      email: req.user.email,
+    const result = await this.walletService.createWallet(
+      createWalletDto,
+      user.email,
+    );
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      ...result,
     };
-    return await this.walletService.createWallet(data, res);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('list')
+  async listWallets(@CurrentUser() user: { userId: number; email: string }) {
+    return await this.walletService.listWallets(user.userId);
   }
 }

@@ -1,7 +1,10 @@
+// Legacy backend URL (without /api prefix)
+// @deprecated Use API_URL instead
+// New API URL with /api prefix
 export const BACKEND_URL =
   process.env.NODE_ENV === "production"
-    ? process.env.NEXT_PUBLIC_PROD_BACKEND_URL
-    : "http://localhost:5000";
+    ? `${process.env.NEXT_PUBLIC_PROD_BACKEND_URL}/api`
+    : "http://localhost:5000/api";
 
 export enum NotificationCode {
   SUCCESS = "Success",

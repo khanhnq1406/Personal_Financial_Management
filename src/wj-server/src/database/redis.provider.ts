@@ -1,6 +1,5 @@
 import { ProvidersName, redisUrl } from 'src/utils/constants';
 import { createClient } from 'redis';
-import { Redis } from 'ioredis';
 
 export const redisOption = {
   provide: ProvidersName.REDIS_OPTIONS,

@@ -1,6 +1,6 @@
 "use client";
 import ActiveLink from "@/components/activeLink";
-import { Logout } from "../auth/utils/logout";
+import { logout } from "../auth/utils/logout";
 import { routes, ButtonType, resources } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
 import { ButtonGroup } from "@/components/buttonGroup";
@@ -60,15 +60,14 @@ export default function DashboardLayout({
         </ActiveLink>
         <button
           className="text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)]"
-          onClick={Logout}
+          onClick={logout}
         >
           <img className="w-[20px] h-[20px]" src="/logout(white).png" />
           <div>Logout</div>
         </button>
       </div>
-
-    )
-  }, [path])
+    );
+  }, [path]);
 
   const handleExtend = () => {
     if (!menuRef.current) return;
@@ -81,16 +80,20 @@ export default function DashboardLayout({
       menuRef.current.style.height = "0px"; // Collapse
     }
     menuRef.current.classList.toggle("h-0");
-  }
+  };
   return (
     <AuthCheck>
       <div className="bg-bg min-h-full sm:p-3">
         <div className="block sm:grid grid-cols-[250px_auto] min-h-full">
           <div className="sm:hidden bg-bg flex justify-between p-3">
-              <div className="flex items-center">
-                <Button type={ButtonType.IMG} src={`${resources}/menu.png`} onClick={handleExtend} />
-              </div>
-              <div className="text-fg font-semibold text-lg">{pathname}</div>
+            <div className="flex items-center">
+              <Button
+                type={ButtonType.IMG}
+                src={`${resources}/menu.png`}
+                onClick={handleExtend}
+              />
+            </div>
+            <div className="text-fg font-semibold text-lg">{pathname}</div>
             <div>
               <img
                 src={
@@ -101,10 +104,11 @@ export default function DashboardLayout({
               />
             </div>
           </div>
-          <div className="sm:hidden overflow-hidden opacity-0 scale-95 transform transition-all duration-300 ease-out pointer-events-none h-0" ref={menuRef}>
-          <div className="pb-3">
-            {navigationItems}
-          </div>
+          <div
+            className="sm:hidden overflow-hidden opacity-0 scale-95 transform transition-all duration-300 ease-out pointer-events-none h-0"
+            ref={menuRef}
+          >
+            <div className="pb-3">{navigationItems}</div>
           </div>
           <div className="hidden sm:flex flex-wrap justify-center h-fit">
             <div className="flex h-fit items-center gap-2 my-8">

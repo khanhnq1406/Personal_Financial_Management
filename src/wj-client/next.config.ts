@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
-module.exports = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+        port: "",
+        pathname: "/**",
+      },
+    ],
+  },
   webpackDevMiddleware: (config: any) => {
     config.watchOptions = {
       poll: 800,
@@ -12,4 +19,5 @@ module.exports = {
     return config;
   },
 };
+
 export default nextConfig;

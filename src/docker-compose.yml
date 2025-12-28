@@ -14,7 +14,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./wj-server/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./wj-server/src/common/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - app-network
 
