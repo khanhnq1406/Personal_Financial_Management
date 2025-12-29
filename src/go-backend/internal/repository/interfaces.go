@@ -1,0 +1,80 @@
+package repository
+
+import (
+	"context"
+	"wealthjourney/internal/models"
+)
+
+// ListOptions represents common list query options.
+type ListOptions struct {
+	Limit   int
+	Offset  int
+	OrderBy string
+	Order   string // "asc" or "desc"
+}
+
+// UserRepository defines the interface for user data operations.
+type UserRepository interface {
+	// Create creates a new user.
+	Create(ctx context.Context, user *models.User) error
+
+	// GetByID retrieves a user by ID.
+	GetByID(ctx context.Context, id int32) (*models.User, error)
+
+	// GetByEmail retrieves a user by email.
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+
+	// List retrieves users with pagination.
+	List(ctx context.Context, opts ListOptions) ([]*models.User, int, error)
+
+	// Update updates a user.
+	Update(ctx context.Context, user *models.User) error
+
+	// Delete soft deletes a user by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// Exists checks if a user exists by email.
+	ExistsByEmail(ctx context.Context, email string) (bool, error)
+}
+
+// WalletRepository defines the interface for wallet data operations.
+type WalletRepository interface {
+	// Create creates a new wallet.
+	Create(ctx context.Context, wallet *models.Wallet) error
+
+	// GetByID retrieves a wallet by ID.
+	GetByID(ctx context.Context, id int32) (*models.Wallet, error)
+
+	// GetByIDForUser retrieves a wallet by ID, ensuring it belongs to the user.
+	GetByIDForUser(ctx context.Context, walletID, userID int32) (*models.Wallet, error)
+
+	// ListByUserID retrieves all wallets for a user.
+	ListByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.Wallet, int, error)
+
+	// Update updates a wallet.
+	Update(ctx context.Context, wallet *models.Wallet) error
+
+	// UpdateBalance updates the balance of a wallet.
+	// Use positive delta to add, negative to subtract.
+	UpdateBalance(ctx context.Context, walletID int32, delta int64) (*models.Wallet, error)
+
+	// Delete soft deletes a wallet by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// Exists checks if a wallet exists by ID and belongs to the user.
+	ExistsForUser(ctx context.Context, walletID, userID int32) (bool, error)
+
+	// CountByUserID returns the number of wallets for a user.
+	CountByUserID(ctx context.Context, userID int32) (int, error)
+
+	// WithTx returns a repository instance that uses the given transaction.
+	WithTx(tx interface{}) WalletRepository
+}
+
+// TransactionManager defines the interface for managing database transactions.
+type TransactionManager interface {
+	// WithTx executes a function within a transaction.
+	// If the function returns an error, the transaction is rolled back.
+	// Otherwise, it is committed.
+	WithTx(ctx context.Context, fn func(tm TransactionManager) error) error
+}

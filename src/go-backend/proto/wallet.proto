@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package wallet;
+
+option go_package = "wealthjourney/wallet/proto";
+
+import "google/protobuf/timestamp.proto";
+
+// WalletService handles wallet operations
+service WalletService {
+  // Create a new wallet
+  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse);
+
+  // List all wallets for a user
+  rpc ListWallets(ListWalletsRequest) returns (ListWalletsResponse);
+
+  // Get wallet by ID
+  rpc GetWallet(GetWalletRequest) returns (GetWalletResponse);
+}
+
+// CreateWallet Request
+message CreateWalletRequest {
+  string email = 1;
+  string name = 2;
+  float balance = 3;
+}
+
+// CreateWallet Response
+message CreateWalletResponse {
+  bool success = 1;
+  string message = 2;
+  Wallet data = 3;
+}
+
+// ListWallets Request
+message ListWalletsRequest {
+  int32 user_id = 1;
+}
+
+// ListWallets Response
+message ListWalletsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Wallet wallets = 3;
+}
+
+// GetWallet Request
+message GetWalletRequest {
+  int32 wallet_id = 1;
+}
+
+// GetWallet Response
+message GetWalletResponse {
+  bool success = 1;
+  string message = 2;
+  Wallet data = 3;
+}
+
+// Wallet message
+message Wallet {
+  int32 id = 1;
+  string wallet_name = 2;
+  float balance = 3;
+  int32 user_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}

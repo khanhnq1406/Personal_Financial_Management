@@ -1,0 +1,30 @@
+{
+  "functions": {
+    "api/**/*.go": {
+      "runtime": "go",
+      "maxDuration": 10
+    }
+  },
+  "routes": [
+    {
+      "src": "/health",
+      "dest": "/api/vercel.go"
+    },
+    {
+      "src": "/api/v1/(.*)",
+      "dest": "/api/vercel.go"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ],
+  "github": {
+    "silent": true
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/vercel.go"
+    }
+  ]
+}

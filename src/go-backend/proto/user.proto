@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "wealthjourney/user/proto";
+
+import "google/protobuf/timestamp.proto";
+
+// UserService handles user operations
+service UserService {
+  // Get user by email
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+
+  // Get all users
+  rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
+
+  // Create a new user
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+}
+
+// GetUserByEmail Request
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+// GetUserByEmail Response
+message GetUserByEmailResponse {
+  bool success = 1;
+  string message = 2;
+  User data = 3;
+}
+
+// GetAllUsers Request
+message GetAllUsersRequest {}
+
+// GetAllUsers Response
+message GetAllUsersResponse {
+  bool success = 1;
+  string message = 2;
+  repeated User users = 3;
+}
+
+// CreateUser Request
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+}
+
+// CreateUser Response
+message CreateUserResponse {
+  bool success = 1;
+  string message = 2;
+  int32 affected_rows = 3;
+  int32 insert_id = 4;
+}
+
+// User message
+message User {
+  int32 id = 1;
+  string email = 2;
+  string name = 3;
+  string picture = 4;
+  google.protobuf.Timestamp created_at = 5;
+}

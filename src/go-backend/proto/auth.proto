@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "wealthjourney/auth/proto";
+
+import "google/protobuf/timestamp.proto";
+
+// AuthService handles authentication operations
+service AuthService {
+  // Register a new user using Google OAuth token
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Login user using Google OAuth token
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Logout user and invalidate token
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // Verify authentication status
+  rpc VerifyAuth(VerifyAuthRequest) returns (VerifyAuthResponse);
+}
+
+// Register Request
+message RegisterRequest {
+  string google_token = 1;
+}
+
+// Register Response
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+  UserData data = 3;
+}
+
+// Login Request
+message LoginRequest {
+  string google_token = 1;
+}
+
+// Login Response
+message LoginResponse {
+  bool success = 1;
+  string message = 2;
+  LoginData data = 3;
+}
+
+// Logout Request
+message LogoutRequest {
+  string token = 1;
+}
+
+// Logout Response
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// VerifyAuth Request
+message VerifyAuthRequest {
+  string token = 1;
+}
+
+// VerifyAuth Response
+message VerifyAuthResponse {
+  bool success = 1;
+  string message = 2;
+  UserData data = 3;
+}
+
+// User Data
+message UserData {
+  int32 id = 1;
+  string email = 2;
+  string name = 3;
+  string picture = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// Login Data (includes token)
+message LoginData {
+  string access_token = 1;
+  string email = 2;
+  string fullname = 3;
+  string picture = 4;
+}

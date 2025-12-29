@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wealthjourney_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wealthjourney
+      MYSQL_USER: wealthjourney
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wealthjourney_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  go-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wealthjourney_go_backend
+    ports:
+      - "50051:50051"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: wealthjourney
+      DB_PASSWORD: password
+      DB_NAME: wealthjourney
+      REDIS_URL: redis:6379
+      GRPC_SERVER_PORT: 50051
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+
+volumes:
+  mysql_data:
+  redis_data:

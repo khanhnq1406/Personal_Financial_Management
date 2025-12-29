@@ -1,0 +1,16 @@
+# Ignore files for Vercel deployment
+bin/
+*.test
+*.out
+vendor/
+.env.local
+.git/
+.proto.bak
+
+# Only include necessary files for build
+!go.mod
+!go.sum
+!api/
+!pkg/
+!internal/
+!proto/
