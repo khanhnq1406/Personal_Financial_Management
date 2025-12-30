@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/api/handlers"
+	"wealthjourney/internal/repository"
+	"wealthjourney/internal/service"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
@@ -15,6 +17,8 @@ import (
 
 var (
 	app *gin.Engine
+	h   *handlers.AllHandlers
+	cfg *config.Config
 )
 
 func init() {
@@ -27,7 +31,8 @@ func init() {
 	app.Use(loggerMiddleware())
 
 	// Load configuration
-	cfg, err := config.Load()
+	var err error
+	cfg, err = config.Load()
 	if err != nil {
 		log.Printf("Warning: Failed to load config: %v", err)
 	}
@@ -38,8 +43,17 @@ func init() {
 		if err != nil {
 			log.Printf("Warning: Database connection failed: %v", err)
 		} else {
-			// Store db and cfg in handler dependencies
-			handlers.SetDependencies(db, cfg)
+			// Initialize repositories
+			repos := &service.Repositories{
+				User:   repository.NewUserRepository(db),
+				Wallet: repository.NewWalletRepository(db),
+			}
+
+			// Initialize services
+			services := service.NewServices(repos)
+
+			// Initialize handlers
+			h = handlers.NewHandlers(services)
 		}
 	}
 
@@ -73,39 +87,14 @@ func registerRoutes(app *gin.Engine) {
 		})
 	})
 
-	// API v1 group
+	// API v1 group (no rate limiting for Vercel)
 	v1 := app.Group("/api/v1")
-	{
-		// Auth routes
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
-			auth.POST("/logout", handlers.Logout)
-			auth.GET("/verify", handlers.VerifyAuth)
-		}
-
-		// User routes (protected)
-		users := v1.Group("/users")
-		users.Use(handlers.AuthMiddleware())
-		{
-			users.GET("", handlers.GetAllUsers)
-			users.GET("/:email", handlers.GetUserByEmail)
-			users.POST("", handlers.CreateUser)
-		}
-
-		// Wallet routes (protected)
-		wallets := v1.Group("/wallets")
-		wallets.Use(handlers.AuthMiddleware())
-		{
-			wallets.POST("", handlers.CreateWallet)
-			wallets.GET("", handlers.ListWallets)
-			wallets.GET("/:id", handlers.GetWallet)
-		}
+	if h != nil {
+		handlers.RegisterRoutes(v1, h, nil)
+	} else {
+		// Fallback to old handlers if service initialization failed
+		registerFallbackRoutes(v1)
 	}
-
-	// Swagger documentation (optional)
-	// app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 404 handler
 	app.NoRoute(func(c *gin.Context) {
@@ -115,6 +104,19 @@ func registerRoutes(app *gin.Engine) {
 			"path":    c.Request.URL.Path,
 		})
 	})
+}
+
+// registerFallbackRoutes registers routes using old handler functions
+// Used when service layer initialization fails
+func registerFallbackRoutes(v1 *gin.RouterGroup) {
+	// Auth routes
+	auth := v1.Group("/auth")
+	{
+		auth.POST("/register", handlers.Register)
+		auth.POST("/login", handlers.Login)
+		auth.POST("/logout", handlers.Logout)
+		auth.GET("/verify", handlers.VerifyAuth)
+	}
 }
 
 // loggerMiddleware is a simple logger for Gin

@@ -80,7 +80,7 @@ func main() {
 	v1.Use(appmiddleware.RateLimitByIP(rateLimiter))
 
 	// Register routes
-	registerRoutes(v1, h, rateLimiter)
+	handlers.RegisterRoutes(v1, h, rateLimiter)
 
 	// Global 404 handler
 	app.NoRoute(func(c *gin.Context) {
@@ -124,42 +124,4 @@ func main() {
 	}
 
 	log.Println("Server exited")
-}
-
-func registerRoutes(v1 *gin.RouterGroup, h *handlers.AllHandlers, rateLimiter *appmiddleware.RateLimiter) {
-	// Auth routes (higher rate limit allowed for auth)
-	auth := v1.Group("/auth")
-	auth.Use(appmiddleware.RateLimitByIP(rateLimiter))
-	{
-		// Keep old auth handlers for now - they need to be refactored
-		// auth.POST("/register", h.Auth.Register)
-		// auth.POST("/login", h.Auth.Login)
-		// auth.POST("/logout", h.Auth.Logout)
-		// auth.GET("/verify", h.Auth.Verify)
-	}
-
-	// User routes (protected)
-	users := v1.Group("/users")
-	users.Use(appmiddleware.RateLimitByUser(rateLimiter))
-	users.Use(handlers.AuthMiddleware()) // Keep using existing auth middleware
-	{
-		users.GET("", h.User.GetUser)
-		// users.GET("/:email", h.User.GetUserByEmail)
-		// users.POST("", h.User.CreateUser)
-	}
-
-	// Wallet routes (protected)
-	wallets := v1.Group("/wallets")
-	wallets.Use(appmiddleware.RateLimitByUser(rateLimiter))
-	wallets.Use(handlers.AuthMiddleware()) // Keep using existing auth middleware
-	{
-		wallets.POST("", h.Wallet.CreateWallet)
-		wallets.GET("", h.Wallet.ListWallets)
-		wallets.GET("/:id", h.Wallet.GetWallet)
-		wallets.PUT("/:id", h.Wallet.UpdateWallet)
-		wallets.DELETE("/:id", h.Wallet.DeleteWallet)
-		wallets.POST("/:id/add", h.Wallet.AddFunds)
-		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
-		wallets.POST("/transfer", h.Wallet.TransferFunds)
-	}
 }
