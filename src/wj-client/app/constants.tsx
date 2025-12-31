@@ -3,8 +3,8 @@
 // New API URL with /api prefix
 export const BACKEND_URL =
   process.env.NODE_ENV === "production"
-    ? `${process.env.NEXT_PUBLIC_PROD_BACKEND_URL}/api`
-    : "http://localhost:5000/api";
+    ? `${process.env.NEXT_PUBLIC_PROD_BACKEND_URL}/api/v1`
+    : "http://localhost:5000/api/v1";
 
 export enum NotificationCode {
   SUCCESS = "Success",

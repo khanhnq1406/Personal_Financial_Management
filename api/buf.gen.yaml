@@ -1,0 +1,30 @@
+version: v1
+plugins:
+  # Go gRPC plugin
+  - plugin: buf.build/grpc/go:v1.3.0
+    out: ../src/go-backend/gen
+    opt:
+      - paths=source_relative
+
+  # Go code generation plugin
+  - plugin: buf.build/protocolbuffers/go:v1.31.0
+    out: ../src/go-backend/gen
+    opt:
+      - paths=source_relative
+
+  # TypeScript plugin (ts-proto) for types only (no gRPC - for Vercel/REST)
+  - plugin: ts_proto
+    out: ../src/wj-client/gen
+    opt:
+      - outputServices=false
+      - outputClientMethods=false
+      - useExactTypes=false
+      - lowerCaseServiceMethods=true
+      - unnestEnumValue=true
+      - enumsAsLiterals=true
+      - stringEnums=true
+      - esModuleInterop=true
+      - forceLong=long
+      - useOptionals=none
+      - initializeFieldsAsOptional=true
+      - oneof=unions

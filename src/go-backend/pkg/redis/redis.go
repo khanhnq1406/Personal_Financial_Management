@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"wealthjourney/pkg/config"
 	"time"
+	"wealthjourney/pkg/config"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -22,16 +22,18 @@ const (
 
 // New creates a new Redis client
 func New(cfg *config.Config) (*RedisClient, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.URL,
-		Password: cfg.Redis.Password,
-		DB:       cfg.Redis.DB,
-	})
+	// Parse full Redis URI (supports redis://user:password@host:port/db)
+	opt, err := redis.ParseURL(cfg.Redis.URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
+	}
+
+	client := redis.NewClient(opt)
 
 	ctx := context.Background()
-	_, err := client.Ping(ctx).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	_, pingErr := client.Ping(ctx).Result()
+	if pingErr != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", pingErr)
 	}
 
 	log.Println("Redis connected successfully")

@@ -42,14 +42,15 @@ export function useGet<T = any>(
         setData(result);
         options?.onSuccess?.(result);
       } else {
-        const errorMessage = "Request failed. Please try again.";
+        const errorText = await response.text().catch(() => "Unknown error");
+        const errorMessage = `Request failed (${response.status}): ${errorText}`;
         setError(errorMessage);
         options?.onError?.(new Error(errorMessage));
       }
-    } catch {
+    } catch (err) {
       const errorMessage = "Network error. Please try again.";
       setError(errorMessage);
-      options?.onError?.(new Error(errorMessage));
+      options?.onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
       setLoading(false);
     }

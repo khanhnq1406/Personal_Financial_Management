@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
 	appmiddleware "wealthjourney/pkg/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterRoutes registers all API routes.
@@ -25,6 +26,16 @@ func RegisterRoutes(
 		auth.GET("/verify", VerifyAuth)
 	}
 
+	// Protected auth routes (require authentication)
+	authProtected := v1.Group("/auth")
+	authProtected.Use(AuthMiddleware())
+	if rateLimiter != nil {
+		authProtected.Use(appmiddleware.RateLimitByIP(rateLimiter))
+	}
+	{
+		authProtected.GET("", GetAuth) // Get current authenticated user
+	}
+
 	// User routes (protected)
 	users := v1.Group("/users")
 	if rateLimiter != nil {
@@ -32,8 +43,8 @@ func RegisterRoutes(
 	}
 	users.Use(AuthMiddleware())
 	{
-		users.GET("", h.User.GetUser)           // Get current user
-		users.GET("/all", h.User.ListUsers)     // List all users (admin)
+		users.GET("", h.User.GetUser)       // Get current user
+		users.GET("/all", h.User.ListUsers) // List all users (admin)
 		users.GET("/:email", h.User.GetUserByEmail)
 		users.POST("", h.User.CreateUser)
 		users.PUT("", h.User.UpdateUser)

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package wealthjourney.common.v1;
+
+option go_package = "wealthjourney/gen/common/v1";
+
+// Money represents a monetary amount with currency.
+// Using int64 for amount in smallest currency unit (cents).
+message Money {
+  int64 amount = 1;      // Amount in smallest currency unit (cents)
+  string currency = 2;   // ISO 4217 currency code (e.g., "USD", "EUR")
+}
+
+// PaginationParams for list requests.
+message PaginationParams {
+  int32 page = 1;        // Page number (1-indexed)
+  int32 page_size = 2;   // Items per page
+  string order_by = 3;   // Field to order by
+  string order = 4;      // "asc" or "desc"
+}
+
+// PaginationResult for list responses.
+message PaginationResult {
+  int32 page = 1;        // Current page number
+  int32 page_size = 2;   // Items per page
+  int32 total_count = 3; // Total number of items
+  int32 total_pages = 4; // Total number of pages
+}
+
+// APIResponse wrapper for standard API responses.
+message APIResponse {
+  bool success = 1;
+  string message = 2;
+  string error_code = 3;      // Application-specific error code
+  string error_message = 4;   // User-friendly error message
+  string error_details = 5;   // Additional error details (optional)
+  string timestamp = 6;
+  string path = 7;
+}

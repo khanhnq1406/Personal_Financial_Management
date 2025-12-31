@@ -5,14 +5,12 @@ import { useGet } from "@/hooks";
 import type { ListWalletsResponseData, Wallet } from "@/types/api";
 import { currencyFormatter } from "@/utils/currencyFormatter";
 export const Wallets = memo(function Wallets() {
-  const { data: wallets } = useGet<ListWalletsResponseData>(
-    `${BACKEND_URL}/wallet/list`
-  );
+  const { data } = useGet<ListWalletsResponseData>(`${BACKEND_URL}/wallets`);
 
   return (
     <div className="px-2 py-1">
-      {wallets && wallets.length > 0 ? (
-        wallets?.map((wallet: Wallet) => {
+      {data?.wallets && data?.wallets.length > 0 ? (
+        data?.wallets?.map((wallet: Wallet) => {
           return (
             <div
               className="flex flex-nowrap justify-between m-3"
@@ -25,7 +23,7 @@ export const Wallets = memo(function Wallets() {
                   alt="wallet-icon"
                   src={`${resources}wallet.png`}
                 />
-                <div className="font-semibold">{wallet.wallet_name}</div>
+                <div className="font-semibold">{wallet.walletName}</div>
               </div>
               <div className="font-semibold">
                 {currencyFormatter.format(wallet.balance)}

@@ -1,4 +1,8 @@
-.PHONY: deps build run clean test dev deploy help
+.PHONY: deps build run clean test dev deploy help generate-proto clean-proto
+
+# Directory paths for protobuf
+PROTO_DIR := ../../api/protobuf
+GEN_DIR := ./gen
 
 # Install dependencies
 deps:
@@ -53,16 +57,30 @@ deploy:
 deploy-preview:
 	@vercel
 
+# Generate Go code from protobuf files
+generate-proto:
+	@echo "Generating Go code from protobuf files..."
+	@cd ../../api && buf generate --template buf.gen.go.yaml
+	@echo "Go code generation complete!"
+
+# Clean generated Go code
+clean-proto:
+	@echo "Removing generated Go code..."
+	@rm -rf $(GEN_DIR)
+	@echo "Clean complete!"
+
 # Show help
 help:
 	@echo "Available commands:"
-	@echo "  make deps           - Install Go dependencies"
-	@echo "  make build         - Build standalone server"
-	@echo "  make build-vercel  - Build Vercel serverless function"
-	@echo "  make run           - Run standalone server locally"
-	@echo "  make run-vercel    - Run locally with Vercel dev"
-	@echo "  make dev           - Run with hot reload (same as run-vercel)"
-	@echo "  make test          - Run tests"
-	@echo "  make clean         - Clean build artifacts"
-	@echo "  make deploy        - Deploy to production on Vercel"
-	@echo "  make deploy-preview - Deploy to preview on Vercel"
+	@echo "  make deps             - Install Go dependencies"
+	@echo "  make build            - Build standalone server"
+	@echo "  make build-vercel     - Build Vercel serverless function"
+	@echo "  make run              - Run standalone server locally"
+	@echo "  make run-vercel       - Run locally with Vercel dev"
+	@echo "  make dev              - Run with hot reload (same as run-vercel)"
+	@echo "  make test             - Run tests"
+	@echo "  make clean            - Clean build artifacts"
+	@echo "  make deploy           - Deploy to production on Vercel"
+	@echo "  make deploy-preview   - Deploy to preview on Vercel"
+	@echo "  make generate-proto   - Generate Go code from protobuf files"
+	@echo "  make clean-proto      - Remove generated Go code"

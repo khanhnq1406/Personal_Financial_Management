@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package wealthjourney.user.v1;
+
+import "protobuf/v1/common.proto";
+
+option go_package = "wealthjourney/gen/user/v1";
+
+// User service for user management operations.
+service UserService {
+  // Get the authenticated user's profile
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // Get a user by email
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+
+  // List all users with pagination
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Create a new user
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+
+  // Update user information
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+  // Delete a user
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+}
+
+// User message
+message User {
+  int32 id = 1;
+  string email = 2;
+  string name = 3;
+  string picture = 4;
+  int64 created_at = 5;
+  int64 updated_at = 6;
+}
+
+// GetUser request
+message GetUserRequest {
+  int32 user_id = 1;  // User ID from context (authenticated user)
+}
+
+// GetUser response
+message GetUserResponse {
+  bool success = 1;
+  User data = 2;
+  string timestamp = 3;
+}
+
+// GetUserByEmail request
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+// GetUserByEmail response
+message GetUserByEmailResponse {
+  bool success = 1;
+  User data = 2;
+  string timestamp = 3;
+}
+
+// ListUsers request
+message ListUsersRequest {
+  common.v1.PaginationParams pagination = 1;
+}
+
+// ListUsers response
+message ListUsersResponse {
+  bool success = 1;
+  repeated User users = 2;
+  common.v1.PaginationResult pagination = 3;
+  string timestamp = 4;
+}
+
+// CreateUser request
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+}
+
+// CreateUser response
+message CreateUserResponse {
+  bool success = 1;
+  User data = 2;
+  string timestamp = 3;
+}
+
+// UpdateUser request
+message UpdateUserRequest {
+  int32 user_id = 1;   // User ID from context (authenticated user)
+  string email = 2;
+  string name = 3;
+  string picture = 4;
+}
+
+// UpdateUser response
+message UpdateUserResponse {
+  bool success = 1;
+  User data = 2;
+  string timestamp = 3;
+}
+
+// DeleteUser request
+message DeleteUserRequest {
+  int32 user_id = 1;  // User ID from context (authenticated user)
+}
+
+// DeleteUser response (returns 204 No Content on success)
+message DeleteUserResponse {
+  bool success = 1;
+  string timestamp = 2;
+}

@@ -8,7 +8,8 @@ type APIResponse struct {
 	Data      interface{} `json:"data,omitempty"`
 	Error     *APIError   `json:"error,omitempty"`
 	Message   string      `json:"message,omitempty"`
-	Timestamp time.Time   `json:"timestamp"`
+	Timestamp string      `json:"timestamp"`
+	Path      string      `json:"path,omitempty"`
 }
 
 // NewSuccessResponse creates a successful API response.
@@ -16,7 +17,7 @@ func NewSuccessResponse(data interface{}) APIResponse {
 	return APIResponse{
 		Success:   true,
 		Data:      data,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}
 }
 
@@ -25,7 +26,7 @@ func NewSuccessMessageResponse(message string) APIResponse {
 	return APIResponse{
 		Success:   true,
 		Message:   message,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}
 }
 
@@ -34,16 +35,16 @@ func NewErrorResponse(err APIError) APIResponse {
 	return APIResponse{
 		Success:   false,
 		Error:     &err,
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}
 }
 
 // APIError represents detailed error information.
 type APIError struct {
-	Code       string `json:"code"`                 // Application-specific error code
-	Message    string `json:"message"`              // User-friendly error message
-	Details    string `json:"details,omitempty"`    // Additional error details (optional)
-	StatusCode int    `json:"-"`                    // HTTP status code (not serialized)
+	Code       string `json:"code"`              // Application-specific error code
+	Message    string `json:"message"`           // User-friendly error message
+	Details    string `json:"details,omitempty"` // Additional error details (optional)
+	StatusCode int    `json:"-"`                 // HTTP status code (not serialized)
 }
 
 // Error implements the error interface.
@@ -113,10 +114,10 @@ func NewServiceUnavailableError(message string) APIError {
 
 // PaginationParams represents pagination parameters for list requests.
 type PaginationParams struct {
-	Page     int    `json:"page" form:"page"`         // Page number (1-indexed)
-	PageSize int    `json:"page_size" form:"page_size"` // Items per page
-	OrderBy  string `json:"order_by" form:"order_by"`   // Field to order by
-	Order    string `json:"order" form:"order"`         // "asc" or "desc"
+	Page     int    `json:"page" form:"page"`          // Page number (1-indexed)
+	PageSize int    `json:"pageSize" form:"page_size"` // Items per page
+	OrderBy  string `json:"orderBy" form:"order_by"`   // Field to order by
+	Order    string `json:"order" form:"order"`        // "asc" or "desc"
 }
 
 // NewPaginationParams creates default pagination parameters.
@@ -159,9 +160,9 @@ func (p PaginationParams) Limit() int {
 // PaginationResult contains pagination metadata for list responses.
 type PaginationResult struct {
 	Page       int `json:"page"`
-	PageSize   int `json:"page_size"`
-	TotalCount int `json:"total_count"`
-	TotalPages int `json:"total_pages"`
+	PageSize   int `json:"pageSize"`
+	TotalCount int `json:"totalCount"`
+	TotalPages int `json:"totalPages"`
 }
 
 // NewPaginationResult creates pagination metadata.
@@ -200,4 +201,34 @@ func NewPaginatedResponse(data interface{}, pagination PaginationResult) APIResp
 		Data:       data,
 		Pagination: pagination,
 	})
+}
+
+// NewSuccessResponseWithPath creates a successful API response with path.
+func NewSuccessResponseWithPath(data interface{}, path string) APIResponse {
+	return APIResponse{
+		Success:   true,
+		Data:      data,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Path:      path,
+	}
+}
+
+// NewSuccessMessageResponseWithPath creates a successful API response with message and path.
+func NewSuccessMessageResponseWithPath(message, path string) APIResponse {
+	return APIResponse{
+		Success:   true,
+		Message:   message,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Path:      path,
+	}
+}
+
+// NewErrorResponseWithPath creates an error API response with path.
+func NewErrorResponseWithPath(err APIError, path string) APIResponse {
+	return APIResponse{
+		Success:   false,
+		Error:     &err,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Path:      path,
+	}
 }

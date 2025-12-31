@@ -12,8 +12,8 @@ type User struct {
 	Email     string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
 	Name      string         `gorm:"size:100" json:"name"`
 	Picture   string         `gorm:"size:255" json:"picture"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

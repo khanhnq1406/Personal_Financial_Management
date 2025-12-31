@@ -150,3 +150,31 @@ func BindAndValidate(c *gin.Context, obj interface{}) error {
 	}
 	return nil
 }
+
+// SuccessWithPath sends a successful response with data and path.
+func SuccessWithPath(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusOK, types.NewSuccessResponseWithPath(data, c.Request.URL.Path))
+}
+
+// CreatedWithPath sends a 201 created response with data and path.
+func CreatedWithPath(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusCreated, types.NewSuccessResponseWithPath(data, c.Request.URL.Path))
+}
+
+// UnauthorizedWithPath sends a 401 unauthorized response with path.
+func UnauthorizedWithPath(c *gin.Context, message string) {
+	c.JSON(http.StatusUnauthorized, types.NewErrorResponseWithPath(types.APIError{
+		Code:       "UNAUTHORIZED",
+		Message:    message,
+		StatusCode: http.StatusUnauthorized,
+	}, c.Request.URL.Path))
+}
+
+// NotFoundWithPath sends a 404 not found response with path.
+func NotFoundWithPath(c *gin.Context, message string) {
+	c.JSON(http.StatusNotFound, types.NewErrorResponseWithPath(types.APIError{
+		Code:       "NOT_FOUND",
+		Message:    message,
+		StatusCode: http.StatusNotFound,
+	}, c.Request.URL.Path))
+}

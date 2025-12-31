@@ -45,12 +45,12 @@ type UserData struct {
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	Picture   string    `json:"picture"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // LoginData contains login information including token
 type LoginData struct {
-	AccessToken string `json:"access_token"`
+	AccessToken string `json:"accessToken"`
 	Email       string `json:"email"`
 	Fullname    string `json:"fullname"`
 	Picture     string `json:"picture"`
@@ -281,4 +281,28 @@ func (s *Server) ParseToken(tokenString string) (*JWTClaims, error) {
 	}
 
 	return claims, nil
+}
+
+// GetAuth retrieves user information by email
+func (s *Server) GetAuth(ctx context.Context, email string) (*VerifyAuthResult, error) {
+	// Get user from database
+	var user models.User
+	result := s.db.DB.Where("email = ?", email).First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("user not found")
+	} else if result.Error != nil {
+		return nil, fmt.Errorf("database error: %w", result.Error)
+	}
+
+	return &VerifyAuthResult{
+		Success: true,
+		Message: "User retrieved successfully",
+		Data: &UserData{
+			ID:        user.ID,
+			Email:     user.Email,
+			Name:      user.Name,
+			Picture:   user.Picture,
+			CreatedAt: user.CreatedAt,
+		},
+	}, nil
 }

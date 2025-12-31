@@ -20,10 +20,10 @@ type Config struct {
 }
 
 type Server struct {
-	Port              string
-	ReadTimeout       time.Duration
-	WriteTimeout      time.Duration
-	ShutdownTimeout   time.Duration
+	Port            string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	ShutdownTimeout time.Duration
 }
 
 type Database struct {
@@ -83,7 +83,7 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		Server: Server{
-			Port:            getEnv("PORT", "8080"),
+			Port:            getEnv("PORT", "5000"),
 			ReadTimeout:     readTimeout,
 			WriteTimeout:    writeTimeout,
 			ShutdownTimeout: shutdownTimeout,

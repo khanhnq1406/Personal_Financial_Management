@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package wealthjourney.wallet.v1;
+
+import "protobuf/v1/common.proto";
+
+option go_package = "wealthjourney/gen/wallet/v1";
+
+// Wallet service for wallet management operations.
+service WalletService {
+  // Get a wallet by ID
+  rpc GetWallet(GetWalletRequest) returns (GetWalletResponse);
+
+  // List all wallets for authenticated user with pagination
+  rpc ListWallets(ListWalletsRequest) returns (ListWalletsResponse);
+
+  // Create a new wallet
+  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse);
+
+  // Update wallet information
+  rpc UpdateWallet(UpdateWalletRequest) returns (UpdateWalletResponse);
+
+  // Delete a wallet
+  rpc DeleteWallet(DeleteWalletRequest) returns (DeleteWalletResponse);
+
+  // Add funds to a wallet
+  rpc AddFunds(AddFundsRequest) returns (AddFundsResponse);
+
+  // Withdraw funds from a wallet
+  rpc WithdrawFunds(WithdrawFundsRequest) returns (WithdrawFundsResponse);
+
+  // Transfer funds between wallets
+  rpc TransferFunds(TransferFundsRequest) returns (TransferFundsResponse);
+}
+
+// Wallet message
+message Wallet {
+  int32 id = 1;
+  int32 user_id = 2;
+  string wallet_name = 3;
+  common.v1.Money balance = 4;
+  int64 created_at = 5;
+  int64 updated_at = 6;
+}
+
+// GetWallet request
+message GetWalletRequest {
+  int32 wallet_id = 1;
+}
+
+// GetWallet response
+message GetWalletResponse {
+  bool success = 1;
+  Wallet data = 2;
+  string timestamp = 3;
+}
+
+// ListWallets request
+message ListWalletsRequest {
+  common.v1.PaginationParams pagination = 1;
+}
+
+// ListWallets response
+message ListWalletsResponse {
+  bool success = 1;
+  repeated Wallet wallets = 2;
+  common.v1.PaginationResult pagination = 3;
+  string timestamp = 4;
+}
+
+// CreateWallet request
+message CreateWalletRequest {
+  string wallet_name = 1;
+  common.v1.Money initial_balance = 2;
+}
+
+// CreateWallet response
+message CreateWalletResponse {
+  bool success = 1;
+  Wallet data = 2;
+  string timestamp = 3;
+}
+
+// UpdateWallet request
+message UpdateWalletRequest {
+  int32 wallet_id = 1;
+  string wallet_name = 2;
+}
+
+// UpdateWallet response
+message UpdateWalletResponse {
+  bool success = 1;
+  Wallet data = 2;
+  string timestamp = 3;
+}
+
+// DeleteWallet request
+message DeleteWalletRequest {
+  int32 wallet_id = 1;
+}
+
+// DeleteWallet response (returns 204 No Content on success)
+message DeleteWalletResponse {
+  bool success = 1;
+  string timestamp = 2;
+}
+
+// AddFunds request
+message AddFundsRequest {
+  int32 wallet_id = 1;
+  common.v1.Money amount = 2;
+}
+
+// AddFunds response
+message AddFundsResponse {
+  bool success = 1;
+  Wallet data = 2;
+  string timestamp = 3;
+}
+
+// WithdrawFunds request
+message WithdrawFundsRequest {
+  int32 wallet_id = 1;
+  common.v1.Money amount = 2;
+}
+
+// WithdrawFunds response
+message WithdrawFundsResponse {
+  bool success = 1;
+  Wallet data = 2;
+  string timestamp = 3;
+}
+
+// TransferFunds request
+message TransferFundsRequest {
+  int32 from_wallet_id = 1;
+  int32 to_wallet_id = 2;
+  common.v1.Money amount = 3;
+}
+
+// TransferFunds response
+message TransferFundsResponse {
+  bool success = 1;
+  Wallet from_wallet = 2;
+  Wallet to_wallet = 3;
+  common.v1.Money amount = 4;
+  string timestamp = 5;
+}

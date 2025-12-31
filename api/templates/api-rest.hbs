@@ -1,0 +1,37 @@
+{{#each services}}
+// ============================================================================
+// {{name}} API - Auto-generated from {{protoName}}
+// ============================================================================
+
+import { apiClient } from "@/utils/api-client";
+
+{{#each comments}}
+// {{this}}
+{{/each}}
+export const {{camelCase name}} = {
+{{#each methods}}
+  /**
+   * {{comment}}
+   * {{httpMethod}} {{httpPath}}
+   */
+  async {{name}}(request: {{requestType}}): Promise<{{responseType}}> {
+    {{#if isStreaming}}
+    throw new Error("Streaming methods not supported for REST API");
+    {{else}}
+    return apiClient.{{httpMethodLowerCase}}<{{responseType}}["data"]>(
+      `{{httpPath}}`{{#if hasBody}},
+      request{{/if}}
+    );
+    {{/if}}
+  },
+
+{{/each}}
+};
+{{/each}}
+
+// Export all APIs
+export const api = {
+{{#each services}}
+  {{camelCase name}},
+{{/each}}
+};

@@ -1,23 +1,27 @@
 // ============================================================================
-// STANDARD API RESPONSE TYPES
+// STANDARD API RESPONSE TYPES (Go Backend)
 // ============================================================================
 
 /**
+ * API Error Detail from Go backend
+ */
+export type ApiErrorDetail = {
+  code: string;
+  message: string;
+  details?: string;
+};
+
+/**
  * Standard API Response Structure
- * All API responses follow this structure for consistency
+ * All API responses from Go backend follow this structure
  */
 export type ApiResponse<T = any> = {
   success: boolean;
-  message: string;
   data?: T;
-  error?: string;
+  error?: ApiErrorDetail;
+  message?: string;
   timestamp: string;
-  path: string;
-  errors?: Array<{
-    field?: string;
-    message: string;
-    value?: any;
-  }>;
+  path?: string;
 };
 
 /**
@@ -25,14 +29,19 @@ export type ApiResponse<T = any> = {
  */
 export type ApiError = {
   success: false;
-  message: string;
-  error?: string;
+  error: ApiErrorDetail;
   timestamp: string;
-  path: string;
-  errors?: Array<{
-    field?: string;
-    message: string;
-  }>;
+  path?: string;
+};
+
+/**
+ * Pagination Response
+ */
+export type PaginationResult = {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 };
 
 // ============================================================================
@@ -47,6 +56,7 @@ export type AuthUser = {
   email: string;
   name: string;
   picture: string;
+  createdAt?: string;
 };
 
 /**
@@ -64,6 +74,7 @@ export type LoginResponseData = {
   email: string;
   fullname: string;
   picture: string;
+  createdAt?: string;
 };
 
 /**
@@ -89,35 +100,28 @@ export type LogoutRequest = {
  */
 export type Wallet = {
   id: number;
-  wallet_name: string;
+  walletName: string;
   balance: number;
-  user_id: number;
-  created_at?: string;
-  updated_at?: string;
+  userId: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 /**
  * Create Wallet Request
  */
 export type CreateWalletRequest = {
-  name: string;
-  balance?: number;
-};
-
-/**
- * Create Wallet Response Data
- */
-export type CreateWalletResponseData = {
-  id: number;
-  name: string;
-  balance: number;
-  userId: number;
+  walletName: string;
+  initialBalance?: number;
 };
 
 /**
  * List Wallets Response Data
  */
-export type ListWalletsResponseData = Wallet[];
+export type ListWalletsResponseData = {
+  pagination: PaginationResult;
+  wallets: Wallet[];
+};
 
 // ============================================================================
 // TRANSACTION TYPES
@@ -130,7 +134,7 @@ export type Transaction = {
   id: number;
   amount: number;
   description: string;
-  wallet_id: number;
-  user_id: number;
-  created_at: string;
+  walletId: number;
+  userId: number;
+  createdAt: string;
 };

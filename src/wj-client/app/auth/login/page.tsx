@@ -5,15 +5,16 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Login() {
+  const router = useRouter();
   const [error, setError] = useState(<></>);
   useEffect(() => {
     const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     if (token) {
-      redirect(routes.home);
+      router.push(routes.home);
     }
   }, []);
   const handleGoogleLogin = async (credentialResponse: any) => {
@@ -25,7 +26,9 @@ export default function Login() {
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, data.data.accessToken);
+        // Go backend uses accessToken (camelCase)
+        const token = data.data.accessToken;
+        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, token);
         store.dispatch(
           setAuth({
             isAuthenticated: true,
@@ -34,6 +37,7 @@ export default function Login() {
             picture: data.data.picture,
           })
         );
+        router.push(routes.home);
       } else {
         setError(
           <>
@@ -42,8 +46,7 @@ export default function Login() {
         );
         return;
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       setError(
         <>
           <p>Opps, Something went wrong. Please try again.</p>
@@ -51,10 +54,8 @@ export default function Login() {
       );
       return;
     }
-    redirect(routes.home);
   };
   const handleGoogleLoginError = () => {
-    console.log("Login Failed");
     setError(
       <>
         <p>Opps, Something went wrong. Please try again.</p>

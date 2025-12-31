@@ -6,17 +6,22 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/api/handlers"
+	grpcserver "wealthjourney/internal/grpcserver"
 	"wealthjourney/internal/repository"
 	"wealthjourney/internal/service"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	appmiddleware "wealthjourney/pkg/middleware"
+	"wealthjourney/pkg/redis"
+	"wealthjourney/internal/auth"
 )
 
 func main() {
@@ -40,6 +45,9 @@ func main() {
 	}
 	defer db.Close()
 
+	// Set dependencies for handlers
+	handlers.SetDependencies(db, cfg)
+
 	// Initialize repositories
 	repos := &service.Repositories{
 		User:   repository.NewUserRepository(db),
@@ -52,6 +60,14 @@ func main() {
 	// Initialize handlers
 	h := handlers.NewHandlers(services)
 
+	// Initialize redis
+	rdb, err := redis.New(cfg)
+	if err != nil {
+		log.Printf("Warning: Redis connection failed: %v", err)
+	} else {
+		handlers.SetRedis(rdb)
+	}
+
 	// Initialize rate limiter
 	rateLimiter := appmiddleware.NewRateLimiter(appmiddleware.RateLimiterConfig{
 		RequestsPerMinute: cfg.RateLimit.RequestsPerMinute,
@@ -60,6 +76,16 @@ func main() {
 
 	// Initialize Gin app
 	app := gin.New()
+
+	// CORS middleware
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Global middleware
 	app.Use(appmiddleware.Recovery())
@@ -101,11 +127,28 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// Start server in a goroutine
+	// Start REST server in a goroutine
 	go func() {
-		log.Printf("Starting server on port %s...", cfg.Server.Port)
+		log.Printf("Starting REST server on port %s...", cfg.Server.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			log.Fatalf("Failed to start REST server: %v", err)
+		}
+	}()
+
+	// Initialize and start gRPC server
+	authSrv := auth.NewServer(db, rdb, cfg)
+	grpcSrv := grpcserver.NewServer(authSrv, services)
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "50051" // Default gRPC port
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := grpcSrv.Start(grpcPort); err != nil {
+			log.Fatalf("Failed to start gRPC server: %v", err)
 		}
 	}()
 
@@ -114,14 +157,23 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	log.Println("Shutting down servers...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 
+	// Shutdown REST server
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		log.Fatalf("REST server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exited")
+	// Shutdown gRPC server
+	if err := grpcSrv.Stop(ctx); err != nil {
+		log.Fatalf("gRPC server forced to shutdown: %v", err)
+	}
+
+	// Wait for gRPC server to stop
+	wg.Wait()
+
+	log.Println("Servers exited")
 }

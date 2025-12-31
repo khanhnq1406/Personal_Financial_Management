@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package wealthjourney.auth.v1;
+
+import "protobuf/v1/common.proto";
+
+option go_package = "wealthjourney/gen/auth/v1";
+
+// Auth service for user authentication operations.
+service AuthService {
+  // Register a new user using Google OAuth token
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Login using Google OAuth token
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Logout and invalidate token
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // Verify authentication status
+  rpc VerifyAuth(VerifyAuthRequest) returns (VerifyAuthResponse);
+
+  // Get authenticated user information
+  rpc GetAuth(GetAuthRequest) returns (GetAuthResponse);
+}
+
+// User data message
+message User {
+  int32 id = 1;
+  string email = 2;
+  string name = 3;
+  string picture = 4;
+  int64 created_at = 5;
+  int64 updated_at = 6;
+}
+
+// Register request
+message RegisterRequest {
+  string google_token = 1;  // Google OAuth token
+}
+
+// Register response
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+  User data = 3;
+  string timestamp = 4;
+}
+
+// Login request
+message LoginRequest {
+  string google_token = 1;  // Google OAuth token
+}
+
+// Login response data
+message LoginData {
+  string access_token = 1;
+  string email = 2;
+  string fullname = 3;
+  string picture = 4;
+}
+
+// Login response
+message LoginResponse {
+  bool success = 1;
+  string message = 2;
+  LoginData data = 3;
+  string timestamp = 4;
+}
+
+// Logout request
+message LogoutRequest {
+  string token = 1;  // JWT token
+}
+
+// Logout response
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+  string timestamp = 3;
+}
+
+// VerifyAuth request
+message VerifyAuthRequest {
+  string token = 1;  // JWT token
+}
+
+// VerifyAuth response
+message VerifyAuthResponse {
+  bool success = 1;
+  string message = 2;
+  User data = 3;
+  string timestamp = 4;
+}
+
+// GetAuth request
+message GetAuthRequest {
+  string email = 1;
+}
+
+// GetAuth response
+message GetAuthResponse {
+  bool success = 1;
+  string message = 2;
+  User data = 3;
+  string timestamp = 4;
+}

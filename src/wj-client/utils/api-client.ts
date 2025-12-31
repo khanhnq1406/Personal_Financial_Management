@@ -1,5 +1,28 @@
 import { LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
 import type { ApiResponse, ApiError } from "@/types/api";
+import type {
+  RegisterRequest,
+  RegisterResponse,
+  LoginRequest,
+  LoginResponse,
+  LogoutRequest,
+  LogoutResponse,
+  VerifyAuthRequest,
+  VerifyAuthResponse,
+  CreateWalletRequest,
+  CreateWalletResponse,
+  UpdateWalletRequest,
+  UpdateWalletResponse,
+  DeleteWalletResponse,
+  GetWalletResponse,
+  ListWalletsQuery,
+  ListWalletsResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
+  ListUsersQuery,
+  ListUsersResponse,
+  GetUserResponse,
+} from "@/types/api-generated";
 
 /**
  * API Client Configuration
@@ -18,7 +41,8 @@ export class ApiRequestError extends Error {
   constructor(
     public statusCode: number,
     public message: string,
-    public errors?: Array<{ field?: string; message: string }>
+    public code?: string,
+    public details?: string
   ) {
     super(message);
     this.name = "ApiRequestError";
@@ -55,18 +79,23 @@ function buildUrl(endpoint: string): string {
  */
 async function handleErrorResponse(response: Response): Promise<never> {
   let errorMessage = "An unexpected error occurred";
-  let errors: Array<{ field?: string; message: string }> | undefined;
+  let errorCode: string | undefined;
+  let errorDetails: string | undefined;
 
   try {
     const errorData: ApiError = await response.json();
-    errorMessage = errorData.message || errorMessage;
-    errors = errorData.errors;
+    // Go backend returns error in format: { success: false, error: { code, message, details }, timestamp, path }
+    if (errorData.error) {
+      errorMessage = errorData.error.message || errorMessage;
+      errorCode = errorData.error.code;
+      errorDetails = errorData.error.details;
+    }
   } catch {
     // If parsing fails, use status text
     errorMessage = response.statusText || errorMessage;
   }
 
-  throw new ApiRequestError(response.status, errorMessage, errors);
+  throw new ApiRequestError(response.status, errorMessage, errorCode, errorDetails);
 }
 
 /**
@@ -246,3 +275,134 @@ export default function fetcher(url: string, options?: RequestInit) {
   };
   return fetch(buildUrl(url), updatedOptions);
 }
+
+// ============================================================================
+// TYPED API METHODS (Using Generated Protobuf Types)
+// ============================================================================
+
+/**
+ * Auth API - Type-safe methods using protobuf-generated types
+ */
+export const authApi = {
+  /**
+   * Register a new user with Google OAuth token
+   * POST /api/v1/auth/register
+   */
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    return apiClient.post<RegisterResponse["data"]>("/v1/auth/register", { googleToken: data.googleToken });
+  },
+
+  /**
+   * Login with Google OAuth token
+   * POST /api/v1/auth/login
+   */
+  async login(data: LoginRequest): Promise<LoginResponse> {
+    return apiClient.post<LoginResponse["data"]>("/v1/auth/login", { token: data.token });
+  },
+
+  /**
+   * Logout user
+   * POST /api/v1/auth/logout
+   */
+  async logout(data: LogoutRequest): Promise<LogoutResponse> {
+    return apiClient.post<void>("/v1/auth/logout", { token: data.token });
+  },
+
+  /**
+   * Verify authentication token
+   * GET /api/v1/auth/verify
+   */
+  async verifyAuth(data: VerifyAuthRequest): Promise<VerifyAuthResponse> {
+    return apiClient.get<VerifyAuthResponse["data"]>(`/v1/auth/verify?token=${encodeURIComponent(data.token)}`);
+  },
+};
+
+/**
+ * Wallet API - Type-safe methods using protobuf-generated types
+ */
+export const walletApi = {
+  /**
+   * Create a new wallet
+   * POST /api/v1/wallets
+   */
+  async create(data: CreateWalletRequest): Promise<CreateWalletResponse> {
+    return apiClient.post<CreateWalletResponse["data"]>("/v1/wallets", data);
+  },
+
+  /**
+   * Update a wallet
+   * PUT /api/v1/wallets/:id
+   */
+  async update(id: string, data: UpdateWalletRequest): Promise<UpdateWalletResponse> {
+    return apiClient.put<UpdateWalletResponse["data"]>(`/v1/wallets/${id}`, data);
+  },
+
+  /**
+   * Delete a wallet
+   * DELETE /api/v1/wallets/:id
+   */
+  async delete(id: string): Promise<DeleteWalletResponse> {
+    return apiClient.delete<void>(`/v1/wallets/${id}`);
+  },
+
+  /**
+   * Get a wallet by ID
+   * GET /api/v1/wallets/:id
+   */
+  async get(id: string): Promise<GetWalletResponse> {
+    return apiClient.get<GetWalletResponse["data"]>(`/v1/wallets/${id}`);
+  },
+
+  /**
+   * List wallets with pagination
+   * GET /api/v1/wallets
+   */
+  async list(query?: ListWalletsQuery): Promise<ListWalletsResponse> {
+    const params = new URLSearchParams();
+    if (query?.page) params.append("page", query.page.toString());
+    if (query?.pageSize) params.append("pageSize", query.pageSize.toString());
+    if (query?.orderBy) params.append("orderBy", query.orderBy);
+    if (query?.order) params.append("order", query.order);
+
+    const queryString = params.toString();
+    const endpoint = `/v1/wallets${queryString ? `?${queryString}` : ""}`;
+    return apiClient.get<ListWalletsResponse["data"]>(endpoint);
+  },
+};
+
+/**
+ * User API - Type-safe methods using protobuf-generated types
+ */
+export const userApi = {
+  /**
+   * Update user profile
+   * PUT /api/v1/users/profile
+   */
+  async updateProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+    return apiClient.put<UpdateProfileResponse["data"]>("/v1/users/profile", data);
+  },
+
+  /**
+   * List users with pagination
+   * GET /api/v1/users
+   */
+  async list(query?: ListUsersQuery): Promise<ListUsersResponse> {
+    const params = new URLSearchParams();
+    if (query?.page) params.append("page", query.page.toString());
+    if (query?.pageSize) params.append("pageSize", query.pageSize.toString());
+    if (query?.orderBy) params.append("orderBy", query.orderBy);
+    if (query?.order) params.append("order", query.order);
+
+    const queryString = params.toString();
+    const endpoint = `/v1/users${queryString ? `?${queryString}` : ""}`;
+    return apiClient.get<ListUsersResponse["data"]>(endpoint);
+  },
+
+  /**
+   * Get a user by ID
+   * GET /api/v1/users/:id
+   */
+  async get(id: string): Promise<GetUserResponse> {
+    return apiClient.get<GetUserResponse["data"]>(`/v1/users/${id}`);
+  },
+};

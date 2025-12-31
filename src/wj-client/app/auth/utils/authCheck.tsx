@@ -2,19 +2,20 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
 import { useGet } from "@/hooks";
 import type { AuthUser } from "@/types/api";
 
 export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [shouldFetch, setShouldFetch] = useState(false);
 
   const handleError = useCallback(() => {
     localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
-    redirect(routes.login);
+    router.push(routes.login);
   }, []);
 
   const { data: authData, error: authError } = useGet<AuthUser>(
@@ -36,7 +37,7 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
     if (storedToken) {
       setShouldFetch(true);
     } else {
-      redirect(routes.login);
+      router.push(routes.login);
     }
   }, []);
 

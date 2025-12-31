@@ -12,29 +12,29 @@ type UserDTO struct {
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	Picture   string    `json:"picture"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // WalletDTO represents a wallet data transfer object.
 type WalletDTO struct {
 	ID         int32     `json:"id"`
-	UserID     int32     `json:"user_id"`
-	WalletName string    `json:"wallet_name"`
+	UserID     int32     `json:"userId"`
+	WalletName string    `json:"walletName"`
 	Balance    types.Money `json:"balance"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 // CreateWalletRequest represents a request to create a wallet.
 type CreateWalletRequest struct {
-	WalletName string      `json:"wallet_name" binding:"required"`
-	InitialBalance types.Money `json:"initial_balance"`
+	WalletName      string      `json:"walletName" binding:"required"`
+	InitialBalance  types.Money `json:"initialBalance"`
 }
 
 // UpdateWalletRequest represents a request to update a wallet.
 type UpdateWalletRequest struct {
-	WalletName string `json:"wallet_name" binding:"required"`
+	WalletName string `json:"walletName" binding:"required"`
 }
 
 // AddFundsRequest represents a request to add funds to a wallet.
@@ -49,15 +49,15 @@ type WithdrawFundsRequest struct {
 
 // TransferFundsRequest represents a request to transfer funds between wallets.
 type TransferFundsRequest struct {
-	FromWalletID int32       `json:"from_wallet_id" binding:"required"`
-	ToWalletID   int32       `json:"to_wallet_id" binding:"required"`
+	FromWalletID int32       `json:"fromWalletId" binding:"required"`
+	ToWalletID   int32       `json:"toWalletId" binding:"required"`
 	Amount       types.Money `json:"amount" binding:"required"`
 }
 
 // TransferResult represents the result of a funds transfer.
 type TransferResult struct {
-	FromWallet WalletDTO `json:"from_wallet"`
-	ToWallet   WalletDTO `json:"to_wallet"`
+	FromWallet WalletDTO `json:"fromWallet"`
+	ToWallet   WalletDTO `json:"toWallet"`
 	Amount     types.Money `json:"amount"`
 }
 

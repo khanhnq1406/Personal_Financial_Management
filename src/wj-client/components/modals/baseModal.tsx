@@ -11,7 +11,7 @@ import { TransferMoneyForm } from "./transferMoneyForm";
 import { CreateWalletForm } from "./createWalletForm";
 import { Success } from "./success";
 import { usePost } from "@/hooks";
-import type { CreateWalletResponseData } from "@/types/api";
+import type { WalletData } from "@/types/api-generated";
 
 type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null };
@@ -60,7 +60,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const [error, setError] = useState("");
 
-  const { post } = usePost<CreateWalletResponseData>(
+  const { post } = usePost<WalletData>(
     `${BACKEND_URL}/wallet/create`,
     {
       onSuccess: () => {
