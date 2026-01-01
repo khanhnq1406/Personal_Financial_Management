@@ -3,8 +3,9 @@ syntax = "proto3";
 package wealthjourney.user.v1;
 
 import "protobuf/v1/common.proto";
+import "protobuf/v1/auth.proto";
 
-option go_package = "wealthjourney/gen/user/v1";
+option go_package = "wealthjourney/gen/protobuf/v1";
 
 // User service for user management operations.
 service UserService {
@@ -27,16 +28,6 @@ service UserService {
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
-// User message
-message User {
-  int32 id = 1;
-  string email = 2;
-  string name = 3;
-  string picture = 4;
-  int64 created_at = 5;
-  int64 updated_at = 6;
-}
-
 // GetUser request
 message GetUserRequest {
   int32 user_id = 1;  // User ID from context (authenticated user)
@@ -45,7 +36,7 @@ message GetUserRequest {
 // GetUser response
 message GetUserResponse {
   bool success = 1;
-  User data = 2;
+  auth.v1.User data = 2;
   string timestamp = 3;
 }
 
@@ -57,7 +48,7 @@ message GetUserByEmailRequest {
 // GetUserByEmail response
 message GetUserByEmailResponse {
   bool success = 1;
-  User data = 2;
+  auth.v1.User data = 2;
   string timestamp = 3;
 }
 
@@ -69,7 +60,7 @@ message ListUsersRequest {
 // ListUsers response
 message ListUsersResponse {
   bool success = 1;
-  repeated User users = 2;
+  repeated auth.v1.User users = 2;
   common.v1.PaginationResult pagination = 3;
   string timestamp = 4;
 }
@@ -84,7 +75,7 @@ message CreateUserRequest {
 // CreateUser response
 message CreateUserResponse {
   bool success = 1;
-  User data = 2;
+  auth.v1.User data = 2;
   string timestamp = 3;
 }
 
@@ -99,7 +90,7 @@ message UpdateUserRequest {
 // UpdateUser response
 message UpdateUserResponse {
   bool success = 1;
-  User data = 2;
+  auth.v1.User data = 2;
   string timestamp = 3;
 }
 

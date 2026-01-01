@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/service"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
@@ -29,8 +30,8 @@ func NewWalletHandlers(walletService service.WalletService) *WalletHandlers {
 // @Tags wallets
 // @Accept json
 // @Produce json
-// @Param request body service.CreateWalletRequest true "Wallet creation request"
-// @Success 201 {object} types.APIResponse{data=service.WalletDTO}
+// @Param request body walletv1.CreateWalletRequest true "Wallet creation request"
+// @Success 201 {object} types.APIResponse{data=walletv1.Wallet}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
@@ -44,7 +45,7 @@ func (h *WalletHandlers) CreateWallet(c *gin.Context) {
 	}
 
 	// Bind and validate request
-	var req service.CreateWalletRequest
+	var req protobufv1.CreateWalletRequest
 	if err := handler.BindAndValidate(c, &req); err != nil {
 		handler.BadRequest(c, err)
 		return
@@ -57,12 +58,15 @@ func (h *WalletHandlers) CreateWallet(c *gin.Context) {
 	}
 
 	// Set default currency if not provided
+	if req.InitialBalance == nil {
+		req.InitialBalance = &protobufv1.Money{Amount: 0, Currency: types.USD}
+	}
 	if req.InitialBalance.Currency == "" {
 		req.InitialBalance.Currency = types.USD
 	}
 
 	// Call service
-	result, err := h.walletService.CreateWallet(c.Request.Context(), userID, req)
+	result, err := h.walletService.CreateWallet(c.Request.Context(), userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
@@ -110,7 +114,7 @@ func (h *WalletHandlers) ListWallets(c *gin.Context) {
 // @Tags wallets
 // @Produce json
 // @Param id path int true "Wallet ID"
-// @Success 200 {object} types.APIResponse{data=service.WalletDTO}
+// @Success 200 {object} types.APIResponse{data=walletv1.Wallet}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 403 {object} types.APIResponse
@@ -148,8 +152,8 @@ func (h *WalletHandlers) GetWallet(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Wallet ID"
-// @Param request body service.UpdateWalletRequest true "Wallet update request"
-// @Success 200 {object} types.APIResponse{data=service.WalletDTO}
+// @Param request body walletv1.UpdateWalletRequest true "Wallet update request"
+// @Success 200 {object} types.APIResponse{data=walletv1.Wallet}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 403 {object} types.APIResponse
@@ -172,14 +176,14 @@ func (h *WalletHandlers) UpdateWallet(c *gin.Context) {
 	}
 
 	// Bind and validate request
-	var req service.UpdateWalletRequest
+	var req protobufv1.UpdateWalletRequest
 	if err := handler.BindAndValidate(c, &req); err != nil {
 		handler.BadRequest(c, err)
 		return
 	}
 
 	// Call service
-	result, err := h.walletService.UpdateWallet(c.Request.Context(), walletID, userID, req)
+	result, err := h.walletService.UpdateWallet(c.Request.Context(), walletID, userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
@@ -230,8 +234,8 @@ func (h *WalletHandlers) DeleteWallet(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Wallet ID"
-// @Param request body service.AddFundsRequest true "Add funds request"
-// @Success 200 {object} types.APIResponse{data=service.WalletDTO}
+// @Param request body walletv1.AddFundsRequest true "Add funds request"
+// @Success 200 {object} types.APIResponse{data=walletv1.Wallet}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 403 {object} types.APIResponse
@@ -254,14 +258,14 @@ func (h *WalletHandlers) AddFunds(c *gin.Context) {
 	}
 
 	// Bind and validate request
-	var req service.AddFundsRequest
+	var req protobufv1.AddFundsRequest
 	if err := handler.BindAndValidate(c, &req); err != nil {
 		handler.BadRequest(c, err)
 		return
 	}
 
 	// Call service
-	result, err := h.walletService.AddFunds(c.Request.Context(), walletID, userID, req)
+	result, err := h.walletService.AddFunds(c.Request.Context(), walletID, userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
@@ -276,8 +280,8 @@ func (h *WalletHandlers) AddFunds(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Wallet ID"
-// @Param request body service.WithdrawFundsRequest true "Withdraw funds request"
-// @Success 200 {object} types.APIResponse{data=service.WalletDTO}
+// @Param request body walletv1.WithdrawFundsRequest true "Withdraw funds request"
+// @Success 200 {object} types.APIResponse{data=walletv1.Wallet}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 403 {object} types.APIResponse
@@ -300,14 +304,14 @@ func (h *WalletHandlers) WithdrawFunds(c *gin.Context) {
 	}
 
 	// Bind and validate request
-	var req service.WithdrawFundsRequest
+	var req protobufv1.WithdrawFundsRequest
 	if err := handler.BindAndValidate(c, &req); err != nil {
 		handler.BadRequest(c, err)
 		return
 	}
 
 	// Call service
-	result, err := h.walletService.WithdrawFunds(c.Request.Context(), walletID, userID, req)
+	result, err := h.walletService.WithdrawFunds(c.Request.Context(), walletID, userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
@@ -321,7 +325,7 @@ func (h *WalletHandlers) WithdrawFunds(c *gin.Context) {
 // @Tags wallets
 // @Accept json
 // @Produce json
-// @Param request body service.TransferFundsRequest true "Transfer funds request"
+// @Param request body walletv1.TransferFundsRequest true "Transfer funds request"
 // @Success 200 {object} types.APIResponse{data=service.TransferResult}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
@@ -338,14 +342,14 @@ func (h *WalletHandlers) TransferFunds(c *gin.Context) {
 	}
 
 	// Bind and validate request
-	var req service.TransferFundsRequest
+	var req protobufv1.TransferFundsRequest
 	if err := handler.BindAndValidate(c, &req); err != nil {
 		handler.BadRequest(c, err)
 		return
 	}
 
 	// Call service
-	result, err := h.walletService.TransferFunds(c.Request.Context(), userID, req)
+	result, err := h.walletService.TransferFunds(c.Request.Context(), userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return

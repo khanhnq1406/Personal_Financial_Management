@@ -23,7 +23,7 @@ func NewUserHandlers(userService service.UserService) *UserHandlers {
 // @Summary Get current user
 // @Tags users
 // @Produce json
-// @Success 200 {object} types.APIResponse{data=service.UserDTO}
+// @Success 200 {object} types.APIResponse{data=protobufv1.User}
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
 // @Router /api/v1/users [get]
@@ -50,7 +50,7 @@ func (h *UserHandlers) GetUser(c *gin.Context) {
 // @Tags users
 // @Produce json
 // @Param email path string true "User email"
-// @Success 200 {object} types.APIResponse{data=service.UserDTO}
+// @Success 200 {object} types.APIResponse{data=protobufv1.User}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 404 {object} types.APIResponse
@@ -105,7 +105,7 @@ func (h *UserHandlers) ListUsers(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body object{email:string,name:string,picture:string} true "User creation request"
-// @Success 201 {object} types.APIResponse{data=service.UserDTO}
+// @Success 201 {object} types.APIResponse{data=protobufv1.User}
 // @Failure 400 {object} types.APIResponse
 // @Failure 409 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
@@ -138,7 +138,7 @@ func (h *UserHandlers) CreateUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body object{email:string,name:string,picture:string} true "User update request"
-// @Success 200 {object} types.APIResponse{data=service.UserDTO}
+// @Success 200 {object} types.APIResponse{data=protobufv1.User}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 409 {object} types.APIResponse

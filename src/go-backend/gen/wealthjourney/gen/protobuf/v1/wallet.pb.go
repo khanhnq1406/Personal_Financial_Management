@@ -11,7 +11,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
-	v1 "wealthjourney/gen/common/v1"
 )
 
 const (
@@ -27,12 +26,12 @@ type Wallet struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id         int32     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId     int32     `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	WalletName string    `protobuf:"bytes,3,opt,name=wallet_name,json=walletName,proto3" json:"wallet_name,omitempty"`
-	Balance    *v1.Money `protobuf:"bytes,4,opt,name=balance,proto3" json:"balance,omitempty"`
-	CreatedAt  int64     `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt  int64     `protobuf:"varint,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Id         int32  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId     int32  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	WalletName string `protobuf:"bytes,3,opt,name=wallet_name,json=walletName,proto3" json:"wallet_name,omitempty"`
+	Balance    *Money `protobuf:"bytes,4,opt,name=balance,proto3" json:"balance,omitempty"`
+	CreatedAt  int64  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt  int64  `protobuf:"varint,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 func (x *Wallet) Reset() {
@@ -88,7 +87,7 @@ func (x *Wallet) GetWalletName() string {
 	return ""
 }
 
-func (x *Wallet) GetBalance() *v1.Money {
+func (x *Wallet) GetBalance() *Money {
 	if x != nil {
 		return x.Balance
 	}
@@ -227,7 +226,7 @@ type ListWalletsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Pagination *v1.PaginationParams `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Pagination *PaginationParams `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *ListWalletsRequest) Reset() {
@@ -262,7 +261,7 @@ func (*ListWalletsRequest) Descriptor() ([]byte, []int) {
 	return file_protobuf_v1_wallet_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListWalletsRequest) GetPagination() *v1.PaginationParams {
+func (x *ListWalletsRequest) GetPagination() *PaginationParams {
 	if x != nil {
 		return x.Pagination
 	}
@@ -275,10 +274,10 @@ type ListWalletsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Success    bool                 `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Wallets    []*Wallet            `protobuf:"bytes,2,rep,name=wallets,proto3" json:"wallets,omitempty"`
-	Pagination *v1.PaginationResult `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Timestamp  string               `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Success    bool              `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Wallets    []*Wallet         `protobuf:"bytes,2,rep,name=wallets,proto3" json:"wallets,omitempty"`
+	Pagination *PaginationResult `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Timestamp  string            `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
 func (x *ListWalletsResponse) Reset() {
@@ -327,7 +326,7 @@ func (x *ListWalletsResponse) GetWallets() []*Wallet {
 	return nil
 }
 
-func (x *ListWalletsResponse) GetPagination() *v1.PaginationResult {
+func (x *ListWalletsResponse) GetPagination() *PaginationResult {
 	if x != nil {
 		return x.Pagination
 	}
@@ -347,8 +346,8 @@ type CreateWalletRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	WalletName     string    `protobuf:"bytes,1,opt,name=wallet_name,json=walletName,proto3" json:"wallet_name,omitempty"`
-	InitialBalance *v1.Money `protobuf:"bytes,2,opt,name=initial_balance,json=initialBalance,proto3" json:"initial_balance,omitempty"`
+	WalletName     string `protobuf:"bytes,1,opt,name=wallet_name,json=walletName,proto3" json:"wallet_name,omitempty"`
+	InitialBalance *Money `protobuf:"bytes,2,opt,name=initial_balance,json=initialBalance,proto3" json:"initial_balance,omitempty"`
 }
 
 func (x *CreateWalletRequest) Reset() {
@@ -390,7 +389,7 @@ func (x *CreateWalletRequest) GetWalletName() string {
 	return ""
 }
 
-func (x *CreateWalletRequest) GetInitialBalance() *v1.Money {
+func (x *CreateWalletRequest) GetInitialBalance() *Money {
 	if x != nil {
 		return x.InitialBalance
 	}
@@ -691,8 +690,8 @@ type AddFundsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	WalletId int32     `protobuf:"varint,1,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
-	Amount   *v1.Money `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	WalletId int32  `protobuf:"varint,1,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
+	Amount   *Money `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *AddFundsRequest) Reset() {
@@ -734,7 +733,7 @@ func (x *AddFundsRequest) GetWalletId() int32 {
 	return 0
 }
 
-func (x *AddFundsRequest) GetAmount() *v1.Money {
+func (x *AddFundsRequest) GetAmount() *Money {
 	if x != nil {
 		return x.Amount
 	}
@@ -811,8 +810,8 @@ type WithdrawFundsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	WalletId int32     `protobuf:"varint,1,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
-	Amount   *v1.Money `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	WalletId int32  `protobuf:"varint,1,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
+	Amount   *Money `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *WithdrawFundsRequest) Reset() {
@@ -854,7 +853,7 @@ func (x *WithdrawFundsRequest) GetWalletId() int32 {
 	return 0
 }
 
-func (x *WithdrawFundsRequest) GetAmount() *v1.Money {
+func (x *WithdrawFundsRequest) GetAmount() *Money {
 	if x != nil {
 		return x.Amount
 	}
@@ -931,9 +930,9 @@ type TransferFundsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FromWalletId int32     `protobuf:"varint,1,opt,name=from_wallet_id,json=fromWalletId,proto3" json:"from_wallet_id,omitempty"`
-	ToWalletId   int32     `protobuf:"varint,2,opt,name=to_wallet_id,json=toWalletId,proto3" json:"to_wallet_id,omitempty"`
-	Amount       *v1.Money `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	FromWalletId int32  `protobuf:"varint,1,opt,name=from_wallet_id,json=fromWalletId,proto3" json:"from_wallet_id,omitempty"`
+	ToWalletId   int32  `protobuf:"varint,2,opt,name=to_wallet_id,json=toWalletId,proto3" json:"to_wallet_id,omitempty"`
+	Amount       *Money `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *TransferFundsRequest) Reset() {
@@ -982,7 +981,7 @@ func (x *TransferFundsRequest) GetToWalletId() int32 {
 	return 0
 }
 
-func (x *TransferFundsRequest) GetAmount() *v1.Money {
+func (x *TransferFundsRequest) GetAmount() *Money {
 	if x != nil {
 		return x.Amount
 	}
@@ -995,11 +994,11 @@ type TransferFundsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Success    bool      `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	FromWallet *Wallet   `protobuf:"bytes,2,opt,name=from_wallet,json=fromWallet,proto3" json:"from_wallet,omitempty"`
-	ToWallet   *Wallet   `protobuf:"bytes,3,opt,name=to_wallet,json=toWallet,proto3" json:"to_wallet,omitempty"`
-	Amount     *v1.Money `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
-	Timestamp  string    `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Success    bool    `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	FromWallet *Wallet `protobuf:"bytes,2,opt,name=from_wallet,json=fromWallet,proto3" json:"from_wallet,omitempty"`
+	ToWallet   *Wallet `protobuf:"bytes,3,opt,name=to_wallet,json=toWallet,proto3" json:"to_wallet,omitempty"`
+	Amount     *Money  `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Timestamp  string  `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
 func (x *TransferFundsResponse) Reset() {
@@ -1055,7 +1054,7 @@ func (x *TransferFundsResponse) GetToWallet() *Wallet {
 	return nil
 }
 
-func (x *TransferFundsResponse) GetAmount() *v1.Money {
+func (x *TransferFundsResponse) GetAmount() *Money {
 	if x != nil {
 		return x.Amount
 	}
@@ -1269,9 +1268,9 @@ var file_protobuf_v1_wallet_proto_rawDesc = []byte{
 	0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x77, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x6a, 0x6f, 0x75, 0x72,
 	0x6e, 0x65, 0x79, 0x2e, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x72,
 	0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x46, 0x75, 0x6e, 0x64, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x42, 0x1d, 0x5a, 0x1b, 0x77, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x6a, 0x6f, 0x75,
-	0x72, 0x6e, 0x65, 0x79, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x2f,
-	0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x73, 0x65, 0x42, 0x1f, 0x5a, 0x1d, 0x77, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x6a, 0x6f, 0x75,
+	0x72, 0x6e, 0x65, 0x79, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1305,9 +1304,9 @@ var file_protobuf_v1_wallet_proto_goTypes = []interface{}{
 	(*WithdrawFundsResponse)(nil), // 14: wealthjourney.wallet.v1.WithdrawFundsResponse
 	(*TransferFundsRequest)(nil),  // 15: wealthjourney.wallet.v1.TransferFundsRequest
 	(*TransferFundsResponse)(nil), // 16: wealthjourney.wallet.v1.TransferFundsResponse
-	(*v1.Money)(nil),              // 17: wealthjourney.common.v1.Money
-	(*v1.PaginationParams)(nil),   // 18: wealthjourney.common.v1.PaginationParams
-	(*v1.PaginationResult)(nil),   // 19: wealthjourney.common.v1.PaginationResult
+	(*Money)(nil),                 // 17: wealthjourney.common.v1.Money
+	(*PaginationParams)(nil),      // 18: wealthjourney.common.v1.PaginationParams
+	(*PaginationResult)(nil),      // 19: wealthjourney.common.v1.PaginationResult
 }
 var file_protobuf_v1_wallet_proto_depIdxs = []int32{
 	17, // 0: wealthjourney.wallet.v1.Wallet.balance:type_name -> wealthjourney.common.v1.Money
@@ -1354,6 +1353,7 @@ func file_protobuf_v1_wallet_proto_init() {
 	if File_protobuf_v1_wallet_proto != nil {
 		return
 	}
+	file_protobuf_v1_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_protobuf_v1_wallet_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Wallet); i {

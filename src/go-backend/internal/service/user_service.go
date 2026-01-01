@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/models"
 	"wealthjourney/internal/repository"
 	apperrors "wealthjourney/pkg/errors"
@@ -12,18 +13,20 @@ import (
 
 // userService implements UserService.
 type userService struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	mapper    *UserMapper
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(userRepo repository.UserRepository) UserService {
 	return &userService{
 		userRepo: userRepo,
+		mapper:   NewUserMapper(),
 	}
 }
 
 // GetUser retrieves a user by ID.
-func (s *userService) GetUser(ctx context.Context, userID int32) (*UserDTO, error) {
+func (s *userService) GetUser(ctx context.Context, userID int32) (*protobufv1.User, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
 	}
@@ -33,11 +36,11 @@ func (s *userService) GetUser(ctx context.Context, userID int32) (*UserDTO, erro
 		return nil, err
 	}
 
-	return s.toUserDTO(user), nil
+	return s.mapper.ModelToProto(user), nil
 }
 
 // GetUserByEmail retrieves a user by email.
-func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*protobufv1.User, error) {
 	if err := validator.Email(email); err != nil {
 		return nil, err
 	}
@@ -47,11 +50,11 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDT
 		return nil, err
 	}
 
-	return s.toUserDTO(user), nil
+	return s.mapper.ModelToProto(user), nil
 }
 
 // ListUsers retrieves all users with pagination.
-func (s *userService) ListUsers(ctx context.Context, params types.PaginationParams) ([]*UserDTO, *types.PaginationResult, error) {
+func (s *userService) ListUsers(ctx context.Context, params types.PaginationParams) ([]*protobufv1.User, *types.PaginationResult, error) {
 	params = params.Validate()
 
 	opts := repository.ListOptions{
@@ -66,17 +69,12 @@ func (s *userService) ListUsers(ctx context.Context, params types.PaginationPara
 		return nil, nil, err
 	}
 
-	userDTOs := make([]*UserDTO, len(users))
-	for i, u := range users {
-		userDTOs[i] = s.toUserDTO(u)
-	}
-
 	pagination := types.NewPaginationResult(params.Page, params.PageSize, total)
-	return userDTOs, &pagination, nil
+	return s.mapper.ModelSliceToProto(users), &pagination, nil
 }
 
 // CreateUser creates a new user.
-func (s *userService) CreateUser(ctx context.Context, email, name, picture string) (*UserDTO, error) {
+func (s *userService) CreateUser(ctx context.Context, email, name, picture string) (*protobufv1.User, error) {
 	// Validate inputs
 	if err := validator.Email(email); err != nil {
 		return nil, err
@@ -107,11 +105,11 @@ func (s *userService) CreateUser(ctx context.Context, email, name, picture strin
 		return nil, err
 	}
 
-	return s.toUserDTO(user), nil
+	return s.mapper.ModelToProto(user), nil
 }
 
 // UpdateUser updates a user's information.
-func (s *userService) UpdateUser(ctx context.Context, userID int32, email, name, picture string) (*UserDTO, error) {
+func (s *userService) UpdateUser(ctx context.Context, userID int32, email, name, picture string) (*protobufv1.User, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
 	}
@@ -155,7 +153,7 @@ func (s *userService) UpdateUser(ctx context.Context, userID int32, email, name,
 		return nil, err
 	}
 
-	return s.toUserDTO(user), nil
+	return s.mapper.ModelToProto(user), nil
 }
 
 // DeleteUser deletes a user.
@@ -172,16 +170,4 @@ func (s *userService) ExistsByEmail(ctx context.Context, email string) (bool, er
 		return false, err
 	}
 	return s.userRepo.ExistsByEmail(ctx, email)
-}
-
-// toUserDTO converts a User model to a UserDTO.
-func (s *userService) toUserDTO(user *models.User) *UserDTO {
-	return &UserDTO{
-		ID:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
 }

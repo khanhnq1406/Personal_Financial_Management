@@ -8,9 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	authv1 "wealthjourney/gen/auth/v1"
-	userv1 "wealthjourney/gen/user/v1"
-	walletv1 "wealthjourney/gen/wallet/v1"
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/auth"
 	"wealthjourney/internal/service"
 )
@@ -27,9 +25,9 @@ func NewServer(authSrv *auth.Server, services *service.Services) *Server {
 	s := grpc.NewServer()
 
 	// Register services
-	authv1.RegisterAuthServiceServer(s, NewAuthServer(authSrv))
-	userv1.RegisterUserServiceServer(s, NewUserServer(services.User))
-	walletv1.RegisterWalletServiceServer(s, NewWalletServer(services.Wallet))
+	protobufv1.RegisterAuthServiceServer(s, NewAuthServer(authSrv))
+	protobufv1.RegisterUserServiceServer(s, NewUserServer(services.User))
+	protobufv1.RegisterWalletServiceServer(s, NewWalletServer(services.Wallet))
 
 	// Register reflection service for debugging
 	reflection.Register(s)

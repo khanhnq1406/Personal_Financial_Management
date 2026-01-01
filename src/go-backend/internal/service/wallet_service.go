@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	walletv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/models"
 	"wealthjourney/internal/repository"
 	apperrors "wealthjourney/pkg/errors"
@@ -14,6 +15,7 @@ import (
 type walletService struct {
 	walletRepo repository.WalletRepository
 	userRepo   repository.UserRepository
+	mapper     *WalletMapper
 }
 
 // NewWalletService creates a new WalletService.
@@ -21,11 +23,12 @@ func NewWalletService(walletRepo repository.WalletRepository, userRepo repositor
 	return &walletService{
 		walletRepo: walletRepo,
 		userRepo:   userRepo,
+		mapper:     NewWalletMapper(),
 	}
 }
 
 // CreateWallet creates a new wallet for a user.
-func (s *walletService) CreateWallet(ctx context.Context, userID int32, req CreateWalletRequest) (*WalletDTO, error) {
+func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *walletv1.CreateWalletRequest) (*walletv1.Wallet, error) {
 	// Validate inputs
 	if err := validator.ID(userID); err != nil {
 		return nil, err
@@ -44,27 +47,33 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req Crea
 	}
 
 	// Validate initial balance
-	if req.InitialBalance.Amount < 0 {
-		return nil, apperrors.NewValidationError("initial balance cannot be negative")
+	initialBalance := int64(0)
+	currency := types.USD
+	if req.InitialBalance != nil {
+		initialBalance = req.InitialBalance.Amount
+		currency = req.InitialBalance.Currency
+		if initialBalance < 0 {
+			return nil, apperrors.NewValidationError("initial balance cannot be negative")
+		}
 	}
 
 	// Create wallet model
 	wallet := &models.Wallet{
 		UserID:     userID,
 		WalletName: req.WalletName,
-		Balance:    req.InitialBalance.Amount,
-		Currency:   req.InitialBalance.Currency,
+		Balance:    initialBalance,
+		Currency:   currency,
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {
 		return nil, err
 	}
 
-	return s.toWalletDTO(wallet), nil
+	return s.mapper.ModelToProto(wallet), nil
 }
 
 // GetWallet retrieves a wallet by ID, ensuring it belongs to the user.
-func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestingUserID int32) (*WalletDTO, error) {
+func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestingUserID int32) (*walletv1.Wallet, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -77,7 +86,7 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 		return nil, err
 	}
 
-	return s.toWalletDTO(wallet), nil
+	return s.mapper.ModelToProto(wallet), nil
 }
 
 // ListWallets retrieves all wallets for a user with pagination.
@@ -100,19 +109,17 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 		return nil, err
 	}
 
-	walletDTOs := make([]WalletDTO, len(wallets))
-	for i, w := range wallets {
-		walletDTOs[i] = *s.toWalletDTO(w)
-	}
+	protoWallets := s.mapper.ModelSliceToProto(wallets)
+	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &WalletListResult{
-		Wallets:    walletDTOs,
-		Pagination: types.NewPaginationResult(params.Page, params.PageSize, total),
+		Wallets:    protoWallets,
+		Pagination: s.mapper.PaginationResultToProto(paginationResult),
 	}, nil
 }
 
 // UpdateWallet updates a wallet's name.
-func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID int32, req UpdateWalletRequest) (*WalletDTO, error) {
+func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.UpdateWalletRequest) (*walletv1.Wallet, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -136,7 +143,7 @@ func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID
 		return nil, err
 	}
 
-	return s.toWalletDTO(wallet), nil
+	return s.mapper.ModelToProto(wallet), nil
 }
 
 // DeleteWallet deletes a wallet.
@@ -158,7 +165,7 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 }
 
 // AddFunds adds funds to a wallet.
-func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int32, req AddFundsRequest) (*WalletDTO, error) {
+func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.AddFundsRequest) (*walletv1.Wallet, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -173,7 +180,7 @@ func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int
 	}
 
 	// Validate amount
-	if req.Amount.Amount <= 0 {
+	if req.Amount == nil || req.Amount.Amount <= 0 {
 		return nil, apperrors.NewValidationError("amount must be positive")
 	}
 	if req.Amount.Currency != wallet.Currency {
@@ -186,11 +193,11 @@ func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int
 		return nil, err
 	}
 
-	return s.toWalletDTO(updated), nil
+	return s.mapper.ModelToProto(updated), nil
 }
 
 // WithdrawFunds withdraws funds from a wallet.
-func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userID int32, req WithdrawFundsRequest) (*WalletDTO, error) {
+func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.WithdrawFundsRequest) (*walletv1.Wallet, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -205,7 +212,7 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 	}
 
 	// Validate amount
-	if req.Amount.Amount <= 0 {
+	if req.Amount == nil || req.Amount.Amount <= 0 {
 		return nil, apperrors.NewValidationError("amount must be positive")
 	}
 	if req.Amount.Currency != wallet.Currency {
@@ -223,31 +230,31 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 		return nil, err
 	}
 
-	return s.toWalletDTO(updated), nil
+	return s.mapper.ModelToProto(updated), nil
 }
 
 // TransferFunds transfers funds between two wallets belonging to the same user.
-func (s *walletService) TransferFunds(ctx context.Context, userID int32, req TransferFundsRequest) (*TransferResult, error) {
+func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*TransferResult, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
 	}
-	if req.FromWalletID == req.ToWalletID {
+	if req.FromWalletId == req.ToWalletId {
 		return nil, apperrors.NewValidationError("source and destination wallets cannot be the same")
 	}
 
 	// Verify both wallets exist and belong to user
-	fromWallet, err := s.walletRepo.GetByIDForUser(ctx, req.FromWalletID, userID)
+	fromWallet, err := s.walletRepo.GetByIDForUser(ctx, req.FromWalletId, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	toWallet, err := s.walletRepo.GetByIDForUser(ctx, req.ToWalletID, userID)
+	toWallet, err := s.walletRepo.GetByIDForUser(ctx, req.ToWalletId, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validate amount
-	if req.Amount.Amount <= 0 {
+	if req.Amount == nil || req.Amount.Amount <= 0 {
 		return nil, apperrors.NewValidationError("amount must be positive")
 	}
 	if req.Amount.Currency != fromWallet.Currency {
@@ -263,37 +270,22 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req Tra
 	}
 
 	// Withdraw from source
-	updatedFrom, err := s.walletRepo.UpdateBalance(ctx, req.FromWalletID, -req.Amount.Amount)
+	updatedFrom, err := s.walletRepo.UpdateBalance(ctx, req.FromWalletId, -req.Amount.Amount)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add to destination
-	updatedTo, err := s.walletRepo.UpdateBalance(ctx, req.ToWalletID, req.Amount.Amount)
+	updatedTo, err := s.walletRepo.UpdateBalance(ctx, req.ToWalletId, req.Amount.Amount)
 	if err != nil {
 		// Attempt to rollback by refunding source
-		_, _ = s.walletRepo.UpdateBalance(ctx, req.FromWalletID, req.Amount.Amount)
+		_, _ = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, req.Amount.Amount)
 		return nil, err
 	}
 
 	return &TransferResult{
-		FromWallet: *s.toWalletDTO(updatedFrom),
-		ToWallet:   *s.toWalletDTO(updatedTo),
+		FromWallet: s.mapper.ModelToProto(updatedFrom),
+		ToWallet:   s.mapper.ModelToProto(updatedTo),
 		Amount:     req.Amount,
 	}, nil
-}
-
-// toWalletDTO converts a Wallet model to a WalletDTO.
-func (s *walletService) toWalletDTO(wallet *models.Wallet) *WalletDTO {
-	return &WalletDTO{
-		ID:         wallet.ID,
-		UserID:     wallet.UserID,
-		WalletName: wallet.WalletName,
-		Balance: types.Money{
-			Amount:   wallet.Balance,
-			Currency: wallet.Currency,
-		},
-		CreatedAt: wallet.CreatedAt,
-		UpdatedAt: wallet.UpdatedAt,
-	}
 }

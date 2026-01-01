@@ -4,7 +4,7 @@ package wealthjourney.auth.v1;
 
 import "protobuf/v1/common.proto";
 
-option go_package = "wealthjourney/gen/auth/v1";
+option go_package = "wealthjourney/gen/protobuf/v1";
 
 // Auth service for user authentication operations.
 service AuthService {

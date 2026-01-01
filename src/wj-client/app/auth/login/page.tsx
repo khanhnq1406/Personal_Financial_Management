@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
+import { LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { api } from "@/utils/generated/api";
 
 export default function Login() {
   const router = useRouter();
@@ -18,41 +19,25 @@ export default function Login() {
     }
   }, []);
   const handleGoogleLogin = async (credentialResponse: any) => {
-    try {
-      const res = await fetch(`${BACKEND_URL}${routes.login}`, {
-        method: "POST",
-        body: JSON.stringify({ token: credentialResponse.credential }),
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      if (data.success) {
-        // Go backend uses accessToken (camelCase)
-        const token = data.data.accessToken;
-        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, token);
-        store.dispatch(
-          setAuth({
-            isAuthenticated: true,
-            email: data.data.email,
-            fullname: data.data.fullname,
-            picture: data.data.picture,
-          })
-        );
-        router.push(routes.home);
-      } else {
-        setError(
-          <>
-            <p>Opps, Something went wrong. Please try again.</p>
-          </>
-        );
-        return;
-      }
-    } catch {
+    const result = await api.auth.login({ googleToken: credentialResponse.credential });
+
+    if (result.success && result.data) {
+      localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, result.data.accessToken);
+      store.dispatch(
+        setAuth({
+          isAuthenticated: true,
+          email: result.data.email,
+          fullname: result.data.fullname,
+          picture: result.data.picture,
+        })
+      );
+      router.push(routes.home);
+    } else {
       setError(
         <>
-          <p>Opps, Something went wrong. Please try again.</p>
+          <p>{result.message || "Opps, Something went wrong. Please try again."}</p>
         </>
       );
-      return;
     }
   };
   const handleGoogleLoginError = () => {

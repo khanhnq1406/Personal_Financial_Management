@@ -1,6 +1,3 @@
-// New improved hooks with better error handling
-export { useGet, usePost, useMutation, getErrorMessage } from "./useApi";
-
-// Legacy hooks (for backward compatibility)
-export { useGet as useGetLegacy } from "./useGet";
-export { usePost as usePostLegacy } from "./usePost";
+// Export custom useAuth hook with localStorage management
+export { useAuth } from './useAuth';
+export type { AuthState, AuthActions } from './useAuth';

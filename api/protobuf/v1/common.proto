@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wealthjourney.common.v1;
 
-option go_package = "wealthjourney/gen/common/v1";
+option go_package = "wealthjourney/gen/protobuf/v1";
 
 // Money represents a monetary amount with currency.
 // Using int64 for amount in smallest currency unit (cents).

@@ -7,37 +7,25 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	userv1 "wealthjourney/gen/user/v1"
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/service"
 )
 
 // userServer implements the UserService gRPC interface
 type userServer struct {
-	userv1.UnimplementedUserServiceServer
+	protobufv1.UnimplementedUserServiceServer
 	userService service.UserService
 }
 
 // NewUserServer creates a new UserService gRPC server
-func NewUserServer(userService service.UserService) userv1.UserServiceServer {
+func NewUserServer(userService service.UserService) protobufv1.UserServiceServer {
 	return &userServer{
 		userService: userService,
 	}
 }
 
-// domainUserToProto converts a domain UserDTO to proto User
-func domainUserToProto(user *service.UserDTO) *userv1.User {
-	return &userv1.User{
-		Id:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt.Unix(),
-		UpdatedAt: user.UpdatedAt.Unix(),
-	}
-}
-
 // GetUser retrieves the authenticated user's profile
-func (s *userServer) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
+func (s *userServer) GetUser(ctx context.Context, req *protobufv1.GetUserRequest) (*protobufv1.GetUserResponse, error) {
 	if req.UserId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
@@ -47,15 +35,15 @@ func (s *userServer) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &userv1.GetUserResponse{
+	return &protobufv1.GetUserResponse{
 		Success:   true,
-		Data:      domainUserToProto(user),
+		Data:      user,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // GetUserByEmail retrieves a user by email
-func (s *userServer) GetUserByEmail(ctx context.Context, req *userv1.GetUserByEmailRequest) (*userv1.GetUserByEmailResponse, error) {
+func (s *userServer) GetUserByEmail(ctx context.Context, req *protobufv1.GetUserByEmailRequest) (*protobufv1.GetUserByEmailResponse, error) {
 	if req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
@@ -65,15 +53,15 @@ func (s *userServer) GetUserByEmail(ctx context.Context, req *userv1.GetUserByEm
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &userv1.GetUserByEmailResponse{
+	return &protobufv1.GetUserByEmailResponse{
 		Success:   true,
-		Data:      domainUserToProto(user),
+		Data:      user,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // ListUsers retrieves all users with pagination
-func (s *userServer) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*userv1.ListUsersResponse, error) {
+func (s *userServer) ListUsers(ctx context.Context, req *protobufv1.ListUsersRequest) (*protobufv1.ListUsersResponse, error) {
 	params := ProtoPaginationParams(req.GetPagination())
 
 	users, pagination, err := s.userService.ListUsers(ctx, params)
@@ -81,21 +69,16 @@ func (s *userServer) ListUsers(ctx context.Context, req *userv1.ListUsersRequest
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	protoUsers := make([]*userv1.User, len(users))
-	for i, u := range users {
-		protoUsers[i] = domainUserToProto(u)
-	}
-
-	return &userv1.ListUsersResponse{
+	return &protobufv1.ListUsersResponse{
 		Success:    true,
-		Users:      protoUsers,
+		Users:      users,
 		Pagination: DomainPaginationResult(*pagination),
 		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // CreateUser creates a new user
-func (s *userServer) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
+func (s *userServer) CreateUser(ctx context.Context, req *protobufv1.CreateUserRequest) (*protobufv1.CreateUserResponse, error) {
 	if req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
@@ -105,15 +88,15 @@ func (s *userServer) CreateUser(ctx context.Context, req *userv1.CreateUserReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &userv1.CreateUserResponse{
+	return &protobufv1.CreateUserResponse{
 		Success:   true,
-		Data:      domainUserToProto(user),
+		Data:      user,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // UpdateUser updates user information
-func (s *userServer) UpdateUser(ctx context.Context, req *userv1.UpdateUserRequest) (*userv1.UpdateUserResponse, error) {
+func (s *userServer) UpdateUser(ctx context.Context, req *protobufv1.UpdateUserRequest) (*protobufv1.UpdateUserResponse, error) {
 	if req.UserId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
@@ -123,15 +106,15 @@ func (s *userServer) UpdateUser(ctx context.Context, req *userv1.UpdateUserReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &userv1.UpdateUserResponse{
+	return &protobufv1.UpdateUserResponse{
 		Success:   true,
-		Data:      domainUserToProto(user),
+		Data:      user,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // DeleteUser deletes a user
-func (s *userServer) DeleteUser(ctx context.Context, req *userv1.DeleteUserRequest) (*userv1.DeleteUserResponse, error) {
+func (s *userServer) DeleteUser(ctx context.Context, req *protobufv1.DeleteUserRequest) (*protobufv1.DeleteUserResponse, error) {
 	if req.UserId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
@@ -141,7 +124,7 @@ func (s *userServer) DeleteUser(ctx context.Context, req *userv1.DeleteUserReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &userv1.DeleteUserResponse{
+	return &protobufv1.DeleteUserResponse{
 		Success:   true,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil

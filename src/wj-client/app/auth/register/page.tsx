@@ -2,14 +2,10 @@
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-import {
-  BACKEND_URL,
-  HttpStatus,
-  NotificationCode,
-  routes,
-} from "@/app/constants";
+import { NotificationCode, routes } from "@/app/constants";
 import { useState } from "react";
 import Notification from "@/components/notification";
+import { api } from "@/utils/generated/api";
 
 enum RegisterState {
   Start,
@@ -32,59 +28,21 @@ export default function Register() {
   const [notification, setNotification] = useState(notificationSuccess);
   const handleGoogleLogin = async (credentialResponse: any) => {
     // eslint-disable-line @typescript-eslint/no-explicit-any
-    try {
-      const res = await fetch(`${BACKEND_URL}${routes.register}`, {
-        method: "POST",
-        body: JSON.stringify({ token: credentialResponse.credential }),
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      console.log(data);
-      setState(RegisterState.Success);
-      console.log("Here: ", data.status);
-      if (data.status == HttpStatus.OK) {
-        setNotification(
-          <Notification
-            notification={{
-              status: NotificationCode.ERROR,
-              message: "Oops, User already exists.",
-              submessage: "Please login to access the website.",
-              button: "Go to login",
-              navigate: routes.login,
-            }}
-          />
-        );
-      } else if (data.status != HttpStatus.CREATED) {
-        setNotification(
-          <div className="flex flex-col justify-center">
-            <Notification
-              notification={{
-                status: NotificationCode.ERROR,
-                message: `Opps, User Registration failed. ${data.message}`,
-                submessage: "Please refresh to try again",
-              }}
-            />
-            <button
-              className="custom-btn"
-              onClick={() => {
-                setNotification(notificationSuccess);
-                setState(RegisterState.Start);
-              }}
-            >
-              Try again
-            </button>
-          </div>
-        );
-      }
-    } catch (err) {
-      console.log(err);
+    const result = await api.auth.register({ googleToken: credentialResponse.credential });
+    setState(RegisterState.Success);
+
+    if (result.success) {
+      // Registration successful
+      setNotification(notificationSuccess);
+    } else {
+      // Registration failed
       setNotification(
         <div className="flex flex-col justify-center">
           <Notification
             notification={{
               status: NotificationCode.ERROR,
-              message: "Opps, Something went wrong. User Registration failed.",
-              submessage: "Please refresh to try again",
+              message: result.message || "Opps, User Registration failed.",
+              submessage: "Please try again",
             }}
           />
           <button

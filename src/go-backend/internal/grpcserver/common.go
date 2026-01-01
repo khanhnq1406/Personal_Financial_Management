@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	commonv1 "wealthjourney/gen/common/v1"
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/pkg/types"
 )
 
@@ -15,7 +15,7 @@ func toProtoTimestamp(t time.Time) *timestamppb.Timestamp {
 }
 
 // Convert proto Money to domain Money
-func protoToDomainMoney(m *commonv1.Money) types.Money {
+func protoToDomainMoney(m *protobufv1.Money) types.Money {
 	if m == nil {
 		return types.Money{}
 	}
@@ -26,15 +26,15 @@ func protoToDomainMoney(m *commonv1.Money) types.Money {
 }
 
 // Convert domain Money to proto Money
-func domainToProtoMoney(m types.Money) *commonv1.Money {
-	return &commonv1.Money{
+func domainToProtoMoney(m types.Money) *protobufv1.Money {
+	return &protobufv1.Money{
 		Amount:   m.Amount,
 		Currency: m.Currency,
 	}
 }
 
 // ProtoPaginationParams converts proto pagination to domain pagination
-func ProtoPaginationParams(p *commonv1.PaginationParams) types.PaginationParams {
+func ProtoPaginationParams(p *protobufv1.PaginationParams) types.PaginationParams {
 	if p == nil {
 		return types.PaginationParams{
 			Page:     1,
@@ -52,8 +52,8 @@ func ProtoPaginationParams(p *commonv1.PaginationParams) types.PaginationParams 
 }
 
 // DomainPaginationResult converts domain pagination to proto
-func DomainPaginationResult(p types.PaginationResult) *commonv1.PaginationResult {
-	return &commonv1.PaginationResult{
+func DomainPaginationResult(p types.PaginationResult) *protobufv1.PaginationResult {
+	return &protobufv1.PaginationResult{
 		Page:       int32(p.Page),
 		PageSize:   int32(p.PageSize),
 		TotalCount: int32(p.TotalCount),

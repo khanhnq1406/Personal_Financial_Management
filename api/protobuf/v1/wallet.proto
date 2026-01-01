@@ -4,7 +4,7 @@ package wealthjourney.wallet.v1;
 
 import "protobuf/v1/common.proto";
 
-option go_package = "wealthjourney/gen/wallet/v1";
+option go_package = "wealthjourney/gen/protobuf/v1";
 
 // Wallet service for wallet management operations.
 service WalletService {

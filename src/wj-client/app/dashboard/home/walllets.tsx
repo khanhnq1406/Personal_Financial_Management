@@ -1,16 +1,24 @@
-import { BACKEND_URL, resources } from "@/app/constants";
+import { resources } from "@/app/constants";
 import Image from "next/image";
 import { memo } from "react";
-import { useGet } from "@/hooks";
-import type { ListWalletsResponseData, Wallet } from "@/types/api";
-import { currencyFormatter } from "@/utils/currencyFormatter";
+import { useQueryListWallets } from "@/utils/generated/hooks";
+
 export const Wallets = memo(function Wallets() {
-  const { data } = useGet<ListWalletsResponseData>(`${BACKEND_URL}/wallets`);
+  const { data, isLoading } = useQueryListWallets(
+    { pagination: { page: 1, pageSize: 10, orderBy: "", order: "" } }
+  );
+
+  if (isLoading) {
+    return <div className="px-2 py-1">Loading...</div>;
+  }
 
   return (
     <div className="px-2 py-1">
-      {data?.wallets && data?.wallets.length > 0 ? (
-        data?.wallets?.map((wallet: Wallet) => {
+      {data?.wallets && data.wallets.length > 0 ? (
+        data.wallets.map((wallet) => {
+          const balance = wallet.balance
+            ? Number(wallet.balance.amount) / 100
+            : 0;
           return (
             <div
               className="flex flex-nowrap justify-between m-3"
@@ -26,7 +34,7 @@ export const Wallets = memo(function Wallets() {
                 <div className="font-semibold">{wallet.walletName}</div>
               </div>
               <div className="font-semibold">
-                {currencyFormatter.format(wallet.balance)}
+                ${balance.toFixed(2)}
               </div>
             </div>
           );

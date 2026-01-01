@@ -7,42 +7,25 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonv1 "wealthjourney/gen/common/v1"
-	walletv1 "wealthjourney/gen/wallet/v1"
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/internal/service"
-	"wealthjourney/pkg/types"
 )
 
 // walletServer implements the WalletService gRPC interface
 type walletServer struct {
-	walletv1.UnimplementedWalletServiceServer
+	protobufv1.UnimplementedWalletServiceServer
 	walletService service.WalletService
 }
 
 // NewWalletServer creates a new WalletService gRPC server
-func NewWalletServer(walletService service.WalletService) walletv1.WalletServiceServer {
+func NewWalletServer(walletService service.WalletService) protobufv1.WalletServiceServer {
 	return &walletServer{
 		walletService: walletService,
 	}
 }
 
-// domainWalletToProto converts a domain WalletDTO to proto Wallet
-func domainWalletToProto(wallet *service.WalletDTO) *walletv1.Wallet {
-	return &walletv1.Wallet{
-		Id:         wallet.ID,
-		UserId:     wallet.UserID,
-		WalletName: wallet.WalletName,
-		Balance: &commonv1.Money{
-			Amount:   wallet.Balance.Amount,
-			Currency: wallet.Balance.Currency,
-		},
-		CreatedAt: wallet.CreatedAt.Unix(),
-		UpdatedAt: wallet.UpdatedAt.Unix(),
-	}
-}
-
 // GetWallet retrieves a wallet by ID
-func (s *walletServer) GetWallet(ctx context.Context, req *walletv1.GetWalletRequest) (*walletv1.GetWalletResponse, error) {
+func (s *walletServer) GetWallet(ctx context.Context, req *protobufv1.GetWalletRequest) (*protobufv1.GetWalletResponse, error) {
 	if req.WalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "wallet_id is required")
 	}
@@ -58,48 +41,39 @@ func (s *walletServer) GetWallet(ctx context.Context, req *walletv1.GetWalletReq
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &walletv1.GetWalletResponse{
+	return &protobufv1.GetWalletResponse{
 		Success:   true,
-		Data:      domainWalletToProto(wallet),
+		Data:      wallet,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // ListWallets retrieves all wallets for authenticated user with pagination
-func (s *walletServer) ListWallets(ctx context.Context, req *walletv1.ListWalletsRequest) (*walletv1.ListWalletsResponse, error) {
+func (s *walletServer) ListWallets(ctx context.Context, req *protobufv1.ListWalletsRequest) (*protobufv1.ListWalletsResponse, error) {
 	// Get user ID from context (set by auth interceptor)
 	userID, ok := ctx.Value("user_id").(int32)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	params := ProtoPaginationParams(req.GetPagination())
+	// Convert proto pagination params to service params
+	params := service.ProtoToPaginationParams(req.GetPagination())
 
-	result, err := s.walletService.ListWallets(ctx, userID, types.PaginationParams{
-		Page:     params.Page,
-		PageSize: params.PageSize,
-		OrderBy:  params.OrderBy,
-		Order:    params.Order,
-	})
+	result, err := s.walletService.ListWallets(ctx, userID, params)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	protoWallets := make([]*walletv1.Wallet, len(result.Wallets))
-	for i := range result.Wallets {
-		protoWallets[i] = domainWalletToProto(&result.Wallets[i])
-	}
-
-	return &walletv1.ListWalletsResponse{
+	return &protobufv1.ListWalletsResponse{
 		Success:    true,
-		Wallets:    protoWallets,
-		Pagination: DomainPaginationResult(result.Pagination),
-		Timestamp: time.Now().Format(time.RFC3339),
+		Wallets:    result.Wallets,
+		Pagination: result.Pagination,
+		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // CreateWallet creates a new wallet
-func (s *walletServer) CreateWallet(ctx context.Context, req *walletv1.CreateWalletRequest) (*walletv1.CreateWalletResponse, error) {
+func (s *walletServer) CreateWallet(ctx context.Context, req *protobufv1.CreateWalletRequest) (*protobufv1.CreateWalletResponse, error) {
 	if req.WalletName == "" {
 		return nil, status.Error(codes.InvalidArgument, "wallet_name is required")
 	}
@@ -110,28 +84,20 @@ func (s *walletServer) CreateWallet(ctx context.Context, req *walletv1.CreateWal
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	createReq := service.CreateWalletRequest{
-		WalletName: req.WalletName,
-		InitialBalance: types.Money{
-			Amount:   req.InitialBalance.Amount,
-			Currency: req.InitialBalance.Currency,
-		},
-	}
-
-	wallet, err := s.walletService.CreateWallet(ctx, userID, createReq)
+	wallet, err := s.walletService.CreateWallet(ctx, userID, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.CreateWalletResponse{
+	return &protobufv1.CreateWalletResponse{
 		Success:   true,
-		Data:      domainWalletToProto(wallet),
+		Data:      wallet,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // UpdateWallet updates wallet information
-func (s *walletServer) UpdateWallet(ctx context.Context, req *walletv1.UpdateWalletRequest) (*walletv1.UpdateWalletResponse, error) {
+func (s *walletServer) UpdateWallet(ctx context.Context, req *protobufv1.UpdateWalletRequest) (*protobufv1.UpdateWalletResponse, error) {
 	if req.WalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "wallet_id is required")
 	}
@@ -145,24 +111,20 @@ func (s *walletServer) UpdateWallet(ctx context.Context, req *walletv1.UpdateWal
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	updateReq := service.UpdateWalletRequest{
-		WalletName: req.WalletName,
-	}
-
-	wallet, err := s.walletService.UpdateWallet(ctx, req.WalletId, userID, updateReq)
+	wallet, err := s.walletService.UpdateWallet(ctx, req.WalletId, userID, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.UpdateWalletResponse{
+	return &protobufv1.UpdateWalletResponse{
 		Success:   true,
-		Data:      domainWalletToProto(wallet),
+		Data:      wallet,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // DeleteWallet deletes a wallet
-func (s *walletServer) DeleteWallet(ctx context.Context, req *walletv1.DeleteWalletRequest) (*walletv1.DeleteWalletResponse, error) {
+func (s *walletServer) DeleteWallet(ctx context.Context, req *protobufv1.DeleteWalletRequest) (*protobufv1.DeleteWalletResponse, error) {
 	if req.WalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "wallet_id is required")
 	}
@@ -178,14 +140,14 @@ func (s *walletServer) DeleteWallet(ctx context.Context, req *walletv1.DeleteWal
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.DeleteWalletResponse{
+	return &protobufv1.DeleteWalletResponse{
 		Success:   true,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // AddFunds adds funds to a wallet
-func (s *walletServer) AddFunds(ctx context.Context, req *walletv1.AddFundsRequest) (*walletv1.AddFundsResponse, error) {
+func (s *walletServer) AddFunds(ctx context.Context, req *protobufv1.AddFundsRequest) (*protobufv1.AddFundsResponse, error) {
 	if req.WalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "wallet_id is required")
 	}
@@ -199,27 +161,20 @@ func (s *walletServer) AddFunds(ctx context.Context, req *walletv1.AddFundsReque
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	addReq := service.AddFundsRequest{
-		Amount: types.Money{
-			Amount:   req.Amount.Amount,
-			Currency: req.Amount.Currency,
-		},
-	}
-
-	wallet, err := s.walletService.AddFunds(ctx, req.WalletId, userID, addReq)
+	wallet, err := s.walletService.AddFunds(ctx, req.WalletId, userID, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.AddFundsResponse{
+	return &protobufv1.AddFundsResponse{
 		Success:   true,
-		Data:      domainWalletToProto(wallet),
+		Data:      wallet,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // WithdrawFunds withdraws funds from a wallet
-func (s *walletServer) WithdrawFunds(ctx context.Context, req *walletv1.WithdrawFundsRequest) (*walletv1.WithdrawFundsResponse, error) {
+func (s *walletServer) WithdrawFunds(ctx context.Context, req *protobufv1.WithdrawFundsRequest) (*protobufv1.WithdrawFundsResponse, error) {
 	if req.WalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "wallet_id is required")
 	}
@@ -233,27 +188,20 @@ func (s *walletServer) WithdrawFunds(ctx context.Context, req *walletv1.Withdraw
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	withdrawReq := service.WithdrawFundsRequest{
-		Amount: types.Money{
-			Amount:   req.Amount.Amount,
-			Currency: req.Amount.Currency,
-		},
-	}
-
-	wallet, err := s.walletService.WithdrawFunds(ctx, req.WalletId, userID, withdrawReq)
+	wallet, err := s.walletService.WithdrawFunds(ctx, req.WalletId, userID, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.WithdrawFundsResponse{
+	return &protobufv1.WithdrawFundsResponse{
 		Success:   true,
-		Data:      domainWalletToProto(wallet),
+		Data:      wallet,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // TransferFunds transfers funds between two wallets
-func (s *walletServer) TransferFunds(ctx context.Context, req *walletv1.TransferFundsRequest) (*walletv1.TransferFundsResponse, error) {
+func (s *walletServer) TransferFunds(ctx context.Context, req *protobufv1.TransferFundsRequest) (*protobufv1.TransferFundsResponse, error) {
 	if req.FromWalletId == 0 {
 		return nil, status.Error(codes.InvalidArgument, "from_wallet_id is required")
 	}
@@ -270,28 +218,16 @@ func (s *walletServer) TransferFunds(ctx context.Context, req *walletv1.Transfer
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	transferReq := service.TransferFundsRequest{
-		FromWalletID: req.FromWalletId,
-		ToWalletID:   req.ToWalletId,
-		Amount: types.Money{
-			Amount:   req.Amount.Amount,
-			Currency: req.Amount.Currency,
-		},
-	}
-
-	result, err := s.walletService.TransferFunds(ctx, userID, transferReq)
+	result, err := s.walletService.TransferFunds(ctx, userID, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &walletv1.TransferFundsResponse{
+	return &protobufv1.TransferFundsResponse{
 		Success:    true,
-		FromWallet: domainWalletToProto(&result.FromWallet),
-		ToWallet:   domainWalletToProto(&result.ToWallet),
-		Amount: &commonv1.Money{
-			Amount:   result.Amount.Amount,
-			Currency: result.Amount.Currency,
-		},
-		Timestamp: time.Now().Format(time.RFC3339),
+		FromWallet: result.FromWallet,
+		ToWallet:   result.ToWallet,
+		Amount:     result.Amount,
+		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
 }

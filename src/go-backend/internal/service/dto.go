@@ -1,68 +1,130 @@
 package service
 
 import (
-	"time"
-
+	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/pkg/types"
 )
 
-// UserDTO represents a user data transfer object.
-type UserDTO struct {
-	ID        int32     `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Picture   string    `json:"picture"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
+// Proto type aliases for user DTOs
+// These allow the service layer to use proto types directly
+type User = protobufv1.User
 
-// WalletDTO represents a wallet data transfer object.
-type WalletDTO struct {
-	ID         int32     `json:"id"`
-	UserID     int32     `json:"userId"`
-	WalletName string    `json:"walletName"`
-	Balance    types.Money `json:"balance"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
-}
+// Proto type aliases for wallet DTOs
+// These allow the service layer to use proto types directly
 
-// CreateWalletRequest represents a request to create a wallet.
-type CreateWalletRequest struct {
-	WalletName      string      `json:"walletName" binding:"required"`
-	InitialBalance  types.Money `json:"initialBalance"`
-}
+// CreateWalletRequest uses proto CreateWalletRequest from gen/protobuf/v1/wallet.pb.go
+type CreateWalletRequest = protobufv1.CreateWalletRequest
 
-// UpdateWalletRequest represents a request to update a wallet.
-type UpdateWalletRequest struct {
-	WalletName string `json:"walletName" binding:"required"`
-}
+// UpdateWalletRequest uses proto UpdateWalletRequest from gen/protobuf/v1/wallet.pb.go
+type UpdateWalletRequest = protobufv1.UpdateWalletRequest
 
-// AddFundsRequest represents a request to add funds to a wallet.
-type AddFundsRequest struct {
-	Amount types.Money `json:"amount" binding:"required"`
-}
+// AddFundsRequest uses proto AddFundsRequest from gen/protobuf/v1/wallet.pb.go
+type AddFundsRequest = protobufv1.AddFundsRequest
 
-// WithdrawFundsRequest represents a request to withdraw funds from a wallet.
-type WithdrawFundsRequest struct {
-	Amount types.Money `json:"amount" binding:"required"`
-}
+// WithdrawFundsRequest uses proto WithdrawFundsRequest from gen/protobuf/v1/wallet.pb.go
+type WithdrawFundsRequest = protobufv1.WithdrawFundsRequest
 
-// TransferFundsRequest represents a request to transfer funds between wallets.
-type TransferFundsRequest struct {
-	FromWalletID int32       `json:"fromWalletId" binding:"required"`
-	ToWalletID   int32       `json:"toWalletId" binding:"required"`
-	Amount       types.Money `json:"amount" binding:"required"`
-}
+// TransferFundsRequest uses proto TransferFundsRequest from gen/protobuf/v1/wallet.pb.go
+type TransferFundsRequest = protobufv1.TransferFundsRequest
 
-// TransferResult represents the result of a funds transfer.
+// TransferResult wraps proto TransferFundsResponse for service layer use
 type TransferResult struct {
-	FromWallet WalletDTO `json:"fromWallet"`
-	ToWallet   WalletDTO `json:"toWallet"`
-	Amount     types.Money `json:"amount"`
+	FromWallet *protobufv1.Wallet
+	ToWallet   *protobufv1.Wallet
+	Amount     *protobufv1.Money
 }
 
 // WalletListResult represents a paginated list of wallets.
 type WalletListResult struct {
-	Wallets    []WalletDTO           `json:"wallets"`
-	Pagination types.PaginationResult `json:"pagination"`
+	Wallets    []*protobufv1.Wallet
+	Pagination *protobufv1.PaginationResult
+}
+
+// Helper functions for working with proto types in service layer
+
+// NewCreateWalletRequest creates a new CreateWalletRequest from service parameters.
+func NewCreateWalletRequest(name string, amount int64, currency string) *CreateWalletRequest {
+	return &protobufv1.CreateWalletRequest{
+		WalletName: name,
+		InitialBalance: &protobufv1.Money{
+			Amount:   amount,
+			Currency: currency,
+		},
+	}
+}
+
+// NewUpdateWalletRequest creates a new UpdateWalletRequest.
+func NewUpdateWalletRequest(name string) *UpdateWalletRequest {
+	return &protobufv1.UpdateWalletRequest{
+		WalletName: name,
+	}
+}
+
+// NewAddFundsRequest creates a new AddFundsRequest.
+func NewAddFundsRequest(amount int64, currency string) *AddFundsRequest {
+	return &protobufv1.AddFundsRequest{
+		Amount: &protobufv1.Money{
+			Amount:   amount,
+			Currency: currency,
+		},
+	}
+}
+
+// NewWithdrawFundsRequest creates a new WithdrawFundsRequest.
+func NewWithdrawFundsRequest(amount int64, currency string) *WithdrawFundsRequest {
+	return &protobufv1.WithdrawFundsRequest{
+		Amount: &protobufv1.Money{
+			Amount:   amount,
+			Currency: currency,
+		},
+	}
+}
+
+// NewTransferFundsRequest creates a new TransferFundsRequest.
+func NewTransferFundsRequest(fromWalletID, toWalletID int32, amount int64, currency string) *TransferFundsRequest {
+	return &protobufv1.TransferFundsRequest{
+		FromWalletId: fromWalletID,
+		ToWalletId:   toWalletID,
+		Amount: &protobufv1.Money{
+			Amount:   amount,
+			Currency: currency,
+		},
+	}
+}
+
+// MoneyToProtoMoney converts types.Money to proto Money.
+func MoneyToProtoMoney(m types.Money) *protobufv1.Money {
+	return &protobufv1.Money{
+		Amount:   m.Amount,
+		Currency: m.Currency,
+	}
+}
+
+// ProtoMoneyToMoney converts proto Money to types.Money.
+func ProtoMoneyToMoney(m *protobufv1.Money) types.Money {
+	if m == nil {
+		return types.Money{Amount: 0, Currency: types.USD}
+	}
+	return types.Money{
+		Amount:   m.Amount,
+		Currency: m.Currency,
+	}
+}
+
+// ProtoToPaginationParams converts proto PaginationParams to service PaginationParams.
+func ProtoToPaginationParams(p *protobufv1.PaginationParams) types.PaginationParams {
+	if p == nil {
+		return types.PaginationParams{
+			Page:     1,
+			PageSize: 10,
+			OrderBy:  "id",
+			Order:    "asc",
+		}
+	}
+	return types.PaginationParams{
+		Page:     int(p.Page),
+		PageSize: int(p.PageSize),
+		OrderBy:  p.OrderBy,
+		Order:    p.Order,
+	}
 }
