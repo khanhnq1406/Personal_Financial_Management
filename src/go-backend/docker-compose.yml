@@ -1,20 +1,19 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: wealthjourney_mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: wealthjourney_postgres
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: wealthjourney
-      MYSQL_USER: wealthjourney
-      MYSQL_PASSWORD: password
+      POSTGRES_DB: wealthjourney
+      POSTGRES_USER: wealthjourney
+      POSTGRES_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U wealthjourney"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,15 +39,15 @@ services:
     ports:
       - "50051:50051"
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: postgres
+      DB_PORT: 5432
       DB_USER: wealthjourney
       DB_PASSWORD: password
       DB_NAME: wealthjourney
       REDIS_URL: redis:6379
       GRPC_SERVER_PORT: 50051
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -57,5 +56,5 @@ services:
     working_dir: /app
 
 volumes:
-  mysql_data:
+  postgres_data:
   redis_data:

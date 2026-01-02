@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 
-	"wealthjourney/internal/service"
+	"wealthjourney/domain/service"
 	"wealthjourney/pkg/handler"
 )
 

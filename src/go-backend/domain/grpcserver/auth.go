@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/auth"
+	"wealthjourney/domain/auth"
 )
 
 // grpcAuthServer implements the AuthService gRPC interface

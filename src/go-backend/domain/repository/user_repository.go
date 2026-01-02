@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"wealthjourney/internal/models"
+	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
 	apperrors "wealthjourney/pkg/errors"
 )

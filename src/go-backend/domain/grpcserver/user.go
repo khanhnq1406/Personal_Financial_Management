@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/service"
+	"wealthjourney/domain/service"
 )
 
 // userServer implements the UserService gRPC interface

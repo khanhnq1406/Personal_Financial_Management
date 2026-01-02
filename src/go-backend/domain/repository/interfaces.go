@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"wealthjourney/internal/models"
+	"wealthjourney/domain/models"
 )
 
 // ListOptions represents common list query options.

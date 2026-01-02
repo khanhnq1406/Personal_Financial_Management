@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/service"
+	"wealthjourney/domain/service"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
 	"wealthjourney/pkg/types"

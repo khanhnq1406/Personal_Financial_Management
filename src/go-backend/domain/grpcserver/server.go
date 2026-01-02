@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/auth"
-	"wealthjourney/internal/service"
+	"wealthjourney/domain/auth"
+	"wealthjourney/domain/service"
 )
 
 // Server wraps the gRPC server and all dependencies

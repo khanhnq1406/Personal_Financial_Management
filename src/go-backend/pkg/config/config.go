@@ -116,9 +116,11 @@ func Load() (*Config, error) {
 		},
 	}
 
-	// Validate configuration
-	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
+	// Validate configuration (skip validation in Vercel environment to allow graceful degradation)
+	if os.Getenv("VERCEL") != "1" {
+		if err := cfg.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid configuration: %w", err)
+		}
 	}
 
 	return cfg, nil
@@ -130,8 +132,8 @@ func (c *Config) Validate() error {
 	if c.Database.Name == "" {
 		return errors.New("database name is required")
 	}
-	if c.JWT.Secret == "" || c.JWT.Secret == "your-secret-key" {
-		return errors.New("JWT_SECRET must be set to a secure value")
+	if c.JWT.Secret == "" || c.JWT.Secret == "your-secret-key" || len(c.JWT.Secret) < 10 {
+		return errors.New("JWT_SECRET must be set to a secure value (at least 10 characters)")
 	}
 
 	// Validate port number

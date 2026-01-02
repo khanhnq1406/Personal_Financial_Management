@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/api/idtoken"
 
-	"wealthjourney/internal/models"
+	"wealthjourney/domain/models"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"

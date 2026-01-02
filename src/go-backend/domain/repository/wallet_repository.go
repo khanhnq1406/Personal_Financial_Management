@@ -6,7 +6,7 @@ import (
 
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/database"
-	"wealthjourney/internal/models"
+	"wealthjourney/domain/models"
 
 	"gorm.io/gorm"
 )

@@ -14,14 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/api/handlers"
-	grpcserver "wealthjourney/internal/grpcserver"
-	"wealthjourney/internal/repository"
-	"wealthjourney/internal/service"
+	grpcserver "wealthjourney/domain/grpcserver"
+	"wealthjourney/domain/repository"
+	"wealthjourney/domain/service"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
-	"wealthjourney/internal/auth"
+	"wealthjourney/domain/auth"
 )
 
 func main() {

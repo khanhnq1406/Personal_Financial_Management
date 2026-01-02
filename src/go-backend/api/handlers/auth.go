@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"wealthjourney/internal/auth"
+	"wealthjourney/domain/auth"
 	"wealthjourney/pkg/handler"
 )
 

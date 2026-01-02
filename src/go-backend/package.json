@@ -6,7 +6,7 @@
     "dev": "vercel dev",
     "deploy": "vercel",
     "deploy:prod": "vercel --prod",
-    "build": "go build -o bin/server ./cmd/server",
+    "build": "echo 'Build handled by Vercel Go runtime'",
     "proto": "make proto"
   },
   "devDependencies": {},

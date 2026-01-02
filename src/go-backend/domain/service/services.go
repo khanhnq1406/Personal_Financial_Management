@@ -1,7 +1,7 @@
 package service
 
 import (
-	"wealthjourney/internal/repository"
+	"wealthjourney/domain/repository"
 )
 
 // Services holds all service instances.

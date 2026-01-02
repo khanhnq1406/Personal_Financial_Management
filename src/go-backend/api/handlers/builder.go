@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"wealthjourney/internal/service"
+	"wealthjourney/domain/service"
 )
 
 // AllHandlers contains all handler instances.

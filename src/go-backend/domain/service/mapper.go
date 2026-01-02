@@ -2,7 +2,7 @@ package service
 
 import (
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/models"
+	"wealthjourney/domain/models"
 	"wealthjourney/pkg/types"
 )
 

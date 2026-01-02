@@ -4,8 +4,8 @@ import (
 	"context"
 
 	protobufv1 "wealthjourney/gen/protobuf/v1"
-	"wealthjourney/internal/models"
-	"wealthjourney/internal/repository"
+	"wealthjourney/domain/models"
+	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"

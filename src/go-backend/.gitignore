@@ -35,3 +35,5 @@ Thumbs.db
 
 # Proto generated files (optional - comment out if you want to commit them)
 # proto/*.pb.go
+.vercel
+.env*.local
