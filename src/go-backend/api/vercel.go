@@ -22,6 +22,29 @@ import (
 	"wealthjourney/pkg/redis"
 )
 
+// corsWrapper wraps an http.Handler to add CORS headers
+type corsWrapper struct {
+	handler http.Handler
+}
+
+func (w *corsWrapper) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
+	// Set CORS headers for all requests
+	wr.Header().Set("Access-Control-Allow-Origin", "*")
+	wr.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+	wr.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+	wr.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+	wr.Header().Set("Access-Control-Allow-Credentials", "true")
+	wr.Header().Set("Access-Control-Max-Age", "43200")
+
+	// Handle OPTIONS preflight requests
+	if r.Method == "OPTIONS" {
+		wr.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.handler.ServeHTTP(wr, r)
+}
+
 var (
 	app        *gin.Engine
 	h          *handlers.AllHandlers
@@ -132,11 +155,24 @@ func registerGatewayServices(ctx context.Context) error {
 
 // Handler is the entry point for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
-	app.ServeHTTP(w, r)
+	// Wrap the Gin app with CORS handling
+	wrappedHandler := &corsWrapper{handler: app}
+	wrappedHandler.ServeHTTP(w, r)
 }
 
 // registerRoutes sets up all API routes
 func registerRoutes(app *gin.Engine) {
+	// Global OPTIONS handler - must be registered first
+	app.OPTIONS("/*path", func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Max-Age", "43200")
+		c.AbortWithStatus(http.StatusNoContent)
+	})
+
 	// Health check endpoint
 	app.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -151,7 +187,12 @@ func registerRoutes(app *gin.Engine) {
 
 	if gatewayMux != nil {
 		// Use gRPC-Gateway for auto-generated endpoints
-		v1.Any("/*path", gin.WrapH(gatewayMux))
+		// Exclude OPTIONS method as it's handled above
+		v1.GET("/*path", gin.WrapH(gatewayMux))
+		v1.POST("/*path", gin.WrapH(gatewayMux))
+		v1.PUT("/*path", gin.WrapH(gatewayMux))
+		v1.PATCH("/*path", gin.WrapH(gatewayMux))
+		v1.DELETE("/*path", gin.WrapH(gatewayMux))
 	} else if h != nil {
 		// Fallback to manual handlers
 		handlers.RegisterRoutes(v1, h, nil)

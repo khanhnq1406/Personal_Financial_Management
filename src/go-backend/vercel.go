@@ -1,24 +1,59 @@
 package handler
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"wealthjourney/api/handlers"
+	"wealthjourney/domain/auth"
+	grpcserver "wealthjourney/domain/grpcserver"
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
+	grpcv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
 )
 
+// corsWrapper wraps an http.Handler to add CORS headers
+type corsWrapper struct {
+	handler http.Handler
+}
+
+func (w *corsWrapper) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
+	// Set CORS headers for all requests
+	wr.Header().Set("Access-Control-Allow-Origin", "*")
+	wr.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+	wr.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+	wr.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+	wr.Header().Set("Access-Control-Allow-Credentials", "true")
+	wr.Header().Set("Access-Control-Max-Age", "43200")
+
+	// Handle OPTIONS preflight requests
+	if r.Method == "OPTIONS" {
+		wr.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.handler.ServeHTTP(wr, r)
+}
+
 var (
-	app *gin.Engine
-	h   *handlers.AllHandlers
-	cfg *config.Config
+	app        *gin.Engine
+	h          *handlers.AllHandlers
+	cfg        *config.Config
+	gatewayMux *runtime.ServeMux
+	svc        *service.Services
+	walletSrv  grpcv1.WalletServiceServer
+	authSrv    grpcv1.AuthServiceServer
+	userSrv    grpcv1.UserServiceServer
 )
 
 func init() {
@@ -29,6 +64,16 @@ func init() {
 	app = gin.New()
 	app.Use(gin.Recovery())
 	app.Use(loggerMiddleware())
+
+	// CORS middleware
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Load configuration
 	var err error
@@ -50,10 +95,27 @@ func init() {
 			}
 
 			// Initialize services
-			services := service.NewServices(repos)
+			svc = service.NewServices(repos)
 
 			// Initialize handlers
-			h = handlers.NewHandlers(services)
+			h = handlers.NewHandlers(svc)
+
+			// Initialize auth domain server
+			authDomainSrv := auth.NewServer(db, nil, cfg)
+
+			// Initialize gRPC service implementations for gateway
+			walletSrv = grpcserver.NewWalletServer(svc.Wallet)
+			authSrv = grpcserver.NewAuthServer(authDomainSrv)
+			userSrv = grpcserver.NewUserServer(svc.User)
+
+			// Initialize gRPC-Gateway mux
+			gatewayMux = runtime.NewServeMux()
+
+			// Register gRPC services directly with the gateway (no network needed)
+			ctx := context.Background()
+			if err := registerGatewayServices(ctx); err != nil {
+				log.Printf("Warning: Failed to register gateway services: %v", err)
+			}
 		}
 	}
 
@@ -71,25 +133,68 @@ func init() {
 	registerRoutes(app)
 }
 
+// registerGatewayServices registers gRPC services with the gateway mux
+func registerGatewayServices(ctx context.Context) error {
+	// Register Wallet Service
+	if err := grpcv1.RegisterWalletServiceHandlerServer(ctx, gatewayMux, walletSrv); err != nil {
+		return err
+	}
+
+	// Register Auth Service
+	if err := grpcv1.RegisterAuthServiceHandlerServer(ctx, gatewayMux, authSrv); err != nil {
+		return err
+	}
+
+	// Register User Service
+	if err := grpcv1.RegisterUserServiceHandlerServer(ctx, gatewayMux, userSrv); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Handler is the entry point for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
-	app.ServeHTTP(w, r)
+	// Wrap the Gin app with CORS handling
+	wrappedHandler := &corsWrapper{handler: app}
+	wrappedHandler.ServeHTTP(w, r)
 }
 
 // registerRoutes sets up all API routes
 func registerRoutes(app *gin.Engine) {
+	// Global OPTIONS handler - must be registered first
+	app.OPTIONS("/*path", func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Max-Age", "43200")
+		c.AbortWithStatus(http.StatusNoContent)
+	})
+
 	// Health check endpoint
 	app.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"service": "wealthjourney-api",
-			"version": "1.0.0",
+			"version": "2.0.0",
 		})
 	})
 
 	// API v1 group (no rate limiting for Vercel)
 	v1 := app.Group("/api/v1")
-	if h != nil {
+
+	if gatewayMux != nil {
+		// Use gRPC-Gateway for auto-generated endpoints
+		// Exclude OPTIONS method as it's handled above
+		v1.GET("/*path", gin.WrapH(gatewayMux))
+		v1.POST("/*path", gin.WrapH(gatewayMux))
+		v1.PUT("/*path", gin.WrapH(gatewayMux))
+		v1.PATCH("/*path", gin.WrapH(gatewayMux))
+		v1.DELETE("/*path", gin.WrapH(gatewayMux))
+	} else if h != nil {
+		// Fallback to manual handlers
 		handlers.RegisterRoutes(v1, h, nil)
 	} else {
 		// Fallback to old handlers if service initialization failed

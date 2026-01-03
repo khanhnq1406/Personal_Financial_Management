@@ -4,22 +4,5 @@
       "src": "vercel.go",
       "use": "@vercel/go"
     }
-  ],
-  "routes": [
-    {
-      "src": "/health",
-      "dest": "vercel.go"
-    },
-    {
-      "src": "/api/v1/(.*)",
-      "dest": "vercel.go"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "vercel.go"
-    }
-  ],
-  "github": {
-    "silent": true
-  }
+  ]
 }
