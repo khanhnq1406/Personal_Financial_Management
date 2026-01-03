@@ -114,16 +114,14 @@ func VerifyAuth(c *gin.Context) {
 	}
 
 	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
-	result, _, err := authServer.VerifyAuth(token)
+	result, err := authServer.VerifyAuth(token)
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": err.Error(),
-		})
+		handler.Unauthorized(c, err.Error())
 		return
 	}
 
+	// Return user data wrapped in standard APIResponse format
 	c.JSON(http.StatusOK, result)
 }
 
@@ -152,9 +150,9 @@ func GetAuth(c *gin.Context) {
 
 	// Return response using the standard format with success, data, message, timestamp, and path
 	handler.SuccessWithPath(c, gin.H{
-		"id":       userData.Data.ID,
-		"email":    userData.Data.Email,
-		"name":     userData.Data.Name,
-		"picture":  userData.Data.Picture,
+		"id":      userData.Data.Id,
+		"email":   userData.Data.Email,
+		"name":    userData.Data.Name,
+		"picture": userData.Data.Picture,
 	})
 }

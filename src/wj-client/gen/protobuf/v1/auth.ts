@@ -16,28 +16,20 @@ export interface User {
   email: string;
   name: string;
   picture: string;
-  createdAt: Long;
-  updatedAt: Long;
+  createdAt: number;
+  updatedAt: number;
 }
 
-/** Register request */
+/** Register request - changed from googleToken to token for consistency */
 export interface RegisterRequest {
   /** Google OAuth token */
-  googleToken: string;
+  token: string;
 }
 
-/** Register response */
-export interface RegisterResponse {
-  success: boolean;
-  message: string;
-  data: User | undefined;
-  timestamp: string;
-}
-
-/** Login request */
+/** Login request - changed from googleToken to token for consistency */
 export interface LoginRequest {
   /** Google OAuth token */
-  googleToken: string;
+  token: string;
 }
 
 /** Login response data */
@@ -48,18 +40,37 @@ export interface LoginData {
   picture: string;
 }
 
+/** Logout request */
+export interface LogoutRequest {
+  /** JWT token */
+  token: string;
+}
+
+/** VerifyAuth request */
+export interface VerifyAuthRequest {
+  /** JWT token */
+  token: string;
+}
+
+/** GetAuth request */
+export interface GetAuthRequest {
+  email: string;
+}
+
+/** Register response */
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  data: User | undefined;
+  timestamp: string;
+}
+
 /** Login response */
 export interface LoginResponse {
   success: boolean;
   message: string;
   data: LoginData | undefined;
   timestamp: string;
-}
-
-/** Logout request */
-export interface LogoutRequest {
-  /** JWT token */
-  token: string;
 }
 
 /** Logout response */
@@ -69,23 +80,12 @@ export interface LogoutResponse {
   timestamp: string;
 }
 
-/** VerifyAuth request */
-export interface VerifyAuthRequest {
-  /** JWT token */
-  token: string;
-}
-
 /** VerifyAuth response */
 export interface VerifyAuthResponse {
   success: boolean;
   message: string;
   data: User | undefined;
   timestamp: string;
-}
-
-/** GetAuth request */
-export interface GetAuthRequest {
-  email: string;
 }
 
 /** GetAuth response */
@@ -97,7 +97,7 @@ export interface GetAuthResponse {
 }
 
 function createBaseUser(): User {
-  return { id: 0, email: "", name: "", picture: "", createdAt: Long.ZERO, updatedAt: Long.ZERO };
+  return { id: 0, email: "", name: "", picture: "", createdAt: 0, updatedAt: 0 };
 }
 
 export const User = {
@@ -114,10 +114,10 @@ export const User = {
     if (message.picture !== "") {
       writer.uint32(34).string(message.picture);
     }
-    if (!message.createdAt.equals(Long.ZERO)) {
+    if (message.createdAt !== 0) {
       writer.uint32(40).int64(message.createdAt);
     }
-    if (!message.updatedAt.equals(Long.ZERO)) {
+    if (message.updatedAt !== 0) {
       writer.uint32(48).int64(message.updatedAt);
     }
     return writer;
@@ -163,14 +163,14 @@ export const User = {
             break;
           }
 
-          message.createdAt = reader.int64() as Long;
+          message.createdAt = longToNumber(reader.int64() as Long);
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.updatedAt = reader.int64() as Long;
+          message.updatedAt = longToNumber(reader.int64() as Long);
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -187,8 +187,8 @@ export const User = {
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       picture: isSet(object.picture) ? globalThis.String(object.picture) : "",
-      createdAt: isSet(object.createdAt) ? Long.fromValue(object.createdAt) : Long.ZERO,
-      updatedAt: isSet(object.updatedAt) ? Long.fromValue(object.updatedAt) : Long.ZERO,
+      createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
+      updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
     };
   },
 
@@ -206,11 +206,11 @@ export const User = {
     if (message.picture !== "") {
       obj.picture = message.picture;
     }
-    if (!message.createdAt.equals(Long.ZERO)) {
-      obj.createdAt = (message.createdAt || Long.ZERO).toString();
+    if (message.createdAt !== 0) {
+      obj.createdAt = Math.round(message.createdAt);
     }
-    if (!message.updatedAt.equals(Long.ZERO)) {
-      obj.updatedAt = (message.updatedAt || Long.ZERO).toString();
+    if (message.updatedAt !== 0) {
+      obj.updatedAt = Math.round(message.updatedAt);
     }
     return obj;
   },
@@ -224,24 +224,20 @@ export const User = {
     message.email = object.email ?? "";
     message.name = object.name ?? "";
     message.picture = object.picture ?? "";
-    message.createdAt = (object.createdAt !== undefined && object.createdAt !== null)
-      ? Long.fromValue(object.createdAt)
-      : Long.ZERO;
-    message.updatedAt = (object.updatedAt !== undefined && object.updatedAt !== null)
-      ? Long.fromValue(object.updatedAt)
-      : Long.ZERO;
+    message.createdAt = object.createdAt ?? 0;
+    message.updatedAt = object.updatedAt ?? 0;
     return message;
   },
 };
 
 function createBaseRegisterRequest(): RegisterRequest {
-  return { googleToken: "" };
+  return { token: "" };
 }
 
 export const RegisterRequest = {
   encode(message: RegisterRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.googleToken !== "") {
-      writer.uint32(10).string(message.googleToken);
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
     }
     return writer;
   },
@@ -258,7 +254,7 @@ export const RegisterRequest = {
             break;
           }
 
-          message.googleToken = reader.string();
+          message.token = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -270,13 +266,13 @@ export const RegisterRequest = {
   },
 
   fromJSON(object: any): RegisterRequest {
-    return { googleToken: isSet(object.googleToken) ? globalThis.String(object.googleToken) : "" };
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
   },
 
   toJSON(message: RegisterRequest): unknown {
     const obj: any = {};
-    if (message.googleToken !== "") {
-      obj.googleToken = message.googleToken;
+    if (message.token !== "") {
+      obj.token = message.token;
     }
     return obj;
   },
@@ -286,123 +282,19 @@ export const RegisterRequest = {
   },
   fromPartial(object: DeepPartial<RegisterRequest>): RegisterRequest {
     const message = createBaseRegisterRequest();
-    message.googleToken = object.googleToken ?? "";
-    return message;
-  },
-};
-
-function createBaseRegisterResponse(): RegisterResponse {
-  return { success: false, message: "", data: undefined, timestamp: "" };
-}
-
-export const RegisterResponse = {
-  encode(message: RegisterResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
-    }
-    if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(34).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): RegisterResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRegisterResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.data = User.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): RegisterResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: RegisterResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<RegisterResponse>): RegisterResponse {
-    return RegisterResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<RegisterResponse>): RegisterResponse {
-    const message = createBaseRegisterResponse();
-    message.success = object.success ?? false;
-    message.message = object.message ?? "";
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
+    message.token = object.token ?? "";
     return message;
   },
 };
 
 function createBaseLoginRequest(): LoginRequest {
-  return { googleToken: "" };
+  return { token: "" };
 }
 
 export const LoginRequest = {
   encode(message: LoginRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.googleToken !== "") {
-      writer.uint32(10).string(message.googleToken);
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
     }
     return writer;
   },
@@ -419,7 +311,7 @@ export const LoginRequest = {
             break;
           }
 
-          message.googleToken = reader.string();
+          message.token = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -431,13 +323,13 @@ export const LoginRequest = {
   },
 
   fromJSON(object: any): LoginRequest {
-    return { googleToken: isSet(object.googleToken) ? globalThis.String(object.googleToken) : "" };
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
   },
 
   toJSON(message: LoginRequest): unknown {
     const obj: any = {};
-    if (message.googleToken !== "") {
-      obj.googleToken = message.googleToken;
+    if (message.token !== "") {
+      obj.token = message.token;
     }
     return obj;
   },
@@ -447,7 +339,7 @@ export const LoginRequest = {
   },
   fromPartial(object: DeepPartial<LoginRequest>): LoginRequest {
     const message = createBaseLoginRequest();
-    message.googleToken = object.googleToken ?? "";
+    message.token = object.token ?? "";
     return message;
   },
 };
@@ -556,6 +448,281 @@ export const LoginData = {
   },
 };
 
+function createBaseLogoutRequest(): LogoutRequest {
+  return { token: "" };
+}
+
+export const LogoutRequest = {
+  encode(message: LogoutRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LogoutRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLogoutRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LogoutRequest {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+  },
+
+  toJSON(message: LogoutRequest): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LogoutRequest>): LogoutRequest {
+    return LogoutRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LogoutRequest>): LogoutRequest {
+    const message = createBaseLogoutRequest();
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseVerifyAuthRequest(): VerifyAuthRequest {
+  return { token: "" };
+}
+
+export const VerifyAuthRequest = {
+  encode(message: VerifyAuthRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): VerifyAuthRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyAuthRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyAuthRequest {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+  },
+
+  toJSON(message: VerifyAuthRequest): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<VerifyAuthRequest>): VerifyAuthRequest {
+    return VerifyAuthRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<VerifyAuthRequest>): VerifyAuthRequest {
+    const message = createBaseVerifyAuthRequest();
+    message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBaseGetAuthRequest(): GetAuthRequest {
+  return { email: "" };
+}
+
+export const GetAuthRequest = {
+  encode(message: GetAuthRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetAuthRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAuthRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetAuthRequest {
+    return { email: isSet(object.email) ? globalThis.String(object.email) : "" };
+  },
+
+  toJSON(message: GetAuthRequest): unknown {
+    const obj: any = {};
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetAuthRequest>): GetAuthRequest {
+    return GetAuthRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetAuthRequest>): GetAuthRequest {
+    const message = createBaseGetAuthRequest();
+    message.email = object.email ?? "";
+    return message;
+  },
+};
+
+function createBaseRegisterResponse(): RegisterResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const RegisterResponse = {
+  encode(message: RegisterResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RegisterResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RegisterResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: RegisterResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RegisterResponse>): RegisterResponse {
+    return RegisterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RegisterResponse>): RegisterResponse {
+    const message = createBaseRegisterResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
 function createBaseLoginResponse(): LoginResponse {
   return { success: false, message: "", data: undefined, timestamp: "" };
 }
@@ -660,63 +827,6 @@ export const LoginResponse = {
   },
 };
 
-function createBaseLogoutRequest(): LogoutRequest {
-  return { token: "" };
-}
-
-export const LogoutRequest = {
-  encode(message: LogoutRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.token !== "") {
-      writer.uint32(10).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): LogoutRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLogoutRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LogoutRequest {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
-  },
-
-  toJSON(message: LogoutRequest): unknown {
-    const obj: any = {};
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<LogoutRequest>): LogoutRequest {
-    return LogoutRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<LogoutRequest>): LogoutRequest {
-    const message = createBaseLogoutRequest();
-    message.token = object.token ?? "";
-    return message;
-  },
-};
-
 function createBaseLogoutResponse(): LogoutResponse {
   return { success: false, message: "", timestamp: "" };
 }
@@ -802,63 +912,6 @@ export const LogoutResponse = {
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
-function createBaseVerifyAuthRequest(): VerifyAuthRequest {
-  return { token: "" };
-}
-
-export const VerifyAuthRequest = {
-  encode(message: VerifyAuthRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.token !== "") {
-      writer.uint32(10).string(message.token);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): VerifyAuthRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVerifyAuthRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): VerifyAuthRequest {
-    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
-  },
-
-  toJSON(message: VerifyAuthRequest): unknown {
-    const obj: any = {};
-    if (message.token !== "") {
-      obj.token = message.token;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<VerifyAuthRequest>): VerifyAuthRequest {
-    return VerifyAuthRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<VerifyAuthRequest>): VerifyAuthRequest {
-    const message = createBaseVerifyAuthRequest();
-    message.token = object.token ?? "";
     return message;
   },
 };
@@ -963,63 +1016,6 @@ export const VerifyAuthResponse = {
     message.message = object.message ?? "";
     message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
-function createBaseGetAuthRequest(): GetAuthRequest {
-  return { email: "" };
-}
-
-export const GetAuthRequest = {
-  encode(message: GetAuthRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.email !== "") {
-      writer.uint32(10).string(message.email);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetAuthRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetAuthRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.email = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetAuthRequest {
-    return { email: isSet(object.email) ? globalThis.String(object.email) : "" };
-  },
-
-  toJSON(message: GetAuthRequest): unknown {
-    const obj: any = {};
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetAuthRequest>): GetAuthRequest {
-    return GetAuthRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetAuthRequest>): GetAuthRequest {
-    const message = createBaseGetAuthRequest();
-    message.email = object.email ?? "";
     return message;
   },
 };
@@ -1131,11 +1127,21 @@ export const GetAuthResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (long.lt(globalThis.Number.MIN_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

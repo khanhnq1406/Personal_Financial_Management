@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	protobufv1 "wealthjourney/gen/protobuf/v1"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/domain/service"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
@@ -220,7 +220,8 @@ func (h *WalletHandlers) DeleteWallet(c *gin.Context) {
 	}
 
 	// Call service
-	if err := h.walletService.DeleteWallet(c.Request.Context(), walletID, userID); err != nil {
+	_, err = h.walletService.DeleteWallet(c.Request.Context(), walletID, userID)
+	if err != nil {
 		handler.HandleError(c, err)
 		return
 	}

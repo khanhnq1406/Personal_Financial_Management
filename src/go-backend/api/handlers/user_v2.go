@@ -87,15 +87,15 @@ func (h *UserHandlers) ListUsers(c *gin.Context) {
 	params := parsePaginationParams(c)
 
 	// Call service
-	users, pagination, err := h.userService.ListUsers(c.Request.Context(), params)
+	result, err := h.userService.ListUsers(c.Request.Context(), params)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
 	}
 
 	handler.Success(c, gin.H{
-		"users":      users,
-		"pagination": pagination,
+		"users":      result.Users,
+		"pagination": result.Pagination,
 	})
 }
 
@@ -191,7 +191,8 @@ func (h *UserHandlers) DeleteUser(c *gin.Context) {
 	}
 
 	// Call service
-	if err := h.userService.DeleteUser(c.Request.Context(), userID); err != nil {
+	_, err := h.userService.DeleteUser(c.Request.Context(), userID)
+	if err != nil {
 		handler.HandleError(c, err)
 		return
 	}

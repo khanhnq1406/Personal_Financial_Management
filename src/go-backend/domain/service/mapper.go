@@ -1,8 +1,8 @@
 package service
 
 import (
-	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/domain/models"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
 )
 
@@ -91,4 +91,14 @@ func (m *UserMapper) ModelSliceToProto(users []*models.User) []*protobufv1.User 
 		result[i] = m.ModelToProto(u)
 	}
 	return result
+}
+
+// PaginationResultToProto converts service PaginationResult to proto.
+func (m *UserMapper) PaginationResultToProto(result types.PaginationResult) *protobufv1.PaginationResult {
+	return &protobufv1.PaginationResult{
+		Page:       int32(result.Page),
+		PageSize:   int32(result.PageSize),
+		TotalCount: int32(result.TotalCount),
+		TotalPages: int32(result.TotalPages),
+	}
 }

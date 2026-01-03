@@ -3,105 +3,129 @@ syntax = "proto3";
 package wealthjourney.auth.v1;
 
 import "protobuf/v1/common.proto";
+import "google/api/annotations.proto";
 
-option go_package = "wealthjourney/gen/protobuf/v1";
+option go_package = "protobuf/v1";
 
 // Auth service for user authentication operations.
 service AuthService {
   // Register a new user using Google OAuth token
-  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
 
   // Login using Google OAuth token
-  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
 
   // Logout and invalidate token
-  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
 
   // Verify authentication status
-  rpc VerifyAuth(VerifyAuthRequest) returns (VerifyAuthResponse);
+  rpc VerifyAuth(VerifyAuthRequest) returns (VerifyAuthResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/verify"
+    };
+  }
 
   // Get authenticated user information
-  rpc GetAuth(GetAuthRequest) returns (GetAuthResponse);
+  rpc GetAuth(GetAuthRequest) returns (GetAuthResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth"
+    };
+  }
 }
 
 // User data message
 message User {
-  int32 id = 1;
-  string email = 2;
-  string name = 3;
-  string picture = 4;
-  int64 created_at = 5;
-  int64 updated_at = 6;
+  int32 id = 1 [json_name = "id"];
+  string email = 2 [json_name = "email"];
+  string name = 3 [json_name = "name"];
+  string picture = 4 [json_name = "picture"];
+  int64 createdAt = 5 [json_name = "createdAt"];
+  int64 updatedAt = 6 [json_name = "updatedAt"];
 }
 
-// Register request
+// Register request - changed from googleToken to token for consistency
 message RegisterRequest {
-  string google_token = 1;  // Google OAuth token
+  string token = 1 [json_name = "token"];  // Google OAuth token
 }
 
-// Register response
-message RegisterResponse {
-  bool success = 1;
-  string message = 2;
-  User data = 3;
-  string timestamp = 4;
-}
-
-// Login request
+// Login request - changed from googleToken to token for consistency
 message LoginRequest {
-  string google_token = 1;  // Google OAuth token
+  string token = 1 [json_name = "token"];  // Google OAuth token
 }
 
 // Login response data
 message LoginData {
-  string access_token = 1;
-  string email = 2;
-  string fullname = 3;
-  string picture = 4;
-}
-
-// Login response
-message LoginResponse {
-  bool success = 1;
-  string message = 2;
-  LoginData data = 3;
-  string timestamp = 4;
+  string accessToken = 1 [json_name = "accessToken"];
+  string email = 2 [json_name = "email"];
+  string fullname = 3 [json_name = "fullname"];
+  string picture = 4 [json_name = "picture"];
 }
 
 // Logout request
 message LogoutRequest {
-  string token = 1;  // JWT token
-}
-
-// Logout response
-message LogoutResponse {
-  bool success = 1;
-  string message = 2;
-  string timestamp = 3;
+  string token = 1 [json_name = "token"];  // JWT token
 }
 
 // VerifyAuth request
 message VerifyAuthRequest {
-  string token = 1;  // JWT token
-}
-
-// VerifyAuth response
-message VerifyAuthResponse {
-  bool success = 1;
-  string message = 2;
-  User data = 3;
-  string timestamp = 4;
+  string token = 1 [json_name = "token"];  // JWT token
 }
 
 // GetAuth request
 message GetAuthRequest {
-  string email = 1;
+  string email = 1 [json_name = "email"];
+}
+
+// Register response
+message RegisterResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  User data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// Login response
+message LoginResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  LoginData data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// Logout response
+message LogoutResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+// VerifyAuth response
+message VerifyAuthResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  User data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }
 
 // GetAuth response
 message GetAuthResponse {
-  bool success = 1;
-  string message = 2;
-  User data = 3;
-  string timestamp = 4;
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  User data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { BACKEND_URL, ButtonType, ModalType, resources } from "@/app/constants";
+import { ButtonType, ModalType, resources } from "@/app/constants";
 import { Button } from "../Button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AddTransactionForm } from "./addTransactionForm";
 import { store } from "@/redux/store";
 import { closeModal, openModal } from "@/redux/actions";
@@ -10,8 +10,7 @@ import { ModalPayload } from "@/redux/interface";
 import { TransferMoneyForm } from "./transferMoneyForm";
 import { CreateWalletForm } from "./createWalletForm";
 import { Success } from "./success";
-import { usePost } from "@/hooks";
-import type { WalletData } from "@/types/api-generated";
+import { useMutationCreateWallet } from "@/utils/generated/hooks";
 
 type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null };
@@ -54,25 +53,19 @@ const initialInput = ():
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const [input, setInput] = useState(initialInput);
   const [successMessage, setSuccessMessage] = useState("");
-  useEffect(() => {
-    console.log(input);
-  }, [input]);
 
   const [error, setError] = useState("");
 
-  const { post } = usePost<WalletData>(
-    `${BACKEND_URL}/wallet/create`,
-    {
-      onSuccess: () => {
-        store.dispatch(closeModal());
-        setSuccessMessage("Wallet has been created successfully");
-        store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
-      },
-      onError: () => {
-        setError("Create wallet fail! Please try again");
-      },
-    }
-  );
+  const createWalletMutation = useMutationCreateWallet({
+    onSuccess: () => {
+      store.dispatch(closeModal());
+      setSuccessMessage("Wallet has been created successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: () => {
+      setError("Create wallet fail! Please try again");
+    },
+  });
 
   const handleSubmit = () => {
     if (modal.type === ModalType.SUCCESS) {
@@ -86,9 +79,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           setError("Name is required");
           return;
         }
-        post({
-          name: input.name,
-          balance: input.initialBalance,
+        createWalletMutation.mutate({
+          walletName: input.name,
+          initialBalance: {
+            amount: input.initialBalance,
+            currency: "USD",
+          },
         });
       }
     }

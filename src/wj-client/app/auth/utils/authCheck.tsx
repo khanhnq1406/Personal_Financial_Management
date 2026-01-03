@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { BACKEND_URL, LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
+import { LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
 import { useRouter } from "next/navigation";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
-import { useGet } from "@/hooks";
-import type { AuthUser } from "@/types/api";
+import { useQueryVerifyAuth } from "@/utils/generated/hooks";
 
 export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -16,12 +15,18 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   const handleError = useCallback(() => {
     localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
     router.push(routes.login);
-  }, []);
+  }, [router]);
 
-  const { data: authData, error: authError } = useGet<AuthUser>(
-    shouldFetch ? `${BACKEND_URL}/auth` : null,
+  const storedToken =
+    typeof window !== "undefined"
+      ? localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME)
+      : null;
+
+  // Verify authentication using the token
+  const { data: authResponse, error: authError } = useQueryVerifyAuth(
+    { token: storedToken || "" },
     {
-      onError: handleError,
+      enabled: shouldFetch && !!storedToken,
     }
   );
 
@@ -43,20 +48,19 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
-
-    if (storedToken && authData) {
+    console.log(authResponse);
+    if (storedToken && authResponse?.data) {
       setToken(storedToken);
       store.dispatch(
         setAuth({
           isAuthenticated: true,
-          email: authData.email,
-          fullname: authData.name,
-          picture: authData.picture,
+          email: authResponse.data.email,
+          fullname: authResponse.data.name,
+          picture: authResponse.data.picture,
         })
       );
     }
-  }, [authData]);
-
+  }, [authResponse]);
   if (token === null) {
     return <div>Loading...</div>;
   }

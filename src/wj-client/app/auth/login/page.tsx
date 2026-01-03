@@ -7,11 +7,37 @@ import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "@/utils/generated/api";
+import { useMutationLogin } from "@/utils/generated/hooks";
 
 export default function Login() {
   const router = useRouter();
   const [error, setError] = useState(<></>);
+  const login = useMutationLogin({
+    onError(error) {
+      console.log(error);
+      setError(
+        <>
+          <p>
+            {error.message || "Opps, Something went wrong. Please try again."}
+          </p>
+        </>
+      );
+    },
+    onSuccess(data) {
+      if (data.data) {
+        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, data.data.accessToken);
+        store.dispatch(
+          setAuth({
+            isAuthenticated: true,
+            email: data.data.email,
+            fullname: data.data.fullname,
+            picture: data.data.picture,
+          })
+        );
+        router.push(routes.home);
+      }
+    },
+  });
   useEffect(() => {
     const token = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
     if (token) {
@@ -19,26 +45,9 @@ export default function Login() {
     }
   }, []);
   const handleGoogleLogin = async (credentialResponse: any) => {
-    const result = await api.auth.login({ googleToken: credentialResponse.credential });
-
-    if (result.success && result.data) {
-      localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, result.data.accessToken);
-      store.dispatch(
-        setAuth({
-          isAuthenticated: true,
-          email: result.data.email,
-          fullname: result.data.fullname,
-          picture: result.data.picture,
-        })
-      );
-      router.push(routes.home);
-    } else {
-      setError(
-        <>
-          <p>{result.message || "Opps, Something went wrong. Please try again."}</p>
-        </>
-      );
-    }
+    await login.mutateAsync({
+      token: credentialResponse.credential,
+    });
   };
   const handleGoogleLoginError = () => {
     setError(

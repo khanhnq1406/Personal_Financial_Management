@@ -3,146 +3,195 @@ syntax = "proto3";
 package wealthjourney.wallet.v1;
 
 import "protobuf/v1/common.proto";
+import "google/api/annotations.proto";
 
-option go_package = "wealthjourney/gen/protobuf/v1";
+option go_package = "protobuf/v1";
 
 // Wallet service for wallet management operations.
 service WalletService {
   // Get a wallet by ID
-  rpc GetWallet(GetWalletRequest) returns (GetWalletResponse);
+  rpc GetWallet(GetWalletRequest) returns (GetWalletResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/{walletId}"
+    };
+  }
 
   // List all wallets for authenticated user with pagination
-  rpc ListWallets(ListWalletsRequest) returns (ListWalletsResponse);
+  rpc ListWallets(ListWalletsRequest) returns (ListWalletsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets"
+    };
+  }
 
   // Create a new wallet
-  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse);
+  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/wallets"
+      body: "*"
+    };
+  }
 
   // Update wallet information
-  rpc UpdateWallet(UpdateWalletRequest) returns (UpdateWalletResponse);
+  rpc UpdateWallet(UpdateWalletRequest) returns (UpdateWalletResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/wallets/{walletId}"
+      body: "*"
+    };
+  }
 
   // Delete a wallet
-  rpc DeleteWallet(DeleteWalletRequest) returns (DeleteWalletResponse);
+  rpc DeleteWallet(DeleteWalletRequest) returns (DeleteWalletResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/wallets/{walletId}"
+    };
+  }
 
   // Add funds to a wallet
-  rpc AddFunds(AddFundsRequest) returns (AddFundsResponse);
+  rpc AddFunds(AddFundsRequest) returns (AddFundsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/wallets/{walletId}/add"
+      body: "*"
+    };
+  }
 
   // Withdraw funds from a wallet
-  rpc WithdrawFunds(WithdrawFundsRequest) returns (WithdrawFundsResponse);
+  rpc WithdrawFunds(WithdrawFundsRequest) returns (WithdrawFundsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/wallets/{walletId}/withdraw"
+      body: "*"
+    };
+  }
 
   // Transfer funds between wallets
-  rpc TransferFunds(TransferFundsRequest) returns (TransferFundsResponse);
+  rpc TransferFunds(TransferFundsRequest) returns (TransferFundsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/wallets/transfer"
+      body: "*"
+    };
+  }
 }
 
 // Wallet message
 message Wallet {
-  int32 id = 1;
-  int32 user_id = 2;
-  string wallet_name = 3;
-  common.v1.Money balance = 4;
-  int64 created_at = 5;
-  int64 updated_at = 6;
+  int32 id = 1 [json_name = "id"];
+  int32 userId = 2 [json_name = "userId"];
+  string walletName = 3 [json_name = "walletName"];
+  wealthjourney.common.v1.Money balance = 4 [json_name = "balance"];
+  int64 createdAt = 5 [json_name = "createdAt"];
+  int64 updatedAt = 6 [json_name = "updatedAt"];
 }
 
 // GetWallet request
 message GetWalletRequest {
-  int32 wallet_id = 1;
-}
-
-// GetWallet response
-message GetWalletResponse {
-  bool success = 1;
-  Wallet data = 2;
-  string timestamp = 3;
+  int32 walletId = 1 [json_name = "walletId"];
 }
 
 // ListWallets request
 message ListWalletsRequest {
-  common.v1.PaginationParams pagination = 1;
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
 }
 
-// ListWallets response
-message ListWalletsResponse {
-  bool success = 1;
-  repeated Wallet wallets = 2;
-  common.v1.PaginationResult pagination = 3;
-  string timestamp = 4;
+// WalletListData contains the paginated wallet list data
+message WalletListData {
+  repeated Wallet items = 1 [json_name = "items"];
+  wealthjourney.common.v1.PaginationResult pagination = 2 [json_name = "pagination"];
 }
 
 // CreateWallet request
 message CreateWalletRequest {
-  string wallet_name = 1;
-  common.v1.Money initial_balance = 2;
-}
-
-// CreateWallet response
-message CreateWalletResponse {
-  bool success = 1;
-  Wallet data = 2;
-  string timestamp = 3;
+  string walletName = 1 [json_name = "walletName"];
+  wealthjourney.common.v1.Money initialBalance = 2 [json_name = "initialBalance"];
 }
 
 // UpdateWallet request
 message UpdateWalletRequest {
-  int32 wallet_id = 1;
-  string wallet_name = 2;
-}
-
-// UpdateWallet response
-message UpdateWalletResponse {
-  bool success = 1;
-  Wallet data = 2;
-  string timestamp = 3;
+  int32 walletId = 1 [json_name = "walletId"];
+  string walletName = 2 [json_name = "walletName"];
 }
 
 // DeleteWallet request
 message DeleteWalletRequest {
-  int32 wallet_id = 1;
-}
-
-// DeleteWallet response (returns 204 No Content on success)
-message DeleteWalletResponse {
-  bool success = 1;
-  string timestamp = 2;
+  int32 walletId = 1 [json_name = "walletId"];
 }
 
 // AddFunds request
 message AddFundsRequest {
-  int32 wallet_id = 1;
-  common.v1.Money amount = 2;
-}
-
-// AddFunds response
-message AddFundsResponse {
-  bool success = 1;
-  Wallet data = 2;
-  string timestamp = 3;
+  int32 walletId = 1 [json_name = "walletId"];
+  wealthjourney.common.v1.Money amount = 2 [json_name = "amount"];
 }
 
 // WithdrawFunds request
 message WithdrawFundsRequest {
-  int32 wallet_id = 1;
-  common.v1.Money amount = 2;
-}
-
-// WithdrawFunds response
-message WithdrawFundsResponse {
-  bool success = 1;
-  Wallet data = 2;
-  string timestamp = 3;
+  int32 walletId = 1 [json_name = "walletId"];
+  wealthjourney.common.v1.Money amount = 2 [json_name = "amount"];
 }
 
 // TransferFunds request
 message TransferFundsRequest {
-  int32 from_wallet_id = 1;
-  int32 to_wallet_id = 2;
-  common.v1.Money amount = 3;
+  int32 fromWalletId = 1 [json_name = "fromWalletId"];
+  int32 toWalletId = 2 [json_name = "toWalletId"];
+  wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
+}
+
+// GetWallet response
+message GetWalletResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// ListWallets response
+message ListWalletsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Wallet wallets = 3 [json_name = "wallets"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+// CreateWallet response
+message CreateWalletResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// UpdateWallet response
+message UpdateWalletResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// DeleteWallet response
+message DeleteWalletResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+// AddFunds response
+message AddFundsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// WithdrawFunds response
+message WithdrawFundsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }
 
 // TransferFunds response
 message TransferFundsResponse {
-  bool success = 1;
-  Wallet from_wallet = 2;
-  Wallet to_wallet = 3;
-  common.v1.Money amount = 4;
-  string timestamp = 5;
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
 }

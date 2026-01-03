@@ -5,21 +5,11 @@
 // source: protobuf/v1/user.proto
 
 /* eslint-disable */
-import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { User } from "./auth";
 import { PaginationParams, PaginationResult } from "./common";
 
 export const protobufPackage = "wealthjourney.user.v1";
-
-/** User message */
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  picture: string;
-  createdAt: Long;
-  updatedAt: Long;
-}
 
 /** GetUser request */
 export interface GetUserRequest {
@@ -27,23 +17,9 @@ export interface GetUserRequest {
   userId: number;
 }
 
-/** GetUser response */
-export interface GetUserResponse {
-  success: boolean;
-  data: User | undefined;
-  timestamp: string;
-}
-
 /** GetUserByEmail request */
 export interface GetUserByEmailRequest {
   email: string;
-}
-
-/** GetUserByEmail response */
-export interface GetUserByEmailResponse {
-  success: boolean;
-  data: User | undefined;
-  timestamp: string;
 }
 
 /** ListUsers request */
@@ -51,26 +27,11 @@ export interface ListUsersRequest {
   pagination: PaginationParams | undefined;
 }
 
-/** ListUsers response */
-export interface ListUsersResponse {
-  success: boolean;
-  users: User[];
-  pagination: PaginationResult | undefined;
-  timestamp: string;
-}
-
 /** CreateUser request */
 export interface CreateUserRequest {
   email: string;
   name: string;
   picture: string;
-}
-
-/** CreateUser response */
-export interface CreateUserResponse {
-  success: boolean;
-  data: User | undefined;
-  timestamp: string;
 }
 
 /** UpdateUser request */
@@ -82,162 +43,59 @@ export interface UpdateUserRequest {
   picture: string;
 }
 
-/** UpdateUser response */
-export interface UpdateUserResponse {
-  success: boolean;
-  data: User | undefined;
-  timestamp: string;
-}
-
 /** DeleteUser request */
 export interface DeleteUserRequest {
   /** User ID from context (authenticated user) */
   userId: number;
 }
 
-/** DeleteUser response (returns 204 No Content on success) */
-export interface DeleteUserResponse {
+/** GetUser response */
+export interface GetUserResponse {
   success: boolean;
+  message: string;
+  data: User | undefined;
   timestamp: string;
 }
 
-function createBaseUser(): User {
-  return { id: 0, email: "", name: "", picture: "", createdAt: Long.ZERO, updatedAt: Long.ZERO };
+/** GetUserByEmail response */
+export interface GetUserByEmailResponse {
+  success: boolean;
+  message: string;
+  data: User | undefined;
+  timestamp: string;
 }
 
-export const User = {
-  encode(message: User, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== 0) {
-      writer.uint32(8).int32(message.id);
-    }
-    if (message.email !== "") {
-      writer.uint32(18).string(message.email);
-    }
-    if (message.name !== "") {
-      writer.uint32(26).string(message.name);
-    }
-    if (message.picture !== "") {
-      writer.uint32(34).string(message.picture);
-    }
-    if (!message.createdAt.equals(Long.ZERO)) {
-      writer.uint32(40).int64(message.createdAt);
-    }
-    if (!message.updatedAt.equals(Long.ZERO)) {
-      writer.uint32(48).int64(message.updatedAt);
-    }
-    return writer;
-  },
+/** ListUsers response */
+export interface ListUsersResponse {
+  success: boolean;
+  message: string;
+  users: User[];
+  pagination: PaginationResult | undefined;
+  timestamp: string;
+}
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): User {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUser();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
+/** CreateUser response */
+export interface CreateUserResponse {
+  success: boolean;
+  message: string;
+  data: User | undefined;
+  timestamp: string;
+}
 
-          message.id = reader.int32();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
+/** UpdateUser response */
+export interface UpdateUserResponse {
+  success: boolean;
+  message: string;
+  data: User | undefined;
+  timestamp: string;
+}
 
-          message.email = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.picture = reader.string();
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.createdAt = reader.int64() as Long;
-          continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.updatedAt = reader.int64() as Long;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): User {
-    return {
-      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
-      email: isSet(object.email) ? globalThis.String(object.email) : "",
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      picture: isSet(object.picture) ? globalThis.String(object.picture) : "",
-      createdAt: isSet(object.createdAt) ? Long.fromValue(object.createdAt) : Long.ZERO,
-      updatedAt: isSet(object.updatedAt) ? Long.fromValue(object.updatedAt) : Long.ZERO,
-    };
-  },
-
-  toJSON(message: User): unknown {
-    const obj: any = {};
-    if (message.id !== 0) {
-      obj.id = Math.round(message.id);
-    }
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.picture !== "") {
-      obj.picture = message.picture;
-    }
-    if (!message.createdAt.equals(Long.ZERO)) {
-      obj.createdAt = (message.createdAt || Long.ZERO).toString();
-    }
-    if (!message.updatedAt.equals(Long.ZERO)) {
-      obj.updatedAt = (message.updatedAt || Long.ZERO).toString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<User>): User {
-    return User.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<User>): User {
-    const message = createBaseUser();
-    message.id = object.id ?? 0;
-    message.email = object.email ?? "";
-    message.name = object.name ?? "";
-    message.picture = object.picture ?? "";
-    message.createdAt = (object.createdAt !== undefined && object.createdAt !== null)
-      ? Long.fromValue(object.createdAt)
-      : Long.ZERO;
-    message.updatedAt = (object.updatedAt !== undefined && object.updatedAt !== null)
-      ? Long.fromValue(object.updatedAt)
-      : Long.ZERO;
-    return message;
-  },
-};
+/** DeleteUser response */
+export interface DeleteUserResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+}
 
 function createBaseGetUserRequest(): GetUserRequest {
   return { userId: 0 };
@@ -292,95 +150,6 @@ export const GetUserRequest = {
   fromPartial(object: DeepPartial<GetUserRequest>): GetUserRequest {
     const message = createBaseGetUserRequest();
     message.userId = object.userId ?? 0;
-    return message;
-  },
-};
-
-function createBaseGetUserResponse(): GetUserResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const GetUserResponse = {
-  encode(message: GetUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetUserResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = User.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetUserResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: GetUserResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetUserResponse>): GetUserResponse {
-    return GetUserResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetUserResponse>): GetUserResponse {
-    const message = createBaseGetUserResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -442,95 +211,6 @@ export const GetUserByEmailRequest = {
   },
 };
 
-function createBaseGetUserByEmailResponse(): GetUserByEmailResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const GetUserByEmailResponse = {
-  encode(message: GetUserByEmailResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserByEmailResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetUserByEmailResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = User.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetUserByEmailResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: GetUserByEmailResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetUserByEmailResponse>): GetUserByEmailResponse {
-    return GetUserByEmailResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetUserByEmailResponse>): GetUserByEmailResponse {
-    const message = createBaseGetUserByEmailResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
 function createBaseListUsersRequest(): ListUsersRequest {
   return { pagination: undefined };
 }
@@ -586,112 +266,6 @@ export const ListUsersRequest = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? PaginationParams.fromPartial(object.pagination)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseListUsersResponse(): ListUsersResponse {
-  return { success: false, users: [], pagination: undefined, timestamp: "" };
-}
-
-export const ListUsersResponse = {
-  encode(message: ListUsersResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    for (const v of message.users) {
-      User.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.pagination !== undefined) {
-      PaginationResult.encode(message.pagination, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(34).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListUsersResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.users.push(User.decode(reader, reader.uint32()));
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pagination = PaginationResult.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListUsersResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
-      pagination: isSet(object.pagination) ? PaginationResult.fromJSON(object.pagination) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: ListUsersResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.users?.length) {
-      obj.users = message.users.map((e) => User.toJSON(e));
-    }
-    if (message.pagination !== undefined) {
-      obj.pagination = PaginationResult.toJSON(message.pagination);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListUsersResponse>): ListUsersResponse {
-    return ListUsersResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListUsersResponse>): ListUsersResponse {
-    const message = createBaseListUsersResponse();
-    message.success = object.success ?? false;
-    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
-    message.pagination = (object.pagination !== undefined && object.pagination !== null)
-      ? PaginationResult.fromPartial(object.pagination)
-      : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -781,95 +355,6 @@ export const CreateUserRequest = {
     message.email = object.email ?? "";
     message.name = object.name ?? "";
     message.picture = object.picture ?? "";
-    return message;
-  },
-};
-
-function createBaseCreateUserResponse(): CreateUserResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const CreateUserResponse = {
-  encode(message: CreateUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateUserResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = User.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreateUserResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: CreateUserResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreateUserResponse>): CreateUserResponse {
-    return CreateUserResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CreateUserResponse>): CreateUserResponse {
-    const message = createBaseCreateUserResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -978,95 +463,6 @@ export const UpdateUserRequest = {
   },
 };
 
-function createBaseUpdateUserResponse(): UpdateUserResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const UpdateUserResponse = {
-  encode(message: UpdateUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateUserResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateUserResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = User.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateUserResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: UpdateUserResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateUserResponse>): UpdateUserResponse {
-    return UpdateUserResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateUserResponse>): UpdateUserResponse {
-    const message = createBaseUpdateUserResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
 function createBaseDeleteUserRequest(): DeleteUserRequest {
   return { userId: 0 };
 }
@@ -1124,8 +520,545 @@ export const DeleteUserRequest = {
   },
 };
 
+function createBaseGetUserResponse(): GetUserResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const GetUserResponse = {
+  encode(message: GetUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetUserResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserResponse>): GetUserResponse {
+    return GetUserResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserResponse>): GetUserResponse {
+    const message = createBaseGetUserResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserByEmailResponse(): GetUserByEmailResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const GetUserByEmailResponse = {
+  encode(message: GetUserByEmailResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserByEmailResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserByEmailResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserByEmailResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetUserByEmailResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserByEmailResponse>): GetUserByEmailResponse {
+    return GetUserByEmailResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserByEmailResponse>): GetUserByEmailResponse {
+    const message = createBaseGetUserByEmailResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseListUsersResponse(): ListUsersResponse {
+  return { success: false, message: "", users: [], pagination: undefined, timestamp: "" };
+}
+
+export const ListUsersResponse = {
+  encode(message: ListUsersResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResult.encode(message.pagination, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(42).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListUsersResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUsersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.pagination = PaginationResult.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUsersResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PaginationResult.fromJSON(object.pagination) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: ListUsersResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResult.toJSON(message.pagination);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUsersResponse>): ListUsersResponse {
+    return ListUsersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUsersResponse>): ListUsersResponse {
+    const message = createBaseListUsersResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResult.fromPartial(object.pagination)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateUserResponse(): CreateUserResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const CreateUserResponse = {
+  encode(message: CreateUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateUserResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateUserResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: CreateUserResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateUserResponse>): CreateUserResponse {
+    return CreateUserResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateUserResponse>): CreateUserResponse {
+    const message = createBaseCreateUserResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateUserResponse(): UpdateUserResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const UpdateUserResponse = {
+  encode(message: UpdateUserResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateUserResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateUserResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateUserResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: UpdateUserResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateUserResponse>): UpdateUserResponse {
+    return UpdateUserResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateUserResponse>): UpdateUserResponse {
+    const message = createBaseUpdateUserResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
 function createBaseDeleteUserResponse(): DeleteUserResponse {
-  return { success: false, timestamp: "" };
+  return { success: false, message: "", timestamp: "" };
 }
 
 export const DeleteUserResponse = {
@@ -1133,8 +1066,11 @@ export const DeleteUserResponse = {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
     if (message.timestamp !== "") {
-      writer.uint32(18).string(message.timestamp);
+      writer.uint32(26).string(message.timestamp);
     }
     return writer;
   },
@@ -1158,6 +1094,13 @@ export const DeleteUserResponse = {
             break;
           }
 
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.timestamp = reader.string();
           continue;
       }
@@ -1172,6 +1115,7 @@ export const DeleteUserResponse = {
   fromJSON(object: any): DeleteUserResponse {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
       timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
     };
   },
@@ -1180,6 +1124,9 @@ export const DeleteUserResponse = {
     const obj: any = {};
     if (message.success !== false) {
       obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
     }
     if (message.timestamp !== "") {
       obj.timestamp = message.timestamp;
@@ -1193,6 +1140,7 @@ export const DeleteUserResponse = {
   fromPartial(object: DeepPartial<DeleteUserResponse>): DeleteUserResponse {
     const message = createBaseDeleteUserResponse();
     message.success = object.success ?? false;
+    message.message = object.message ?? "";
     message.timestamp = object.timestamp ?? "";
     return message;
   },
@@ -1201,16 +1149,11 @@ export const DeleteUserResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

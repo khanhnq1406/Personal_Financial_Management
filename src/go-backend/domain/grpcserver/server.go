@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	protobufv1 "wealthjourney/gen/protobuf/v1"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/domain/auth"
 	"wealthjourney/domain/service"
 )

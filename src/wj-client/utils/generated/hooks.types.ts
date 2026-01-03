@@ -13,7 +13,7 @@ import type {
  * Standard API response wrapper
  */
 export type ResponseType<T> = {
-  data: T;
+  data?: T;
   error?: { message: string };
 };
 
@@ -45,7 +45,7 @@ export interface CustomUseQueryOptions<Response, Transformed = Response>
    * Refetch data on component mount
    * @default true
    */
-  refetchOnMount?: boolean;
+  refetchOnMount?: boolean | 'always';
 
   /**
    * Time in milliseconds after which data is considered stale

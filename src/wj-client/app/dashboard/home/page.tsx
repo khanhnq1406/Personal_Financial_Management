@@ -9,8 +9,15 @@ import { AccountBalance } from "./accountBalance";
 import { User } from "./user";
 import { TotalBalance } from "./totalBalance";
 import { FunctionalButton } from "./functionalButtons";
+import { useQueryListWallets } from "@/utils/generated/hooks";
 
 export default function Home() {
+  const getListWallets = useQueryListWallets(
+    {
+      pagination: { page: 1, pageSize: 10, orderBy: "", order: "" },
+    },
+    { refetchOnMount: "always" }
+  );
   return (
     <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
       <div className="sm:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center">
@@ -22,7 +29,7 @@ export default function Home() {
         <div className="w-[80%] mb-3">
           <div className="font-semibold my-2">My Wallets</div>
           <BaseCard>
-            <Wallets />
+            <Wallets getListWallets={getListWallets} />
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">
             Total balance fluctuation

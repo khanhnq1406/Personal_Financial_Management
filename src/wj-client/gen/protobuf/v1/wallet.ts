@@ -17,8 +17,8 @@ export interface Wallet {
   userId: number;
   walletName: string;
   balance: Money | undefined;
-  createdAt: Long;
-  updatedAt: Long;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /** GetWallet request */
@@ -26,24 +26,15 @@ export interface GetWalletRequest {
   walletId: number;
 }
 
-/** GetWallet response */
-export interface GetWalletResponse {
-  success: boolean;
-  data: Wallet | undefined;
-  timestamp: string;
-}
-
 /** ListWallets request */
 export interface ListWalletsRequest {
   pagination: PaginationParams | undefined;
 }
 
-/** ListWallets response */
-export interface ListWalletsResponse {
-  success: boolean;
-  wallets: Wallet[];
+/** WalletListData contains the paginated wallet list data */
+export interface WalletListData {
+  items: Wallet[];
   pagination: PaginationResult | undefined;
-  timestamp: string;
 }
 
 /** CreateWallet request */
@@ -52,35 +43,15 @@ export interface CreateWalletRequest {
   initialBalance: Money | undefined;
 }
 
-/** CreateWallet response */
-export interface CreateWalletResponse {
-  success: boolean;
-  data: Wallet | undefined;
-  timestamp: string;
-}
-
 /** UpdateWallet request */
 export interface UpdateWalletRequest {
   walletId: number;
   walletName: string;
 }
 
-/** UpdateWallet response */
-export interface UpdateWalletResponse {
-  success: boolean;
-  data: Wallet | undefined;
-  timestamp: string;
-}
-
 /** DeleteWallet request */
 export interface DeleteWalletRequest {
   walletId: number;
-}
-
-/** DeleteWallet response (returns 204 No Content on success) */
-export interface DeleteWalletResponse {
-  success: boolean;
-  timestamp: string;
 }
 
 /** AddFunds request */
@@ -89,24 +60,10 @@ export interface AddFundsRequest {
   amount: Money | undefined;
 }
 
-/** AddFunds response */
-export interface AddFundsResponse {
-  success: boolean;
-  data: Wallet | undefined;
-  timestamp: string;
-}
-
 /** WithdrawFunds request */
 export interface WithdrawFundsRequest {
   walletId: number;
   amount: Money | undefined;
-}
-
-/** WithdrawFunds response */
-export interface WithdrawFundsResponse {
-  success: boolean;
-  data: Wallet | undefined;
-  timestamp: string;
 }
 
 /** TransferFunds request */
@@ -116,17 +73,71 @@ export interface TransferFundsRequest {
   amount: Money | undefined;
 }
 
+/** GetWallet response */
+export interface GetWalletResponse {
+  success: boolean;
+  message: string;
+  data: Wallet | undefined;
+  timestamp: string;
+}
+
+/** ListWallets response */
+export interface ListWalletsResponse {
+  success: boolean;
+  message: string;
+  wallets: Wallet[];
+  pagination: PaginationResult | undefined;
+  timestamp: string;
+}
+
+/** CreateWallet response */
+export interface CreateWalletResponse {
+  success: boolean;
+  message: string;
+  data: Wallet | undefined;
+  timestamp: string;
+}
+
+/** UpdateWallet response */
+export interface UpdateWalletResponse {
+  success: boolean;
+  message: string;
+  data: Wallet | undefined;
+  timestamp: string;
+}
+
+/** DeleteWallet response */
+export interface DeleteWalletResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+}
+
+/** AddFunds response */
+export interface AddFundsResponse {
+  success: boolean;
+  message: string;
+  data: Wallet | undefined;
+  timestamp: string;
+}
+
+/** WithdrawFunds response */
+export interface WithdrawFundsResponse {
+  success: boolean;
+  message: string;
+  data: Wallet | undefined;
+  timestamp: string;
+}
+
 /** TransferFunds response */
 export interface TransferFundsResponse {
   success: boolean;
-  fromWallet: Wallet | undefined;
-  toWallet: Wallet | undefined;
-  amount: Money | undefined;
+  message: string;
   timestamp: string;
 }
 
 function createBaseWallet(): Wallet {
-  return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: Long.ZERO, updatedAt: Long.ZERO };
+  return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: 0, updatedAt: 0 };
 }
 
 export const Wallet = {
@@ -143,10 +154,10 @@ export const Wallet = {
     if (message.balance !== undefined) {
       Money.encode(message.balance, writer.uint32(34).fork()).ldelim();
     }
-    if (!message.createdAt.equals(Long.ZERO)) {
+    if (message.createdAt !== 0) {
       writer.uint32(40).int64(message.createdAt);
     }
-    if (!message.updatedAt.equals(Long.ZERO)) {
+    if (message.updatedAt !== 0) {
       writer.uint32(48).int64(message.updatedAt);
     }
     return writer;
@@ -192,14 +203,14 @@ export const Wallet = {
             break;
           }
 
-          message.createdAt = reader.int64() as Long;
+          message.createdAt = longToNumber(reader.int64() as Long);
           continue;
         case 6:
           if (tag !== 48) {
             break;
           }
 
-          message.updatedAt = reader.int64() as Long;
+          message.updatedAt = longToNumber(reader.int64() as Long);
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -216,8 +227,8 @@ export const Wallet = {
       userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
       walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
       balance: isSet(object.balance) ? Money.fromJSON(object.balance) : undefined,
-      createdAt: isSet(object.createdAt) ? Long.fromValue(object.createdAt) : Long.ZERO,
-      updatedAt: isSet(object.updatedAt) ? Long.fromValue(object.updatedAt) : Long.ZERO,
+      createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
+      updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
     };
   },
 
@@ -235,11 +246,11 @@ export const Wallet = {
     if (message.balance !== undefined) {
       obj.balance = Money.toJSON(message.balance);
     }
-    if (!message.createdAt.equals(Long.ZERO)) {
-      obj.createdAt = (message.createdAt || Long.ZERO).toString();
+    if (message.createdAt !== 0) {
+      obj.createdAt = Math.round(message.createdAt);
     }
-    if (!message.updatedAt.equals(Long.ZERO)) {
-      obj.updatedAt = (message.updatedAt || Long.ZERO).toString();
+    if (message.updatedAt !== 0) {
+      obj.updatedAt = Math.round(message.updatedAt);
     }
     return obj;
   },
@@ -255,12 +266,8 @@ export const Wallet = {
     message.balance = (object.balance !== undefined && object.balance !== null)
       ? Money.fromPartial(object.balance)
       : undefined;
-    message.createdAt = (object.createdAt !== undefined && object.createdAt !== null)
-      ? Long.fromValue(object.createdAt)
-      : Long.ZERO;
-    message.updatedAt = (object.updatedAt !== undefined && object.updatedAt !== null)
-      ? Long.fromValue(object.updatedAt)
-      : Long.ZERO;
+    message.createdAt = object.createdAt ?? 0;
+    message.updatedAt = object.updatedAt ?? 0;
     return message;
   },
 };
@@ -318,95 +325,6 @@ export const GetWalletRequest = {
   fromPartial(object: DeepPartial<GetWalletRequest>): GetWalletRequest {
     const message = createBaseGetWalletRequest();
     message.walletId = object.walletId ?? 0;
-    return message;
-  },
-};
-
-function createBaseGetWalletResponse(): GetWalletResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const GetWalletResponse = {
-  encode(message: GetWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      Wallet.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetWalletResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetWalletResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetWalletResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: GetWalletResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = Wallet.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetWalletResponse>): GetWalletResponse {
-    return GetWalletResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetWalletResponse>): GetWalletResponse {
-    const message = createBaseGetWalletResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -470,61 +388,41 @@ export const ListWalletsRequest = {
   },
 };
 
-function createBaseListWalletsResponse(): ListWalletsResponse {
-  return { success: false, wallets: [], pagination: undefined, timestamp: "" };
+function createBaseWalletListData(): WalletListData {
+  return { items: [], pagination: undefined };
 }
 
-export const ListWalletsResponse = {
-  encode(message: ListWalletsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    for (const v of message.wallets) {
-      Wallet.encode(v!, writer.uint32(18).fork()).ldelim();
+export const WalletListData = {
+  encode(message: WalletListData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.items) {
+      Wallet.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.pagination !== undefined) {
-      PaginationResult.encode(message.pagination, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(34).string(message.timestamp);
+      PaginationResult.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListWalletsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): WalletListData {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListWalletsResponse();
+    const message = createBaseWalletListData();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.success = reader.bool();
+          message.items.push(Wallet.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.wallets.push(Wallet.decode(reader, reader.uint32()));
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
           message.pagination = PaginationResult.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.timestamp = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -535,43 +433,33 @@ export const ListWalletsResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListWalletsResponse {
+  fromJSON(object: any): WalletListData {
     return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      wallets: globalThis.Array.isArray(object?.wallets) ? object.wallets.map((e: any) => Wallet.fromJSON(e)) : [],
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => Wallet.fromJSON(e)) : [],
       pagination: isSet(object.pagination) ? PaginationResult.fromJSON(object.pagination) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
     };
   },
 
-  toJSON(message: ListWalletsResponse): unknown {
+  toJSON(message: WalletListData): unknown {
     const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.wallets?.length) {
-      obj.wallets = message.wallets.map((e) => Wallet.toJSON(e));
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => Wallet.toJSON(e));
     }
     if (message.pagination !== undefined) {
       obj.pagination = PaginationResult.toJSON(message.pagination);
     }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
     return obj;
   },
 
-  create(base?: DeepPartial<ListWalletsResponse>): ListWalletsResponse {
-    return ListWalletsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<WalletListData>): WalletListData {
+    return WalletListData.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListWalletsResponse>): ListWalletsResponse {
-    const message = createBaseListWalletsResponse();
-    message.success = object.success ?? false;
-    message.wallets = object.wallets?.map((e) => Wallet.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<WalletListData>): WalletListData {
+    const message = createBaseWalletListData();
+    message.items = object.items?.map((e) => Wallet.fromPartial(e)) || [];
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? PaginationResult.fromPartial(object.pagination)
       : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -652,95 +540,6 @@ export const CreateWalletRequest = {
   },
 };
 
-function createBaseCreateWalletResponse(): CreateWalletResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const CreateWalletResponse = {
-  encode(message: CreateWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      Wallet.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateWalletResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateWalletResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreateWalletResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: CreateWalletResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = Wallet.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreateWalletResponse>): CreateWalletResponse {
-    return CreateWalletResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CreateWalletResponse>): CreateWalletResponse {
-    const message = createBaseCreateWalletResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
 function createBaseUpdateWalletRequest(): UpdateWalletRequest {
   return { walletId: 0, walletName: "" };
 }
@@ -815,95 +614,6 @@ export const UpdateWalletRequest = {
   },
 };
 
-function createBaseUpdateWalletResponse(): UpdateWalletResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const UpdateWalletResponse = {
-  encode(message: UpdateWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      Wallet.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateWalletResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateWalletResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateWalletResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: UpdateWalletResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = Wallet.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateWalletResponse>): UpdateWalletResponse {
-    return UpdateWalletResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateWalletResponse>): UpdateWalletResponse {
-    const message = createBaseUpdateWalletResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
 function createBaseDeleteWalletRequest(): DeleteWalletRequest {
   return { walletId: 0 };
 }
@@ -957,80 +667,6 @@ export const DeleteWalletRequest = {
   fromPartial(object: DeepPartial<DeleteWalletRequest>): DeleteWalletRequest {
     const message = createBaseDeleteWalletRequest();
     message.walletId = object.walletId ?? 0;
-    return message;
-  },
-};
-
-function createBaseDeleteWalletResponse(): DeleteWalletResponse {
-  return { success: false, timestamp: "" };
-}
-
-export const DeleteWalletResponse = {
-  encode(message: DeleteWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(18).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteWalletResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteWalletResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteWalletResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: DeleteWalletResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeleteWalletResponse>): DeleteWalletResponse {
-    return DeleteWalletResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeleteWalletResponse>): DeleteWalletResponse {
-    const message = createBaseDeleteWalletResponse();
-    message.success = object.success ?? false;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -1111,95 +747,6 @@ export const AddFundsRequest = {
   },
 };
 
-function createBaseAddFundsResponse(): AddFundsResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const AddFundsResponse = {
-  encode(message: AddFundsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      Wallet.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): AddFundsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAddFundsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AddFundsResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: AddFundsResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = Wallet.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<AddFundsResponse>): AddFundsResponse {
-    return AddFundsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<AddFundsResponse>): AddFundsResponse {
-    const message = createBaseAddFundsResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
-    return message;
-  },
-};
-
 function createBaseWithdrawFundsRequest(): WithdrawFundsRequest {
   return { walletId: 0, amount: undefined };
 }
@@ -1272,95 +819,6 @@ export const WithdrawFundsRequest = {
     message.amount = (object.amount !== undefined && object.amount !== null)
       ? Money.fromPartial(object.amount)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseWithdrawFundsResponse(): WithdrawFundsResponse {
-  return { success: false, data: undefined, timestamp: "" };
-}
-
-export const WithdrawFundsResponse = {
-  encode(message: WithdrawFundsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.data !== undefined) {
-      Wallet.encode(message.data, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(26).string(message.timestamp);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): WithdrawFundsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseWithdrawFundsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.data = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): WithdrawFundsResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-    };
-  },
-
-  toJSON(message: WithdrawFundsResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.data !== undefined) {
-      obj.data = Wallet.toJSON(message.data);
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<WithdrawFundsResponse>): WithdrawFundsResponse {
-    return WithdrawFundsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<WithdrawFundsResponse>): WithdrawFundsResponse {
-    const message = createBaseWithdrawFundsResponse();
-    message.success = object.success ?? false;
-    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
-    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };
@@ -1456,8 +914,738 @@ export const TransferFundsRequest = {
   },
 };
 
+function createBaseGetWalletResponse(): GetWalletResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const GetWalletResponse = {
+  encode(message: GetWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetWalletResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetWalletResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetWalletResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetWalletResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetWalletResponse>): GetWalletResponse {
+    return GetWalletResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetWalletResponse>): GetWalletResponse {
+    const message = createBaseGetWalletResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseListWalletsResponse(): ListWalletsResponse {
+  return { success: false, message: "", wallets: [], pagination: undefined, timestamp: "" };
+}
+
+export const ListWalletsResponse = {
+  encode(message: ListWalletsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.wallets) {
+      Wallet.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResult.encode(message.pagination, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(42).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListWalletsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListWalletsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.wallets.push(Wallet.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.pagination = PaginationResult.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListWalletsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      wallets: globalThis.Array.isArray(object?.wallets) ? object.wallets.map((e: any) => Wallet.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PaginationResult.fromJSON(object.pagination) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: ListWalletsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.wallets?.length) {
+      obj.wallets = message.wallets.map((e) => Wallet.toJSON(e));
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResult.toJSON(message.pagination);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListWalletsResponse>): ListWalletsResponse {
+    return ListWalletsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListWalletsResponse>): ListWalletsResponse {
+    const message = createBaseListWalletsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.wallets = object.wallets?.map((e) => Wallet.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResult.fromPartial(object.pagination)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateWalletResponse(): CreateWalletResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const CreateWalletResponse = {
+  encode(message: CreateWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateWalletResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateWalletResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateWalletResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: CreateWalletResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateWalletResponse>): CreateWalletResponse {
+    return CreateWalletResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateWalletResponse>): CreateWalletResponse {
+    const message = createBaseCreateWalletResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateWalletResponse(): UpdateWalletResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const UpdateWalletResponse = {
+  encode(message: UpdateWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateWalletResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateWalletResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateWalletResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: UpdateWalletResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateWalletResponse>): UpdateWalletResponse {
+    return UpdateWalletResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateWalletResponse>): UpdateWalletResponse {
+    const message = createBaseUpdateWalletResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteWalletResponse(): DeleteWalletResponse {
+  return { success: false, message: "", timestamp: "" };
+}
+
+export const DeleteWalletResponse = {
+  encode(message: DeleteWalletResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteWalletResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteWalletResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteWalletResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: DeleteWalletResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteWalletResponse>): DeleteWalletResponse {
+    return DeleteWalletResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteWalletResponse>): DeleteWalletResponse {
+    const message = createBaseDeleteWalletResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseAddFundsResponse(): AddFundsResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const AddFundsResponse = {
+  encode(message: AddFundsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AddFundsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddFundsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddFundsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: AddFundsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AddFundsResponse>): AddFundsResponse {
+    return AddFundsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AddFundsResponse>): AddFundsResponse {
+    const message = createBaseAddFundsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseWithdrawFundsResponse(): WithdrawFundsResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const WithdrawFundsResponse = {
+  encode(message: WithdrawFundsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WithdrawFundsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWithdrawFundsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WithdrawFundsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: WithdrawFundsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<WithdrawFundsResponse>): WithdrawFundsResponse {
+    return WithdrawFundsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<WithdrawFundsResponse>): WithdrawFundsResponse {
+    const message = createBaseWithdrawFundsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
 function createBaseTransferFundsResponse(): TransferFundsResponse {
-  return { success: false, fromWallet: undefined, toWallet: undefined, amount: undefined, timestamp: "" };
+  return { success: false, message: "", timestamp: "" };
 }
 
 export const TransferFundsResponse = {
@@ -1465,17 +1653,11 @@ export const TransferFundsResponse = {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
-    if (message.fromWallet !== undefined) {
-      Wallet.encode(message.fromWallet, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.toWallet !== undefined) {
-      Wallet.encode(message.toWallet, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.amount !== undefined) {
-      Money.encode(message.amount, writer.uint32(34).fork()).ldelim();
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
     }
     if (message.timestamp !== "") {
-      writer.uint32(42).string(message.timestamp);
+      writer.uint32(26).string(message.timestamp);
     }
     return writer;
   },
@@ -1499,24 +1681,10 @@ export const TransferFundsResponse = {
             break;
           }
 
-          message.fromWallet = Wallet.decode(reader, reader.uint32());
+          message.message = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
-            break;
-          }
-
-          message.toWallet = Wallet.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.amount = Money.decode(reader, reader.uint32());
-          continue;
-        case 5:
-          if (tag !== 42) {
             break;
           }
 
@@ -1534,9 +1702,7 @@ export const TransferFundsResponse = {
   fromJSON(object: any): TransferFundsResponse {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      fromWallet: isSet(object.fromWallet) ? Wallet.fromJSON(object.fromWallet) : undefined,
-      toWallet: isSet(object.toWallet) ? Wallet.fromJSON(object.toWallet) : undefined,
-      amount: isSet(object.amount) ? Money.fromJSON(object.amount) : undefined,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
       timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
     };
   },
@@ -1546,14 +1712,8 @@ export const TransferFundsResponse = {
     if (message.success !== false) {
       obj.success = message.success;
     }
-    if (message.fromWallet !== undefined) {
-      obj.fromWallet = Wallet.toJSON(message.fromWallet);
-    }
-    if (message.toWallet !== undefined) {
-      obj.toWallet = Wallet.toJSON(message.toWallet);
-    }
-    if (message.amount !== undefined) {
-      obj.amount = Money.toJSON(message.amount);
+    if (message.message !== "") {
+      obj.message = message.message;
     }
     if (message.timestamp !== "") {
       obj.timestamp = message.timestamp;
@@ -1567,15 +1727,7 @@ export const TransferFundsResponse = {
   fromPartial(object: DeepPartial<TransferFundsResponse>): TransferFundsResponse {
     const message = createBaseTransferFundsResponse();
     message.success = object.success ?? false;
-    message.fromWallet = (object.fromWallet !== undefined && object.fromWallet !== null)
-      ? Wallet.fromPartial(object.fromWallet)
-      : undefined;
-    message.toWallet = (object.toWallet !== undefined && object.toWallet !== null)
-      ? Wallet.fromPartial(object.toWallet)
-      : undefined;
-    message.amount = (object.amount !== undefined && object.amount !== null)
-      ? Money.fromPartial(object.amount)
-      : undefined;
+    message.message = object.message ?? "";
     message.timestamp = object.timestamp ?? "";
     return message;
   },
@@ -1584,11 +1736,21 @@ export const TransferFundsResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (long.lt(globalThis.Number.MIN_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

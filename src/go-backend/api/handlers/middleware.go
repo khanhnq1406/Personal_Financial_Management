@@ -25,7 +25,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Verify token using auth service
 		authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
-		_, userData, err := authServer.VerifyAuth(token)
+		result, err := authServer.VerifyAuth(token)
 
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -37,9 +37,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Store user info in context
-		c.Set("user_id", userData.ID)
-		c.Set("user_email", userData.Email)
-		c.Set("user_name", userData.Name)
+		c.Set("user_id", result.Data.Id)
+		c.Set("user_email", result.Data.Email)
+		c.Set("user_name", result.Data.Name)
 
 		c.Next()
 	}

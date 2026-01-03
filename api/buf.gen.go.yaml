@@ -2,12 +2,20 @@ version: v1
 plugins:
   # Go gRPC plugin
   - plugin: buf.build/grpc/go:v1.3.0
-    out: ../src/go-backend/gen
+    out: src/go-backend/gen/protobuf
     opt:
       - paths=import
 
   # Go code generation plugin
   - plugin: buf.build/protocolbuffers/go:v1.31.0
-    out: ../src/go-backend/gen
+    out: src/go-backend/gen/protobuf
     opt:
       - paths=import
+
+  # gRPC-Gateway plugin (generates REST reverse proxy) - using local plugin
+  - plugin: grpc-gateway
+    out: src/go-backend/gen/protobuf
+    opt:
+      - paths=import
+      - generate_unbound_methods=true
+    strategy: all

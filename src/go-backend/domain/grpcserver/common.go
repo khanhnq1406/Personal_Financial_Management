@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	protobufv1 "wealthjourney/gen/protobuf/v1"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
 )
 

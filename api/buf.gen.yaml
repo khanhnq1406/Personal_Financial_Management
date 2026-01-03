@@ -24,7 +24,7 @@ plugins:
       - enumsAsLiterals=true
       - stringEnums=true
       - esModuleInterop=true
-      - forceLong=long
+      - forceLong=number
       - useOptionals=none
       - initializeFieldsAsOptional=true
       - oneof=unions

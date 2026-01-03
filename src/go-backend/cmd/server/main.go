@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/api/handlers"
+	"wealthjourney/domain/auth"
+	gateway "wealthjourney/domain/gateway"
 	grpcserver "wealthjourney/domain/grpcserver"
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
@@ -21,7 +23,6 @@ import (
 	"wealthjourney/pkg/database"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
-	"wealthjourney/domain/auth"
 )
 
 func main() {
@@ -143,12 +144,39 @@ func main() {
 		grpcPort = "50051" // Default gRPC port
 	}
 
+	// Initialize gRPC-Gateway server
+	gatewayPort := os.Getenv("GATEWAY_PORT")
+	if gatewayPort == "" {
+		gatewayPort = "8081" // Default gateway port
+	}
+	gwSrv := gateway.NewServer(gateway.Config{
+		GRPCPort: grpcPort,
+		HTTPPort: gatewayPort,
+	})
+
+	// Register services with the gateway
+	if err := gwSrv.RegisterServices(grpcSrv); err != nil {
+		log.Fatalf("Failed to register gateway services: %v", err)
+	}
+
 	var wg sync.WaitGroup
+
+	// Start gRPC server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		if err := grpcSrv.Start(grpcPort); err != nil {
 			log.Fatalf("Failed to start gRPC server: %v", err)
+		}
+	}()
+
+	// Start gRPC-Gateway server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Printf("Starting gRPC-Gateway server on port %s...", gatewayPort)
+		if err := gwSrv.Start(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start gRPC-Gateway server: %v", err)
 		}
 	}()
 
@@ -172,7 +200,12 @@ func main() {
 		log.Fatalf("gRPC server forced to shutdown: %v", err)
 	}
 
-	// Wait for gRPC server to stop
+	// Shutdown gRPC-Gateway server
+	if err := gwSrv.Stop(ctx); err != nil {
+		log.Fatalf("gRPC-Gateway server forced to shutdown: %v", err)
+	}
+
+	// Wait for all servers to stop
 	wg.Wait()
 
 	log.Println("Servers exited")

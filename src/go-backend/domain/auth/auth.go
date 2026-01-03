@@ -8,6 +8,7 @@ import (
 	"google.golang.org/api/idtoken"
 
 	"wealthjourney/domain/models"
+	authv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
@@ -48,43 +49,23 @@ type UserData struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-// LoginData contains login information including token
-type LoginData struct {
-	AccessToken string `json:"accessToken"`
-	Email       string `json:"email"`
-	Fullname    string `json:"fullname"`
-	Picture     string `json:"picture"`
-}
-
-// RegisterResult is the result of registration
-type RegisterResult struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	Data    *UserData `json:"data,omitempty"`
-}
-
-// LoginResult is the result of login
-type LoginResult struct {
-	Success bool       `json:"success"`
-	Message string     `json:"message"`
-	Data    *LoginData `json:"data,omitempty"`
-}
-
-// LogoutResult is the result of logout
-type LogoutResult struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
-// VerifyAuthResult is the result of auth verification
-type VerifyAuthResult struct {
-	Success bool      `json:"success"`
-	Message string    `json:"message"`
-	Data    *UserData `json:"data,omitempty"`
+// userDataToProto converts UserData to proto User
+func userDataToProto(data *UserData) *authv1.User {
+	if data == nil {
+		return nil
+	}
+	return &authv1.User{
+		Id:        data.ID,
+		Email:     data.Email,
+		Name:      data.Name,
+		Picture:   data.Picture,
+		CreatedAt: data.CreatedAt.Unix(),
+		UpdatedAt: data.CreatedAt.Unix(),
+	}
 }
 
 // Register registers a new user using Google OAuth token
-func (s *Server) Register(ctx context.Context, googleToken string) (*RegisterResult, error) {
+func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.RegisterResponse, error) {
 	// Verify Google token
 	payload, err := idtoken.Validate(ctx, googleToken, s.cfg.Google.ClientID)
 	if err != nil {
@@ -101,16 +82,11 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*RegisterRes
 	result := s.db.DB.Where("email = ?", email).First(&existingUser)
 	if result.Error == nil {
 		// User already exists
-		return &RegisterResult{
-			Success: true,
-			Message: "User already exists",
-			Data: &UserData{
-				ID:        existingUser.ID,
-				Email:     existingUser.Email,
-				Name:      existingUser.Name,
-				Picture:   existingUser.Picture,
-				CreatedAt: existingUser.CreatedAt,
-			},
+		return &authv1.RegisterResponse{
+			Success:   true,
+			Message:   "User already exists",
+			Data:      userDataToProto(&UserData{ID: existingUser.ID, Email: existingUser.Email, Name: existingUser.Name, Picture: existingUser.Picture, CreatedAt: existingUser.CreatedAt}),
+			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	} else if result.Error != gorm.ErrRecordNotFound {
 		return nil, fmt.Errorf("database error: %w", result.Error)
@@ -127,21 +103,16 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*RegisterRes
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return &RegisterResult{
-		Success: true,
-		Message: "User registered successfully",
-		Data: &UserData{
-			ID:        user.ID,
-			Email:     user.Email,
-			Name:      user.Name,
-			Picture:   user.Picture,
-			CreatedAt: user.CreatedAt,
-		},
+	return &authv1.RegisterResponse{
+		Success:   true,
+		Message:   "User registered successfully",
+		Data:      userDataToProto(&UserData{ID: user.ID, Email: user.Email, Name: user.Name, Picture: user.Picture, CreatedAt: user.CreatedAt}),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // Login logs in a user using Google OAuth token
-func (s *Server) Login(ctx context.Context, googleToken string) (*LoginResult, error) {
+func (s *Server) Login(ctx context.Context, googleToken string) (*authv1.LoginResponse, error) {
 	// Verify Google token
 	payload, err := idtoken.Validate(ctx, googleToken, s.cfg.Google.ClientID)
 	if err != nil {
@@ -155,7 +126,7 @@ func (s *Server) Login(ctx context.Context, googleToken string) (*LoginResult, e
 	var user models.User
 	result := s.db.DB.Where("email = ?", email).First(&user)
 	if result.Error == gorm.ErrRecordNotFound {
-		return nil, fmt.Errorf("user not found. Please register first")
+		return nil, fmt.Errorf("User not found. Please register first")
 	} else if result.Error != nil {
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
@@ -181,20 +152,21 @@ func (s *Server) Login(ctx context.Context, googleToken string) (*LoginResult, e
 		return nil, fmt.Errorf("failed to store token: %w", err)
 	}
 
-	return &LoginResult{
+	return &authv1.LoginResponse{
 		Success: true,
 		Message: "Login successful",
-		Data: &LoginData{
+		Data: &authv1.LoginData{
 			AccessToken: tokenString,
 			Email:       user.Email,
 			Fullname:    user.Name,
 			Picture:     user.Picture,
 		},
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // Logout logs out a user and invalidates the token
-func (s *Server) Logout(tokenString string) (*LogoutResult, error) {
+func (s *Server) Logout(tokenString string) (*authv1.LogoutResponse, error) {
 	// Parse token to get email
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWT.Secret), nil
@@ -213,57 +185,55 @@ func (s *Server) Logout(tokenString string) (*LogoutResult, error) {
 		return nil, fmt.Errorf("failed to logout: %w", err)
 	}
 
-	return &LogoutResult{
-		Success: true,
-		Message: "Logged out successfully",
+	return &authv1.LogoutResponse{
+		Success:   true,
+		Message:   "Logged out successfully",
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // VerifyAuth verifies the authentication status
-func (s *Server) VerifyAuth(tokenString string) (*VerifyAuthResult, *UserData, error) {
+func (s *Server) VerifyAuth(tokenString string) (*authv1.VerifyAuthResponse, error) {
 	// Parse token
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWT.Secret), nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid token: %w", err)
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	claims, ok := token.Claims.(*JWTClaims)
 	if !ok || !token.Valid {
-		return nil, nil, fmt.Errorf("invalid token claims")
+		return nil, fmt.Errorf("invalid token claims")
 	}
 
 	// Verify token is in whitelist
 	storedToken, err := s.rdb.GetFromWhitelist(claims.Email)
 	if err != nil || storedToken != tokenString {
-		return nil, nil, fmt.Errorf("token not found in whitelist")
+		return nil, fmt.Errorf("token not found in whitelist")
 	}
 
 	// Get user from database
 	var user models.User
 	result := s.db.DB.Where("email = ?", claims.Email).First(&user)
 	if result.Error != nil {
-		return nil, nil, fmt.Errorf("user not found")
+		return nil, fmt.Errorf("user not found")
 	}
 
-	return &VerifyAuthResult{
-			Success: true,
-			Message: "User retrieved successfully",
-			Data: &UserData{
-				ID:        user.ID,
-				Email:     user.Email,
-				Name:      user.Name,
-				Picture:   user.Picture,
-				CreatedAt: user.CreatedAt,
-			},
-		}, &UserData{
-			ID:        user.ID,
-			Email:     user.Email,
-			Name:      user.Name,
-			Picture:   user.Picture,
-			CreatedAt: user.CreatedAt,
-		}, nil
+	userData := &UserData{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Picture:   user.Picture,
+		CreatedAt: user.CreatedAt,
+	}
+
+	return &authv1.VerifyAuthResponse{
+		Success:   true,
+		Message:   "User retrieved successfully",
+		Data:      userDataToProto(userData),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // ParseToken parses a JWT token and returns the claims
@@ -284,7 +254,7 @@ func (s *Server) ParseToken(tokenString string) (*JWTClaims, error) {
 }
 
 // GetAuth retrieves user information by email
-func (s *Server) GetAuth(ctx context.Context, email string) (*VerifyAuthResult, error) {
+func (s *Server) GetAuth(ctx context.Context, email string) (*authv1.GetAuthResponse, error) {
 	// Get user from database
 	var user models.User
 	result := s.db.DB.Where("email = ?", email).First(&user)
@@ -294,15 +264,10 @@ func (s *Server) GetAuth(ctx context.Context, email string) (*VerifyAuthResult, 
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
-	return &VerifyAuthResult{
-		Success: true,
-		Message: "User retrieved successfully",
-		Data: &UserData{
-			ID:        user.ID,
-			Email:     user.Email,
-			Name:      user.Name,
-			Picture:   user.Picture,
-			CreatedAt: user.CreatedAt,
-		},
+	return &authv1.GetAuthResponse{
+		Success:   true,
+		Message:   "User retrieved successfully",
+		Data:      userDataToProto(&UserData{ID: user.ID, Email: user.Email, Name: user.Name, Picture: user.Picture, CreatedAt: user.CreatedAt}),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }

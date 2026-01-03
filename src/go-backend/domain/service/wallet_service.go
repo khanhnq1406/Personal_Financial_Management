@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"time"
 
-	walletv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
+	walletv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
@@ -28,7 +29,7 @@ func NewWalletService(walletRepo repository.WalletRepository, userRepo repositor
 }
 
 // CreateWallet creates a new wallet for a user.
-func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *walletv1.CreateWalletRequest) (*walletv1.Wallet, error) {
+func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *walletv1.CreateWalletRequest) (*walletv1.CreateWalletResponse, error) {
 	// Validate inputs
 	if err := validator.ID(userID); err != nil {
 		return nil, err
@@ -69,11 +70,16 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *wal
 		return nil, err
 	}
 
-	return s.mapper.ModelToProto(wallet), nil
+	return &walletv1.CreateWalletResponse{
+		Success:   true,
+		Message:   "Wallet created successfully",
+		Data:      s.mapper.ModelToProto(wallet),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // GetWallet retrieves a wallet by ID, ensuring it belongs to the user.
-func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestingUserID int32) (*walletv1.Wallet, error) {
+func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestingUserID int32) (*walletv1.GetWalletResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -86,11 +92,16 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 		return nil, err
 	}
 
-	return s.mapper.ModelToProto(wallet), nil
+	return &walletv1.GetWalletResponse{
+		Success:   true,
+		Message:   "Wallet retrieved successfully",
+		Data:      s.mapper.ModelToProto(wallet),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // ListWallets retrieves all wallets for a user with pagination.
-func (s *walletService) ListWallets(ctx context.Context, userID int32, params types.PaginationParams) (*WalletListResult, error) {
+func (s *walletService) ListWallets(ctx context.Context, userID int32, params types.PaginationParams) (*walletv1.ListWalletsResponse, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
 	}
@@ -112,14 +123,17 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 	protoWallets := s.mapper.ModelSliceToProto(wallets)
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
-	return &WalletListResult{
-		Wallets:    protoWallets,
+	return &walletv1.ListWalletsResponse{
+		Success:   true,
+		Message:   "Wallets retrieved successfully",
+		Wallets:   protoWallets,
 		Pagination: s.mapper.PaginationResultToProto(paginationResult),
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
 // UpdateWallet updates a wallet's name.
-func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.UpdateWalletRequest) (*walletv1.Wallet, error) {
+func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.UpdateWalletRequest) (*walletv1.UpdateWalletResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -143,29 +157,42 @@ func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID
 		return nil, err
 	}
 
-	return s.mapper.ModelToProto(wallet), nil
+	return &walletv1.UpdateWalletResponse{
+		Success:   true,
+		Message:   "Wallet updated successfully",
+		Data:      s.mapper.ModelToProto(wallet),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // DeleteWallet deletes a wallet.
-func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID int32) error {
+func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID int32) (*walletv1.DeleteWalletResponse, error) {
 	if err := validator.ID(walletID); err != nil {
-		return err
+		return nil, err
 	}
 	if err := validator.ID(userID); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Verify ownership
 	_, err := s.walletRepo.GetByIDForUser(ctx, walletID, userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return s.walletRepo.Delete(ctx, walletID)
+	if err := s.walletRepo.Delete(ctx, walletID); err != nil {
+		return nil, err
+	}
+
+	return &walletv1.DeleteWalletResponse{
+		Success:   true,
+		Message:   "Wallet deleted successfully",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // AddFunds adds funds to a wallet.
-func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.AddFundsRequest) (*walletv1.Wallet, error) {
+func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.AddFundsRequest) (*walletv1.AddFundsResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -193,11 +220,16 @@ func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int
 		return nil, err
 	}
 
-	return s.mapper.ModelToProto(updated), nil
+	return &walletv1.AddFundsResponse{
+		Success:   true,
+		Message:   "Funds added successfully",
+		Data:      s.mapper.ModelToProto(updated),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // WithdrawFunds withdraws funds from a wallet.
-func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.WithdrawFundsRequest) (*walletv1.Wallet, error) {
+func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.WithdrawFundsRequest) (*walletv1.WithdrawFundsResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -230,11 +262,16 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 		return nil, err
 	}
 
-	return s.mapper.ModelToProto(updated), nil
+	return &walletv1.WithdrawFundsResponse{
+		Success:   true,
+		Message:   "Funds withdrawn successfully",
+		Data:      s.mapper.ModelToProto(updated),
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
 }
 
 // TransferFunds transfers funds between two wallets belonging to the same user.
-func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*TransferResult, error) {
+func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*walletv1.TransferFundsResponse, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
 	}
@@ -270,22 +307,22 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *wa
 	}
 
 	// Withdraw from source
-	updatedFrom, err := s.walletRepo.UpdateBalance(ctx, req.FromWalletId, -req.Amount.Amount)
+	_, err = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, -req.Amount.Amount)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add to destination
-	updatedTo, err := s.walletRepo.UpdateBalance(ctx, req.ToWalletId, req.Amount.Amount)
+	_, err = s.walletRepo.UpdateBalance(ctx, req.ToWalletId, req.Amount.Amount)
 	if err != nil {
 		// Attempt to rollback by refunding source
 		_, _ = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, req.Amount.Amount)
 		return nil, err
 	}
 
-	return &TransferResult{
-		FromWallet: s.mapper.ModelToProto(updatedFrom),
-		ToWallet:   s.mapper.ModelToProto(updatedTo),
-		Amount:     req.Amount,
+	return &walletv1.TransferFundsResponse{
+		Success:   true,
+		Message:   "Funds transferred successfully",
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }

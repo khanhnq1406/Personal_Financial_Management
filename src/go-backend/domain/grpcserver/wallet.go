@@ -2,13 +2,12 @@ package grpcserver
 
 import (
 	"context"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/domain/service"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 )
 
 // walletServer implements the WalletService gRPC interface
@@ -36,16 +35,7 @@ func (s *walletServer) GetWallet(ctx context.Context, req *protobufv1.GetWalletR
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	wallet, err := s.walletService.GetWallet(ctx, req.WalletId, userID)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-
-	return &protobufv1.GetWalletResponse{
-		Success:   true,
-		Data:      wallet,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.GetWallet(ctx, req.WalletId, userID)
 }
 
 // ListWallets retrieves all wallets for authenticated user with pagination
@@ -59,17 +49,7 @@ func (s *walletServer) ListWallets(ctx context.Context, req *protobufv1.ListWall
 	// Convert proto pagination params to service params
 	params := service.ProtoToPaginationParams(req.GetPagination())
 
-	result, err := s.walletService.ListWallets(ctx, userID, params)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.ListWalletsResponse{
-		Success:    true,
-		Wallets:    result.Wallets,
-		Pagination: result.Pagination,
-		Timestamp:  time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.ListWallets(ctx, userID, params)
 }
 
 // CreateWallet creates a new wallet
@@ -84,16 +64,7 @@ func (s *walletServer) CreateWallet(ctx context.Context, req *protobufv1.CreateW
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	wallet, err := s.walletService.CreateWallet(ctx, userID, req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.CreateWalletResponse{
-		Success:   true,
-		Data:      wallet,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.CreateWallet(ctx, userID, req)
 }
 
 // UpdateWallet updates wallet information
@@ -111,16 +82,7 @@ func (s *walletServer) UpdateWallet(ctx context.Context, req *protobufv1.UpdateW
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	wallet, err := s.walletService.UpdateWallet(ctx, req.WalletId, userID, req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.UpdateWalletResponse{
-		Success:   true,
-		Data:      wallet,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.UpdateWallet(ctx, req.WalletId, userID, req)
 }
 
 // DeleteWallet deletes a wallet
@@ -135,15 +97,7 @@ func (s *walletServer) DeleteWallet(ctx context.Context, req *protobufv1.DeleteW
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	err := s.walletService.DeleteWallet(ctx, req.WalletId, userID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.DeleteWalletResponse{
-		Success:   true,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.DeleteWallet(ctx, req.WalletId, userID)
 }
 
 // AddFunds adds funds to a wallet
@@ -161,16 +115,7 @@ func (s *walletServer) AddFunds(ctx context.Context, req *protobufv1.AddFundsReq
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	wallet, err := s.walletService.AddFunds(ctx, req.WalletId, userID, req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.AddFundsResponse{
-		Success:   true,
-		Data:      wallet,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.AddFunds(ctx, req.WalletId, userID, req)
 }
 
 // WithdrawFunds withdraws funds from a wallet
@@ -188,16 +133,7 @@ func (s *walletServer) WithdrawFunds(ctx context.Context, req *protobufv1.Withdr
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	wallet, err := s.walletService.WithdrawFunds(ctx, req.WalletId, userID, req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.WithdrawFundsResponse{
-		Success:   true,
-		Data:      wallet,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.WithdrawFunds(ctx, req.WalletId, userID, req)
 }
 
 // TransferFunds transfers funds between two wallets
@@ -218,16 +154,5 @@ func (s *walletServer) TransferFunds(ctx context.Context, req *protobufv1.Transf
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	result, err := s.walletService.TransferFunds(ctx, userID, req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.TransferFundsResponse{
-		Success:    true,
-		FromWallet: result.FromWallet,
-		ToWallet:   result.ToWallet,
-		Amount:     result.Amount,
-		Timestamp:  time.Now().Format(time.RFC3339),
-	}, nil
+	return s.walletService.TransferFunds(ctx, userID, req)
 }

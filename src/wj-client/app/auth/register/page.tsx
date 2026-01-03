@@ -28,10 +28,10 @@ export default function Register() {
   const [notification, setNotification] = useState(notificationSuccess);
   const handleGoogleLogin = async (credentialResponse: any) => {
     // eslint-disable-line @typescript-eslint/no-explicit-any
-    const result = await api.auth.register({ googleToken: credentialResponse.credential });
+    const result = await api.auth.register({ token: credentialResponse.credential });
     setState(RegisterState.Success);
 
-    if (result.success) {
+    if (result.data) {
       // Registration successful
       setNotification(notificationSuccess);
     } else {
@@ -41,7 +41,7 @@ export default function Register() {
           <Notification
             notification={{
               status: NotificationCode.ERROR,
-              message: result.message || "Opps, User Registration failed.",
+              message: "Opps, User Registration failed.",
               submessage: "Please try again",
             }}
           />

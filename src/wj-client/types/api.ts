@@ -1,140 +1,60 @@
 // ============================================================================
-// STANDARD API RESPONSE TYPES (Go Backend)
+// IMPORT GENERATED PROTOBUF TYPES
+// ============================================================================
+import type { Error, Money, PaginationParams, PaginationResult } from "@/gen/protobuf/v1/common";
+import type { User, LoginData } from "@/gen/protobuf/v1/auth";
+import type { Wallet } from "@/gen/protobuf/v1/wallet";
+
+// ============================================================================
+// GENERIC API RESPONSE TYPE (for api-client.ts)
 // ============================================================================
 
 /**
- * API Error Detail from Go backend
+ * Generic API Response type used by the low-level apiClient
  */
-export type ApiErrorDetail = {
-  code: string;
-  message: string;
-  details?: string;
-};
-
-/**
- * Standard API Response Structure
- * All API responses from Go backend follow this structure
- */
-export type ApiResponse<T = any> = {
+export type ApiResponse<T = unknown> = {
   success: boolean;
-  data?: T;
-  error?: ApiErrorDetail;
   message?: string;
-  timestamp: string;
+  error?: Error;
+  timestamp?: string;
   path?: string;
-};
-
-/**
- * API Error Response
- */
-export type ApiError = {
-  success: false;
-  error: ApiErrorDetail;
-  timestamp: string;
-  path?: string;
-};
-
-/**
- * Pagination Response
- */
-export type PaginationResult = {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
+  data?: T;
 };
 
 // ============================================================================
-// AUTH TYPES
+// RE-EXPORT COMMON TYPES FOR CONVENIENCE
+// ============================================================================
+
+export type { Money, PaginationParams, PaginationResult };
+export type { User, LoginData };
+export type { Wallet };
+
+// ============================================================================
+// API ERROR FROM GO BACKEND
 // ============================================================================
 
 /**
- * Authenticated User
+ * API Error from Go backend - uses generated protobuf Error type
  */
-export type AuthUser = {
-  id: number;
-  email: string;
-  name: string;
-  picture: string;
-  createdAt?: string;
-};
+export type ApiErrorDetail = Error;
 
 /**
- * Login Request
+ * Helper function to check if response is an error
  */
-export type LoginRequest = {
-  token: string;
-};
-
-/**
- * Login Response Data
- */
-export type LoginResponseData = {
-  accessToken: string;
-  email: string;
-  fullname: string;
-  picture: string;
-  createdAt?: string;
-};
-
-/**
- * Register Request
- */
-export type RegisterRequest = {
-  token: string;
-};
-
-/**
- * Logout Request
- */
-export type LogoutRequest = {
-  token: string;
-};
+export function isApiResponseError(response: { success: boolean; error?: Error }): response is { success: false; error: Error } {
+  return !response.success && response.error !== undefined;
+}
 
 // ============================================================================
-// WALLET TYPES
+// MONEY DISPLAY HELPER
 // ============================================================================
 
 /**
- * Wallet Entity
+ * Format Money for display (converts int64 cents to decimal string)
+ * @param money - Money object with amount in cents
+ * @returns Formatted string (e.g., "USD 123.45")
  */
-export type Wallet = {
-  id: number;
-  walletName: string;
-  balance: number;
-  userId: number;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-/**
- * Create Wallet Request
- */
-export type CreateWalletRequest = {
-  walletName: string;
-  initialBalance?: number;
-};
-
-/**
- * List Wallets Response Data
- */
-export type ListWalletsResponseData = {
-  pagination: PaginationResult;
-  wallets: Wallet[];
-};
-
-// ============================================================================
-// TRANSACTION TYPES
-// ============================================================================
-
-/**
- * Transaction Entity
- */
-export type Transaction = {
-  id: number;
-  amount: number;
-  description: string;
-  walletId: number;
-  userId: number;
-  createdAt: string;
-};
+export function formatMoney(money: Money): string {
+  const dollars = money.amount / 100;
+  return `${money.currency} ${dollars.toFixed(2)}`;
+}

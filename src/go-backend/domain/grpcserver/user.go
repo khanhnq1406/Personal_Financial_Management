@@ -2,13 +2,12 @@ package grpcserver
 
 import (
 	"context"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	protobufv1 "wealthjourney/gen/protobuf/v1"
 	"wealthjourney/domain/service"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 )
 
 // userServer implements the UserService gRPC interface
@@ -30,16 +29,7 @@ func (s *userServer) GetUser(ctx context.Context, req *protobufv1.GetUserRequest
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	user, err := s.userService.GetUser(ctx, req.UserId)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-
-	return &protobufv1.GetUserResponse{
-		Success:   true,
-		Data:      user,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.GetUser(ctx, req.UserId)
 }
 
 // GetUserByEmail retrieves a user by email
@@ -48,33 +38,14 @@ func (s *userServer) GetUserByEmail(ctx context.Context, req *protobufv1.GetUser
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
 
-	user, err := s.userService.GetUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-
-	return &protobufv1.GetUserByEmailResponse{
-		Success:   true,
-		Data:      user,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.GetUserByEmail(ctx, req.Email)
 }
 
 // ListUsers retrieves all users with pagination
 func (s *userServer) ListUsers(ctx context.Context, req *protobufv1.ListUsersRequest) (*protobufv1.ListUsersResponse, error) {
-	params := ProtoPaginationParams(req.GetPagination())
+	params := service.ProtoToPaginationParams(req.GetPagination())
 
-	users, pagination, err := s.userService.ListUsers(ctx, params)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.ListUsersResponse{
-		Success:    true,
-		Users:      users,
-		Pagination: DomainPaginationResult(*pagination),
-		Timestamp:  time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.ListUsers(ctx, params)
 }
 
 // CreateUser creates a new user
@@ -83,16 +54,7 @@ func (s *userServer) CreateUser(ctx context.Context, req *protobufv1.CreateUserR
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
 
-	user, err := s.userService.CreateUser(ctx, req.Email, req.Name, req.Picture)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.CreateUserResponse{
-		Success:   true,
-		Data:      user,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.CreateUser(ctx, req.Email, req.Name, req.Picture)
 }
 
 // UpdateUser updates user information
@@ -101,16 +63,7 @@ func (s *userServer) UpdateUser(ctx context.Context, req *protobufv1.UpdateUserR
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	user, err := s.userService.UpdateUser(ctx, req.UserId, req.Email, req.Name, req.Picture)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.UpdateUserResponse{
-		Success:   true,
-		Data:      user,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.UpdateUser(ctx, req.UserId, req.Email, req.Name, req.Picture)
 }
 
 // DeleteUser deletes a user
@@ -119,13 +72,5 @@ func (s *userServer) DeleteUser(ctx context.Context, req *protobufv1.DeleteUserR
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	err := s.userService.DeleteUser(ctx, req.UserId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &protobufv1.DeleteUserResponse{
-		Success:   true,
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	return s.userService.DeleteUser(ctx, req.UserId)
 }

@@ -1,13 +1,15 @@
 import { resources } from "@/app/constants";
 import Image from "next/image";
-import { memo } from "react";
-import { useQueryListWallets } from "@/utils/generated/hooks";
+import { UseQueryResult } from "@tanstack/react-query";
+import { ListWalletsResponse } from "@/gen/protobuf/v1/wallet";
+import { ErrorType } from "@/utils/generated/hooks.types";
 
-export const Wallets = memo(function Wallets() {
-  const { data, isLoading } = useQueryListWallets(
-    { pagination: { page: 1, pageSize: 10, orderBy: "", order: "" } }
-  );
-
+type WalletsProps = {
+  getListWallets: UseQueryResult<ListWalletsResponse, ErrorType>;
+};
+const Wallets: React.FC<WalletsProps> = (props) => {
+  const { getListWallets } = props;
+  const { isLoading, data } = getListWallets;
   if (isLoading) {
     return <div className="px-2 py-1">Loading...</div>;
   }
@@ -16,9 +18,10 @@ export const Wallets = memo(function Wallets() {
     <div className="px-2 py-1">
       {data?.wallets && data.wallets.length > 0 ? (
         data.wallets.map((wallet) => {
-          const balance = wallet.balance
-            ? Number(wallet.balance.amount) / 100
-            : 0;
+          const balanceAmount = wallet.balance?.amount ?? 0;
+          const balance = balanceAmount > 0 ? Number(balanceAmount) / 100 : 0;
+          const currency = wallet.balance?.currency || "USD";
+
           return (
             <div
               className="flex flex-nowrap justify-between m-3"
@@ -34,7 +37,8 @@ export const Wallets = memo(function Wallets() {
                 <div className="font-semibold">{wallet.walletName}</div>
               </div>
               <div className="font-semibold">
-                ${balance.toFixed(2)}
+                {currency === "USD" ? "$" : ""}
+                {balance.toFixed(2)}
               </div>
             </div>
           );
@@ -46,4 +50,6 @@ export const Wallets = memo(function Wallets() {
       )}
     </div>
   );
-});
+};
+
+export { Wallets };

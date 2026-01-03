@@ -3,12 +3,17 @@
  * Provides authentication state and operations using generated hooks
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useMutationLogin, useMutationRegister, useMutationLogout, useMutationVerifyAuth } from '@/utils/generated/hooks';
-import { LOCAL_STORAGE_TOKEN_NAME } from '@/app/constants';
-import type { User } from '@/gen/protobuf/v1/auth';
+import { useState, useEffect, useCallback } from "react";
+import {
+  useMutationLogin,
+  useMutationRegister,
+  useMutationLogout,
+  useMutationVerifyAuth,
+} from "@/utils/generated/hooks";
+import { LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
+import type { User } from "@/gen/protobuf/v1/auth";
 
 export interface AuthState {
   user: User | null;
@@ -20,8 +25,8 @@ export interface AuthState {
 
 export interface AuthActions {
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: (googleToken: string) => Promise<boolean>;
-  register: (googleToken: string) => Promise<boolean>;
+  loginWithGoogle: (token: string) => Promise<boolean>;
+  register: (token: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -29,22 +34,24 @@ export interface AuthActions {
 
 // Helper functions for token management
 const getStoredToken = (): string | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
 };
 
 const setStoredToken = (token: string): void => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, token);
 };
 
 const clearStoredToken = (): void => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   localStorage.removeItem(LOCAL_STORAGE_TOKEN_NAME);
 };
 
 // Helper to extract user and token from response
-const extractAuthFromResponse = (response: any): { user: User | null; token: string | null } => {
+const extractAuthFromResponse = (
+  response: any
+): { user: User | null; token: string | null } => {
   // Adjust based on your actual API response structure
   const token = response?.accessToken || response?.token || getStoredToken();
   const user = response?.user || response?.userId ? response : null;
@@ -184,41 +191,50 @@ export function useAuth(): AuthState & AuthActions {
     };
 
     initAuth();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
    * Login with email and password (placeholder - adjust based on API)
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const login = useCallback(async (_email: string, _password: string): Promise<boolean> => {
-    setState((prev) => ({ ...prev, error: 'Email/password login not implemented. Use Google OAuth.' }));
+  const login = useCallback(async (): Promise<boolean> => {
+    setState((prev) => ({
+      ...prev,
+      error: "Email/password login not implemented. Use Google OAuth.",
+    }));
     return false;
   }, []);
 
   /**
    * Login with Google token
    */
-  const loginWithGoogle = useCallback(async (googleToken: string): Promise<boolean> => {
-    try {
-      await loginMutation.mutateAsync({ googleToken });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [loginMutation]);
+  const loginWithGoogle = useCallback(
+    async (token: string): Promise<boolean> => {
+      try {
+        await loginMutation.mutateAsync({ token });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [loginMutation]
+  );
 
   /**
    * Register new user with Google token
    */
-  const register = useCallback(async (googleToken: string): Promise<boolean> => {
-    try {
-      await registerMutation.mutateAsync({ googleToken });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [registerMutation]);
+  const register = useCallback(
+    async (token: string): Promise<boolean> => {
+      try {
+        await registerMutation.mutateAsync({ token });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [registerMutation]
+  );
 
   /**
    * Logout current user
@@ -270,10 +286,18 @@ export function useAuth(): AuthState & AuthActions {
 
   return {
     ...state,
-    isLoading: state.isLoading || loginMutation.isPending || registerMutation.isPending ||
-               logoutMutation.isPending || verifyAuth.isPending,
-    error: (loginMutation.error?.message || registerMutation.error?.message ||
-            logoutMutation.error?.message || verifyAuth.error?.message || state.error),
+    isLoading:
+      state.isLoading ||
+      loginMutation.isPending ||
+      registerMutation.isPending ||
+      logoutMutation.isPending ||
+      verifyAuth.isPending,
+    error:
+      loginMutation.error?.message ||
+      registerMutation.error?.message ||
+      logoutMutation.error?.message ||
+      verifyAuth.error?.message ||
+      state.error,
     login,
     loginWithGoogle,
     register,

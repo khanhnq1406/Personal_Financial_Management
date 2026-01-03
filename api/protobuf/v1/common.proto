@@ -2,38 +2,46 @@ syntax = "proto3";
 
 package wealthjourney.common.v1;
 
-option go_package = "wealthjourney/gen/protobuf/v1";
+option go_package = "protobuf/v1";
+
+import "google/protobuf/any.proto";
+
+// Response wrapper for all API endpoints
+message Response {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Error error = 3 [json_name = "error"];
+  string timestamp = 4 [json_name = "timestamp"];
+  string path = 5 [json_name = "path"];
+  google.protobuf.Any data = 6 [json_name = "data"];
+}
+
+// Standard error structure
+message Error {
+  string code = 1 [json_name = "code"];
+  string message = 2 [json_name = "message"];
+  string details = 3 [json_name = "details"];
+}
 
 // Money represents a monetary amount with currency.
 // Using int64 for amount in smallest currency unit (cents).
 message Money {
-  int64 amount = 1;      // Amount in smallest currency unit (cents)
-  string currency = 2;   // ISO 4217 currency code (e.g., "USD", "EUR")
+  int64 amount = 1 [json_name = "amount"];      // Amount in smallest currency unit (cents)
+  string currency = 2 [json_name = "currency"];   // ISO 4217 currency code (e.g., "USD", "EUR")
 }
 
 // PaginationParams for list requests.
 message PaginationParams {
-  int32 page = 1;        // Page number (1-indexed)
-  int32 page_size = 2;   // Items per page
-  string order_by = 3;   // Field to order by
-  string order = 4;      // "asc" or "desc"
+  int32 page = 1 [json_name = "page"];        // Page number (1-indexed)
+  int32 pageSize = 2 [json_name = "pageSize"];   // Items per page
+  string orderBy = 3 [json_name = "orderBy"];   // Field to order by
+  string order = 4 [json_name = "order"];      // "asc" or "desc"
 }
 
 // PaginationResult for list responses.
 message PaginationResult {
-  int32 page = 1;        // Current page number
-  int32 page_size = 2;   // Items per page
-  int32 total_count = 3; // Total number of items
-  int32 total_pages = 4; // Total number of pages
-}
-
-// APIResponse wrapper for standard API responses.
-message APIResponse {
-  bool success = 1;
-  string message = 2;
-  string error_code = 3;      // Application-specific error code
-  string error_message = 4;   // User-friendly error message
-  string error_details = 5;   // Additional error details (optional)
-  string timestamp = 6;
-  string path = 7;
+  int32 page = 1 [json_name = "page"];        // Current page number
+  int32 pageSize = 2 [json_name = "pageSize"];   // Items per page
+  int32 totalCount = 3 [json_name = "totalCount"]; // Total number of items
+  int32 totalPages = 4 [json_name = "totalPages"]; // Total number of pages
 }

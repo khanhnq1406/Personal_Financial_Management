@@ -1,6 +1,17 @@
 package types
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+)
+
+// protoMessage is used for type assertion to detect protobuf messages
+type protoMessage interface {
+	ProtoMessage()
+}
 
 // APIResponse is a standardized response wrapper for all API endpoints.
 type APIResponse struct {
@@ -10,6 +21,46 @@ type APIResponse struct {
 	Message   string      `json:"message,omitempty"`
 	Timestamp string      `json:"timestamp"`
 	Path      string      `json:"path,omitempty"`
+}
+
+// MarshalJSON implements json.Marshaler for APIResponse.
+// It uses protojson for protobuf messages to respect json_name option (camelCase).
+func (r APIResponse) MarshalJSON() ([]byte, error) {
+	// Define a local type to avoid infinite recursion
+	type alias APIResponse
+
+	// If Data is a protobuf message, marshal it with protojson
+	if r.Data != nil {
+		if pm, ok := r.Data.(protoMessage); ok {
+			opts := protojson.MarshalOptions{
+				EmitUnpopulated: false,
+				UseProtoNames:   false, // Use json_name instead of protobuf field names
+			}
+			protoJSONBytes, err := opts.Marshal(pm.(proto.Message))
+			if err != nil {
+				return nil, err
+			}
+			// Create a new response with raw JSON data
+			return json.Marshal(struct {
+				Success   bool            `json:"success"`
+				Data      json.RawMessage `json:"data,omitempty"`
+				Error     *APIError       `json:"error,omitempty"`
+				Message   string          `json:"message,omitempty"`
+				Timestamp string          `json:"timestamp"`
+				Path      string          `json:"path,omitempty"`
+			}{
+				Success:   r.Success,
+				Data:      json.RawMessage(protoJSONBytes),
+				Error:     r.Error,
+				Message:   r.Message,
+				Timestamp: r.Timestamp,
+				Path:      r.Path,
+			})
+		}
+	}
+
+	// For non-protobuf data, use standard JSON marshaling
+	return json.Marshal(alias(r))
 }
 
 // NewSuccessResponse creates a successful API response.

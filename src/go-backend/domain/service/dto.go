@@ -1,7 +1,7 @@
 package service
 
 import (
-	protobufv1 "wealthjourney/gen/protobuf/v1"
+	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
 )
 
@@ -26,19 +26,6 @@ type WithdrawFundsRequest = protobufv1.WithdrawFundsRequest
 
 // TransferFundsRequest uses proto TransferFundsRequest from gen/protobuf/v1/wallet.pb.go
 type TransferFundsRequest = protobufv1.TransferFundsRequest
-
-// TransferResult wraps proto TransferFundsResponse for service layer use
-type TransferResult struct {
-	FromWallet *protobufv1.Wallet
-	ToWallet   *protobufv1.Wallet
-	Amount     *protobufv1.Money
-}
-
-// WalletListResult represents a paginated list of wallets.
-type WalletListResult struct {
-	Wallets    []*protobufv1.Wallet
-	Pagination *protobufv1.PaginationResult
-}
 
 // Helper functions for working with proto types in service layer
 

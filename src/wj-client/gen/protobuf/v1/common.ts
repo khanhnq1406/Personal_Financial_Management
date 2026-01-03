@@ -7,8 +7,26 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Any } from "../../google/protobuf/any";
 
 export const protobufPackage = "wealthjourney.common.v1";
+
+/** Response wrapper for all API endpoints */
+export interface Response {
+  success: boolean;
+  message: string;
+  error: Error | undefined;
+  timestamp: string;
+  path: string;
+  data: Any | undefined;
+}
+
+/** Standard error structure */
+export interface Error {
+  code: string;
+  message: string;
+  details: string;
+}
 
 /**
  * Money represents a monetary amount with currency.
@@ -16,7 +34,7 @@ export const protobufPackage = "wealthjourney.common.v1";
  */
 export interface Money {
   /** Amount in smallest currency unit (cents) */
-  amount: Long;
+  amount: number;
   /** ISO 4217 currency code (e.g., "USD", "EUR") */
   currency: string;
 }
@@ -45,27 +63,236 @@ export interface PaginationResult {
   totalPages: number;
 }
 
-/** APIResponse wrapper for standard API responses. */
-export interface APIResponse {
-  success: boolean;
-  message: string;
-  /** Application-specific error code */
-  errorCode: string;
-  /** User-friendly error message */
-  errorMessage: string;
-  /** Additional error details (optional) */
-  errorDetails: string;
-  timestamp: string;
-  path: string;
+function createBaseResponse(): Response {
+  return { success: false, message: "", error: undefined, timestamp: "", path: "", data: undefined };
 }
 
+export const Response = {
+  encode(message: Response, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.error !== undefined) {
+      Error.encode(message.error, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    if (message.path !== "") {
+      writer.uint32(42).string(message.path);
+    }
+    if (message.data !== undefined) {
+      Any.encode(message.data, writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Response {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.error = Error.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.path = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.data = Any.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Response {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
+      data: isSet(object.data) ? Any.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: Response): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.error !== undefined) {
+      obj.error = Error.toJSON(message.error);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    if (message.path !== "") {
+      obj.path = message.path;
+    }
+    if (message.data !== undefined) {
+      obj.data = Any.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Response>): Response {
+    return Response.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Response>): Response {
+    const message = createBaseResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.error = (object.error !== undefined && object.error !== null) ? Error.fromPartial(object.error) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    message.path = object.path ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Any.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseError(): Error {
+  return { code: "", message: "", details: "" };
+}
+
+export const Error = {
+  encode(message: Error, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.details !== "") {
+      writer.uint32(26).string(message.details);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Error {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseError();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.details = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Error {
+    return {
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      details: isSet(object.details) ? globalThis.String(object.details) : "",
+    };
+  },
+
+  toJSON(message: Error): unknown {
+    const obj: any = {};
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.details !== "") {
+      obj.details = message.details;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Error>): Error {
+    return Error.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Error>): Error {
+    const message = createBaseError();
+    message.code = object.code ?? "";
+    message.message = object.message ?? "";
+    message.details = object.details ?? "";
+    return message;
+  },
+};
+
 function createBaseMoney(): Money {
-  return { amount: Long.ZERO, currency: "" };
+  return { amount: 0, currency: "" };
 }
 
 export const Money = {
   encode(message: Money, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (!message.amount.equals(Long.ZERO)) {
+    if (message.amount !== 0) {
       writer.uint32(8).int64(message.amount);
     }
     if (message.currency !== "") {
@@ -86,7 +313,7 @@ export const Money = {
             break;
           }
 
-          message.amount = reader.int64() as Long;
+          message.amount = longToNumber(reader.int64() as Long);
           continue;
         case 2:
           if (tag !== 18) {
@@ -106,15 +333,15 @@ export const Money = {
 
   fromJSON(object: any): Money {
     return {
-      amount: isSet(object.amount) ? Long.fromValue(object.amount) : Long.ZERO,
+      amount: isSet(object.amount) ? globalThis.Number(object.amount) : 0,
       currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
     };
   },
 
   toJSON(message: Money): unknown {
     const obj: any = {};
-    if (!message.amount.equals(Long.ZERO)) {
-      obj.amount = (message.amount || Long.ZERO).toString();
+    if (message.amount !== 0) {
+      obj.amount = Math.round(message.amount);
     }
     if (message.currency !== "") {
       obj.currency = message.currency;
@@ -127,9 +354,7 @@ export const Money = {
   },
   fromPartial(object: DeepPartial<Money>): Money {
     const message = createBaseMoney();
-    message.amount = (object.amount !== undefined && object.amount !== null)
-      ? Long.fromValue(object.amount)
-      : Long.ZERO;
+    message.amount = object.amount ?? 0;
     message.currency = object.currency ?? "";
     return message;
   },
@@ -343,163 +568,24 @@ export const PaginationResult = {
   },
 };
 
-function createBaseAPIResponse(): APIResponse {
-  return { success: false, message: "", errorCode: "", errorMessage: "", errorDetails: "", timestamp: "", path: "" };
-}
-
-export const APIResponse = {
-  encode(message: APIResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
-    }
-    if (message.errorCode !== "") {
-      writer.uint32(26).string(message.errorCode);
-    }
-    if (message.errorMessage !== "") {
-      writer.uint32(34).string(message.errorMessage);
-    }
-    if (message.errorDetails !== "") {
-      writer.uint32(42).string(message.errorDetails);
-    }
-    if (message.timestamp !== "") {
-      writer.uint32(50).string(message.timestamp);
-    }
-    if (message.path !== "") {
-      writer.uint32(58).string(message.path);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): APIResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAPIResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.errorCode = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.errorMessage = reader.string();
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.errorDetails = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.timestamp = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.path = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): APIResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-      errorCode: isSet(object.errorCode) ? globalThis.String(object.errorCode) : "",
-      errorMessage: isSet(object.errorMessage) ? globalThis.String(object.errorMessage) : "",
-      errorDetails: isSet(object.errorDetails) ? globalThis.String(object.errorDetails) : "",
-      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
-      path: isSet(object.path) ? globalThis.String(object.path) : "",
-    };
-  },
-
-  toJSON(message: APIResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    if (message.errorCode !== "") {
-      obj.errorCode = message.errorCode;
-    }
-    if (message.errorMessage !== "") {
-      obj.errorMessage = message.errorMessage;
-    }
-    if (message.errorDetails !== "") {
-      obj.errorDetails = message.errorDetails;
-    }
-    if (message.timestamp !== "") {
-      obj.timestamp = message.timestamp;
-    }
-    if (message.path !== "") {
-      obj.path = message.path;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<APIResponse>): APIResponse {
-    return APIResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<APIResponse>): APIResponse {
-    const message = createBaseAPIResponse();
-    message.success = object.success ?? false;
-    message.message = object.message ?? "";
-    message.errorCode = object.errorCode ?? "";
-    message.errorMessage = object.errorMessage ?? "";
-    message.errorDetails = object.errorDetails ?? "";
-    message.timestamp = object.timestamp ?? "";
-    message.path = object.path ?? "";
-    return message;
-  },
-};
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(long: Long): number {
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (long.lt(globalThis.Number.MIN_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

@@ -1,9 +1,13 @@
 package handler
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
@@ -11,12 +15,36 @@ import (
 
 // Success sends a successful response with data.
 func Success(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, types.NewSuccessResponse(data))
+	// Explicitly marshal to ensure custom MarshalJSON is called
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(types.APIError{
+			Code:       "MARSHAL_ERROR",
+			Message:    "failed to marshal response",
+			StatusCode: http.StatusInternalServerError,
+		}))
+		return
+	}
+	c.Header("Content-Type", "application/json")
+	c.Writer.WriteHeader(http.StatusOK)
+	c.Writer.Write(jsonBytes)
 }
 
 // Created sends a 201 created response with data.
 func Created(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusCreated, types.NewSuccessResponse(data))
+	// Explicitly marshal to ensure custom MarshalJSON is called
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(types.APIError{
+			Code:       "MARSHAL_ERROR",
+			Message:    "failed to marshal response",
+			StatusCode: http.StatusInternalServerError,
+		}))
+		return
+	}
+	c.Header("Content-Type", "application/json")
+	c.Writer.WriteHeader(http.StatusCreated)
+	c.Writer.Write(jsonBytes)
 }
 
 // NoContent sends a 204 no content response.
@@ -144,7 +172,26 @@ func GetUserEmail(c *gin.Context) (string, bool) {
 }
 
 // BindAndValidate binds JSON request body and validates it.
+// For protobuf messages, it uses protojson to respect json_name (camelCase).
 func BindAndValidate(c *gin.Context, obj interface{}) error {
+	// Check if obj is a protobuf message
+	if pm, ok := obj.(proto.Message); ok {
+		// Use protojson for protobuf messages (respects json_name)
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			return apperrors.NewValidationErrorWithCause("failed to read request body", err)
+		}
+		opts := protojson.UnmarshalOptions{
+			AllowPartial:   false,
+			DiscardUnknown: false,
+		}
+		if err := opts.Unmarshal(body, pm); err != nil {
+			return apperrors.NewValidationErrorWithCause("invalid request body format", err)
+		}
+		return nil
+	}
+
+	// For non-protobuf objects, use standard JSON binding
 	if err := c.ShouldBindJSON(obj); err != nil {
 		return apperrors.NewValidationErrorWithCause("invalid request body", err)
 	}
