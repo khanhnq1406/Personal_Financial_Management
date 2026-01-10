@@ -71,6 +71,12 @@ service WalletService {
   }
 }
 
+// Enums
+enum WalletType {
+  BASIC = 0;
+  INVESTMENT = 1;
+}
+
 // Wallet message
 message Wallet {
   int32 id = 1 [json_name = "id"];
@@ -79,6 +85,7 @@ message Wallet {
   wealthjourney.common.v1.Money balance = 4 [json_name = "balance"];
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
+  WalletType type = 7 [json_name = "type"];
 }
 
 // GetWallet request
@@ -101,6 +108,7 @@ message WalletListData {
 message CreateWalletRequest {
   string walletName = 1 [json_name = "walletName"];
   wealthjourney.common.v1.Money initialBalance = 2 [json_name = "initialBalance"];
+  WalletType type = 3 [json_name = "type"];
 }
 
 // UpdateWallet request

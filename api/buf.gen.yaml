@@ -12,8 +12,15 @@ plugins:
     opt:
       - paths=source_relative
 
+  # gRPC-Gateway plugin (generates REST reverse proxy .gw.go files)
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.27.4
+    out: ../src/go-backend
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+
   # TypeScript plugin (ts-proto) for types only (no gRPC - for Vercel/REST)
-  - plugin: ts_proto
+  - plugin: buf.build/community/stephenh-ts-proto
     out: ../src/wj-client/gen
     opt:
       - outputServices=false

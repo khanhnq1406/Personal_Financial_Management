@@ -5,12 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/domain/service"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
+	protobufv1 "wealthjourney/protobuf/v1"
 )
 
 // WalletHandlers handles wallet-related HTTP requests.

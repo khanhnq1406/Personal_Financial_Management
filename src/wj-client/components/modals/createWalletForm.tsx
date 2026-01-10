@@ -1,9 +1,16 @@
 import { ModalType } from "@/app/constants";
 import { Dispatch, SetStateAction, useEffect } from "react";
-import { CreateWalletType } from "./baseModal";
+import {
+  CreateWalletType,
+  AddTransactionType,
+  TransferMoneyType,
+} from "./baseModal";
+import { WalletType } from "@/gen/protobuf/v1/wallet";
 
 interface CreateWalletFormProps {
-  setInput: Dispatch<SetStateAction<CreateWalletType>>;
+  setInput: Dispatch<
+    SetStateAction<CreateWalletType | AddTransactionType | TransferMoneyType>
+  >;
 }
 
 export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({
@@ -18,7 +25,8 @@ export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({
   }, []);
   return (
     <div>
-      <div>Name<span className="required">*</span>
+      <div>
+        Name<span className="required">*</span>
       </div>
       <input
         className="p-2 drop-shadow-round rounded-lg w-full mt-1 mb-2"
@@ -44,6 +52,21 @@ export const CreateWalletForm: React.FC<CreateWalletFormProps> = ({
           }))
         }
       />
+
+      <div>Wallet Type</div>
+      <select
+        defaultValue={WalletType.BASIC}
+        className="p-2 drop-shadow-round rounded-lg w-full mt-1 mb-2"
+        onChange={(e) =>
+          setInput((input) => ({
+            ...input,
+            walletType: e.target.value,
+          }))
+        }
+      >
+        <option value={WalletType.BASIC}>Basic</option>
+        <option value={WalletType.INVESTMENT}>Investment</option>
+      </select>
     </div>
   );
 };

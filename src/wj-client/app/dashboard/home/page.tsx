@@ -55,7 +55,7 @@ export default function Home() {
         <div className="grid divide-y-2">
           <User />
           <TotalBalance />
-          <FunctionalButton />
+          <FunctionalButton onRefreshWallets={getListWallets.refetch} />
         </div>
       </div>
     </div>

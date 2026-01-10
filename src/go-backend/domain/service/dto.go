@@ -1,8 +1,8 @@
 package service
 
 import (
-	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
+	protobufv1 "wealthjourney/protobuf/v1"
 )
 
 // Proto type aliases for user DTOs

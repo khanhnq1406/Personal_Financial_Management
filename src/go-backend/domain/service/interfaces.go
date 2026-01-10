@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	walletv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
+	walletv1 "wealthjourney/protobuf/v1"
 )
 
 // WalletService defines the interface for wallet business logic.

@@ -4,7 +4,13 @@ import { openModal } from "@/redux/actions";
 import { store } from "@/redux/store";
 import { memo } from "react";
 
-export const FunctionalButton = memo(function FunctionalButton() {
+type FunctionalButtonProps = {
+  onRefreshWallets?: () => void;
+};
+
+export const FunctionalButton = memo(function FunctionalButton({
+  onRefreshWallets,
+}: FunctionalButtonProps) {
   return (
     <div className="py-5">
       <div className="mb-5">
@@ -12,7 +18,11 @@ export const FunctionalButton = memo(function FunctionalButton() {
           type={ButtonType.PRIMARY}
           onClick={() => {
             store.dispatch(
-              openModal({ isOpen: true, type: ModalType.ADD_TRANSACTION })
+              openModal({
+                isOpen: true,
+                type: ModalType.ADD_TRANSACTION,
+                onSuccess: onRefreshWallets,
+              })
             );
           }}
         >
@@ -24,7 +34,11 @@ export const FunctionalButton = memo(function FunctionalButton() {
           type={ButtonType.SECONDARY}
           onClick={() => {
             store.dispatch(
-              openModal({ isOpen: true, type: ModalType.TRANSFER_MONEY })
+              openModal({
+                isOpen: true,
+                type: ModalType.TRANSFER_MONEY,
+                onSuccess: onRefreshWallets,
+              })
             );
           }}
         >
@@ -36,7 +50,11 @@ export const FunctionalButton = memo(function FunctionalButton() {
           type={ButtonType.SECONDARY}
           onClick={() => {
             store.dispatch(
-              openModal({ isOpen: true, type: ModalType.CREATE_WALLET })
+              openModal({
+                isOpen: true,
+                type: ModalType.CREATE_WALLET,
+                onSuccess: onRefreshWallets,
+              })
             );
           }}
         >

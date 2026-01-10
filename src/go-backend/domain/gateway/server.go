@@ -9,18 +9,19 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	grpcv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/domain/grpcserver"
+	grpcv1 "wealthjourney/protobuf/v1"
 )
 
 // Server wraps the gRPC-Gateway HTTP server
 type Server struct {
-	mux         *runtime.ServeMux
-	server      *http.Server
-	grpcPort    string
-	httpPort    string
+	mux          *runtime.ServeMux
+	server       *http.Server
+	grpcPort     string
+	httpPort     string
 	grpcDialOpts []grpc.DialOption
 }
 
@@ -32,9 +33,17 @@ type Config struct {
 
 // NewServer creates a new gRPC-Gateway server
 func NewServer(cfg Config) *Server {
+	// Create a custom JSON marshaler that emits default values
+	marshaler := &runtime.JSONPb{
+		MarshalOptions: protojson.MarshalOptions{
+			EmitUnpopulated: true, // Emit unpopulated fields (like type=0) in JSON
+		},
+	}
+
 	// Create a runtime mux for the gateway
 	mux := runtime.NewServeMux(
 		runtime.WithForwardResponseOption(setHeader),
+		runtime.WithMarshalerOption(marshaler.ContentType(nil), marshaler),
 	)
 
 	// gRPC dial options
@@ -43,9 +52,9 @@ func NewServer(cfg Config) *Server {
 	}
 
 	return &Server{
-		mux:         mux,
-		grpcPort:    cfg.GRPCPort,
-		httpPort:    cfg.HTTPPort,
+		mux:          mux,
+		grpcPort:     cfg.GRPCPort,
+		httpPort:     cfg.HTTPPort,
 		grpcDialOpts: grpcDialOpts,
 	}
 }

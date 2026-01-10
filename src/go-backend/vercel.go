@@ -16,10 +16,10 @@ import (
 	grpcserver "wealthjourney/domain/grpcserver"
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
-	grpcv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
+	grpcv1 "wealthjourney/protobuf/v1"
 )
 
 // corsWrapper wraps an http.Handler to add CORS headers

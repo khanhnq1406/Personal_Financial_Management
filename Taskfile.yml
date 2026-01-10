@@ -1,0 +1,177 @@
+# https://taskfile.dev
+version: '3'
+
+vars:
+  BACKEND_DIR: "./src/go-backend"
+  FRONTEND_DIR: "./src/wj-client"
+  FRONTEND_GEN_DIR: "./src/wj-client/gen"
+  API_DIR: "./api"
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+
+  # Backend tasks
+  backend:dev:
+    desc: "Start backend in development mode (with Vercel dev)"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make dev
+    interactive: true
+
+  backend:start:
+    desc: "Start backend standalone server"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make run
+    interactive: true
+
+  backend:build:
+    desc: "Build backend standalone server"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make build
+
+  backend:test:
+    desc: "Run backend tests"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make test
+
+  backend:deps:
+    desc: "Install backend dependencies"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make deps
+
+  # Frontend tasks
+  frontend:dev:
+    desc: "Start frontend in development mode"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run dev
+    interactive: true
+
+  frontend:build:
+    desc: "Build frontend for production"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run build
+
+  frontend:start:
+    desc: "Start frontend production server"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run start
+    interactive: true
+
+  frontend:lint:
+    desc: "Run frontend linter"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run lint
+
+  # Protobuf tasks
+  proto:build:
+    desc: "Generate Go code from protobuf files (outputs to ../src/go-backend)"
+    dir: "{{.API_DIR}}"
+    cmds:
+      - buf generate --template buf.gen.go.yaml
+
+  proto:clean:
+    desc: "Remove generated protobuf code from both backend and frontend"
+    cmds:
+      - echo "Removing generated Go code from backend..."
+      - rm -rf {{.BACKEND_DIR}}/gen/protobuf
+      - echo "Removing generated TypeScript code from frontend..."
+      - rm -rf {{.FRONTEND_GEN_DIR}}
+      - echo "Clean complete!"
+
+  proto:types:
+    desc: "Generate TypeScript types from protobuf files (outputs to ../src/wj-client/gen)"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run generate:types
+
+  proto:api:
+    desc: "Generate REST API client from protobuf files"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run generate:api
+
+  proto:all:
+    desc: "Generate all protobuf code (Go backend + TypeScript frontend)"
+    cmds:
+      - echo "Generating protobuf code for backend..."
+      - task: proto:build
+      - echo "Generating protobuf code for frontend..."
+      - task: proto:types
+      - echo "Running frontend REST API generation..."
+      - task: proto:api
+      - echo "Protobuf generation complete!"
+
+  # Combined tasks
+  dev:
+    desc: "Start both backend and frontend in development mode"
+    cmds:
+      - echo "Starting backend and frontend in development mode..."
+      - task: backend:dev &
+      - task: frontend:dev
+    interactive: true
+
+  dev:backend:
+    desc: "Start only backend in development mode"
+    cmds:
+      - task: backend:dev
+    interactive: true
+
+  dev:frontend:
+    desc: "Start only frontend in development mode"
+    cmds:
+      - task: frontend:dev
+    interactive: true
+
+  build:all:
+    desc: "Build both backend and frontend"
+    cmds:
+      - task: backend:build
+      - task: frontend:build
+
+  test:all:
+    desc: "Run all tests"
+    cmds:
+      - task: backend:test
+      - task: frontend:lint
+
+  clean:
+    desc: "Clean all build artifacts"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make clean
+
+  setup:
+    desc: "Install all dependencies (backend + frontend)"
+    cmds:
+      - task: backend:deps
+      - task: frontend:install
+
+  frontend:install:
+    desc: "Install frontend dependencies"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm install
+
+  # Deployment tasks
+  deploy:backend:
+    desc: "Deploy backend to production (Vercel)"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make deploy
+
+  deploy:backend:preview:
+    desc: "Deploy backend to preview environment (Vercel)"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - make deploy-preview

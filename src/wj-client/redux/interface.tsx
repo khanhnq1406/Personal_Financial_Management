@@ -17,6 +17,7 @@ export interface AuthAction extends ReduxAction {
 export interface ModalPayload {
   isOpen: boolean;
   type: string; // 'Add' or 'Transfer' or 'Create'
+  onSuccess?: () => void; // Callback to refetch data after successful mutation
 }
 export interface ModalAction extends ReduxAction {
   payload: ModalPayload;

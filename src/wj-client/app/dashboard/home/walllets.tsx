@@ -3,6 +3,7 @@ import Image from "next/image";
 import { UseQueryResult } from "@tanstack/react-query";
 import { ListWalletsResponse } from "@/gen/protobuf/v1/wallet";
 import { ErrorType } from "@/utils/generated/hooks.types";
+import { currencyFormatter } from "@/utils/currencyFormatter";
 
 type WalletsProps = {
   getListWallets: UseQueryResult<ListWalletsResponse, ErrorType>;
@@ -19,8 +20,6 @@ const Wallets: React.FC<WalletsProps> = (props) => {
       {data?.wallets && data.wallets.length > 0 ? (
         data.wallets.map((wallet) => {
           const balanceAmount = wallet.balance?.amount ?? 0;
-          const balance = balanceAmount > 0 ? Number(balanceAmount) / 100 : 0;
-          const currency = wallet.balance?.currency || "USD";
 
           return (
             <div
@@ -37,8 +36,7 @@ const Wallets: React.FC<WalletsProps> = (props) => {
                 <div className="font-semibold">{wallet.walletName}</div>
               </div>
               <div className="font-semibold">
-                {currency === "USD" ? "$" : ""}
-                {balance.toFixed(2)}
+                {currencyFormatter.format(balanceAmount)}
               </div>
             </div>
           );

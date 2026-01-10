@@ -10,28 +10,40 @@ import { ModalPayload } from "@/redux/interface";
 import { TransferMoneyForm } from "./transferMoneyForm";
 import { CreateWalletForm } from "./createWalletForm";
 import { Success } from "./success";
-import { useMutationCreateWallet } from "@/utils/generated/hooks";
+import {
+  useMutationCreateWallet,
+  useMutationAddFunds,
+  useMutationTransferFunds,
+} from "@/utils/generated/hooks";
+import { WalletType } from "@/gen/protobuf/v1/wallet";
 
 type BaseModalProps = {
-  modal: ModalPayload | { isOpen: boolean; type: null };
+  modal: ModalPayload | { isOpen: boolean; type: null; onSuccess?: () => void };
 };
 
 export interface CreateWalletType {
   type: string;
   name: string;
   initialBalance: number;
+  walletType: WalletType;
 }
 
 export interface AddTransactionType {
   type: string;
-  name: string;
-  initialBalance: number;
+  amount?: number;
+  category?: string;
+  wallet?: string;
+  datetime?: string;
+  note?: string;
 }
 
 export interface TransferMoneyType {
   type: string;
-  name: string;
-  initialBalance: number;
+  amount?: number;
+  from?: string;
+  to?: string;
+  datetime?: string;
+  note?: string;
 }
 
 const initialInput = ():
@@ -39,15 +51,23 @@ const initialInput = ():
   | AddTransactionType
   | TransferMoneyType => {
   if (store.getState().setModalReducer.type === ModalType.CREATE_WALLET) {
-    return { type: ModalType.CREATE_WALLET, name: "", initialBalance: 0 };
+    return {
+      type: ModalType.CREATE_WALLET,
+      name: "",
+      initialBalance: 0,
+    } as CreateWalletType;
   }
   if (store.getState().setModalReducer.type === ModalType.ADD_TRANSACTION) {
-    return { type: ModalType.ADD_TRANSACTION, name: "", initialBalance: 0 };
+    return { type: ModalType.ADD_TRANSACTION };
   }
   if (store.getState().setModalReducer.type === ModalType.TRANSFER_MONEY) {
-    return { type: ModalType.TRANSFER_MONEY, name: "", initialBalance: 0 };
+    return { type: ModalType.TRANSFER_MONEY };
   }
-  return { type: "", name: "", initialBalance: 0 };
+  return {
+    type: WalletType.UNRECOGNIZED,
+    name: "",
+    initialBalance: 0,
+  } as CreateWalletType;
 };
 
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
@@ -58,6 +78,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const createWalletMutation = useMutationCreateWallet({
     onSuccess: () => {
+      modal.onSuccess?.();
       store.dispatch(closeModal());
       setSuccessMessage("Wallet has been created successfully");
       store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
@@ -67,7 +88,32 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     },
   });
 
+  const addFundsMutation = useMutationAddFunds({
+    onSuccess: () => {
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage("Transaction added successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: () => {
+      setError("Add transaction fail! Please try again");
+    },
+  });
+
+  const transferFundsMutation = useMutationTransferFunds({
+    onSuccess: () => {
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage("Transfer completed successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: () => {
+      setError("Transfer fail! Please try again");
+    },
+  });
+
   const handleSubmit = () => {
+    console.log(input);
     if (modal.type === ModalType.SUCCESS) {
       store.dispatch(closeModal());
       return;
@@ -75,14 +121,53 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     setError(""); // reset error message
     if (input) {
       if (input.type === ModalType.CREATE_WALLET) {
-        if (!input.name) {
+        const walletInput = input as CreateWalletType;
+        if (!walletInput.name) {
           setError("Name is required");
           return;
         }
         createWalletMutation.mutate({
-          walletName: input.name,
+          walletName: walletInput.name,
           initialBalance: {
-            amount: input.initialBalance,
+            amount: walletInput.initialBalance,
+            currency: "VND",
+          },
+          type: walletInput.walletType,
+        });
+      }
+      if (input.type === ModalType.ADD_TRANSACTION) {
+        const transactionInput = input as AddTransactionType;
+        if (!transactionInput.amount) {
+          setError("Amount is required");
+          return;
+        }
+        if (!transactionInput.wallet) {
+          setError("Please select a wallet");
+          return;
+        }
+        addFundsMutation.mutate({
+          walletId: Number(transactionInput.wallet),
+          amount: {
+            amount: transactionInput.amount,
+            currency: "USD",
+          },
+        });
+      }
+      if (input.type === ModalType.TRANSFER_MONEY) {
+        const transferInput = input as TransferMoneyType;
+        if (!transferInput.amount) {
+          setError("Amount is required");
+          return;
+        }
+        if (!transferInput.from || !transferInput.to) {
+          setError("Please select both source and destination wallets");
+          return;
+        }
+        transferFundsMutation.mutate({
+          fromWalletId: Number(transferInput.from),
+          toWalletId: Number(transferInput.to),
+          amount: {
+            amount: transferInput.amount,
             currency: "USD",
           },
         });

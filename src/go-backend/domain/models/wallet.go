@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+	v1 "wealthjourney/protobuf/v1"
 
 	"gorm.io/gorm"
 )
@@ -17,6 +18,7 @@ type Wallet struct {
 	UpdatedAt  time.Time      `json:"updatedAt"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 	User       *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Type       v1.WalletType  `gorm:"type:int;default:0;not null" json:"type"`
 }
 
 // TableName specifies the table name for Wallet model

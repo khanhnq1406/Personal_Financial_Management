@@ -6,10 +6,10 @@ import (
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
-	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
+	protobufv1 "wealthjourney/protobuf/v1"
 )
 
 // userService implements UserService.

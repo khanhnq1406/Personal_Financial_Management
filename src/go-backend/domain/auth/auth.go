@@ -8,10 +8,10 @@ import (
 	"google.golang.org/api/idtoken"
 
 	"wealthjourney/domain/models"
-	authv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
+	authv1 "wealthjourney/protobuf/v1"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"

@@ -6,10 +6,10 @@ import (
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
-	walletv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
+	walletv1 "wealthjourney/protobuf/v1"
 )
 
 // walletService implements WalletService.
@@ -64,6 +64,7 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *wal
 		WalletName: req.WalletName,
 		Balance:    initialBalance,
 		Currency:   currency,
+		Type:       req.Type,
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {
@@ -124,11 +125,11 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &walletv1.ListWalletsResponse{
-		Success:   true,
-		Message:   "Wallets retrieved successfully",
-		Wallets:   protoWallets,
+		Success:    true,
+		Message:    "Wallets retrieved successfully",
+		Wallets:    protoWallets,
 		Pagination: s.mapper.PaginationResultToProto(paginationResult),
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
 }
 

@@ -2,8 +2,8 @@ package service
 
 import (
 	"wealthjourney/domain/models"
-	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
 	"wealthjourney/pkg/types"
+	protobufv1 "wealthjourney/protobuf/v1"
 )
 
 // WalletMapper handles conversion between domain models and proto types.
@@ -30,6 +30,7 @@ func (m *WalletMapper) ModelToProto(wallet *models.Wallet) *protobufv1.Wallet {
 		},
 		CreatedAt: wallet.CreatedAt.Unix(),
 		UpdatedAt: wallet.UpdatedAt.Unix(),
+		Type:      wallet.Type,
 	}
 }
 

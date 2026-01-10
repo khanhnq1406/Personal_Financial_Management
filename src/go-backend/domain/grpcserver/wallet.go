@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"wealthjourney/domain/service"
-	protobufv1 "wealthjourney/gen/protobuf/protobuf/v1"
+	protobufv1 "wealthjourney/protobuf/v1"
 )
 
 // walletServer implements the WalletService gRPC interface
