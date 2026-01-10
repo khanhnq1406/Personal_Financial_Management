@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"wealthjourney/pkg/types"
+	transactionv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
 )
 
@@ -56,4 +57,40 @@ type UserService interface {
 
 	// ExistsByEmail checks if a user exists by email.
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
+}
+
+// TransactionService defines the interface for transaction business logic.
+type TransactionService interface {
+	// CreateTransaction creates a new transaction and updates wallet balance.
+	CreateTransaction(ctx context.Context, userID int32, req *transactionv1.CreateTransactionRequest) (*transactionv1.CreateTransactionResponse, error)
+
+	// GetTransaction retrieves a transaction by ID, ensuring it belongs to the user's wallet.
+	GetTransaction(ctx context.Context, transactionID int32, userID int32) (*transactionv1.GetTransactionResponse, error)
+
+	// ListTransactions retrieves transactions with filtering and pagination.
+	ListTransactions(ctx context.Context, userID int32, req *transactionv1.ListTransactionsRequest) (*transactionv1.ListTransactionsResponse, error)
+
+	// UpdateTransaction updates a transaction and adjusts wallet balance accordingly.
+	UpdateTransaction(ctx context.Context, transactionID int32, userID int32, req *transactionv1.UpdateTransactionRequest) (*transactionv1.UpdateTransactionResponse, error)
+
+	// DeleteTransaction deletes a transaction and restores the wallet balance.
+	DeleteTransaction(ctx context.Context, transactionID int32, userID int32) (*transactionv1.DeleteTransactionResponse, error)
+}
+
+// CategoryService defines the interface for category business logic.
+type CategoryService interface {
+	// CreateCategory creates a new category for a user.
+	CreateCategory(ctx context.Context, userID int32, req *transactionv1.CreateCategoryRequest) (*transactionv1.CreateCategoryResponse, error)
+
+	// GetCategory retrieves a category by ID, ensuring it belongs to the user.
+	GetCategory(ctx context.Context, categoryID int32, userID int32) (*transactionv1.GetCategoryResponse, error)
+
+	// ListCategories retrieves categories for a user with optional type filtering.
+	ListCategories(ctx context.Context, userID int32, req *transactionv1.ListCategoriesRequest) (*transactionv1.ListCategoriesResponse, error)
+
+	// UpdateCategory updates a category's name.
+	UpdateCategory(ctx context.Context, categoryID int32, userID int32, req *transactionv1.UpdateCategoryRequest) (*transactionv1.UpdateCategoryResponse, error)
+
+	// DeleteCategory deletes a category.
+	DeleteCategory(ctx context.Context, categoryID int32, userID int32) (*transactionv1.DeleteCategoryResponse, error)
 }

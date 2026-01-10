@@ -6,17 +6,21 @@ import (
 
 // AllHandlers contains all handler instances.
 type AllHandlers struct {
-	Wallet *WalletHandlers
-	User   *UserHandlers
-	Auth   *AuthHandlers
+	Wallet      *WalletHandlers
+	User        *UserHandlers
+	Auth        *AuthHandlers
+	Transaction *TransactionHandlers
+	Category    *CategoryHandlers
 }
 
 // NewHandlers creates all handler instances with proper dependency injection.
 func NewHandlers(services *service.Services) *AllHandlers {
 	return &AllHandlers{
-		Wallet: NewWalletHandlers(services.Wallet),
-		User:   NewUserHandlers(services.User),
-		Auth:   NewAuthHandlers(services.User),
+		Wallet:      NewWalletHandlers(services.Wallet),
+		User:        NewUserHandlers(services.User),
+		Auth:        NewAuthHandlers(services.User),
+		Transaction: NewTransactionHandlers(services.Transaction),
+		Category:    NewCategoryHandlers(services.Category),
 	}
 }
 

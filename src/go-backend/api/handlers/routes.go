@@ -67,4 +67,32 @@ func RegisterRoutes(
 		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
 		wallets.POST("/transfer", h.Wallet.TransferFunds)
 	}
+
+	// Transaction routes (protected)
+	transactions := v1.Group("/transactions")
+	if rateLimiter != nil {
+		transactions.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	transactions.Use(AuthMiddleware())
+	{
+		transactions.POST("", h.Transaction.CreateTransaction)
+		transactions.GET("", h.Transaction.ListTransactions)
+		transactions.GET("/:id", h.Transaction.GetTransaction)
+		transactions.PUT("/:id", h.Transaction.UpdateTransaction)
+		transactions.DELETE("/:id", h.Transaction.DeleteTransaction)
+	}
+
+	// Category routes (protected)
+	categories := v1.Group("/categories")
+	if rateLimiter != nil {
+		categories.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	categories.Use(AuthMiddleware())
+	{
+		categories.POST("", h.Category.CreateCategory)
+		categories.GET("", h.Category.ListCategories)
+		categories.GET("/:id", h.Category.GetCategory)
+		categories.PUT("/:id", h.Category.UpdateCategory)
+		categories.DELETE("/:id", h.Category.DeleteCategory)
+	}
 }

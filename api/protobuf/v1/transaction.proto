@@ -1,0 +1,290 @@
+syntax = "proto3";
+
+package wealthjourney.transaction.v1;
+
+import "protobuf/v1/common.proto";
+import "google/api/annotations.proto";
+
+option go_package = "protobuf/v1";
+
+// Transaction service for transaction management operations.
+service TransactionService {
+  // Get a transaction by ID
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/transactions/{transactionId}"
+    };
+  }
+
+  // List all transactions for authenticated user with advanced filtering and pagination
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/transactions"
+    };
+  }
+
+  // Create a new transaction
+  rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/transactions"
+      body: "*"
+    };
+  }
+
+  // Update transaction information
+  rpc UpdateTransaction(UpdateTransactionRequest) returns (UpdateTransactionResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/transactions/{transactionId}"
+      body: "*"
+    };
+  }
+
+  // Delete a transaction
+  rpc DeleteTransaction(DeleteTransactionRequest) returns (DeleteTransactionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/transactions/{transactionId}"
+    };
+  }
+}
+
+// Category service for category management operations.
+service CategoryService {
+  // Get a category by ID
+  rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/categories/{categoryId}"
+    };
+  }
+
+  // List all categories for authenticated user with type filtering and pagination
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/categories"
+    };
+  }
+
+  // Create a new category
+  rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/categories"
+      body: "*"
+    };
+  }
+
+  // Update category information
+  rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/categories/{categoryId}"
+      body: "*"
+    };
+  }
+
+  // Delete a category
+  rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/categories/{categoryId}"
+    };
+  }
+}
+
+// Enums
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  TRANSACTION_TYPE_INCOME = 1;
+  TRANSACTION_TYPE_EXPENSE = 2;
+}
+
+enum CategoryType {
+  CATEGORY_TYPE_UNSPECIFIED = 0;
+  CATEGORY_TYPE_INCOME = 1;
+  CATEGORY_TYPE_EXPENSE = 2;
+}
+
+enum SortField {
+  SORT_FIELD_UNSPECIFIED = 0;
+  DATE = 1;
+  AMOUNT = 2;
+  CREATED_AT = 3;
+  UPDATED_AT = 4;
+}
+
+// Transaction message
+message Transaction {
+  int32 id = 1 [json_name = "id"];
+  int32 walletId = 2 [json_name = "walletId"];
+  int32 categoryId = 3 [json_name = "categoryId"];
+  wealthjourney.common.v1.Money amount = 4 [json_name = "amount"];
+  int64 date = 5 [json_name = "date"];
+  string note = 6 [json_name = "note"];
+  int64 createdAt = 7 [json_name = "createdAt"];
+  int64 updatedAt = 8 [json_name = "updatedAt"];
+}
+
+// Category message
+message Category {
+  int32 id = 1 [json_name = "id"];
+  int32 userId = 2 [json_name = "userId"];
+  string name = 3 [json_name = "name"];
+  CategoryType type = 4 [json_name = "type"];
+  int64 createdAt = 5 [json_name = "createdAt"];
+  int64 updatedAt = 6 [json_name = "updatedAt"];
+}
+
+// TransactionFilter for advanced filtering
+message TransactionFilter {
+  optional int32 walletId = 1 [json_name = "walletId"];
+  optional int32 categoryId = 2 [json_name = "categoryId"];
+  optional TransactionType type = 3 [json_name = "type"];
+  optional int64 startDate = 4 [json_name = "startDate"];
+  optional int64 endDate = 5 [json_name = "endDate"];
+  optional int64 minAmount = 6 [json_name = "minAmount"];
+  optional int64 maxAmount = 7 [json_name = "maxAmount"];
+  optional string searchNote = 8 [json_name = "searchNote"];
+}
+
+// GetTransaction request
+message GetTransactionRequest {
+  int32 transactionId = 1 [json_name = "transactionId"];
+}
+
+// ListTransactions request
+message ListTransactionsRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+  TransactionFilter filter = 2 [json_name = "filter"];
+  SortField sortField = 3 [json_name = "sortField"];
+  string sortOrder = 4 [json_name = "sortOrder"]; // "asc" or "desc"
+}
+
+// CreateTransaction request
+message CreateTransactionRequest {
+  int32 walletId = 1 [json_name = "walletId"];
+  optional int32 categoryId = 2 [json_name = "categoryId"];
+  wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
+  optional int64 date = 4 [json_name = "date"];
+  optional string note = 5 [json_name = "note"];
+}
+
+// UpdateTransaction request
+message UpdateTransactionRequest {
+  int32 transactionId = 1 [json_name = "transactionId"];
+  optional int32 categoryId = 2 [json_name = "categoryId"];
+  optional wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
+  optional int64 date = 4 [json_name = "date"];
+  optional string note = 5 [json_name = "note"];
+}
+
+// DeleteTransaction request
+message DeleteTransactionRequest {
+  int32 transactionId = 1 [json_name = "transactionId"];
+}
+
+// GetTransaction response
+message GetTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Transaction data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// ListTransactions response
+message ListTransactionsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Transaction transactions = 3 [json_name = "transactions"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+// CreateTransaction response
+message CreateTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Transaction data = 3 [json_name = "data"];
+  wealthjourney.common.v1.Money newBalance = 4 [json_name = "newBalance"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+// UpdateTransaction response
+message UpdateTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Transaction data = 3 [json_name = "data"];
+  wealthjourney.common.v1.Money newBalance = 4 [json_name = "newBalance"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+// DeleteTransaction response
+message DeleteTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  wealthjourney.common.v1.Money newBalance = 3 [json_name = "newBalance"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// GetCategory request
+message GetCategoryRequest {
+  int32 categoryId = 1 [json_name = "categoryId"];
+}
+
+// ListCategories request
+message ListCategoriesRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+  optional CategoryType type = 2 [json_name = "type"];
+}
+
+// CreateCategory request
+message CreateCategoryRequest {
+  string name = 1 [json_name = "name"];
+  CategoryType type = 2 [json_name = "type"];
+}
+
+// UpdateCategory request
+message UpdateCategoryRequest {
+  int32 categoryId = 1 [json_name = "categoryId"];
+  string name = 2 [json_name = "name"];
+}
+
+// DeleteCategory request
+message DeleteCategoryRequest {
+  int32 categoryId = 1 [json_name = "categoryId"];
+}
+
+// GetCategory response
+message GetCategoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Category data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// ListCategories response
+message ListCategoriesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Category categories = 3 [json_name = "categories"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+// CreateCategory response
+message CreateCategoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Category data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// UpdateCategory response
+message UpdateCategoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Category data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// DeleteCategory response
+message DeleteCategoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}

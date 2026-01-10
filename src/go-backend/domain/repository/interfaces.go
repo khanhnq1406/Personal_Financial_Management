@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"time"
+	v1 "wealthjourney/protobuf/v1"
 	"wealthjourney/domain/models"
 )
 
@@ -77,4 +79,67 @@ type TransactionManager interface {
 	// If the function returns an error, the transaction is rolled back.
 	// Otherwise, it is committed.
 	WithTx(ctx context.Context, fn func(tm TransactionManager) error) error
+}
+
+// TransactionFilter defines filter options for listing transactions.
+type TransactionFilter struct {
+	WalletID   *int32
+	CategoryID *int32
+	Type       *v1.TransactionType
+	StartDate  *time.Time
+	EndDate    *time.Time
+	MinAmount  *int64
+	MaxAmount  *int64
+	SearchNote *string
+}
+
+// TransactionRepository defines the interface for transaction data operations.
+type TransactionRepository interface {
+	// Create creates a new transaction.
+	Create(ctx context.Context, tx *models.Transaction) error
+
+	// GetByID retrieves a transaction by ID.
+	GetByID(ctx context.Context, id int32) (*models.Transaction, error)
+
+	// GetByIDForUser retrieves a transaction by ID, ensuring it belongs to the user's wallet.
+	GetByIDForUser(ctx context.Context, txID, userID int32) (*models.Transaction, error)
+
+	// Update updates a transaction.
+	Update(ctx context.Context, tx *models.Transaction) error
+
+	// Delete soft deletes a transaction by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// List retrieves transactions with filtering and pagination.
+	List(ctx context.Context, userID int32, filter TransactionFilter, opts ListOptions) ([]*models.Transaction, int, error)
+
+	// GetWithWallet retrieves a transaction with its wallet relationship.
+	GetWithWallet(ctx context.Context, id int32) (*models.Transaction, error)
+}
+
+// CategoryRepository defines the interface for category data operations.
+type CategoryRepository interface {
+	// Create creates a new category.
+	Create(ctx context.Context, category *models.Category) error
+
+	// GetByID retrieves a category by ID.
+	GetByID(ctx context.Context, id int32) (*models.Category, error)
+
+	// GetByIDForUser retrieves a category by ID, ensuring it belongs to the user.
+	GetByIDForUser(ctx context.Context, categoryID, userID int32) (*models.Category, error)
+
+	// Update updates a category.
+	Update(ctx context.Context, category *models.Category) error
+
+	// Delete soft deletes a category by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// ListByUserID retrieves all categories for a user with optional type filtering.
+	ListByUserID(ctx context.Context, userID int32, categoryType *v1.CategoryType, opts ListOptions) ([]*models.Category, int, error)
+
+	// ExistsForUser checks if a category exists by ID and belongs to the user.
+	ExistsForUser(ctx context.Context, categoryID, userID int32) (bool, error)
+
+	// CountByUserID returns the number of categories for a user.
+	CountByUserID(ctx context.Context, userID int32) (int, error)
 }

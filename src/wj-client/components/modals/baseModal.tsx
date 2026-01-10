@@ -12,8 +12,8 @@ import { CreateWalletForm } from "./createWalletForm";
 import { Success } from "./success";
 import {
   useMutationCreateWallet,
-  useMutationAddFunds,
   useMutationTransferFunds,
+  useMutationCreateTransaction,
 } from "@/utils/generated/hooks";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 
@@ -31,9 +31,9 @@ export interface CreateWalletType {
 export interface AddTransactionType {
   type: string;
   amount?: number;
-  category?: string;
-  wallet?: string;
-  datetime?: string;
+  categoryId?: number;
+  walletId?: number;
+  date?: number; // Unix timestamp
   note?: string;
 }
 
@@ -88,7 +88,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     },
   });
 
-  const addFundsMutation = useMutationAddFunds({
+  const createTransactionMutation = useMutationCreateTransaction({
     onSuccess: () => {
       modal.onSuccess?.();
       store.dispatch(closeModal());
@@ -141,16 +141,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           setError("Amount is required");
           return;
         }
-        if (!transactionInput.wallet) {
+        if (!transactionInput.walletId) {
           setError("Please select a wallet");
           return;
         }
-        addFundsMutation.mutate({
-          walletId: Number(transactionInput.wallet),
+        createTransactionMutation.mutate({
+          walletId: transactionInput.walletId,
+          categoryId: transactionInput.categoryId,
           amount: {
             amount: transactionInput.amount,
             currency: "USD",
           },
+          date: transactionInput.date,
+          note: transactionInput.note,
         });
       }
       if (input.type === ModalType.TRANSFER_MONEY) {

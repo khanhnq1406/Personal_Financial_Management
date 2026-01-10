@@ -52,7 +52,12 @@ func New(cfg *config.Config) (*Database, error) {
 	sqlDB.SetConnMaxIdleTime(cfg.Database.ConnMaxIdleTime)
 
 	// Auto migrate schemas
-	err = db.AutoMigrate(&models.User{}, &models.Wallet{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Wallet{},
+		&models.Category{},
+		&models.Transaction{},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
