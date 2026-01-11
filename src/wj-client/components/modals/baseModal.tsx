@@ -223,7 +223,15 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         )}
         <div className="text-red-600 mb-2">{error}</div>
         <div>
-          <Button type={ButtonType.PRIMARY} onClick={handleSubmit}>
+          <Button
+            type={ButtonType.PRIMARY}
+            onClick={handleSubmit}
+            loading={
+              createWalletMutation.isPending ||
+              createTransactionMutation.isPending ||
+              transferFundsMutation.isPending
+            }
+          >
             {modal.type === ModalType.SUCCESS ? "Close" : "Save"}
           </Button>
         </div>

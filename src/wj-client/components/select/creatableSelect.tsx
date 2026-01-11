@@ -16,6 +16,8 @@ interface CreatableSelectProps {
   className?: string;
   disabled?: boolean;
   allowCreate?: boolean;
+  isLoading?: boolean;
+  displayValue?: string; // For displaying the selected value's label when not in options
 }
 
 export const CreatableSelect: React.FC<CreatableSelectProps> = ({
@@ -27,6 +29,8 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   className = "",
   disabled = false,
   allowCreate = true,
+  isLoading = false,
+  displayValue,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -42,13 +46,20 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
       setInputValue(selectedOption.label);
     } else if (value === "") {
       setInputValue("");
+    } else if (displayValue) {
+      // Use displayValue if the selected option is not in the options list
+      // (e.g., when a new item was just created)
+      setInputValue(displayValue);
     }
-  }, [value, selectedOption]);
+  }, [value, selectedOption, displayValue]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
         setHighlightedIndex(-1);
       }
@@ -65,7 +76,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   const canCreateNew =
     allowCreate &&
     inputValue.trim() !== "" &&
-    !filteredOptions.some((opt) => opt.label.toLowerCase() === inputValue.toLowerCase());
+    !filteredOptions.some(
+      (opt) => opt.label.toLowerCase() === inputValue.toLowerCase()
+    );
 
   const handleSelect = (selectedValue: string) => {
     onChange(selectedValue);
@@ -73,11 +86,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     setHighlightedIndex(-1);
   };
 
-  const handleCreateNew = () => {
-    if (canCreateNew && onCreate) {
-      onCreate(inputValue.trim());
-      onChange(inputValue.trim());
-      setInputValue(inputValue.trim());
+  const handleCreateNew = async () => {
+    if (canCreateNew && onCreate && !isLoading) {
+      await onCreate(inputValue.trim());
       setIsOpen(false);
       setHighlightedIndex(-1);
     }
@@ -95,7 +106,9 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev < totalItems - 1 ? prev + 1 : prev));
+        setHighlightedIndex((prev) =>
+          prev < totalItems - 1 ? prev + 1 : prev
+        );
         break;
       case "ArrowUp":
         e.preventDefault();
@@ -141,13 +154,13 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         onChange={handleInputChange}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
-        disabled={disabled}
+        disabled={disabled || isLoading}
         placeholder={placeholder}
         className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
-      {/* Dropdown arrow icon */}
-      {!disabled && (
+      {/* Dropdown arrow icon / Loading spinner */}
+      {!disabled && !isLoading && (
         <button
           type="button"
           onClick={() => {
@@ -157,14 +170,45 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 pointer-events-none"
         >
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
+      )}
+      {isLoading && (
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg
+            className="animate-spin h-4 w-4 text-hgreen"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </div>
       )}
 
       {/* Dropdown menu */}
@@ -206,13 +250,39 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
               {canCreateNew && (
                 <div
                   onClick={handleCreateNew}
-                  className={`px-3 py-2 cursor-pointer text-sm border-t border-gray-200 ${
+                  className={`px-3 py-2 cursor-pointer text-sm border-t border-gray-200 flex items-center gap-2 ${
                     highlightedIndex === filteredOptions.length
                       ? "bg-hgreen text-white"
                       : "hover:bg-gray-100 text-hgreen font-semibold"
-                  }`}
+                  } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  + Create &quot;{inputValue.trim()}&quot;
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Creating...
+                    </>
+                  ) : (
+                    <>+ Create &quot;{inputValue.trim()}&quot;</>
+                  )}
                 </div>
               )}
             </>

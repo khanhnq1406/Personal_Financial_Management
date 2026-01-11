@@ -35,8 +35,9 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
     "income"
   );
 
-  // State for selected category ID
+  // State for selected category ID and name
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
 
   // Fetch categories filtered by type
   const { data: categoriesData, isLoading: categoriesLoading } =
@@ -55,10 +56,11 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
       queryClient.invalidateQueries({
         queryKey: [EVENT_CategoryListCategories],
       });
-      // Set the newly created category ID
-      if (data.data?.id) {
+      // Set the newly created category ID and name
+      if (data.data?.id && data.data?.name) {
         const categoryId = String(data.data.id);
         setSelectedCategoryId(categoryId);
+        setSelectedCategoryName(data.data.name);
         setInput((input) => ({
           ...input,
           categoryId: data.data?.id,
@@ -94,12 +96,26 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
   // Reset category when transaction type changes
   useEffect(() => {
     setSelectedCategoryId("");
+    setSelectedCategoryName("");
     setInput((input) => ({
       ...input,
       categoryId: undefined,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactionType]);
+
+  // Clear displayValue once the newly created category is in the options list
+  useEffect(() => {
+    if (selectedCategoryId && selectedCategoryName) {
+      const categoryExists = categories.find(
+        (c) => String(c.id) === selectedCategoryId
+      );
+      if (categoryExists) {
+        setSelectedCategoryName(""); // Clear displayValue since the option is now in the list
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, selectedCategoryId, selectedCategoryName]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateStr = e.target.value;
@@ -203,8 +219,12 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
             label: category.name,
           }))}
           value={selectedCategoryId}
+          displayValue={selectedCategoryName}
           onChange={(value: string) => {
             setSelectedCategoryId(value);
+            // Find and set the category name from the options
+            const category = categories.find((c) => String(c.id) === value);
+            setSelectedCategoryName(category?.name || "");
             setInput((input) => ({
               ...input,
               categoryId: value ? Number(value) : undefined,
@@ -218,6 +238,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           }
           disabled={categoriesLoading}
           className="mt-1"
+          isLoading={createCategoryMutation.isPending}
         />
       </div>
 
