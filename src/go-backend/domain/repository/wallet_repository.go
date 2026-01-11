@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	apperrors "wealthjourney/pkg/errors"
-	"wealthjourney/pkg/database"
 	"wealthjourney/domain/models"
+	"wealthjourney/pkg/database"
+	apperrors "wealthjourney/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -99,7 +99,7 @@ func (r *walletRepository) UpdateBalance(ctx context.Context, walletID int32, de
 		// Check for negative balance
 		newBalance := wallet.Balance + delta
 		if newBalance < 0 {
-			return apperrors.NewValidationError("insufficient balance")
+			return apperrors.NewValidationError("Insufficient balance")
 		}
 
 		// Update balance

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"wealthjourney/domain/models"
@@ -14,17 +15,26 @@ import (
 
 // walletService implements WalletService.
 type walletService struct {
-	walletRepo repository.WalletRepository
-	userRepo   repository.UserRepository
-	mapper     *WalletMapper
+	walletRepo   repository.WalletRepository
+	userRepo     repository.UserRepository
+	txRepo       repository.TransactionRepository
+	categoryRepo repository.CategoryRepository
+	mapper       *WalletMapper
 }
 
 // NewWalletService creates a new WalletService.
-func NewWalletService(walletRepo repository.WalletRepository, userRepo repository.UserRepository) WalletService {
+func NewWalletService(
+	walletRepo repository.WalletRepository,
+	userRepo repository.UserRepository,
+	txRepo repository.TransactionRepository,
+	categoryRepo repository.CategoryRepository,
+) WalletService {
 	return &walletService{
-		walletRepo: walletRepo,
-		userRepo:   userRepo,
-		mapper:     NewWalletMapper(),
+		walletRepo:   walletRepo,
+		userRepo:     userRepo,
+		txRepo:       txRepo,
+		categoryRepo: categoryRepo,
+		mapper:       NewWalletMapper(),
 	}
 }
 
@@ -254,7 +264,7 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 
 	// Check sufficient balance
 	if wallet.Balance < req.Amount.Amount {
-		return nil, apperrors.NewValidationError("insufficient balance")
+		return nil, apperrors.NewValidationError("Insufficient balance")
 	}
 
 	// Update balance (negative delta for withdrawal)
@@ -272,6 +282,7 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 }
 
 // TransferFunds transfers funds between two wallets belonging to the same user.
+// It also creates two transactions: one for the outgoing transfer (expense) and one for the incoming transfer (income).
 func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*walletv1.TransferFundsResponse, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
@@ -304,20 +315,67 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *wa
 
 	// Check sufficient balance
 	if fromWallet.Balance < req.Amount.Amount {
-		return nil, apperrors.NewValidationError("insufficient balance")
+		return nil, apperrors.NewValidationError("Insufficient balance")
+	}
+
+	// Find or create "Outgoing Transfer" category (expense)
+	outgoingCategory, err := s.categoryRepo.GetByNameAndType(ctx, userID, "Outgoing Transfer", walletv1.CategoryType_CATEGORY_TYPE_EXPENSE)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to get outgoing transfer category", err)
+	}
+
+	// Find or create "Incoming Transfer" category (income)
+	incomingCategory, err := s.categoryRepo.GetByNameAndType(ctx, userID, "Incoming Transfer", walletv1.CategoryType_CATEGORY_TYPE_INCOME)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to get incoming transfer category", err)
+	}
+
+	// Create outgoing transaction (expense) for source wallet
+	outgoingTx := &models.Transaction{
+		WalletID:   req.FromWalletId,
+		CategoryID: &outgoingCategory.ID,
+		Amount:     req.Amount.Amount,
+		Date:       time.Now(),
+		Note:       fmt.Sprintf("Transfer to wallet: %s", toWallet.WalletName),
+	}
+
+	// Create incoming transaction (income) for destination wallet
+	incomingTx := &models.Transaction{
+		WalletID:   req.ToWalletId,
+		CategoryID: &incomingCategory.ID,
+		Amount:     req.Amount.Amount,
+		Date:       time.Now(),
+		Note:       fmt.Sprintf("Transfer from wallet: %s", fromWallet.WalletName),
+	}
+
+	// Create both transactions
+	if err := s.txRepo.Create(ctx, outgoingTx); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to create outgoing transaction", err)
+	}
+
+	if err := s.txRepo.Create(ctx, incomingTx); err != nil {
+		// Attempt to rollback by deleting the outgoing transaction
+		_ = s.txRepo.Delete(ctx, outgoingTx.ID)
+		return nil, apperrors.NewInternalErrorWithCause("failed to create incoming transaction", err)
 	}
 
 	// Withdraw from source
 	_, err = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, -req.Amount.Amount)
 	if err != nil {
+		// Attempt to rollback by refunding source and deleting transactions
+		_, _ = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, req.Amount.Amount)
+		_ = s.txRepo.Delete(ctx, outgoingTx.ID)
+		_ = s.txRepo.Delete(ctx, incomingTx.ID)
 		return nil, err
 	}
 
 	// Add to destination
 	_, err = s.walletRepo.UpdateBalance(ctx, req.ToWalletId, req.Amount.Amount)
 	if err != nil {
-		// Attempt to rollback by refunding source
+		// Attempt to rollback by refunding source and deleting transactions
 		_, _ = s.walletRepo.UpdateBalance(ctx, req.FromWalletId, req.Amount.Amount)
+		_ = s.txRepo.Delete(ctx, outgoingTx.ID)
+		_ = s.txRepo.Delete(ctx, incomingTx.ID)
 		return nil, err
 	}
 

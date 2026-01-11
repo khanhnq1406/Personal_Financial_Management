@@ -1,4 +1,4 @@
-.PHONY: deps build run clean test dev deploy help generate-proto clean-proto
+.PHONY: deps build run clean test dev deploy help generate-proto clean-proto migrate-currency-vnd
 
 # Directory paths for protobuf
 PROTO_DIR := ../../api/protobuf
@@ -72,15 +72,21 @@ clean-proto:
 # Show help
 help:
 	@echo "Available commands:"
-	@echo "  make deps             - Install Go dependencies"
-	@echo "  make build            - Build standalone server"
-	@echo "  make build-vercel     - Build Vercel serverless function"
-	@echo "  make run              - Run standalone server locally"
-	@echo "  make run-vercel       - Run locally with Vercel dev"
-	@echo "  make dev              - Run with hot reload (same as run-vercel)"
-	@echo "  make test             - Run tests"
-	@echo "  make clean            - Clean build artifacts"
-	@echo "  make deploy           - Deploy to production on Vercel"
-	@echo "  make deploy-preview   - Deploy to preview on Vercel"
-	@echo "  make generate-proto   - Generate Go code from protobuf files"
-	@echo "  make clean-proto      - Remove generated Go code"
+	@echo "  make deps                  - Install Go dependencies"
+	@echo "  make build                 - Build standalone server"
+	@echo "  make build-vercel          - Build Vercel serverless function"
+	@echo "  make run                   - Run standalone server locally"
+	@echo "  make run-vercel            - Run locally with Vercel dev"
+	@echo "  make dev                   - Run with hot reload (same as run-vercel)"
+	@echo "  make test                  - Run tests"
+	@echo "  make clean                 - Clean build artifacts"
+	@echo "  make deploy                - Deploy to production on Vercel"
+	@echo "  make deploy-preview        - Deploy to preview on Vercel"
+	@echo "  make generate-proto        - Generate Go code from protobuf files"
+	@echo "  make clean-proto           - Remove generated Go code"
+	@echo "  make migrate-currency-vnd  - Migrate all wallet currencies to VND"
+
+# Migrate all wallet currencies to VND
+migrate-currency-vnd:
+	@echo "Running currency migration to VND..."
+	@go run ./cmd/migrate-currency-vnd/main.go

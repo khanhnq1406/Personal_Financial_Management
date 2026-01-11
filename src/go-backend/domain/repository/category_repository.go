@@ -193,3 +193,30 @@ func (r *categoryRepository) CreateDefaultCategories(ctx context.Context, userID
 
 	return nil
 }
+
+// GetByNameAndType retrieves a category by name and type for a user.
+// Returns the category if found, or creates it if it doesn't exist.
+func (r *categoryRepository) GetByNameAndType(ctx context.Context, userID int32, name string, categoryType v1.CategoryType) (*models.Category, error) {
+	var category models.Category
+	result := r.db.DB.WithContext(ctx).
+		Where("user_id = ? AND name = ? AND type = ?", userID, name, int(categoryType)).
+		First(&category)
+
+	if result.Error == nil {
+		// Category found, return it
+		return &category, nil
+	}
+
+	// Category not found, create it
+	newCategory := &models.Category{
+		UserID: userID,
+		Name:   name,
+		Type:   categoryType,
+	}
+
+	if err := r.Create(ctx, newCategory); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to create transfer category", err)
+	}
+
+	return newCategory, nil
+}

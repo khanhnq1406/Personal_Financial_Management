@@ -13,6 +13,7 @@ import {
 import { CategoryType } from "@/gen/protobuf/v1/transaction";
 import { useQueryClient } from "@tanstack/react-query";
 import { CreatableSelect } from "@/components/select/creatableSelect";
+import { currencyFormatter } from "@/utils/currencyFormatter";
 
 interface AddTransactionFormProps {
   setInput: Dispatch<
@@ -201,8 +202,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           </option>
           {wallets.map((wallet) => (
             <option key={wallet.id} value={wallet.id}>
-              {wallet.walletName} ({wallet.balance?.amount || 0}{" "}
-              {wallet.balance?.currency || "USD"})
+              {wallet.walletName} (
+              {currencyFormatter.format(wallet.balance?.amount || 0)})
             </option>
           ))}
         </select>

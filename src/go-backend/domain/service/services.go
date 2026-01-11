@@ -23,7 +23,7 @@ func NewServices(repos *Repositories) *Services {
 	}
 
 	return &Services{
-		Wallet:      NewWalletService(repos.Wallet, repos.User),
+		Wallet:      NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category),
 		User:        userSvc,
 		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category),
 		Category:    categorySvc,

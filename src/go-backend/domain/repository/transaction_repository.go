@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	apperrors "wealthjourney/pkg/errors"
-	"wealthjourney/pkg/database"
 	"wealthjourney/domain/models"
+	"wealthjourney/pkg/database"
+	apperrors "wealthjourney/pkg/errors"
 
 	v1 "wealthjourney/protobuf/v1"
 
@@ -182,7 +182,7 @@ func (r *transactionRepository) ExecuteTransactionWithBalanceUpdate(ctx context.
 		// Calculate new balance
 		newBalance := wallet.Balance + balanceDelta
 		if newBalance < 0 {
-			return apperrors.NewValidationError("insufficient balance")
+			return apperrors.NewValidationError("Insufficient balance")
 		}
 
 		// Execute the provided function (e.g., create/update transaction)

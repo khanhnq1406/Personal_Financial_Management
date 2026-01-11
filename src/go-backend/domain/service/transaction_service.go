@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	apperrors "wealthjourney/pkg/errors"
-	"wealthjourney/pkg/types"
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
+	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/types"
 
 	v1 "wealthjourney/protobuf/v1"
 )
@@ -60,13 +60,13 @@ func (s *transactionService) CreateTransaction(ctx context.Context, userID int32
 	// Check if balance would go negative
 	newBalance := wallet.Balance + balanceDelta
 	if newBalance < 0 {
-		return nil, apperrors.NewValidationError("insufficient balance for this transaction")
+		return nil, apperrors.NewValidationError("Insufficient balance for this transaction")
 	}
 
 	// Create transaction
 	transaction := &models.Transaction{
 		WalletID: req.WalletId,
-		Amount:    req.Amount.Amount,
+		Amount:   req.Amount.Amount,
 	}
 
 	if req.CategoryId != nil {
@@ -164,8 +164,8 @@ func (s *transactionService) ListTransactions(ctx context.Context, userID int32,
 	}
 
 	return &v1.ListTransactionsResponse{
-		Success:     true,
-		Message:     "Transactions retrieved successfully",
+		Success:      true,
+		Message:      "Transactions retrieved successfully",
 		Transactions: protoTransactions,
 		Pagination: &v1.PaginationResult{
 			Page:       int32(params.Page),
@@ -216,7 +216,7 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 	// Check if balance would go negative
 	newBalance := wallet.Balance + totalDelta
 	if newBalance < 0 {
-		return nil, apperrors.NewValidationError("insufficient balance for this transaction update")
+		return nil, apperrors.NewValidationError("Insufficient balance for this transaction update")
 	}
 
 	// Update transaction fields
@@ -292,8 +292,8 @@ func (s *transactionService) DeleteTransaction(ctx context.Context, transactionI
 	}
 
 	return &v1.DeleteTransactionResponse{
-		Success:   true,
-		Message:   "Transaction deleted successfully",
+		Success: true,
+		Message: "Transaction deleted successfully",
 		NewBalance: &v1.Money{
 			Amount:   updatedWallet.Balance,
 			Currency: updatedWallet.Currency,
@@ -404,7 +404,7 @@ func (s *transactionService) modelToProtoSimple(tx *models.Transaction) *v1.Tran
 		WalletId: tx.WalletID,
 		Amount: &v1.Money{
 			Amount:   tx.Amount,
-			Currency: "USD", // Default, should be loaded from wallet
+			Currency: "VND", // Default, should be loaded from wallet
 		},
 		Date:      tx.Date.Unix(),
 		Note:      tx.Note,

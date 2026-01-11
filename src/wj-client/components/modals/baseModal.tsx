@@ -86,8 +86,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       setSuccessMessage("Wallet has been created successfully");
       store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
     },
-    onError: () => {
-      setError("Create wallet fail! Please try again");
+    onError: (error: any) => {
+      setError(error.message || "Failed to create wallet. Please try again");
     },
   });
 
@@ -99,8 +99,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       setSuccessMessage("Transaction added successfully");
       store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
     },
-    onError: () => {
-      setError("Add transaction fail! Please try again");
+    onError: (error: any) => {
+      setError(error.message || "Failed to add transaction. Please try again");
     },
   });
 
@@ -111,8 +111,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       setSuccessMessage("Transfer completed successfully");
       store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
     },
-    onError: () => {
-      setError("Transfer fail! Please try again");
+    onError: (error: any) => {
+      setError(error.message || "Failed to transfer funds. Please try again");
     },
   });
 
@@ -161,7 +161,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           categoryId: transactionInput.categoryId,
           amount: {
             amount: transactionInput.amount,
-            currency: "USD",
+            currency: "VND",
           },
           date: transactionInput.date,
           note: transactionInput.note,
@@ -182,7 +182,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           toWalletId: Number(transferInput.to),
           amount: {
             amount: transferInput.amount,
-            currency: "USD",
+            currency: "VND",
           },
         });
       }
