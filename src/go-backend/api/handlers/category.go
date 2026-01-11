@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/domain/service"
@@ -233,18 +235,19 @@ func (h *CategoryHandlers) DeleteCategory(c *gin.Context) {
 // Helper functions for parsing query parameters
 
 // parseCategoryTypeFilter parses the category type filter from query string.
+// Supports numeric enum values (1 = INCOME, 2 = EXPENSE).
 func parseCategoryTypeFilter(c *gin.Context) *transactionv1.CategoryType {
 	if typeStr := c.Query("type"); typeStr != "" {
-		var categoryType transactionv1.CategoryType
-		switch typeStr {
-		case "Income":
-			categoryType = transactionv1.CategoryType_CATEGORY_TYPE_INCOME
-		case "Expense":
-			categoryType = transactionv1.CategoryType_CATEGORY_TYPE_EXPENSE
-		default:
-			return nil
+		if typeNum, err := strconv.ParseInt(typeStr, 10, 32); err == nil {
+			switch transactionv1.CategoryType(typeNum) {
+			case transactionv1.CategoryType_CATEGORY_TYPE_INCOME:
+				categoryType := transactionv1.CategoryType_CATEGORY_TYPE_INCOME
+				return &categoryType
+			case transactionv1.CategoryType_CATEGORY_TYPE_EXPENSE:
+				categoryType := transactionv1.CategoryType_CATEGORY_TYPE_EXPENSE
+				return &categoryType
+			}
 		}
-		return &categoryType
 	}
 	return nil
 }

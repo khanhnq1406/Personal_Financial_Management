@@ -1,10 +1,19 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { AddTransactionType, CreateWalletType, TransferMoneyType } from "./baseModal";
-import { useQueryListWallets, useQueryListCategories } from "@/utils/generated/hooks";
+import {
+  AddTransactionType,
+  CreateWalletType,
+  TransferMoneyType,
+} from "./baseModal";
+import {
+  useQueryListWallets,
+  useQueryListCategories,
+} from "@/utils/generated/hooks";
 import { CategoryType } from "@/gen/protobuf/v1/transaction";
 
 interface AddTransactionFormProps {
-  setInput: Dispatch<SetStateAction<CreateWalletType | AddTransactionType | TransferMoneyType>>;
+  setInput: Dispatch<
+    SetStateAction<CreateWalletType | AddTransactionType | TransferMoneyType>
+  >;
 }
 
 export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
@@ -16,13 +25,19 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
   });
 
   // State for transaction type (income/expense)
-  const [transactionType, setTransactionType] = useState<"income" | "expense">("expense");
+  const [transactionType, setTransactionType] = useState<"income" | "expense">(
+    "income"
+  );
 
   // Fetch categories filtered by type
-  const { data: categoriesData, isLoading: categoriesLoading } = useQueryListCategories({
-    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-    type: transactionType === "income" ? CategoryType.CATEGORY_TYPE_INCOME : CategoryType.CATEGORY_TYPE_EXPENSE,
-  });
+  const { data: categoriesData, isLoading: categoriesLoading } =
+    useQueryListCategories({
+      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+      type:
+        transactionType === "income"
+          ? CategoryType.CATEGORY_TYPE_INCOME
+          : CategoryType.CATEGORY_TYPE_EXPENSE,
+    });
 
   const wallets = walletsData?.wallets || [];
   const categories = categoriesData?.categories || [];
@@ -131,7 +146,8 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           </option>
           {wallets.map((wallet) => (
             <option key={wallet.id} value={wallet.id}>
-              {wallet.walletName} ({wallet.balance?.amount || 0} {wallet.balance?.currency || "USD"})
+              {wallet.walletName} ({wallet.balance?.amount || 0}{" "}
+              {wallet.balance?.currency || "USD"})
             </option>
           ))}
         </select>
@@ -139,9 +155,11 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
 
       {/* Category */}
       <div className="mb-2">
-        <div>Category</div>
+        <div>
+          Category<span className="required">*</span>
+        </div>
         <select
-          defaultValue={""}
+          defaultValue={categories?.[0]?.id}
           className="p-2 drop-shadow-round rounded-lg w-full mt-1"
           disabled={categoriesLoading}
           onChange={(e) =>
@@ -151,8 +169,10 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
             }))
           }
         >
-          <option value={""} disabled>
-            {categoriesLoading ? "Loading categories..." : "Select category (optional)"}
+          <option value={undefined} disabled>
+            {categoriesLoading
+              ? "Loading categories..."
+              : "Select category (optional)"}
           </option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
@@ -164,7 +184,9 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
 
       {/* Date & Time */}
       <div className="mb-2">
-        <div>Date & Time</div>
+        <div>
+          Date & Time<span className="required">*</span>
+        </div>
         <input
           type="datetime-local"
           className="p-2 drop-shadow-round rounded-lg w-full mt-1"

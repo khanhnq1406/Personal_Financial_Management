@@ -14,8 +14,10 @@ import {
   useMutationCreateWallet,
   useMutationTransferFunds,
   useMutationCreateTransaction,
+  EVENT_WalletListWallets,
 } from "@/utils/generated/hooks";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
+import { useQueryClient } from "@tanstack/react-query";
 
 type BaseModalProps = {
   modal: ModalPayload | { isOpen: boolean; type: null; onSuccess?: () => void };
@@ -55,7 +57,7 @@ const initialInput = ():
       type: ModalType.CREATE_WALLET,
       name: "",
       initialBalance: 0,
-    } as CreateWalletType;
+    };
   }
   if (store.getState().setModalReducer.type === ModalType.ADD_TRANSACTION) {
     return { type: ModalType.ADD_TRANSACTION };
@@ -64,13 +66,14 @@ const initialInput = ():
     return { type: ModalType.TRANSFER_MONEY };
   }
   return {
-    type: WalletType.UNRECOGNIZED,
+    type: "",
     name: "",
     initialBalance: 0,
-  } as CreateWalletType;
+  };
 };
 
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
+  const queryClient = useQueryClient();
   const [input, setInput] = useState(initialInput);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -90,6 +93,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const createTransactionMutation = useMutationCreateTransaction({
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       modal.onSuccess?.();
       store.dispatch(closeModal());
       setSuccessMessage("Transaction added successfully");
@@ -113,7 +117,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   });
 
   const handleSubmit = () => {
-    console.log(input);
     if (modal.type === ModalType.SUCCESS) {
       store.dispatch(closeModal());
       return;
@@ -143,6 +146,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         }
         if (!transactionInput.walletId) {
           setError("Please select a wallet");
+          return;
+        }
+        if (!transactionInput.categoryId) {
+          setError("Please select a category");
+          return;
+        }
+        if (!transactionInput.date) {
+          setError("Please select date");
           return;
         }
         createTransactionMutation.mutate({

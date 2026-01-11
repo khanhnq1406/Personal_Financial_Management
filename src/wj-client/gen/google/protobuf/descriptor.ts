@@ -12,45 +12,45 @@ export const protobufPackage = "google.protobuf";
 /** The full set of known editions. */
 export const Edition = {
   /** EDITION_UNKNOWN - A placeholder for an unknown edition value. */
-  EDITION_UNKNOWN: "EDITION_UNKNOWN",
+  EDITION_UNKNOWN: 0,
   /**
    * EDITION_LEGACY - A placeholder edition for specifying default behaviors *before* a feature
    * was first introduced.  This is effectively an "infinite past".
    */
-  EDITION_LEGACY: "EDITION_LEGACY",
+  EDITION_LEGACY: 900,
   /**
    * EDITION_PROTO2 - Legacy syntax "editions".  These pre-date editions, but behave much like
    * distinct editions.  These can't be used to specify the edition of proto
    * files, but feature definitions must supply proto2/proto3 defaults for
    * backwards compatibility.
    */
-  EDITION_PROTO2: "EDITION_PROTO2",
-  EDITION_PROTO3: "EDITION_PROTO3",
+  EDITION_PROTO2: 998,
+  EDITION_PROTO3: 999,
   /**
    * EDITION_2023 - Editions that have been released.  The specific values are arbitrary and
    * should not be depended on, but they will always be time-ordered for easy
    * comparison.
    */
-  EDITION_2023: "EDITION_2023",
-  EDITION_2024: "EDITION_2024",
+  EDITION_2023: 1000,
+  EDITION_2024: 1001,
   /** EDITION_UNSTABLE - A placeholder edition for developing and testing unscheduled features. */
-  EDITION_UNSTABLE: "EDITION_UNSTABLE",
+  EDITION_UNSTABLE: 9999,
   /**
    * EDITION_1_TEST_ONLY - Placeholder editions for testing feature resolution.  These should not be
    * used or relied on outside of tests.
    */
-  EDITION_1_TEST_ONLY: "EDITION_1_TEST_ONLY",
-  EDITION_2_TEST_ONLY: "EDITION_2_TEST_ONLY",
-  EDITION_99997_TEST_ONLY: "EDITION_99997_TEST_ONLY",
-  EDITION_99998_TEST_ONLY: "EDITION_99998_TEST_ONLY",
-  EDITION_99999_TEST_ONLY: "EDITION_99999_TEST_ONLY",
+  EDITION_1_TEST_ONLY: 1,
+  EDITION_2_TEST_ONLY: 2,
+  EDITION_99997_TEST_ONLY: 99997,
+  EDITION_99998_TEST_ONLY: 99998,
+  EDITION_99999_TEST_ONLY: 99999,
   /**
    * EDITION_MAX - Placeholder for specifying unbounded edition support.  This should only
    * ever be used by plugins that can expect to never require any changes to
    * support a new edition.
    */
-  EDITION_MAX: "EDITION_MAX",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  EDITION_MAX: 2147483647,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type Edition = typeof Edition[keyof typeof Edition];
@@ -154,40 +154,6 @@ export function editionToJSON(object: Edition): string {
   }
 }
 
-export function editionToNumber(object: Edition): number {
-  switch (object) {
-    case Edition.EDITION_UNKNOWN:
-      return 0;
-    case Edition.EDITION_LEGACY:
-      return 900;
-    case Edition.EDITION_PROTO2:
-      return 998;
-    case Edition.EDITION_PROTO3:
-      return 999;
-    case Edition.EDITION_2023:
-      return 1000;
-    case Edition.EDITION_2024:
-      return 1001;
-    case Edition.EDITION_UNSTABLE:
-      return 9999;
-    case Edition.EDITION_1_TEST_ONLY:
-      return 1;
-    case Edition.EDITION_2_TEST_ONLY:
-      return 2;
-    case Edition.EDITION_99997_TEST_ONLY:
-      return 99997;
-    case Edition.EDITION_99998_TEST_ONLY:
-      return 99998;
-    case Edition.EDITION_99999_TEST_ONLY:
-      return 99999;
-    case Edition.EDITION_MAX:
-      return 2147483647;
-    case Edition.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 /**
  * Describes the 'visibility' of a symbol with respect to the proto import
  * system. Symbols can only be imported when the visibility rules do not prevent
@@ -196,10 +162,10 @@ export function editionToNumber(object: Edition): number {
  * from other files.
  */
 export const SymbolVisibility = {
-  VISIBILITY_UNSET: "VISIBILITY_UNSET",
-  VISIBILITY_LOCAL: "VISIBILITY_LOCAL",
-  VISIBILITY_EXPORT: "VISIBILITY_EXPORT",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  VISIBILITY_UNSET: 0,
+  VISIBILITY_LOCAL: 1,
+  VISIBILITY_EXPORT: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type SymbolVisibility = typeof SymbolVisibility[keyof typeof SymbolVisibility];
@@ -240,20 +206,6 @@ export function symbolVisibilityToJSON(object: SymbolVisibility): string {
     case SymbolVisibility.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function symbolVisibilityToNumber(object: SymbolVisibility): number {
-  switch (object) {
-    case SymbolVisibility.VISIBILITY_UNSET:
-      return 0;
-    case SymbolVisibility.VISIBILITY_LOCAL:
-      return 1;
-    case SymbolVisibility.VISIBILITY_EXPORT:
-      return 2;
-    case SymbolVisibility.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -395,9 +347,9 @@ export interface ExtensionRangeOptions {
 /** The verification state of the extension range. */
 export const ExtensionRangeOptions_VerificationState = {
   /** DECLARATION - All the extensions of the range must be declared. */
-  DECLARATION: "DECLARATION",
-  UNVERIFIED: "UNVERIFIED",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  DECLARATION: 0,
+  UNVERIFIED: 1,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type ExtensionRangeOptions_VerificationState =
@@ -433,20 +385,6 @@ export function extensionRangeOptions_VerificationStateToJSON(object: ExtensionR
     case ExtensionRangeOptions_VerificationState.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function extensionRangeOptions_VerificationStateToNumber(
-  object: ExtensionRangeOptions_VerificationState,
-): number {
-  switch (object) {
-    case ExtensionRangeOptions_VerificationState.DECLARATION:
-      return 0;
-    case ExtensionRangeOptions_VerificationState.UNVERIFIED:
-      return 1;
-    case ExtensionRangeOptions_VerificationState.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -573,23 +511,23 @@ export const FieldDescriptorProto_Type = {
    * TYPE_DOUBLE - 0 is reserved for errors.
    * Order is weird for historical reasons.
    */
-  TYPE_DOUBLE: "TYPE_DOUBLE",
-  TYPE_FLOAT: "TYPE_FLOAT",
+  TYPE_DOUBLE: 1,
+  TYPE_FLOAT: 2,
   /**
    * TYPE_INT64 - Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if
    * negative values are likely.
    */
-  TYPE_INT64: "TYPE_INT64",
-  TYPE_UINT64: "TYPE_UINT64",
+  TYPE_INT64: 3,
+  TYPE_UINT64: 4,
   /**
    * TYPE_INT32 - Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if
    * negative values are likely.
    */
-  TYPE_INT32: "TYPE_INT32",
-  TYPE_FIXED64: "TYPE_FIXED64",
-  TYPE_FIXED32: "TYPE_FIXED32",
-  TYPE_BOOL: "TYPE_BOOL",
-  TYPE_STRING: "TYPE_STRING",
+  TYPE_INT32: 5,
+  TYPE_FIXED64: 6,
+  TYPE_FIXED32: 7,
+  TYPE_BOOL: 8,
+  TYPE_STRING: 9,
   /**
    * TYPE_GROUP - Tag-delimited aggregate.
    * Group type is deprecated and not supported after google.protobuf. However, Proto3
@@ -597,20 +535,20 @@ export const FieldDescriptorProto_Type = {
    * treat group fields as unknown fields.  In Editions, the group wire format
    * can be enabled via the `message_encoding` feature.
    */
-  TYPE_GROUP: "TYPE_GROUP",
+  TYPE_GROUP: 10,
   /** TYPE_MESSAGE - Length-delimited aggregate. */
-  TYPE_MESSAGE: "TYPE_MESSAGE",
+  TYPE_MESSAGE: 11,
   /** TYPE_BYTES - New in version 2. */
-  TYPE_BYTES: "TYPE_BYTES",
-  TYPE_UINT32: "TYPE_UINT32",
-  TYPE_ENUM: "TYPE_ENUM",
-  TYPE_SFIXED32: "TYPE_SFIXED32",
-  TYPE_SFIXED64: "TYPE_SFIXED64",
+  TYPE_BYTES: 12,
+  TYPE_UINT32: 13,
+  TYPE_ENUM: 14,
+  TYPE_SFIXED32: 15,
+  TYPE_SFIXED64: 16,
   /** TYPE_SINT32 - Uses ZigZag encoding. */
-  TYPE_SINT32: "TYPE_SINT32",
+  TYPE_SINT32: 17,
   /** TYPE_SINT64 - Uses ZigZag encoding. */
-  TYPE_SINT64: "TYPE_SINT64",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  TYPE_SINT64: 18,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldDescriptorProto_Type = typeof FieldDescriptorProto_Type[keyof typeof FieldDescriptorProto_Type];
@@ -744,61 +682,17 @@ export function fieldDescriptorProto_TypeToJSON(object: FieldDescriptorProto_Typ
   }
 }
 
-export function fieldDescriptorProto_TypeToNumber(object: FieldDescriptorProto_Type): number {
-  switch (object) {
-    case FieldDescriptorProto_Type.TYPE_DOUBLE:
-      return 1;
-    case FieldDescriptorProto_Type.TYPE_FLOAT:
-      return 2;
-    case FieldDescriptorProto_Type.TYPE_INT64:
-      return 3;
-    case FieldDescriptorProto_Type.TYPE_UINT64:
-      return 4;
-    case FieldDescriptorProto_Type.TYPE_INT32:
-      return 5;
-    case FieldDescriptorProto_Type.TYPE_FIXED64:
-      return 6;
-    case FieldDescriptorProto_Type.TYPE_FIXED32:
-      return 7;
-    case FieldDescriptorProto_Type.TYPE_BOOL:
-      return 8;
-    case FieldDescriptorProto_Type.TYPE_STRING:
-      return 9;
-    case FieldDescriptorProto_Type.TYPE_GROUP:
-      return 10;
-    case FieldDescriptorProto_Type.TYPE_MESSAGE:
-      return 11;
-    case FieldDescriptorProto_Type.TYPE_BYTES:
-      return 12;
-    case FieldDescriptorProto_Type.TYPE_UINT32:
-      return 13;
-    case FieldDescriptorProto_Type.TYPE_ENUM:
-      return 14;
-    case FieldDescriptorProto_Type.TYPE_SFIXED32:
-      return 15;
-    case FieldDescriptorProto_Type.TYPE_SFIXED64:
-      return 16;
-    case FieldDescriptorProto_Type.TYPE_SINT32:
-      return 17;
-    case FieldDescriptorProto_Type.TYPE_SINT64:
-      return 18;
-    case FieldDescriptorProto_Type.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FieldDescriptorProto_Label = {
   /** LABEL_OPTIONAL - 0 is reserved for errors */
-  LABEL_OPTIONAL: "LABEL_OPTIONAL",
-  LABEL_REPEATED: "LABEL_REPEATED",
+  LABEL_OPTIONAL: 1,
+  LABEL_REPEATED: 3,
   /**
    * LABEL_REQUIRED - The required label is only allowed in google.protobuf.  In proto3 and Editions
    * it's explicitly prohibited.  In Editions, the `field_presence` feature
    * can be used to get this behavior.
    */
-  LABEL_REQUIRED: "LABEL_REQUIRED",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  LABEL_REQUIRED: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldDescriptorProto_Label = typeof FieldDescriptorProto_Label[keyof typeof FieldDescriptorProto_Label];
@@ -839,20 +733,6 @@ export function fieldDescriptorProto_LabelToJSON(object: FieldDescriptorProto_La
     case FieldDescriptorProto_Label.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function fieldDescriptorProto_LabelToNumber(object: FieldDescriptorProto_Label): number {
-  switch (object) {
-    case FieldDescriptorProto_Label.LABEL_OPTIONAL:
-      return 1;
-    case FieldDescriptorProto_Label.LABEL_REPEATED:
-      return 3;
-    case FieldDescriptorProto_Label.LABEL_REQUIRED:
-      return 2;
-    case FieldDescriptorProto_Label.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -1105,12 +985,12 @@ export interface FileOptions {
 /** Generated classes can be optimized for speed or code size. */
 export const FileOptions_OptimizeMode = {
   /** SPEED - Generate complete code for parsing, serialization, */
-  SPEED: "SPEED",
+  SPEED: 1,
   /** CODE_SIZE - etc. */
-  CODE_SIZE: "CODE_SIZE",
+  CODE_SIZE: 2,
   /** LITE_RUNTIME - Generate code using MessageLite and the lite runtime. */
-  LITE_RUNTIME: "LITE_RUNTIME",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  LITE_RUNTIME: 3,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FileOptions_OptimizeMode = typeof FileOptions_OptimizeMode[keyof typeof FileOptions_OptimizeMode];
@@ -1151,20 +1031,6 @@ export function fileOptions_OptimizeModeToJSON(object: FileOptions_OptimizeMode)
     case FileOptions_OptimizeMode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function fileOptions_OptimizeModeToNumber(object: FileOptions_OptimizeMode): number {
-  switch (object) {
-    case FileOptions_OptimizeMode.SPEED:
-      return 1;
-    case FileOptions_OptimizeMode.CODE_SIZE:
-      return 2;
-    case FileOptions_OptimizeMode.LITE_RUNTIME:
-      return 3;
-    case FileOptions_OptimizeMode.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -1383,7 +1249,7 @@ export interface FieldOptions {
 
 export const FieldOptions_CType = {
   /** STRING - Default mode. */
-  STRING: "STRING",
+  STRING: 0,
   /**
    * CORD - The option [ctype=CORD] may be applied to a non-repeated field of type
    * "bytes". It indicates that in C++, the data should be stored in a Cord
@@ -1392,9 +1258,9 @@ export const FieldOptions_CType = {
    * Cord, or when parsing with aliasing enabled, as the parsed Cord may then
    * alias the original buffer.
    */
-  CORD: "CORD",
-  STRING_PIECE: "STRING_PIECE",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  CORD: 1,
+  STRING_PIECE: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldOptions_CType = typeof FieldOptions_CType[keyof typeof FieldOptions_CType];
@@ -1438,28 +1304,14 @@ export function fieldOptions_CTypeToJSON(object: FieldOptions_CType): string {
   }
 }
 
-export function fieldOptions_CTypeToNumber(object: FieldOptions_CType): number {
-  switch (object) {
-    case FieldOptions_CType.STRING:
-      return 0;
-    case FieldOptions_CType.CORD:
-      return 1;
-    case FieldOptions_CType.STRING_PIECE:
-      return 2;
-    case FieldOptions_CType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FieldOptions_JSType = {
   /** JS_NORMAL - Use the default type. */
-  JS_NORMAL: "JS_NORMAL",
+  JS_NORMAL: 0,
   /** JS_STRING - Use JavaScript strings. */
-  JS_STRING: "JS_STRING",
+  JS_STRING: 1,
   /** JS_NUMBER - Use JavaScript numbers. */
-  JS_NUMBER: "JS_NUMBER",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  JS_NUMBER: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldOptions_JSType = typeof FieldOptions_JSType[keyof typeof FieldOptions_JSType];
@@ -1503,26 +1355,12 @@ export function fieldOptions_JSTypeToJSON(object: FieldOptions_JSType): string {
   }
 }
 
-export function fieldOptions_JSTypeToNumber(object: FieldOptions_JSType): number {
-  switch (object) {
-    case FieldOptions_JSType.JS_NORMAL:
-      return 0;
-    case FieldOptions_JSType.JS_STRING:
-      return 1;
-    case FieldOptions_JSType.JS_NUMBER:
-      return 2;
-    case FieldOptions_JSType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 /** If set to RETENTION_SOURCE, the option will be omitted from the binary. */
 export const FieldOptions_OptionRetention = {
-  RETENTION_UNKNOWN: "RETENTION_UNKNOWN",
-  RETENTION_RUNTIME: "RETENTION_RUNTIME",
-  RETENTION_SOURCE: "RETENTION_SOURCE",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  RETENTION_UNKNOWN: 0,
+  RETENTION_RUNTIME: 1,
+  RETENTION_SOURCE: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldOptions_OptionRetention =
@@ -1567,37 +1405,23 @@ export function fieldOptions_OptionRetentionToJSON(object: FieldOptions_OptionRe
   }
 }
 
-export function fieldOptions_OptionRetentionToNumber(object: FieldOptions_OptionRetention): number {
-  switch (object) {
-    case FieldOptions_OptionRetention.RETENTION_UNKNOWN:
-      return 0;
-    case FieldOptions_OptionRetention.RETENTION_RUNTIME:
-      return 1;
-    case FieldOptions_OptionRetention.RETENTION_SOURCE:
-      return 2;
-    case FieldOptions_OptionRetention.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 /**
  * This indicates the types of entities that the field may apply to when used
  * as an option. If it is unset, then the field may be freely used as an
  * option on any kind of entity.
  */
 export const FieldOptions_OptionTargetType = {
-  TARGET_TYPE_UNKNOWN: "TARGET_TYPE_UNKNOWN",
-  TARGET_TYPE_FILE: "TARGET_TYPE_FILE",
-  TARGET_TYPE_EXTENSION_RANGE: "TARGET_TYPE_EXTENSION_RANGE",
-  TARGET_TYPE_MESSAGE: "TARGET_TYPE_MESSAGE",
-  TARGET_TYPE_FIELD: "TARGET_TYPE_FIELD",
-  TARGET_TYPE_ONEOF: "TARGET_TYPE_ONEOF",
-  TARGET_TYPE_ENUM: "TARGET_TYPE_ENUM",
-  TARGET_TYPE_ENUM_ENTRY: "TARGET_TYPE_ENUM_ENTRY",
-  TARGET_TYPE_SERVICE: "TARGET_TYPE_SERVICE",
-  TARGET_TYPE_METHOD: "TARGET_TYPE_METHOD",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  TARGET_TYPE_UNKNOWN: 0,
+  TARGET_TYPE_FILE: 1,
+  TARGET_TYPE_EXTENSION_RANGE: 2,
+  TARGET_TYPE_MESSAGE: 3,
+  TARGET_TYPE_FIELD: 4,
+  TARGET_TYPE_ONEOF: 5,
+  TARGET_TYPE_ENUM: 6,
+  TARGET_TYPE_ENUM_ENTRY: 7,
+  TARGET_TYPE_SERVICE: 8,
+  TARGET_TYPE_METHOD: 9,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FieldOptions_OptionTargetType =
@@ -1681,34 +1505,6 @@ export function fieldOptions_OptionTargetTypeToJSON(object: FieldOptions_OptionT
     case FieldOptions_OptionTargetType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function fieldOptions_OptionTargetTypeToNumber(object: FieldOptions_OptionTargetType): number {
-  switch (object) {
-    case FieldOptions_OptionTargetType.TARGET_TYPE_UNKNOWN:
-      return 0;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_FILE:
-      return 1;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_EXTENSION_RANGE:
-      return 2;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_MESSAGE:
-      return 3;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_FIELD:
-      return 4;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_ONEOF:
-      return 5;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_ENUM:
-      return 6;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_ENUM_ENTRY:
-      return 7;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_SERVICE:
-      return 8;
-    case FieldOptions_OptionTargetType.TARGET_TYPE_METHOD:
-      return 9;
-    case FieldOptions_OptionTargetType.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -1904,12 +1700,12 @@ export interface MethodOptions {
  * methods, and PUT verb for idempotent methods instead of the default POST.
  */
 export const MethodOptions_IdempotencyLevel = {
-  IDEMPOTENCY_UNKNOWN: "IDEMPOTENCY_UNKNOWN",
+  IDEMPOTENCY_UNKNOWN: 0,
   /** NO_SIDE_EFFECTS - implies idempotent */
-  NO_SIDE_EFFECTS: "NO_SIDE_EFFECTS",
+  NO_SIDE_EFFECTS: 1,
   /** IDEMPOTENT - idempotent, but may have side effects */
-  IDEMPOTENT: "IDEMPOTENT",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  IDEMPOTENT: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type MethodOptions_IdempotencyLevel =
@@ -1951,20 +1747,6 @@ export function methodOptions_IdempotencyLevelToJSON(object: MethodOptions_Idemp
     case MethodOptions_IdempotencyLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function methodOptions_IdempotencyLevelToNumber(object: MethodOptions_IdempotencyLevel): number {
-  switch (object) {
-    case MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN:
-      return 0;
-    case MethodOptions_IdempotencyLevel.NO_SIDE_EFFECTS:
-      return 1;
-    case MethodOptions_IdempotencyLevel.IDEMPOTENT:
-      return 2;
-    case MethodOptions_IdempotencyLevel.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -2022,11 +1804,11 @@ export interface FeatureSet {
 }
 
 export const FeatureSet_FieldPresence = {
-  FIELD_PRESENCE_UNKNOWN: "FIELD_PRESENCE_UNKNOWN",
-  EXPLICIT: "EXPLICIT",
-  IMPLICIT: "IMPLICIT",
-  LEGACY_REQUIRED: "LEGACY_REQUIRED",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  FIELD_PRESENCE_UNKNOWN: 0,
+  EXPLICIT: 1,
+  IMPLICIT: 2,
+  LEGACY_REQUIRED: 3,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_FieldPresence = typeof FeatureSet_FieldPresence[keyof typeof FeatureSet_FieldPresence];
@@ -2076,28 +1858,7 @@ export function featureSet_FieldPresenceToJSON(object: FeatureSet_FieldPresence)
   }
 }
 
-export function featureSet_FieldPresenceToNumber(object: FeatureSet_FieldPresence): number {
-  switch (object) {
-    case FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN:
-      return 0;
-    case FeatureSet_FieldPresence.EXPLICIT:
-      return 1;
-    case FeatureSet_FieldPresence.IMPLICIT:
-      return 2;
-    case FeatureSet_FieldPresence.LEGACY_REQUIRED:
-      return 3;
-    case FeatureSet_FieldPresence.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export const FeatureSet_EnumType = {
-  ENUM_TYPE_UNKNOWN: "ENUM_TYPE_UNKNOWN",
-  OPEN: "OPEN",
-  CLOSED: "CLOSED",
-  UNRECOGNIZED: "UNRECOGNIZED",
-} as const;
+export const FeatureSet_EnumType = { ENUM_TYPE_UNKNOWN: 0, OPEN: 1, CLOSED: 2, UNRECOGNIZED: -1 } as const;
 
 export type FeatureSet_EnumType = typeof FeatureSet_EnumType[keyof typeof FeatureSet_EnumType];
 
@@ -2140,25 +1901,11 @@ export function featureSet_EnumTypeToJSON(object: FeatureSet_EnumType): string {
   }
 }
 
-export function featureSet_EnumTypeToNumber(object: FeatureSet_EnumType): number {
-  switch (object) {
-    case FeatureSet_EnumType.ENUM_TYPE_UNKNOWN:
-      return 0;
-    case FeatureSet_EnumType.OPEN:
-      return 1;
-    case FeatureSet_EnumType.CLOSED:
-      return 2;
-    case FeatureSet_EnumType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FeatureSet_RepeatedFieldEncoding = {
-  REPEATED_FIELD_ENCODING_UNKNOWN: "REPEATED_FIELD_ENCODING_UNKNOWN",
-  PACKED: "PACKED",
-  EXPANDED: "EXPANDED",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  REPEATED_FIELD_ENCODING_UNKNOWN: 0,
+  PACKED: 1,
+  EXPANDED: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_RepeatedFieldEncoding =
@@ -2203,26 +1950,7 @@ export function featureSet_RepeatedFieldEncodingToJSON(object: FeatureSet_Repeat
   }
 }
 
-export function featureSet_RepeatedFieldEncodingToNumber(object: FeatureSet_RepeatedFieldEncoding): number {
-  switch (object) {
-    case FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN:
-      return 0;
-    case FeatureSet_RepeatedFieldEncoding.PACKED:
-      return 1;
-    case FeatureSet_RepeatedFieldEncoding.EXPANDED:
-      return 2;
-    case FeatureSet_RepeatedFieldEncoding.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export const FeatureSet_Utf8Validation = {
-  UTF8_VALIDATION_UNKNOWN: "UTF8_VALIDATION_UNKNOWN",
-  VERIFY: "VERIFY",
-  NONE: "NONE",
-  UNRECOGNIZED: "UNRECOGNIZED",
-} as const;
+export const FeatureSet_Utf8Validation = { UTF8_VALIDATION_UNKNOWN: 0, VERIFY: 2, NONE: 3, UNRECOGNIZED: -1 } as const;
 
 export type FeatureSet_Utf8Validation = typeof FeatureSet_Utf8Validation[keyof typeof FeatureSet_Utf8Validation];
 
@@ -2265,25 +1993,11 @@ export function featureSet_Utf8ValidationToJSON(object: FeatureSet_Utf8Validatio
   }
 }
 
-export function featureSet_Utf8ValidationToNumber(object: FeatureSet_Utf8Validation): number {
-  switch (object) {
-    case FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN:
-      return 0;
-    case FeatureSet_Utf8Validation.VERIFY:
-      return 2;
-    case FeatureSet_Utf8Validation.NONE:
-      return 3;
-    case FeatureSet_Utf8Validation.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FeatureSet_MessageEncoding = {
-  MESSAGE_ENCODING_UNKNOWN: "MESSAGE_ENCODING_UNKNOWN",
-  LENGTH_PREFIXED: "LENGTH_PREFIXED",
-  DELIMITED: "DELIMITED",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  MESSAGE_ENCODING_UNKNOWN: 0,
+  LENGTH_PREFIXED: 1,
+  DELIMITED: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_MessageEncoding = typeof FeatureSet_MessageEncoding[keyof typeof FeatureSet_MessageEncoding];
@@ -2327,25 +2041,11 @@ export function featureSet_MessageEncodingToJSON(object: FeatureSet_MessageEncod
   }
 }
 
-export function featureSet_MessageEncodingToNumber(object: FeatureSet_MessageEncoding): number {
-  switch (object) {
-    case FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN:
-      return 0;
-    case FeatureSet_MessageEncoding.LENGTH_PREFIXED:
-      return 1;
-    case FeatureSet_MessageEncoding.DELIMITED:
-      return 2;
-    case FeatureSet_MessageEncoding.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FeatureSet_JsonFormat = {
-  JSON_FORMAT_UNKNOWN: "JSON_FORMAT_UNKNOWN",
-  ALLOW: "ALLOW",
-  LEGACY_BEST_EFFORT: "LEGACY_BEST_EFFORT",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  JSON_FORMAT_UNKNOWN: 0,
+  ALLOW: 1,
+  LEGACY_BEST_EFFORT: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_JsonFormat = typeof FeatureSet_JsonFormat[keyof typeof FeatureSet_JsonFormat];
@@ -2389,25 +2089,11 @@ export function featureSet_JsonFormatToJSON(object: FeatureSet_JsonFormat): stri
   }
 }
 
-export function featureSet_JsonFormatToNumber(object: FeatureSet_JsonFormat): number {
-  switch (object) {
-    case FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN:
-      return 0;
-    case FeatureSet_JsonFormat.ALLOW:
-      return 1;
-    case FeatureSet_JsonFormat.LEGACY_BEST_EFFORT:
-      return 2;
-    case FeatureSet_JsonFormat.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const FeatureSet_EnforceNamingStyle = {
-  ENFORCE_NAMING_STYLE_UNKNOWN: "ENFORCE_NAMING_STYLE_UNKNOWN",
-  STYLE2024: "STYLE2024",
-  STYLE_LEGACY: "STYLE_LEGACY",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  ENFORCE_NAMING_STYLE_UNKNOWN: 0,
+  STYLE2024: 1,
+  STYLE_LEGACY: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_EnforceNamingStyle =
@@ -2452,38 +2138,24 @@ export function featureSet_EnforceNamingStyleToJSON(object: FeatureSet_EnforceNa
   }
 }
 
-export function featureSet_EnforceNamingStyleToNumber(object: FeatureSet_EnforceNamingStyle): number {
-  switch (object) {
-    case FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN:
-      return 0;
-    case FeatureSet_EnforceNamingStyle.STYLE2024:
-      return 1;
-    case FeatureSet_EnforceNamingStyle.STYLE_LEGACY:
-      return 2;
-    case FeatureSet_EnforceNamingStyle.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export interface FeatureSet_VisibilityFeature {
 }
 
 export const FeatureSet_VisibilityFeature_DefaultSymbolVisibility = {
-  DEFAULT_SYMBOL_VISIBILITY_UNKNOWN: "DEFAULT_SYMBOL_VISIBILITY_UNKNOWN",
+  DEFAULT_SYMBOL_VISIBILITY_UNKNOWN: 0,
   /** EXPORT_ALL - Default pre-EDITION_2024, all UNSET visibility are export. */
-  EXPORT_ALL: "EXPORT_ALL",
+  EXPORT_ALL: 1,
   /** EXPORT_TOP_LEVEL - All top-level symbols default to export, nested default to local. */
-  EXPORT_TOP_LEVEL: "EXPORT_TOP_LEVEL",
+  EXPORT_TOP_LEVEL: 2,
   /** LOCAL_ALL - All symbols default to local. */
-  LOCAL_ALL: "LOCAL_ALL",
+  LOCAL_ALL: 3,
   /**
    * STRICT - All symbols local by default. Nested types cannot be exported.
    * With special case caveat for message { enum {} reserved 1 to max; }
    * This is the recommended setting for new protos.
    */
-  STRICT: "STRICT",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  STRICT: 4,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type FeatureSet_VisibilityFeature_DefaultSymbolVisibility =
@@ -2544,26 +2216,6 @@ export function featureSet_VisibilityFeature_DefaultSymbolVisibilityToJSON(
     case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function featureSet_VisibilityFeature_DefaultSymbolVisibilityToNumber(
-  object: FeatureSet_VisibilityFeature_DefaultSymbolVisibility,
-): number {
-  switch (object) {
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN:
-      return 0;
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.EXPORT_ALL:
-      return 1;
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.EXPORT_TOP_LEVEL:
-      return 2;
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.LOCAL_ALL:
-      return 3;
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.STRICT:
-      return 4;
-    case FeatureSet_VisibilityFeature_DefaultSymbolVisibility.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -2794,12 +2446,12 @@ export interface GeneratedCodeInfo_Annotation {
  */
 export const GeneratedCodeInfo_Annotation_Semantic = {
   /** NONE - There is no effect or the effect is indescribable. */
-  NONE: "NONE",
+  NONE: 0,
   /** SET - The element is set or otherwise mutated. */
-  SET: "SET",
+  SET: 1,
   /** ALIAS - An alias to the element is returned. */
-  ALIAS: "ALIAS",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  ALIAS: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type GeneratedCodeInfo_Annotation_Semantic =
@@ -2841,20 +2493,6 @@ export function generatedCodeInfo_Annotation_SemanticToJSON(object: GeneratedCod
     case GeneratedCodeInfo_Annotation_Semantic.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function generatedCodeInfo_Annotation_SemanticToNumber(object: GeneratedCodeInfo_Annotation_Semantic): number {
-  switch (object) {
-    case GeneratedCodeInfo_Annotation_Semantic.NONE:
-      return 0;
-    case GeneratedCodeInfo_Annotation_Semantic.SET:
-      return 1;
-    case GeneratedCodeInfo_Annotation_Semantic.ALIAS:
-      return 2;
-    case GeneratedCodeInfo_Annotation_Semantic.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -2933,7 +2571,7 @@ function createBaseFileDescriptorProto(): FileDescriptorProto {
     options: undefined,
     sourceCodeInfo: undefined,
     syntax: "",
-    edition: Edition.EDITION_UNKNOWN,
+    edition: 0,
   };
 }
 
@@ -2982,8 +2620,8 @@ export const FileDescriptorProto: MessageFns<FileDescriptorProto> = {
     if (message.syntax !== undefined && message.syntax !== "") {
       writer.uint32(98).string(message.syntax);
     }
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(112).int32(editionToNumber(message.edition));
+    if (message.edition !== undefined && message.edition !== 0) {
+      writer.uint32(112).int32(message.edition);
     }
     return writer;
   },
@@ -3124,7 +2762,7 @@ export const FileDescriptorProto: MessageFns<FileDescriptorProto> = {
             break;
           }
 
-          message.edition = editionFromJSON(reader.int32());
+          message.edition = reader.int32() as any;
           continue;
         }
       }
@@ -3167,7 +2805,7 @@ export const FileDescriptorProto: MessageFns<FileDescriptorProto> = {
       options: isSet(object.options) ? FileOptions.fromJSON(object.options) : undefined,
       sourceCodeInfo: isSet(object.sourceCodeInfo) ? SourceCodeInfo.fromJSON(object.sourceCodeInfo) : undefined,
       syntax: isSet(object.syntax) ? globalThis.String(object.syntax) : "",
-      edition: isSet(object.edition) ? editionFromJSON(object.edition) : Edition.EDITION_UNKNOWN,
+      edition: isSet(object.edition) ? editionFromJSON(object.edition) : 0,
     };
   },
 
@@ -3212,7 +2850,7 @@ export const FileDescriptorProto: MessageFns<FileDescriptorProto> = {
     if (message.syntax !== undefined && message.syntax !== "") {
       obj.syntax = message.syntax;
     }
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
+    if (message.edition !== undefined && message.edition !== 0) {
       obj.edition = editionToJSON(message.edition);
     }
     return obj;
@@ -3240,7 +2878,7 @@ export const FileDescriptorProto: MessageFns<FileDescriptorProto> = {
       ? SourceCodeInfo.fromPartial(object.sourceCodeInfo)
       : undefined;
     message.syntax = object.syntax ?? "";
-    message.edition = object.edition ?? Edition.EDITION_UNKNOWN;
+    message.edition = object.edition ?? 0;
     return message;
   },
 };
@@ -3257,7 +2895,7 @@ function createBaseDescriptorProto(): DescriptorProto {
     options: undefined,
     reservedRange: [],
     reservedName: [],
-    visibility: SymbolVisibility.VISIBILITY_UNSET,
+    visibility: 0,
   };
 }
 
@@ -3293,8 +2931,8 @@ export const DescriptorProto: MessageFns<DescriptorProto> = {
     for (const v of message.reservedName) {
       writer.uint32(82).string(v!);
     }
-    if (message.visibility !== undefined && message.visibility !== SymbolVisibility.VISIBILITY_UNSET) {
-      writer.uint32(88).int32(symbolVisibilityToNumber(message.visibility));
+    if (message.visibility !== undefined && message.visibility !== 0) {
+      writer.uint32(88).int32(message.visibility);
     }
     return writer;
   },
@@ -3391,7 +3029,7 @@ export const DescriptorProto: MessageFns<DescriptorProto> = {
             break;
           }
 
-          message.visibility = symbolVisibilityFromJSON(reader.int32());
+          message.visibility = reader.int32() as any;
           continue;
         }
       }
@@ -3431,9 +3069,7 @@ export const DescriptorProto: MessageFns<DescriptorProto> = {
       reservedName: globalThis.Array.isArray(object?.reservedName)
         ? object.reservedName.map((e: any) => globalThis.String(e))
         : [],
-      visibility: isSet(object.visibility)
-        ? symbolVisibilityFromJSON(object.visibility)
-        : SymbolVisibility.VISIBILITY_UNSET,
+      visibility: isSet(object.visibility) ? symbolVisibilityFromJSON(object.visibility) : 0,
     };
   },
 
@@ -3469,7 +3105,7 @@ export const DescriptorProto: MessageFns<DescriptorProto> = {
     if (message.reservedName?.length) {
       obj.reservedName = message.reservedName;
     }
-    if (message.visibility !== undefined && message.visibility !== SymbolVisibility.VISIBILITY_UNSET) {
+    if (message.visibility !== undefined && message.visibility !== 0) {
       obj.visibility = symbolVisibilityToJSON(message.visibility);
     }
     return obj;
@@ -3492,7 +3128,7 @@ export const DescriptorProto: MessageFns<DescriptorProto> = {
       : undefined;
     message.reservedRange = object.reservedRange?.map((e) => DescriptorProto_ReservedRange.fromPartial(e)) || [];
     message.reservedName = object.reservedName?.map((e) => e) || [];
-    message.visibility = object.visibility ?? SymbolVisibility.VISIBILITY_UNSET;
+    message.visibility = object.visibility ?? 0;
     return message;
   },
 };
@@ -3668,12 +3304,7 @@ export const DescriptorProto_ReservedRange: MessageFns<DescriptorProto_ReservedR
 };
 
 function createBaseExtensionRangeOptions(): ExtensionRangeOptions {
-  return {
-    uninterpretedOption: [],
-    declaration: [],
-    features: undefined,
-    verification: ExtensionRangeOptions_VerificationState.UNVERIFIED,
-  };
+  return { uninterpretedOption: [], declaration: [], features: undefined, verification: 1 };
 }
 
 export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
@@ -3687,10 +3318,8 @@ export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
     if (message.features !== undefined) {
       FeatureSet.encode(message.features, writer.uint32(402).fork()).join();
     }
-    if (
-      message.verification !== undefined && message.verification !== ExtensionRangeOptions_VerificationState.DECLARATION
-    ) {
-      writer.uint32(24).int32(extensionRangeOptions_VerificationStateToNumber(message.verification));
+    if (message.verification !== undefined && message.verification !== 1) {
+      writer.uint32(24).int32(message.verification);
     }
     return writer;
   },
@@ -3731,7 +3360,7 @@ export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
             break;
           }
 
-          message.verification = extensionRangeOptions_VerificationStateFromJSON(reader.int32());
+          message.verification = reader.int32() as any;
           continue;
         }
       }
@@ -3754,7 +3383,7 @@ export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
       features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
       verification: isSet(object.verification)
         ? extensionRangeOptions_VerificationStateFromJSON(object.verification)
-        : ExtensionRangeOptions_VerificationState.UNVERIFIED,
+        : 1,
     };
   },
 
@@ -3769,9 +3398,7 @@ export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
     if (message.features !== undefined) {
       obj.features = FeatureSet.toJSON(message.features);
     }
-    if (
-      message.verification !== undefined && message.verification !== ExtensionRangeOptions_VerificationState.DECLARATION
-    ) {
+    if (message.verification !== undefined && message.verification !== 1) {
       obj.verification = extensionRangeOptions_VerificationStateToJSON(message.verification);
     }
     return obj;
@@ -3787,7 +3414,7 @@ export const ExtensionRangeOptions: MessageFns<ExtensionRangeOptions> = {
     message.features = (object.features !== undefined && object.features !== null)
       ? FeatureSet.fromPartial(object.features)
       : undefined;
-    message.verification = object.verification ?? ExtensionRangeOptions_VerificationState.UNVERIFIED;
+    message.verification = object.verification ?? 1;
     return message;
   },
 };
@@ -3920,8 +3547,8 @@ function createBaseFieldDescriptorProto(): FieldDescriptorProto {
   return {
     name: "",
     number: 0,
-    label: FieldDescriptorProto_Label.LABEL_OPTIONAL,
-    type: FieldDescriptorProto_Type.TYPE_DOUBLE,
+    label: 1,
+    type: 1,
     typeName: "",
     extendee: "",
     defaultValue: "",
@@ -3940,11 +3567,11 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
     if (message.number !== undefined && message.number !== 0) {
       writer.uint32(24).int32(message.number);
     }
-    if (message.label !== undefined && message.label !== FieldDescriptorProto_Label.LABEL_OPTIONAL) {
-      writer.uint32(32).int32(fieldDescriptorProto_LabelToNumber(message.label));
+    if (message.label !== undefined && message.label !== 1) {
+      writer.uint32(32).int32(message.label);
     }
-    if (message.type !== undefined && message.type !== FieldDescriptorProto_Type.TYPE_DOUBLE) {
-      writer.uint32(40).int32(fieldDescriptorProto_TypeToNumber(message.type));
+    if (message.type !== undefined && message.type !== 1) {
+      writer.uint32(40).int32(message.type);
     }
     if (message.typeName !== undefined && message.typeName !== "") {
       writer.uint32(50).string(message.typeName);
@@ -3998,7 +3625,7 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
             break;
           }
 
-          message.label = fieldDescriptorProto_LabelFromJSON(reader.int32());
+          message.label = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -4006,7 +3633,7 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
             break;
           }
 
-          message.type = fieldDescriptorProto_TypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
         case 6: {
@@ -4078,10 +3705,8 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       number: isSet(object.number) ? globalThis.Number(object.number) : 0,
-      label: isSet(object.label)
-        ? fieldDescriptorProto_LabelFromJSON(object.label)
-        : FieldDescriptorProto_Label.LABEL_OPTIONAL,
-      type: isSet(object.type) ? fieldDescriptorProto_TypeFromJSON(object.type) : FieldDescriptorProto_Type.TYPE_DOUBLE,
+      label: isSet(object.label) ? fieldDescriptorProto_LabelFromJSON(object.label) : 1,
+      type: isSet(object.type) ? fieldDescriptorProto_TypeFromJSON(object.type) : 1,
       typeName: isSet(object.typeName) ? globalThis.String(object.typeName) : "",
       extendee: isSet(object.extendee) ? globalThis.String(object.extendee) : "",
       defaultValue: isSet(object.defaultValue) ? globalThis.String(object.defaultValue) : "",
@@ -4100,10 +3725,10 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
     if (message.number !== undefined && message.number !== 0) {
       obj.number = Math.round(message.number);
     }
-    if (message.label !== undefined && message.label !== FieldDescriptorProto_Label.LABEL_OPTIONAL) {
+    if (message.label !== undefined && message.label !== 1) {
       obj.label = fieldDescriptorProto_LabelToJSON(message.label);
     }
-    if (message.type !== undefined && message.type !== FieldDescriptorProto_Type.TYPE_DOUBLE) {
+    if (message.type !== undefined && message.type !== 1) {
       obj.type = fieldDescriptorProto_TypeToJSON(message.type);
     }
     if (message.typeName !== undefined && message.typeName !== "") {
@@ -4137,8 +3762,8 @@ export const FieldDescriptorProto: MessageFns<FieldDescriptorProto> = {
     const message = createBaseFieldDescriptorProto();
     message.name = object.name ?? "";
     message.number = object.number ?? 0;
-    message.label = object.label ?? FieldDescriptorProto_Label.LABEL_OPTIONAL;
-    message.type = object.type ?? FieldDescriptorProto_Type.TYPE_DOUBLE;
+    message.label = object.label ?? 1;
+    message.type = object.type ?? 1;
     message.typeName = object.typeName ?? "";
     message.extendee = object.extendee ?? "";
     message.defaultValue = object.defaultValue ?? "";
@@ -4231,14 +3856,7 @@ export const OneofDescriptorProto: MessageFns<OneofDescriptorProto> = {
 };
 
 function createBaseEnumDescriptorProto(): EnumDescriptorProto {
-  return {
-    name: "",
-    value: [],
-    options: undefined,
-    reservedRange: [],
-    reservedName: [],
-    visibility: SymbolVisibility.VISIBILITY_UNSET,
-  };
+  return { name: "", value: [], options: undefined, reservedRange: [], reservedName: [], visibility: 0 };
 }
 
 export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
@@ -4258,8 +3876,8 @@ export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
     for (const v of message.reservedName) {
       writer.uint32(42).string(v!);
     }
-    if (message.visibility !== undefined && message.visibility !== SymbolVisibility.VISIBILITY_UNSET) {
-      writer.uint32(48).int32(symbolVisibilityToNumber(message.visibility));
+    if (message.visibility !== undefined && message.visibility !== 0) {
+      writer.uint32(48).int32(message.visibility);
     }
     return writer;
   },
@@ -4316,7 +3934,7 @@ export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
             break;
           }
 
-          message.visibility = symbolVisibilityFromJSON(reader.int32());
+          message.visibility = reader.int32() as any;
           continue;
         }
       }
@@ -4341,9 +3959,7 @@ export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
       reservedName: globalThis.Array.isArray(object?.reservedName)
         ? object.reservedName.map((e: any) => globalThis.String(e))
         : [],
-      visibility: isSet(object.visibility)
-        ? symbolVisibilityFromJSON(object.visibility)
-        : SymbolVisibility.VISIBILITY_UNSET,
+      visibility: isSet(object.visibility) ? symbolVisibilityFromJSON(object.visibility) : 0,
     };
   },
 
@@ -4364,7 +3980,7 @@ export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
     if (message.reservedName?.length) {
       obj.reservedName = message.reservedName;
     }
-    if (message.visibility !== undefined && message.visibility !== SymbolVisibility.VISIBILITY_UNSET) {
+    if (message.visibility !== undefined && message.visibility !== 0) {
       obj.visibility = symbolVisibilityToJSON(message.visibility);
     }
     return obj;
@@ -4383,7 +3999,7 @@ export const EnumDescriptorProto: MessageFns<EnumDescriptorProto> = {
     message.reservedRange = object.reservedRange?.map((e) => EnumDescriptorProto_EnumReservedRange.fromPartial(e)) ||
       [];
     message.reservedName = object.reservedName?.map((e) => e) || [];
-    message.visibility = object.visibility ?? SymbolVisibility.VISIBILITY_UNSET;
+    message.visibility = object.visibility ?? 0;
     return message;
   },
 };
@@ -4810,7 +4426,7 @@ function createBaseFileOptions(): FileOptions {
     javaMultipleFiles: false,
     javaGenerateEqualsAndHash: false,
     javaStringCheckUtf8: false,
-    optimizeFor: FileOptions_OptimizeMode.SPEED,
+    optimizeFor: 1,
     goPackage: "",
     ccGenericServices: false,
     javaGenericServices: false,
@@ -4846,8 +4462,8 @@ export const FileOptions: MessageFns<FileOptions> = {
     if (message.javaStringCheckUtf8 !== undefined && message.javaStringCheckUtf8 !== false) {
       writer.uint32(216).bool(message.javaStringCheckUtf8);
     }
-    if (message.optimizeFor !== undefined && message.optimizeFor !== FileOptions_OptimizeMode.SPEED) {
-      writer.uint32(72).int32(fileOptions_OptimizeModeToNumber(message.optimizeFor));
+    if (message.optimizeFor !== undefined && message.optimizeFor !== 1) {
+      writer.uint32(72).int32(message.optimizeFor);
     }
     if (message.goPackage !== undefined && message.goPackage !== "") {
       writer.uint32(90).string(message.goPackage);
@@ -4949,7 +4565,7 @@ export const FileOptions: MessageFns<FileOptions> = {
             break;
           }
 
-          message.optimizeFor = fileOptions_OptimizeModeFromJSON(reader.int32());
+          message.optimizeFor = reader.int32() as any;
           continue;
         }
         case 11: {
@@ -5090,9 +4706,7 @@ export const FileOptions: MessageFns<FileOptions> = {
         ? globalThis.Boolean(object.javaGenerateEqualsAndHash)
         : false,
       javaStringCheckUtf8: isSet(object.javaStringCheckUtf8) ? globalThis.Boolean(object.javaStringCheckUtf8) : false,
-      optimizeFor: isSet(object.optimizeFor)
-        ? fileOptions_OptimizeModeFromJSON(object.optimizeFor)
-        : FileOptions_OptimizeMode.SPEED,
+      optimizeFor: isSet(object.optimizeFor) ? fileOptions_OptimizeModeFromJSON(object.optimizeFor) : 1,
       goPackage: isSet(object.goPackage) ? globalThis.String(object.goPackage) : "",
       ccGenericServices: isSet(object.ccGenericServices) ? globalThis.Boolean(object.ccGenericServices) : false,
       javaGenericServices: isSet(object.javaGenericServices) ? globalThis.Boolean(object.javaGenericServices) : false,
@@ -5130,7 +4744,7 @@ export const FileOptions: MessageFns<FileOptions> = {
     if (message.javaStringCheckUtf8 !== undefined && message.javaStringCheckUtf8 !== false) {
       obj.javaStringCheckUtf8 = message.javaStringCheckUtf8;
     }
-    if (message.optimizeFor !== undefined && message.optimizeFor !== FileOptions_OptimizeMode.SPEED) {
+    if (message.optimizeFor !== undefined && message.optimizeFor !== 1) {
       obj.optimizeFor = fileOptions_OptimizeModeToJSON(message.optimizeFor);
     }
     if (message.goPackage !== undefined && message.goPackage !== "") {
@@ -5191,7 +4805,7 @@ export const FileOptions: MessageFns<FileOptions> = {
     message.javaMultipleFiles = object.javaMultipleFiles ?? false;
     message.javaGenerateEqualsAndHash = object.javaGenerateEqualsAndHash ?? false;
     message.javaStringCheckUtf8 = object.javaStringCheckUtf8 ?? false;
-    message.optimizeFor = object.optimizeFor ?? FileOptions_OptimizeMode.SPEED;
+    message.optimizeFor = object.optimizeFor ?? 1;
     message.goPackage = object.goPackage ?? "";
     message.ccGenericServices = object.ccGenericServices ?? false;
     message.javaGenericServices = object.javaGenericServices ?? false;
@@ -5393,15 +5007,15 @@ export const MessageOptions: MessageFns<MessageOptions> = {
 
 function createBaseFieldOptions(): FieldOptions {
   return {
-    ctype: FieldOptions_CType.STRING,
+    ctype: 0,
     packed: false,
-    jstype: FieldOptions_JSType.JS_NORMAL,
+    jstype: 0,
     lazy: false,
     unverifiedLazy: false,
     deprecated: false,
     weak: false,
     debugRedact: false,
-    retention: FieldOptions_OptionRetention.RETENTION_UNKNOWN,
+    retention: 0,
     targets: [],
     editionDefaults: [],
     features: undefined,
@@ -5412,14 +5026,14 @@ function createBaseFieldOptions(): FieldOptions {
 
 export const FieldOptions: MessageFns<FieldOptions> = {
   encode(message: FieldOptions, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.ctype !== undefined && message.ctype !== FieldOptions_CType.STRING) {
-      writer.uint32(8).int32(fieldOptions_CTypeToNumber(message.ctype));
+    if (message.ctype !== undefined && message.ctype !== 0) {
+      writer.uint32(8).int32(message.ctype);
     }
     if (message.packed !== undefined && message.packed !== false) {
       writer.uint32(16).bool(message.packed);
     }
-    if (message.jstype !== undefined && message.jstype !== FieldOptions_JSType.JS_NORMAL) {
-      writer.uint32(48).int32(fieldOptions_JSTypeToNumber(message.jstype));
+    if (message.jstype !== undefined && message.jstype !== 0) {
+      writer.uint32(48).int32(message.jstype);
     }
     if (message.lazy !== undefined && message.lazy !== false) {
       writer.uint32(40).bool(message.lazy);
@@ -5436,12 +5050,12 @@ export const FieldOptions: MessageFns<FieldOptions> = {
     if (message.debugRedact !== undefined && message.debugRedact !== false) {
       writer.uint32(128).bool(message.debugRedact);
     }
-    if (message.retention !== undefined && message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
-      writer.uint32(136).int32(fieldOptions_OptionRetentionToNumber(message.retention));
+    if (message.retention !== undefined && message.retention !== 0) {
+      writer.uint32(136).int32(message.retention);
     }
     writer.uint32(154).fork();
     for (const v of message.targets) {
-      writer.int32(fieldOptions_OptionTargetTypeToNumber(v));
+      writer.int32(v);
     }
     writer.join();
     for (const v of message.editionDefaults) {
@@ -5471,7 +5085,7 @@ export const FieldOptions: MessageFns<FieldOptions> = {
             break;
           }
 
-          message.ctype = fieldOptions_CTypeFromJSON(reader.int32());
+          message.ctype = reader.int32() as any;
           continue;
         }
         case 2: {
@@ -5487,7 +5101,7 @@ export const FieldOptions: MessageFns<FieldOptions> = {
             break;
           }
 
-          message.jstype = fieldOptions_JSTypeFromJSON(reader.int32());
+          message.jstype = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -5535,12 +5149,12 @@ export const FieldOptions: MessageFns<FieldOptions> = {
             break;
           }
 
-          message.retention = fieldOptions_OptionRetentionFromJSON(reader.int32());
+          message.retention = reader.int32() as any;
           continue;
         }
         case 19: {
           if (tag === 152) {
-            message.targets.push(fieldOptions_OptionTargetTypeFromJSON(reader.int32()));
+            message.targets.push(reader.int32() as any);
 
             continue;
           }
@@ -5548,7 +5162,7 @@ export const FieldOptions: MessageFns<FieldOptions> = {
           if (tag === 154) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
-              message.targets.push(fieldOptions_OptionTargetTypeFromJSON(reader.int32()));
+              message.targets.push(reader.int32() as any);
             }
 
             continue;
@@ -5599,17 +5213,15 @@ export const FieldOptions: MessageFns<FieldOptions> = {
 
   fromJSON(object: any): FieldOptions {
     return {
-      ctype: isSet(object.ctype) ? fieldOptions_CTypeFromJSON(object.ctype) : FieldOptions_CType.STRING,
+      ctype: isSet(object.ctype) ? fieldOptions_CTypeFromJSON(object.ctype) : 0,
       packed: isSet(object.packed) ? globalThis.Boolean(object.packed) : false,
-      jstype: isSet(object.jstype) ? fieldOptions_JSTypeFromJSON(object.jstype) : FieldOptions_JSType.JS_NORMAL,
+      jstype: isSet(object.jstype) ? fieldOptions_JSTypeFromJSON(object.jstype) : 0,
       lazy: isSet(object.lazy) ? globalThis.Boolean(object.lazy) : false,
       unverifiedLazy: isSet(object.unverifiedLazy) ? globalThis.Boolean(object.unverifiedLazy) : false,
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       weak: isSet(object.weak) ? globalThis.Boolean(object.weak) : false,
       debugRedact: isSet(object.debugRedact) ? globalThis.Boolean(object.debugRedact) : false,
-      retention: isSet(object.retention)
-        ? fieldOptions_OptionRetentionFromJSON(object.retention)
-        : FieldOptions_OptionRetention.RETENTION_UNKNOWN,
+      retention: isSet(object.retention) ? fieldOptions_OptionRetentionFromJSON(object.retention) : 0,
       targets: globalThis.Array.isArray(object?.targets)
         ? object.targets.map((e: any) => fieldOptions_OptionTargetTypeFromJSON(e))
         : [],
@@ -5628,13 +5240,13 @@ export const FieldOptions: MessageFns<FieldOptions> = {
 
   toJSON(message: FieldOptions): unknown {
     const obj: any = {};
-    if (message.ctype !== undefined && message.ctype !== FieldOptions_CType.STRING) {
+    if (message.ctype !== undefined && message.ctype !== 0) {
       obj.ctype = fieldOptions_CTypeToJSON(message.ctype);
     }
     if (message.packed !== undefined && message.packed !== false) {
       obj.packed = message.packed;
     }
-    if (message.jstype !== undefined && message.jstype !== FieldOptions_JSType.JS_NORMAL) {
+    if (message.jstype !== undefined && message.jstype !== 0) {
       obj.jstype = fieldOptions_JSTypeToJSON(message.jstype);
     }
     if (message.lazy !== undefined && message.lazy !== false) {
@@ -5652,7 +5264,7 @@ export const FieldOptions: MessageFns<FieldOptions> = {
     if (message.debugRedact !== undefined && message.debugRedact !== false) {
       obj.debugRedact = message.debugRedact;
     }
-    if (message.retention !== undefined && message.retention !== FieldOptions_OptionRetention.RETENTION_UNKNOWN) {
+    if (message.retention !== undefined && message.retention !== 0) {
       obj.retention = fieldOptions_OptionRetentionToJSON(message.retention);
     }
     if (message.targets?.length) {
@@ -5678,15 +5290,15 @@ export const FieldOptions: MessageFns<FieldOptions> = {
   },
   fromPartial(object: DeepPartial<FieldOptions>): FieldOptions {
     const message = createBaseFieldOptions();
-    message.ctype = object.ctype ?? FieldOptions_CType.STRING;
+    message.ctype = object.ctype ?? 0;
     message.packed = object.packed ?? false;
-    message.jstype = object.jstype ?? FieldOptions_JSType.JS_NORMAL;
+    message.jstype = object.jstype ?? 0;
     message.lazy = object.lazy ?? false;
     message.unverifiedLazy = object.unverifiedLazy ?? false;
     message.deprecated = object.deprecated ?? false;
     message.weak = object.weak ?? false;
     message.debugRedact = object.debugRedact ?? false;
-    message.retention = object.retention ?? FieldOptions_OptionRetention.RETENTION_UNKNOWN;
+    message.retention = object.retention ?? 0;
     message.targets = object.targets?.map((e) => e) || [];
     message.editionDefaults = object.editionDefaults?.map((e) => FieldOptions_EditionDefault.fromPartial(e)) || [];
     message.features = (object.features !== undefined && object.features !== null)
@@ -5701,13 +5313,13 @@ export const FieldOptions: MessageFns<FieldOptions> = {
 };
 
 function createBaseFieldOptions_EditionDefault(): FieldOptions_EditionDefault {
-  return { edition: Edition.EDITION_UNKNOWN, value: "" };
+  return { edition: 0, value: "" };
 }
 
 export const FieldOptions_EditionDefault: MessageFns<FieldOptions_EditionDefault> = {
   encode(message: FieldOptions_EditionDefault, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(24).int32(editionToNumber(message.edition));
+    if (message.edition !== undefined && message.edition !== 0) {
+      writer.uint32(24).int32(message.edition);
     }
     if (message.value !== undefined && message.value !== "") {
       writer.uint32(18).string(message.value);
@@ -5727,7 +5339,7 @@ export const FieldOptions_EditionDefault: MessageFns<FieldOptions_EditionDefault
             break;
           }
 
-          message.edition = editionFromJSON(reader.int32());
+          message.edition = reader.int32() as any;
           continue;
         }
         case 2: {
@@ -5749,14 +5361,14 @@ export const FieldOptions_EditionDefault: MessageFns<FieldOptions_EditionDefault
 
   fromJSON(object: any): FieldOptions_EditionDefault {
     return {
-      edition: isSet(object.edition) ? editionFromJSON(object.edition) : Edition.EDITION_UNKNOWN,
+      edition: isSet(object.edition) ? editionFromJSON(object.edition) : 0,
       value: isSet(object.value) ? globalThis.String(object.value) : "",
     };
   },
 
   toJSON(message: FieldOptions_EditionDefault): unknown {
     const obj: any = {};
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
+    if (message.edition !== undefined && message.edition !== 0) {
       obj.edition = editionToJSON(message.edition);
     }
     if (message.value !== undefined && message.value !== "") {
@@ -5770,35 +5382,29 @@ export const FieldOptions_EditionDefault: MessageFns<FieldOptions_EditionDefault
   },
   fromPartial(object: DeepPartial<FieldOptions_EditionDefault>): FieldOptions_EditionDefault {
     const message = createBaseFieldOptions_EditionDefault();
-    message.edition = object.edition ?? Edition.EDITION_UNKNOWN;
+    message.edition = object.edition ?? 0;
     message.value = object.value ?? "";
     return message;
   },
 };
 
 function createBaseFieldOptions_FeatureSupport(): FieldOptions_FeatureSupport {
-  return {
-    editionIntroduced: Edition.EDITION_UNKNOWN,
-    editionDeprecated: Edition.EDITION_UNKNOWN,
-    deprecationWarning: "",
-    editionRemoved: Edition.EDITION_UNKNOWN,
-    removalError: "",
-  };
+  return { editionIntroduced: 0, editionDeprecated: 0, deprecationWarning: "", editionRemoved: 0, removalError: "" };
 }
 
 export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport> = {
   encode(message: FieldOptions_FeatureSupport, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.editionIntroduced !== undefined && message.editionIntroduced !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(8).int32(editionToNumber(message.editionIntroduced));
+    if (message.editionIntroduced !== undefined && message.editionIntroduced !== 0) {
+      writer.uint32(8).int32(message.editionIntroduced);
     }
-    if (message.editionDeprecated !== undefined && message.editionDeprecated !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(16).int32(editionToNumber(message.editionDeprecated));
+    if (message.editionDeprecated !== undefined && message.editionDeprecated !== 0) {
+      writer.uint32(16).int32(message.editionDeprecated);
     }
     if (message.deprecationWarning !== undefined && message.deprecationWarning !== "") {
       writer.uint32(26).string(message.deprecationWarning);
     }
-    if (message.editionRemoved !== undefined && message.editionRemoved !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(32).int32(editionToNumber(message.editionRemoved));
+    if (message.editionRemoved !== undefined && message.editionRemoved !== 0) {
+      writer.uint32(32).int32(message.editionRemoved);
     }
     if (message.removalError !== undefined && message.removalError !== "") {
       writer.uint32(42).string(message.removalError);
@@ -5818,7 +5424,7 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
             break;
           }
 
-          message.editionIntroduced = editionFromJSON(reader.int32());
+          message.editionIntroduced = reader.int32() as any;
           continue;
         }
         case 2: {
@@ -5826,7 +5432,7 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
             break;
           }
 
-          message.editionDeprecated = editionFromJSON(reader.int32());
+          message.editionDeprecated = reader.int32() as any;
           continue;
         }
         case 3: {
@@ -5842,7 +5448,7 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
             break;
           }
 
-          message.editionRemoved = editionFromJSON(reader.int32());
+          message.editionRemoved = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -5864,30 +5470,26 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
 
   fromJSON(object: any): FieldOptions_FeatureSupport {
     return {
-      editionIntroduced: isSet(object.editionIntroduced)
-        ? editionFromJSON(object.editionIntroduced)
-        : Edition.EDITION_UNKNOWN,
-      editionDeprecated: isSet(object.editionDeprecated)
-        ? editionFromJSON(object.editionDeprecated)
-        : Edition.EDITION_UNKNOWN,
+      editionIntroduced: isSet(object.editionIntroduced) ? editionFromJSON(object.editionIntroduced) : 0,
+      editionDeprecated: isSet(object.editionDeprecated) ? editionFromJSON(object.editionDeprecated) : 0,
       deprecationWarning: isSet(object.deprecationWarning) ? globalThis.String(object.deprecationWarning) : "",
-      editionRemoved: isSet(object.editionRemoved) ? editionFromJSON(object.editionRemoved) : Edition.EDITION_UNKNOWN,
+      editionRemoved: isSet(object.editionRemoved) ? editionFromJSON(object.editionRemoved) : 0,
       removalError: isSet(object.removalError) ? globalThis.String(object.removalError) : "",
     };
   },
 
   toJSON(message: FieldOptions_FeatureSupport): unknown {
     const obj: any = {};
-    if (message.editionIntroduced !== undefined && message.editionIntroduced !== Edition.EDITION_UNKNOWN) {
+    if (message.editionIntroduced !== undefined && message.editionIntroduced !== 0) {
       obj.editionIntroduced = editionToJSON(message.editionIntroduced);
     }
-    if (message.editionDeprecated !== undefined && message.editionDeprecated !== Edition.EDITION_UNKNOWN) {
+    if (message.editionDeprecated !== undefined && message.editionDeprecated !== 0) {
       obj.editionDeprecated = editionToJSON(message.editionDeprecated);
     }
     if (message.deprecationWarning !== undefined && message.deprecationWarning !== "") {
       obj.deprecationWarning = message.deprecationWarning;
     }
-    if (message.editionRemoved !== undefined && message.editionRemoved !== Edition.EDITION_UNKNOWN) {
+    if (message.editionRemoved !== undefined && message.editionRemoved !== 0) {
       obj.editionRemoved = editionToJSON(message.editionRemoved);
     }
     if (message.removalError !== undefined && message.removalError !== "") {
@@ -5901,10 +5503,10 @@ export const FieldOptions_FeatureSupport: MessageFns<FieldOptions_FeatureSupport
   },
   fromPartial(object: DeepPartial<FieldOptions_FeatureSupport>): FieldOptions_FeatureSupport {
     const message = createBaseFieldOptions_FeatureSupport();
-    message.editionIntroduced = object.editionIntroduced ?? Edition.EDITION_UNKNOWN;
-    message.editionDeprecated = object.editionDeprecated ?? Edition.EDITION_UNKNOWN;
+    message.editionIntroduced = object.editionIntroduced ?? 0;
+    message.editionDeprecated = object.editionDeprecated ?? 0;
     message.deprecationWarning = object.deprecationWarning ?? "";
-    message.editionRemoved = object.editionRemoved ?? Edition.EDITION_UNKNOWN;
+    message.editionRemoved = object.editionRemoved ?? 0;
     message.removalError = object.removalError ?? "";
     return message;
   },
@@ -6365,12 +5967,7 @@ export const ServiceOptions: MessageFns<ServiceOptions> = {
 };
 
 function createBaseMethodOptions(): MethodOptions {
-  return {
-    deprecated: false,
-    idempotencyLevel: MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
-    features: undefined,
-    uninterpretedOption: [],
-  };
+  return { deprecated: false, idempotencyLevel: 0, features: undefined, uninterpretedOption: [] };
 }
 
 export const MethodOptions: MessageFns<MethodOptions> = {
@@ -6378,11 +5975,8 @@ export const MethodOptions: MessageFns<MethodOptions> = {
     if (message.deprecated !== undefined && message.deprecated !== false) {
       writer.uint32(264).bool(message.deprecated);
     }
-    if (
-      message.idempotencyLevel !== undefined &&
-      message.idempotencyLevel !== MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN
-    ) {
-      writer.uint32(272).int32(methodOptions_IdempotencyLevelToNumber(message.idempotencyLevel));
+    if (message.idempotencyLevel !== undefined && message.idempotencyLevel !== 0) {
+      writer.uint32(272).int32(message.idempotencyLevel);
     }
     if (message.features !== undefined) {
       FeatureSet.encode(message.features, writer.uint32(282).fork()).join();
@@ -6413,7 +6007,7 @@ export const MethodOptions: MessageFns<MethodOptions> = {
             break;
           }
 
-          message.idempotencyLevel = methodOptions_IdempotencyLevelFromJSON(reader.int32());
+          message.idempotencyLevel = reader.int32() as any;
           continue;
         }
         case 35: {
@@ -6446,7 +6040,7 @@ export const MethodOptions: MessageFns<MethodOptions> = {
       deprecated: isSet(object.deprecated) ? globalThis.Boolean(object.deprecated) : false,
       idempotencyLevel: isSet(object.idempotencyLevel)
         ? methodOptions_IdempotencyLevelFromJSON(object.idempotencyLevel)
-        : MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN,
+        : 0,
       features: isSet(object.features) ? FeatureSet.fromJSON(object.features) : undefined,
       uninterpretedOption: globalThis.Array.isArray(object?.uninterpretedOption)
         ? object.uninterpretedOption.map((e: any) => UninterpretedOption.fromJSON(e))
@@ -6459,10 +6053,7 @@ export const MethodOptions: MessageFns<MethodOptions> = {
     if (message.deprecated !== undefined && message.deprecated !== false) {
       obj.deprecated = message.deprecated;
     }
-    if (
-      message.idempotencyLevel !== undefined &&
-      message.idempotencyLevel !== MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN
-    ) {
+    if (message.idempotencyLevel !== undefined && message.idempotencyLevel !== 0) {
       obj.idempotencyLevel = methodOptions_IdempotencyLevelToJSON(message.idempotencyLevel);
     }
     if (message.features !== undefined) {
@@ -6480,7 +6071,7 @@ export const MethodOptions: MessageFns<MethodOptions> = {
   fromPartial(object: DeepPartial<MethodOptions>): MethodOptions {
     const message = createBaseMethodOptions();
     message.deprecated = object.deprecated ?? false;
-    message.idempotencyLevel = object.idempotencyLevel ?? MethodOptions_IdempotencyLevel.IDEMPOTENCY_UNKNOWN;
+    message.idempotencyLevel = object.idempotencyLevel ?? 0;
     message.features = (object.features !== undefined && object.features !== null)
       ? FeatureSet.fromPartial(object.features)
       : undefined;
@@ -6733,62 +6324,42 @@ export const UninterpretedOption_NamePart: MessageFns<UninterpretedOption_NamePa
 
 function createBaseFeatureSet(): FeatureSet {
   return {
-    fieldPresence: FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN,
-    enumType: FeatureSet_EnumType.ENUM_TYPE_UNKNOWN,
-    repeatedFieldEncoding: FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN,
-    utf8Validation: FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN,
-    messageEncoding: FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN,
-    jsonFormat: FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN,
-    enforceNamingStyle: FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN,
-    defaultSymbolVisibility: FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN,
+    fieldPresence: 0,
+    enumType: 0,
+    repeatedFieldEncoding: 0,
+    utf8Validation: 0,
+    messageEncoding: 0,
+    jsonFormat: 0,
+    enforceNamingStyle: 0,
+    defaultSymbolVisibility: 0,
   };
 }
 
 export const FeatureSet: MessageFns<FeatureSet> = {
   encode(message: FeatureSet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (
-      message.fieldPresence !== undefined && message.fieldPresence !== FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN
-    ) {
-      writer.uint32(8).int32(featureSet_FieldPresenceToNumber(message.fieldPresence));
+    if (message.fieldPresence !== undefined && message.fieldPresence !== 0) {
+      writer.uint32(8).int32(message.fieldPresence);
     }
-    if (message.enumType !== undefined && message.enumType !== FeatureSet_EnumType.ENUM_TYPE_UNKNOWN) {
-      writer.uint32(16).int32(featureSet_EnumTypeToNumber(message.enumType));
+    if (message.enumType !== undefined && message.enumType !== 0) {
+      writer.uint32(16).int32(message.enumType);
     }
-    if (
-      message.repeatedFieldEncoding !== undefined &&
-      message.repeatedFieldEncoding !== FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN
-    ) {
-      writer.uint32(24).int32(featureSet_RepeatedFieldEncodingToNumber(message.repeatedFieldEncoding));
+    if (message.repeatedFieldEncoding !== undefined && message.repeatedFieldEncoding !== 0) {
+      writer.uint32(24).int32(message.repeatedFieldEncoding);
     }
-    if (
-      message.utf8Validation !== undefined &&
-      message.utf8Validation !== FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN
-    ) {
-      writer.uint32(32).int32(featureSet_Utf8ValidationToNumber(message.utf8Validation));
+    if (message.utf8Validation !== undefined && message.utf8Validation !== 0) {
+      writer.uint32(32).int32(message.utf8Validation);
     }
-    if (
-      message.messageEncoding !== undefined &&
-      message.messageEncoding !== FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN
-    ) {
-      writer.uint32(40).int32(featureSet_MessageEncodingToNumber(message.messageEncoding));
+    if (message.messageEncoding !== undefined && message.messageEncoding !== 0) {
+      writer.uint32(40).int32(message.messageEncoding);
     }
-    if (message.jsonFormat !== undefined && message.jsonFormat !== FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN) {
-      writer.uint32(48).int32(featureSet_JsonFormatToNumber(message.jsonFormat));
+    if (message.jsonFormat !== undefined && message.jsonFormat !== 0) {
+      writer.uint32(48).int32(message.jsonFormat);
     }
-    if (
-      message.enforceNamingStyle !== undefined &&
-      message.enforceNamingStyle !== FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN
-    ) {
-      writer.uint32(56).int32(featureSet_EnforceNamingStyleToNumber(message.enforceNamingStyle));
+    if (message.enforceNamingStyle !== undefined && message.enforceNamingStyle !== 0) {
+      writer.uint32(56).int32(message.enforceNamingStyle);
     }
-    if (
-      message.defaultSymbolVisibility !== undefined &&
-      message.defaultSymbolVisibility !==
-        FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN
-    ) {
-      writer.uint32(64).int32(
-        featureSet_VisibilityFeature_DefaultSymbolVisibilityToNumber(message.defaultSymbolVisibility),
-      );
+    if (message.defaultSymbolVisibility !== undefined && message.defaultSymbolVisibility !== 0) {
+      writer.uint32(64).int32(message.defaultSymbolVisibility);
     }
     return writer;
   },
@@ -6805,7 +6376,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.fieldPresence = featureSet_FieldPresenceFromJSON(reader.int32());
+          message.fieldPresence = reader.int32() as any;
           continue;
         }
         case 2: {
@@ -6813,7 +6384,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.enumType = featureSet_EnumTypeFromJSON(reader.int32());
+          message.enumType = reader.int32() as any;
           continue;
         }
         case 3: {
@@ -6821,7 +6392,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.repeatedFieldEncoding = featureSet_RepeatedFieldEncodingFromJSON(reader.int32());
+          message.repeatedFieldEncoding = reader.int32() as any;
           continue;
         }
         case 4: {
@@ -6829,7 +6400,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.utf8Validation = featureSet_Utf8ValidationFromJSON(reader.int32());
+          message.utf8Validation = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -6837,7 +6408,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.messageEncoding = featureSet_MessageEncodingFromJSON(reader.int32());
+          message.messageEncoding = reader.int32() as any;
           continue;
         }
         case 6: {
@@ -6845,7 +6416,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.jsonFormat = featureSet_JsonFormatFromJSON(reader.int32());
+          message.jsonFormat = reader.int32() as any;
           continue;
         }
         case 7: {
@@ -6853,7 +6424,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.enforceNamingStyle = featureSet_EnforceNamingStyleFromJSON(reader.int32());
+          message.enforceNamingStyle = reader.int32() as any;
           continue;
         }
         case 8: {
@@ -6861,9 +6432,7 @@ export const FeatureSet: MessageFns<FeatureSet> = {
             break;
           }
 
-          message.defaultSymbolVisibility = featureSet_VisibilityFeature_DefaultSymbolVisibilityFromJSON(
-            reader.int32(),
-          );
+          message.defaultSymbolVisibility = reader.int32() as any;
           continue;
         }
       }
@@ -6877,75 +6446,47 @@ export const FeatureSet: MessageFns<FeatureSet> = {
 
   fromJSON(object: any): FeatureSet {
     return {
-      fieldPresence: isSet(object.fieldPresence)
-        ? featureSet_FieldPresenceFromJSON(object.fieldPresence)
-        : FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN,
-      enumType: isSet(object.enumType)
-        ? featureSet_EnumTypeFromJSON(object.enumType)
-        : FeatureSet_EnumType.ENUM_TYPE_UNKNOWN,
+      fieldPresence: isSet(object.fieldPresence) ? featureSet_FieldPresenceFromJSON(object.fieldPresence) : 0,
+      enumType: isSet(object.enumType) ? featureSet_EnumTypeFromJSON(object.enumType) : 0,
       repeatedFieldEncoding: isSet(object.repeatedFieldEncoding)
         ? featureSet_RepeatedFieldEncodingFromJSON(object.repeatedFieldEncoding)
-        : FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN,
-      utf8Validation: isSet(object.utf8Validation)
-        ? featureSet_Utf8ValidationFromJSON(object.utf8Validation)
-        : FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN,
-      messageEncoding: isSet(object.messageEncoding)
-        ? featureSet_MessageEncodingFromJSON(object.messageEncoding)
-        : FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN,
-      jsonFormat: isSet(object.jsonFormat)
-        ? featureSet_JsonFormatFromJSON(object.jsonFormat)
-        : FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN,
+        : 0,
+      utf8Validation: isSet(object.utf8Validation) ? featureSet_Utf8ValidationFromJSON(object.utf8Validation) : 0,
+      messageEncoding: isSet(object.messageEncoding) ? featureSet_MessageEncodingFromJSON(object.messageEncoding) : 0,
+      jsonFormat: isSet(object.jsonFormat) ? featureSet_JsonFormatFromJSON(object.jsonFormat) : 0,
       enforceNamingStyle: isSet(object.enforceNamingStyle)
         ? featureSet_EnforceNamingStyleFromJSON(object.enforceNamingStyle)
-        : FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN,
+        : 0,
       defaultSymbolVisibility: isSet(object.defaultSymbolVisibility)
         ? featureSet_VisibilityFeature_DefaultSymbolVisibilityFromJSON(object.defaultSymbolVisibility)
-        : FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN,
+        : 0,
     };
   },
 
   toJSON(message: FeatureSet): unknown {
     const obj: any = {};
-    if (
-      message.fieldPresence !== undefined && message.fieldPresence !== FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN
-    ) {
+    if (message.fieldPresence !== undefined && message.fieldPresence !== 0) {
       obj.fieldPresence = featureSet_FieldPresenceToJSON(message.fieldPresence);
     }
-    if (message.enumType !== undefined && message.enumType !== FeatureSet_EnumType.ENUM_TYPE_UNKNOWN) {
+    if (message.enumType !== undefined && message.enumType !== 0) {
       obj.enumType = featureSet_EnumTypeToJSON(message.enumType);
     }
-    if (
-      message.repeatedFieldEncoding !== undefined &&
-      message.repeatedFieldEncoding !== FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN
-    ) {
+    if (message.repeatedFieldEncoding !== undefined && message.repeatedFieldEncoding !== 0) {
       obj.repeatedFieldEncoding = featureSet_RepeatedFieldEncodingToJSON(message.repeatedFieldEncoding);
     }
-    if (
-      message.utf8Validation !== undefined &&
-      message.utf8Validation !== FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN
-    ) {
+    if (message.utf8Validation !== undefined && message.utf8Validation !== 0) {
       obj.utf8Validation = featureSet_Utf8ValidationToJSON(message.utf8Validation);
     }
-    if (
-      message.messageEncoding !== undefined &&
-      message.messageEncoding !== FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN
-    ) {
+    if (message.messageEncoding !== undefined && message.messageEncoding !== 0) {
       obj.messageEncoding = featureSet_MessageEncodingToJSON(message.messageEncoding);
     }
-    if (message.jsonFormat !== undefined && message.jsonFormat !== FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN) {
+    if (message.jsonFormat !== undefined && message.jsonFormat !== 0) {
       obj.jsonFormat = featureSet_JsonFormatToJSON(message.jsonFormat);
     }
-    if (
-      message.enforceNamingStyle !== undefined &&
-      message.enforceNamingStyle !== FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN
-    ) {
+    if (message.enforceNamingStyle !== undefined && message.enforceNamingStyle !== 0) {
       obj.enforceNamingStyle = featureSet_EnforceNamingStyleToJSON(message.enforceNamingStyle);
     }
-    if (
-      message.defaultSymbolVisibility !== undefined &&
-      message.defaultSymbolVisibility !==
-        FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN
-    ) {
+    if (message.defaultSymbolVisibility !== undefined && message.defaultSymbolVisibility !== 0) {
       obj.defaultSymbolVisibility = featureSet_VisibilityFeature_DefaultSymbolVisibilityToJSON(
         message.defaultSymbolVisibility,
       );
@@ -6958,17 +6499,14 @@ export const FeatureSet: MessageFns<FeatureSet> = {
   },
   fromPartial(object: DeepPartial<FeatureSet>): FeatureSet {
     const message = createBaseFeatureSet();
-    message.fieldPresence = object.fieldPresence ?? FeatureSet_FieldPresence.FIELD_PRESENCE_UNKNOWN;
-    message.enumType = object.enumType ?? FeatureSet_EnumType.ENUM_TYPE_UNKNOWN;
-    message.repeatedFieldEncoding = object.repeatedFieldEncoding ??
-      FeatureSet_RepeatedFieldEncoding.REPEATED_FIELD_ENCODING_UNKNOWN;
-    message.utf8Validation = object.utf8Validation ?? FeatureSet_Utf8Validation.UTF8_VALIDATION_UNKNOWN;
-    message.messageEncoding = object.messageEncoding ?? FeatureSet_MessageEncoding.MESSAGE_ENCODING_UNKNOWN;
-    message.jsonFormat = object.jsonFormat ?? FeatureSet_JsonFormat.JSON_FORMAT_UNKNOWN;
-    message.enforceNamingStyle = object.enforceNamingStyle ??
-      FeatureSet_EnforceNamingStyle.ENFORCE_NAMING_STYLE_UNKNOWN;
-    message.defaultSymbolVisibility = object.defaultSymbolVisibility ??
-      FeatureSet_VisibilityFeature_DefaultSymbolVisibility.DEFAULT_SYMBOL_VISIBILITY_UNKNOWN;
+    message.fieldPresence = object.fieldPresence ?? 0;
+    message.enumType = object.enumType ?? 0;
+    message.repeatedFieldEncoding = object.repeatedFieldEncoding ?? 0;
+    message.utf8Validation = object.utf8Validation ?? 0;
+    message.messageEncoding = object.messageEncoding ?? 0;
+    message.jsonFormat = object.jsonFormat ?? 0;
+    message.enforceNamingStyle = object.enforceNamingStyle ?? 0;
+    message.defaultSymbolVisibility = object.defaultSymbolVisibility ?? 0;
     return message;
   },
 };
@@ -7017,7 +6555,7 @@ export const FeatureSet_VisibilityFeature: MessageFns<FeatureSet_VisibilityFeatu
 };
 
 function createBaseFeatureSetDefaults(): FeatureSetDefaults {
-  return { defaults: [], minimumEdition: Edition.EDITION_UNKNOWN, maximumEdition: Edition.EDITION_UNKNOWN };
+  return { defaults: [], minimumEdition: 0, maximumEdition: 0 };
 }
 
 export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
@@ -7025,11 +6563,11 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
     for (const v of message.defaults) {
       FeatureSetDefaults_FeatureSetEditionDefault.encode(v!, writer.uint32(10).fork()).join();
     }
-    if (message.minimumEdition !== undefined && message.minimumEdition !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(32).int32(editionToNumber(message.minimumEdition));
+    if (message.minimumEdition !== undefined && message.minimumEdition !== 0) {
+      writer.uint32(32).int32(message.minimumEdition);
     }
-    if (message.maximumEdition !== undefined && message.maximumEdition !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(40).int32(editionToNumber(message.maximumEdition));
+    if (message.maximumEdition !== undefined && message.maximumEdition !== 0) {
+      writer.uint32(40).int32(message.maximumEdition);
     }
     return writer;
   },
@@ -7054,7 +6592,7 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
             break;
           }
 
-          message.minimumEdition = editionFromJSON(reader.int32());
+          message.minimumEdition = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -7062,7 +6600,7 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
             break;
           }
 
-          message.maximumEdition = editionFromJSON(reader.int32());
+          message.maximumEdition = reader.int32() as any;
           continue;
         }
       }
@@ -7079,8 +6617,8 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
       defaults: globalThis.Array.isArray(object?.defaults)
         ? object.defaults.map((e: any) => FeatureSetDefaults_FeatureSetEditionDefault.fromJSON(e))
         : [],
-      minimumEdition: isSet(object.minimumEdition) ? editionFromJSON(object.minimumEdition) : Edition.EDITION_UNKNOWN,
-      maximumEdition: isSet(object.maximumEdition) ? editionFromJSON(object.maximumEdition) : Edition.EDITION_UNKNOWN,
+      minimumEdition: isSet(object.minimumEdition) ? editionFromJSON(object.minimumEdition) : 0,
+      maximumEdition: isSet(object.maximumEdition) ? editionFromJSON(object.maximumEdition) : 0,
     };
   },
 
@@ -7089,10 +6627,10 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
     if (message.defaults?.length) {
       obj.defaults = message.defaults.map((e) => FeatureSetDefaults_FeatureSetEditionDefault.toJSON(e));
     }
-    if (message.minimumEdition !== undefined && message.minimumEdition !== Edition.EDITION_UNKNOWN) {
+    if (message.minimumEdition !== undefined && message.minimumEdition !== 0) {
       obj.minimumEdition = editionToJSON(message.minimumEdition);
     }
-    if (message.maximumEdition !== undefined && message.maximumEdition !== Edition.EDITION_UNKNOWN) {
+    if (message.maximumEdition !== undefined && message.maximumEdition !== 0) {
       obj.maximumEdition = editionToJSON(message.maximumEdition);
     }
     return obj;
@@ -7104,14 +6642,14 @@ export const FeatureSetDefaults: MessageFns<FeatureSetDefaults> = {
   fromPartial(object: DeepPartial<FeatureSetDefaults>): FeatureSetDefaults {
     const message = createBaseFeatureSetDefaults();
     message.defaults = object.defaults?.map((e) => FeatureSetDefaults_FeatureSetEditionDefault.fromPartial(e)) || [];
-    message.minimumEdition = object.minimumEdition ?? Edition.EDITION_UNKNOWN;
-    message.maximumEdition = object.maximumEdition ?? Edition.EDITION_UNKNOWN;
+    message.minimumEdition = object.minimumEdition ?? 0;
+    message.maximumEdition = object.maximumEdition ?? 0;
     return message;
   },
 };
 
 function createBaseFeatureSetDefaults_FeatureSetEditionDefault(): FeatureSetDefaults_FeatureSetEditionDefault {
-  return { edition: Edition.EDITION_UNKNOWN, overridableFeatures: undefined, fixedFeatures: undefined };
+  return { edition: 0, overridableFeatures: undefined, fixedFeatures: undefined };
 }
 
 export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetDefaults_FeatureSetEditionDefault> = {
@@ -7119,8 +6657,8 @@ export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetD
     message: FeatureSetDefaults_FeatureSetEditionDefault,
     writer: BinaryWriter = new BinaryWriter(),
   ): BinaryWriter {
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
-      writer.uint32(24).int32(editionToNumber(message.edition));
+    if (message.edition !== undefined && message.edition !== 0) {
+      writer.uint32(24).int32(message.edition);
     }
     if (message.overridableFeatures !== undefined) {
       FeatureSet.encode(message.overridableFeatures, writer.uint32(34).fork()).join();
@@ -7143,7 +6681,7 @@ export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetD
             break;
           }
 
-          message.edition = editionFromJSON(reader.int32());
+          message.edition = reader.int32() as any;
           continue;
         }
         case 4: {
@@ -7173,7 +6711,7 @@ export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetD
 
   fromJSON(object: any): FeatureSetDefaults_FeatureSetEditionDefault {
     return {
-      edition: isSet(object.edition) ? editionFromJSON(object.edition) : Edition.EDITION_UNKNOWN,
+      edition: isSet(object.edition) ? editionFromJSON(object.edition) : 0,
       overridableFeatures: isSet(object.overridableFeatures)
         ? FeatureSet.fromJSON(object.overridableFeatures)
         : undefined,
@@ -7183,7 +6721,7 @@ export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetD
 
   toJSON(message: FeatureSetDefaults_FeatureSetEditionDefault): unknown {
     const obj: any = {};
-    if (message.edition !== undefined && message.edition !== Edition.EDITION_UNKNOWN) {
+    if (message.edition !== undefined && message.edition !== 0) {
       obj.edition = editionToJSON(message.edition);
     }
     if (message.overridableFeatures !== undefined) {
@@ -7202,7 +6740,7 @@ export const FeatureSetDefaults_FeatureSetEditionDefault: MessageFns<FeatureSetD
     object: DeepPartial<FeatureSetDefaults_FeatureSetEditionDefault>,
   ): FeatureSetDefaults_FeatureSetEditionDefault {
     const message = createBaseFeatureSetDefaults_FeatureSetEditionDefault();
-    message.edition = object.edition ?? Edition.EDITION_UNKNOWN;
+    message.edition = object.edition ?? 0;
     message.overridableFeatures = (object.overridableFeatures !== undefined && object.overridableFeatures !== null)
       ? FeatureSet.fromPartial(object.overridableFeatures)
       : undefined;
@@ -7488,7 +7026,7 @@ export const GeneratedCodeInfo: MessageFns<GeneratedCodeInfo> = {
 };
 
 function createBaseGeneratedCodeInfo_Annotation(): GeneratedCodeInfo_Annotation {
-  return { path: [], sourceFile: "", begin: 0, end: 0, semantic: GeneratedCodeInfo_Annotation_Semantic.NONE };
+  return { path: [], sourceFile: "", begin: 0, end: 0, semantic: 0 };
 }
 
 export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotation> = {
@@ -7507,8 +7045,8 @@ export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotati
     if (message.end !== undefined && message.end !== 0) {
       writer.uint32(32).int32(message.end);
     }
-    if (message.semantic !== undefined && message.semantic !== GeneratedCodeInfo_Annotation_Semantic.NONE) {
-      writer.uint32(40).int32(generatedCodeInfo_Annotation_SemanticToNumber(message.semantic));
+    if (message.semantic !== undefined && message.semantic !== 0) {
+      writer.uint32(40).int32(message.semantic);
     }
     return writer;
   },
@@ -7567,7 +7105,7 @@ export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotati
             break;
           }
 
-          message.semantic = generatedCodeInfo_Annotation_SemanticFromJSON(reader.int32());
+          message.semantic = reader.int32() as any;
           continue;
         }
       }
@@ -7585,9 +7123,7 @@ export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotati
       sourceFile: isSet(object.sourceFile) ? globalThis.String(object.sourceFile) : "",
       begin: isSet(object.begin) ? globalThis.Number(object.begin) : 0,
       end: isSet(object.end) ? globalThis.Number(object.end) : 0,
-      semantic: isSet(object.semantic)
-        ? generatedCodeInfo_Annotation_SemanticFromJSON(object.semantic)
-        : GeneratedCodeInfo_Annotation_Semantic.NONE,
+      semantic: isSet(object.semantic) ? generatedCodeInfo_Annotation_SemanticFromJSON(object.semantic) : 0,
     };
   },
 
@@ -7605,7 +7141,7 @@ export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotati
     if (message.end !== undefined && message.end !== 0) {
       obj.end = Math.round(message.end);
     }
-    if (message.semantic !== undefined && message.semantic !== GeneratedCodeInfo_Annotation_Semantic.NONE) {
+    if (message.semantic !== undefined && message.semantic !== 0) {
       obj.semantic = generatedCodeInfo_Annotation_SemanticToJSON(message.semantic);
     }
     return obj;
@@ -7620,7 +7156,7 @@ export const GeneratedCodeInfo_Annotation: MessageFns<GeneratedCodeInfo_Annotati
     message.sourceFile = object.sourceFile ?? "";
     message.begin = object.begin ?? 0;
     message.end = object.end ?? 0;
-    message.semantic = object.semantic ?? GeneratedCodeInfo_Annotation_Semantic.NONE;
+    message.semantic = object.semantic ?? 0;
     return message;
   },
 };

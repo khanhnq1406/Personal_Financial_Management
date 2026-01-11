@@ -93,4 +93,7 @@ type CategoryService interface {
 
 	// DeleteCategory deletes a category.
 	DeleteCategory(ctx context.Context, categoryID int32, userID int32) (*transactionv1.DeleteCategoryResponse, error)
+
+	// CreateDefaultCategories creates default categories for a new user.
+	CreateDefaultCategories(ctx context.Context, userID int32) error
 }

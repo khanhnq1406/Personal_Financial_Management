@@ -136,3 +136,60 @@ func (r *categoryRepository) CountByUserID(ctx context.Context, userID int32) (i
 	}
 	return int(count), nil
 }
+
+// CreateDefaultCategories creates default categories for a new user.
+func (r *categoryRepository) CreateDefaultCategories(ctx context.Context, userID int32) error {
+	// Define default expense categories
+	expenseCategories := []string{
+		"Food and Beverage",
+		"Bills & Utilities",
+		"Shopping",
+		"Family",
+		"Transportation",
+		"Health & Fitness",
+		"Education",
+		"Entertainment",
+		"Gifts & Donations",
+		"Insurances",
+		"Investment",
+		"Other Expense",
+		"Outgoing Transfer",
+		"Pay Interest",
+		"Uncategorized",
+	}
+
+	// Define default income categories
+	incomeCategories := []string{
+		"Salary",
+		"Other Income",
+		"Incoming Transfer",
+		"Collect Interest",
+		"Uncategorized",
+	}
+
+	// Create expense categories
+	for _, name := range expenseCategories {
+		category := &models.Category{
+			UserID: userID,
+			Name:   name,
+			Type:   v1.CategoryType_CATEGORY_TYPE_EXPENSE,
+		}
+		if err := r.Create(ctx, category); err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to create default expense category", err)
+		}
+	}
+
+	// Create income categories
+	for _, name := range incomeCategories {
+		category := &models.Category{
+			UserID: userID,
+			Name:   name,
+			Type:   v1.CategoryType_CATEGORY_TYPE_INCOME,
+		}
+		if err := r.Create(ctx, category); err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to create default income category", err)
+		}
+	}
+
+	return nil
+}

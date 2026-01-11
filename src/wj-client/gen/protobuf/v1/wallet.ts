@@ -11,7 +11,7 @@ import { Money, PaginationParams, PaginationResult } from "./common";
 export const protobufPackage = "wealthjourney.wallet.v1";
 
 /** Enums */
-export const WalletType = { BASIC: "BASIC", INVESTMENT: "INVESTMENT", UNRECOGNIZED: "UNRECOGNIZED" } as const;
+export const WalletType = { BASIC: 0, INVESTMENT: 1, UNRECOGNIZED: -1 } as const;
 
 export type WalletType = typeof WalletType[keyof typeof WalletType];
 
@@ -45,18 +45,6 @@ export function walletTypeToJSON(object: WalletType): string {
     case WalletType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function walletTypeToNumber(object: WalletType): number {
-  switch (object) {
-    case WalletType.BASIC:
-      return 0;
-    case WalletType.INVESTMENT:
-      return 1;
-    case WalletType.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -188,7 +176,7 @@ export interface TransferFundsResponse {
 }
 
 function createBaseWallet(): Wallet {
-  return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: 0, updatedAt: 0, type: WalletType.BASIC };
+  return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: 0, updatedAt: 0, type: 0 };
 }
 
 export const Wallet: MessageFns<Wallet> = {
@@ -211,8 +199,8 @@ export const Wallet: MessageFns<Wallet> = {
     if (message.updatedAt !== 0) {
       writer.uint32(48).int64(message.updatedAt);
     }
-    if (message.type !== WalletType.BASIC) {
-      writer.uint32(56).int32(walletTypeToNumber(message.type));
+    if (message.type !== 0) {
+      writer.uint32(56).int32(message.type);
     }
     return writer;
   },
@@ -277,7 +265,7 @@ export const Wallet: MessageFns<Wallet> = {
             break;
           }
 
-          message.type = walletTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
       }
@@ -297,7 +285,7 @@ export const Wallet: MessageFns<Wallet> = {
       balance: isSet(object.balance) ? Money.fromJSON(object.balance) : undefined,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
-      type: isSet(object.type) ? walletTypeFromJSON(object.type) : WalletType.BASIC,
+      type: isSet(object.type) ? walletTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -321,7 +309,7 @@ export const Wallet: MessageFns<Wallet> = {
     if (message.updatedAt !== 0) {
       obj.updatedAt = Math.round(message.updatedAt);
     }
-    if (message.type !== WalletType.BASIC) {
+    if (message.type !== 0) {
       obj.type = walletTypeToJSON(message.type);
     }
     return obj;
@@ -340,7 +328,7 @@ export const Wallet: MessageFns<Wallet> = {
       : undefined;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
-    message.type = object.type ?? WalletType.BASIC;
+    message.type = object.type ?? 0;
     return message;
   },
 };
@@ -542,7 +530,7 @@ export const WalletListData: MessageFns<WalletListData> = {
 };
 
 function createBaseCreateWalletRequest(): CreateWalletRequest {
-  return { walletName: "", initialBalance: undefined, type: WalletType.BASIC };
+  return { walletName: "", initialBalance: undefined, type: 0 };
 }
 
 export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
@@ -553,8 +541,8 @@ export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
     if (message.initialBalance !== undefined) {
       Money.encode(message.initialBalance, writer.uint32(18).fork()).join();
     }
-    if (message.type !== WalletType.BASIC) {
-      writer.uint32(24).int32(walletTypeToNumber(message.type));
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
     }
     return writer;
   },
@@ -587,7 +575,7 @@ export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
             break;
           }
 
-          message.type = walletTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
       }
@@ -603,7 +591,7 @@ export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
     return {
       walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
       initialBalance: isSet(object.initialBalance) ? Money.fromJSON(object.initialBalance) : undefined,
-      type: isSet(object.type) ? walletTypeFromJSON(object.type) : WalletType.BASIC,
+      type: isSet(object.type) ? walletTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -615,7 +603,7 @@ export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
     if (message.initialBalance !== undefined) {
       obj.initialBalance = Money.toJSON(message.initialBalance);
     }
-    if (message.type !== WalletType.BASIC) {
+    if (message.type !== 0) {
       obj.type = walletTypeToJSON(message.type);
     }
     return obj;
@@ -630,7 +618,7 @@ export const CreateWalletRequest: MessageFns<CreateWalletRequest> = {
     message.initialBalance = (object.initialBalance !== undefined && object.initialBalance !== null)
       ? Money.fromPartial(object.initialBalance)
       : undefined;
-    message.type = object.type ?? WalletType.BASIC;
+    message.type = object.type ?? 0;
     return message;
   },
 };

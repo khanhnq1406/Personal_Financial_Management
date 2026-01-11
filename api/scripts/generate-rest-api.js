@@ -552,7 +552,36 @@ function generateAPIClient(services) {
       } else {
         // No path params
         if (httpMethod === "get" || httpMethod === "delete") {
-          apiCode.push(`      const endpoint = \`${httpPath}\`;`);
+          // Build query params for GET/DELETE requests
+          // Helper function to convert request to query params with enum handling
+          apiCode.push(`      function toQueryParams(obj: any, parentKey = ''): string {`);
+          apiCode.push(`        const params: string[] = [];`);
+          apiCode.push(`        for (const [key, value] of Object.entries(obj)) {`);
+          apiCode.push(`          if (value === undefined || value === null) continue;`);
+          apiCode.push(`          const fullKey = parentKey ? \`\${parentKey}.\${key}\` : key;`);
+          apiCode.push(`          if (typeof value === 'object' && !Array.isArray(value)) {`);
+          apiCode.push(`            params.push(toQueryParams(value, fullKey));`);
+          apiCode.push(`          } else {`);
+          // Convert enum values to simpler form for backend
+          apiCode.push(`            let paramValue = value;`);
+          apiCode.push(`            // For numeric enums, pass as-is (backend handles numeric values)`);
+          apiCode.push(`            // For string enums (if any), convert to simplified form`);
+          apiCode.push(`            if (typeof value === 'string') {`);
+          apiCode.push(`              // Convert enum values like CATEGORY_TYPE_INCOME -> INCOME`);
+          apiCode.push(`              paramValue = value`);
+          apiCode.push(`                .replace(/^CATEGORY_TYPE_/, '')`);
+          apiCode.push(`                .replace(/^TRANSACTION_TYPE_/, '')`);
+          apiCode.push(`                .replace(/^SORT_FIELD_/, '');`);
+          apiCode.push(`            }`);
+          apiCode.push(`            params.push(\`\${fullKey}=\${encodeURIComponent(paramValue)}\`);`);
+          apiCode.push(`          }`);
+          apiCode.push(`        }`);
+          apiCode.push(`        return params.join('&');`);
+          apiCode.push(`      }`);
+          apiCode.push(`      const queryString = request ? toQueryParams(request) : '';`);
+          apiCode.push(
+            `      const endpoint = \`${httpPath}\${queryString ? \`?\${queryString}\` : ""}\`;`
+          );
           apiCode.push(
             `      return apiClient.${httpMethod}(endpoint) as unknown as ${responseType};`
           );

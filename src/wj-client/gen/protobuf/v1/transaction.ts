@@ -12,10 +12,10 @@ export const protobufPackage = "wealthjourney.transaction.v1";
 
 /** Enums */
 export const TransactionType = {
-  TRANSACTION_TYPE_UNSPECIFIED: "TRANSACTION_TYPE_UNSPECIFIED",
-  TRANSACTION_TYPE_INCOME: "TRANSACTION_TYPE_INCOME",
-  TRANSACTION_TYPE_EXPENSE: "TRANSACTION_TYPE_EXPENSE",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  TRANSACTION_TYPE_UNSPECIFIED: 0,
+  TRANSACTION_TYPE_INCOME: 1,
+  TRANSACTION_TYPE_EXPENSE: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
@@ -59,25 +59,11 @@ export function transactionTypeToJSON(object: TransactionType): string {
   }
 }
 
-export function transactionTypeToNumber(object: TransactionType): number {
-  switch (object) {
-    case TransactionType.TRANSACTION_TYPE_UNSPECIFIED:
-      return 0;
-    case TransactionType.TRANSACTION_TYPE_INCOME:
-      return 1;
-    case TransactionType.TRANSACTION_TYPE_EXPENSE:
-      return 2;
-    case TransactionType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const CategoryType = {
-  CATEGORY_TYPE_UNSPECIFIED: "CATEGORY_TYPE_UNSPECIFIED",
-  CATEGORY_TYPE_INCOME: "CATEGORY_TYPE_INCOME",
-  CATEGORY_TYPE_EXPENSE: "CATEGORY_TYPE_EXPENSE",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  CATEGORY_TYPE_UNSPECIFIED: 0,
+  CATEGORY_TYPE_INCOME: 1,
+  CATEGORY_TYPE_EXPENSE: 2,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type CategoryType = typeof CategoryType[keyof typeof CategoryType];
@@ -121,27 +107,13 @@ export function categoryTypeToJSON(object: CategoryType): string {
   }
 }
 
-export function categoryTypeToNumber(object: CategoryType): number {
-  switch (object) {
-    case CategoryType.CATEGORY_TYPE_UNSPECIFIED:
-      return 0;
-    case CategoryType.CATEGORY_TYPE_INCOME:
-      return 1;
-    case CategoryType.CATEGORY_TYPE_EXPENSE:
-      return 2;
-    case CategoryType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export const SortField = {
-  SORT_FIELD_UNSPECIFIED: "SORT_FIELD_UNSPECIFIED",
-  DATE: "DATE",
-  AMOUNT: "AMOUNT",
-  CREATED_AT: "CREATED_AT",
-  UPDATED_AT: "UPDATED_AT",
-  UNRECOGNIZED: "UNRECOGNIZED",
+  SORT_FIELD_UNSPECIFIED: 0,
+  DATE: 1,
+  AMOUNT: 2,
+  CREATED_AT: 3,
+  UPDATED_AT: 4,
+  UNRECOGNIZED: -1,
 } as const;
 
 export type SortField = typeof SortField[keyof typeof SortField];
@@ -194,24 +166,6 @@ export function sortFieldToJSON(object: SortField): string {
     case SortField.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
-  }
-}
-
-export function sortFieldToNumber(object: SortField): number {
-  switch (object) {
-    case SortField.SORT_FIELD_UNSPECIFIED:
-      return 0;
-    case SortField.DATE:
-      return 1;
-    case SortField.AMOUNT:
-      return 2;
-    case SortField.CREATED_AT:
-      return 3;
-    case SortField.UPDATED_AT:
-      return 4;
-    case SortField.UNRECOGNIZED:
-    default:
-      return -1;
   }
 }
 
@@ -572,7 +526,7 @@ export const Transaction: MessageFns<Transaction> = {
 };
 
 function createBaseCategory(): Category {
-  return { id: 0, userId: 0, name: "", type: CategoryType.CATEGORY_TYPE_UNSPECIFIED, createdAt: 0, updatedAt: 0 };
+  return { id: 0, userId: 0, name: "", type: 0, createdAt: 0, updatedAt: 0 };
 }
 
 export const Category: MessageFns<Category> = {
@@ -586,8 +540,8 @@ export const Category: MessageFns<Category> = {
     if (message.name !== "") {
       writer.uint32(26).string(message.name);
     }
-    if (message.type !== CategoryType.CATEGORY_TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(categoryTypeToNumber(message.type));
+    if (message.type !== 0) {
+      writer.uint32(32).int32(message.type);
     }
     if (message.createdAt !== 0) {
       writer.uint32(40).int64(message.createdAt);
@@ -634,7 +588,7 @@ export const Category: MessageFns<Category> = {
             break;
           }
 
-          message.type = categoryTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -667,7 +621,7 @@ export const Category: MessageFns<Category> = {
       id: isSet(object.id) ? globalThis.Number(object.id) : 0,
       userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? categoryTypeFromJSON(object.type) : CategoryType.CATEGORY_TYPE_UNSPECIFIED,
+      type: isSet(object.type) ? categoryTypeFromJSON(object.type) : 0,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
     };
@@ -684,7 +638,7 @@ export const Category: MessageFns<Category> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.type !== CategoryType.CATEGORY_TYPE_UNSPECIFIED) {
+    if (message.type !== 0) {
       obj.type = categoryTypeToJSON(message.type);
     }
     if (message.createdAt !== 0) {
@@ -704,7 +658,7 @@ export const Category: MessageFns<Category> = {
     message.id = object.id ?? 0;
     message.userId = object.userId ?? 0;
     message.name = object.name ?? "";
-    message.type = object.type ?? CategoryType.CATEGORY_TYPE_UNSPECIFIED;
+    message.type = object.type ?? 0;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
     return message;
@@ -733,7 +687,7 @@ export const TransactionFilter: MessageFns<TransactionFilter> = {
       writer.uint32(16).int32(message.categoryId);
     }
     if (message.type !== undefined) {
-      writer.uint32(24).int32(transactionTypeToNumber(message.type));
+      writer.uint32(24).int32(message.type);
     }
     if (message.startDate !== undefined) {
       writer.uint32(32).int64(message.startDate);
@@ -781,7 +735,7 @@ export const TransactionFilter: MessageFns<TransactionFilter> = {
             break;
           }
 
-          message.type = transactionTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
         case 4: {
@@ -951,7 +905,7 @@ export const GetTransactionRequest: MessageFns<GetTransactionRequest> = {
 };
 
 function createBaseListTransactionsRequest(): ListTransactionsRequest {
-  return { pagination: undefined, filter: undefined, sortField: SortField.SORT_FIELD_UNSPECIFIED, sortOrder: "" };
+  return { pagination: undefined, filter: undefined, sortField: 0, sortOrder: "" };
 }
 
 export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
@@ -962,8 +916,8 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     if (message.filter !== undefined) {
       TransactionFilter.encode(message.filter, writer.uint32(18).fork()).join();
     }
-    if (message.sortField !== SortField.SORT_FIELD_UNSPECIFIED) {
-      writer.uint32(24).int32(sortFieldToNumber(message.sortField));
+    if (message.sortField !== 0) {
+      writer.uint32(24).int32(message.sortField);
     }
     if (message.sortOrder !== "") {
       writer.uint32(34).string(message.sortOrder);
@@ -999,7 +953,7 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
             break;
           }
 
-          message.sortField = sortFieldFromJSON(reader.int32());
+          message.sortField = reader.int32() as any;
           continue;
         }
         case 4: {
@@ -1023,7 +977,7 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     return {
       pagination: isSet(object.pagination) ? PaginationParams.fromJSON(object.pagination) : undefined,
       filter: isSet(object.filter) ? TransactionFilter.fromJSON(object.filter) : undefined,
-      sortField: isSet(object.sortField) ? sortFieldFromJSON(object.sortField) : SortField.SORT_FIELD_UNSPECIFIED,
+      sortField: isSet(object.sortField) ? sortFieldFromJSON(object.sortField) : 0,
       sortOrder: isSet(object.sortOrder) ? globalThis.String(object.sortOrder) : "",
     };
   },
@@ -1036,7 +990,7 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     if (message.filter !== undefined) {
       obj.filter = TransactionFilter.toJSON(message.filter);
     }
-    if (message.sortField !== SortField.SORT_FIELD_UNSPECIFIED) {
+    if (message.sortField !== 0) {
       obj.sortField = sortFieldToJSON(message.sortField);
     }
     if (message.sortOrder !== "") {
@@ -1056,7 +1010,7 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     message.filter = (object.filter !== undefined && object.filter !== null)
       ? TransactionFilter.fromPartial(object.filter)
       : undefined;
-    message.sortField = object.sortField ?? SortField.SORT_FIELD_UNSPECIFIED;
+    message.sortField = object.sortField ?? 0;
     message.sortOrder = object.sortOrder ?? "";
     return message;
   },
@@ -2044,7 +1998,7 @@ export const ListCategoriesRequest: MessageFns<ListCategoriesRequest> = {
       PaginationParams.encode(message.pagination, writer.uint32(10).fork()).join();
     }
     if (message.type !== undefined) {
-      writer.uint32(16).int32(categoryTypeToNumber(message.type));
+      writer.uint32(16).int32(message.type);
     }
     return writer;
   },
@@ -2069,7 +2023,7 @@ export const ListCategoriesRequest: MessageFns<ListCategoriesRequest> = {
             break;
           }
 
-          message.type = categoryTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
       }
@@ -2113,7 +2067,7 @@ export const ListCategoriesRequest: MessageFns<ListCategoriesRequest> = {
 };
 
 function createBaseCreateCategoryRequest(): CreateCategoryRequest {
-  return { name: "", type: CategoryType.CATEGORY_TYPE_UNSPECIFIED };
+  return { name: "", type: 0 };
 }
 
 export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
@@ -2121,8 +2075,8 @@ export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.type !== CategoryType.CATEGORY_TYPE_UNSPECIFIED) {
-      writer.uint32(16).int32(categoryTypeToNumber(message.type));
+    if (message.type !== 0) {
+      writer.uint32(16).int32(message.type);
     }
     return writer;
   },
@@ -2147,7 +2101,7 @@ export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
             break;
           }
 
-          message.type = categoryTypeFromJSON(reader.int32());
+          message.type = reader.int32() as any;
           continue;
         }
       }
@@ -2162,7 +2116,7 @@ export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
   fromJSON(object: any): CreateCategoryRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      type: isSet(object.type) ? categoryTypeFromJSON(object.type) : CategoryType.CATEGORY_TYPE_UNSPECIFIED,
+      type: isSet(object.type) ? categoryTypeFromJSON(object.type) : 0,
     };
   },
 
@@ -2171,7 +2125,7 @@ export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.type !== CategoryType.CATEGORY_TYPE_UNSPECIFIED) {
+    if (message.type !== 0) {
       obj.type = categoryTypeToJSON(message.type);
     }
     return obj;
@@ -2183,7 +2137,7 @@ export const CreateCategoryRequest: MessageFns<CreateCategoryRequest> = {
   fromPartial(object: DeepPartial<CreateCategoryRequest>): CreateCategoryRequest {
     const message = createBaseCreateCategoryRequest();
     message.name = object.name ?? "";
-    message.type = object.type ?? CategoryType.CATEGORY_TYPE_UNSPECIFIED;
+    message.type = object.type ?? 0;
     return message;
   },
 };

@@ -29,7 +29,7 @@ plugins:
       - lowerCaseServiceMethods=true
       - unnestEnumValue=true
       - enumsAsLiterals=true
-      - stringEnums=true
+      - stringEnums=false
       - esModuleInterop=true
       - forceLong=number
       - useOptionals=none

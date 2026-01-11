@@ -163,6 +163,11 @@ func (s *categoryService) DeleteCategory(ctx context.Context, categoryID int32, 
 	}, nil
 }
 
+// CreateDefaultCategories creates default categories for a new user.
+func (s *categoryService) CreateDefaultCategories(ctx context.Context, userID int32) error {
+	return s.categoryRepo.CreateDefaultCategories(ctx, userID)
+}
+
 // Helper methods
 
 // validateCategoryName validates the category name.

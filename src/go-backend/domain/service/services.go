@@ -14,11 +14,19 @@ type Services struct {
 
 // NewServices creates all service instances.
 func NewServices(repos *Repositories) *Services {
+	categorySvc := NewCategoryService(repos.Category)
+	userSvc := NewUserService(repos.User)
+
+	// Wire up the category service to user service for default category creation
+	if us, ok := userSvc.(*userService); ok {
+		us.SetCategoryService(categorySvc)
+	}
+
 	return &Services{
 		Wallet:      NewWalletService(repos.Wallet, repos.User),
-		User:        NewUserService(repos.User),
+		User:        userSvc,
 		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category),
-		Category:    NewCategoryService(repos.Category),
+		Category:    categorySvc,
 	}
 }
 

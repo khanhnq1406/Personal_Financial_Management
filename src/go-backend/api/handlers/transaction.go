@@ -342,13 +342,20 @@ func parseSortOrder(c *gin.Context) string {
 }
 
 // parsePaginationParamsProto parses pagination parameters from query string into protobuf format.
+// Supports both flat format (page, page_size) and nested format (pagination.page, pagination.pageSize)
 func parsePaginationParamsProto(c *gin.Context) *transactionv1.PaginationParams {
 	page := int32(1)      // Default page
 	pageSize := int32(20) // Default page size
 	orderBy := "date"     // Default order by
 	order := "desc"       // Default order
 
+	// Try flat format first (for backward compatibility)
 	if pageStr := c.Query("page"); pageStr != "" {
+		if p, err := strconv.ParseInt(pageStr, 10, 32); err == nil {
+			page = int32(p)
+		}
+	} else if pageStr := c.Query("pagination.page"); pageStr != "" {
+		// Try nested format (gRPC-Gateway style)
 		if p, err := strconv.ParseInt(pageStr, 10, 32); err == nil {
 			page = int32(p)
 		}
@@ -358,13 +365,21 @@ func parsePaginationParamsProto(c *gin.Context) *transactionv1.PaginationParams 
 		if ps, err := strconv.ParseInt(pageSizeStr, 10, 32); err == nil {
 			pageSize = int32(ps)
 		}
+	} else if pageSizeStr := c.Query("pagination.pageSize"); pageSizeStr != "" {
+		if ps, err := strconv.ParseInt(pageSizeStr, 10, 32); err == nil {
+			pageSize = int32(ps)
+		}
 	}
 
 	if ob := c.Query("order_by"); ob != "" {
 		orderBy = ob
+	} else if ob := c.Query("pagination.orderBy"); ob != "" {
+		orderBy = ob
 	}
 
 	if o := c.Query("order"); o != "" {
+		order = o
+	} else if o := c.Query("pagination.order"); o != "" {
 		order = o
 	}
 

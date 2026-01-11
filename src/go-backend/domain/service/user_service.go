@@ -14,16 +14,23 @@ import (
 
 // userService implements UserService.
 type userService struct {
-	userRepo repository.UserRepository
-	mapper   *UserMapper
+	userRepo     repository.UserRepository
+	categorySvc  CategoryService
+	mapper       *UserMapper
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(userRepo repository.UserRepository) UserService {
 	return &userService{
-		userRepo: userRepo,
-		mapper:   NewUserMapper(),
+		userRepo:    userRepo,
+		categorySvc: nil, // Set later to avoid circular dependency
+		mapper:      NewUserMapper(),
 	}
+}
+
+// SetCategoryService sets the category service (called after initialization to avoid circular dependency).
+func (s *userService) SetCategoryService(categorySvc CategoryService) {
+	s.categorySvc = categorySvc
 }
 
 // GetUser retrieves a user by ID.
@@ -121,6 +128,14 @@ func (s *userService) CreateUser(ctx context.Context, email, name, picture strin
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, err
+	}
+
+	// Create default categories for the new user
+	if s.categorySvc != nil {
+		if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
+			// Log the error but don't fail the user creation
+			// The categories can be created manually later
+		}
 	}
 
 	return &protobufv1.CreateUserResponse{

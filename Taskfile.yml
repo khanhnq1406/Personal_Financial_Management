@@ -46,6 +46,12 @@ tasks:
     cmds:
       - make deps
 
+  backend:migrate-categories:
+    desc: "Run migration to create default categories for existing users"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go run ./cmd/migrate-default-categories
+
   # Frontend tasks
   frontend:dev:
     desc: "Start frontend in development mode"

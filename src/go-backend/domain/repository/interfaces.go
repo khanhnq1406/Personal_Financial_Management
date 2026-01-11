@@ -142,4 +142,7 @@ type CategoryRepository interface {
 
 	// CountByUserID returns the number of categories for a user.
 	CountByUserID(ctx context.Context, userID int32) (int, error)
+
+	// CreateDefaultCategories creates default categories for a new user.
+	CreateDefaultCategories(ctx context.Context, userID int32) error
 }

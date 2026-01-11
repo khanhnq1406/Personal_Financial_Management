@@ -48,7 +48,6 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
-    console.log(authResponse);
     if (storedToken && authResponse?.data) {
       setToken(storedToken);
       store.dispatch(
