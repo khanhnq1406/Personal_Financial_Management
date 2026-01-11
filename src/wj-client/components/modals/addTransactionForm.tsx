@@ -7,8 +7,12 @@ import {
 import {
   useQueryListWallets,
   useQueryListCategories,
+  useMutationCreateCategory,
+  EVENT_CategoryListCategories,
 } from "@/utils/generated/hooks";
 import { CategoryType } from "@/gen/protobuf/v1/transaction";
+import { useQueryClient } from "@tanstack/react-query";
+import { CreatableSelect } from "@/components/select/creatableSelect";
 
 interface AddTransactionFormProps {
   setInput: Dispatch<
@@ -19,6 +23,8 @@ interface AddTransactionFormProps {
 export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
   setInput,
 }) => {
+  const queryClient = useQueryClient();
+
   // Fetch wallets
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
@@ -28,6 +34,9 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
   const [transactionType, setTransactionType] = useState<"income" | "expense">(
     "income"
   );
+
+  // State for selected category ID
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
   // Fetch categories filtered by type
   const { data: categoriesData, isLoading: categoriesLoading } =
@@ -39,8 +48,37 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           : CategoryType.CATEGORY_TYPE_EXPENSE,
     });
 
+  // Mutation for creating new categories
+  const createCategoryMutation = useMutationCreateCategory({
+    onSuccess: (data) => {
+      // Invalidate categories query to refetch with new category
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_CategoryListCategories],
+      });
+      // Set the newly created category ID
+      if (data.data?.id) {
+        const categoryId = String(data.data.id);
+        setSelectedCategoryId(categoryId);
+        setInput((input) => ({
+          ...input,
+          categoryId: data.data?.id,
+        }));
+      }
+    },
+  });
+
   const wallets = walletsData?.wallets || [];
   const categories = categoriesData?.categories || [];
+
+  const handleCreateCategory = async (categoryName: string) => {
+    await createCategoryMutation.mutateAsync({
+      name: categoryName,
+      type:
+        transactionType === "income"
+          ? CategoryType.CATEGORY_TYPE_INCOME
+          : CategoryType.CATEGORY_TYPE_EXPENSE,
+    });
+  };
 
   // Initialize with current date/time on mount
   useEffect(() => {
@@ -55,6 +93,7 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
 
   // Reset category when transaction type changes
   useEffect(() => {
+    setSelectedCategoryId("");
     setInput((input) => ({
       ...input,
       categoryId: undefined,
@@ -158,28 +197,28 @@ export const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
         <div>
           Category<span className="required">*</span>
         </div>
-        <select
-          defaultValue={categories?.[0]?.id}
-          className="p-2 drop-shadow-round rounded-lg w-full mt-1"
-          disabled={categoriesLoading}
-          onChange={(e) =>
+        <CreatableSelect
+          options={categories.map((category) => ({
+            value: String(category.id),
+            label: category.name,
+          }))}
+          value={selectedCategoryId}
+          onChange={(value: string) => {
+            setSelectedCategoryId(value);
             setInput((input) => ({
               ...input,
-              categoryId: e.target.value ? Number(e.target.value) : undefined,
-            }))
-          }
-        >
-          <option value={undefined} disabled>
-            {categoriesLoading
+              categoryId: value ? Number(value) : undefined,
+            }));
+          }}
+          onCreate={handleCreateCategory}
+          placeholder={
+            categoriesLoading
               ? "Loading categories..."
-              : "Select category (optional)"}
-          </option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+              : "Select or create category..."
+          }
+          disabled={categoriesLoading}
+          className="mt-1"
+        />
       </div>
 
       {/* Date & Time */}
