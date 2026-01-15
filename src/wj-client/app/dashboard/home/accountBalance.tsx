@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
   ComposedChart,
   Line,
@@ -9,8 +9,19 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { ChartSkeleton } from "@/components/loading/Skeleton";
 
 export const AccountBalance = memo(function AccountBalance() {
+  const [isLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="w-full aspect-video p-1">
+        <ChartSkeleton />
+      </div>
+    );
+  }
+
   const years = [2024, 2023];
   const data = [
     { id: 1, month: "January", balance: 100 },

@@ -17,7 +17,7 @@ import {
   useQueryListWallets,
   useQueryGetAvailableYears,
 } from "@/utils/generated/hooks";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { ChartSkeleton } from "@/components/loading/Skeleton";
 
 export const Balance = memo(function Balance() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -64,8 +64,8 @@ export const Balance = memo(function Balance() {
 
   if (walletsLoading || balanceLoading) {
     return (
-      <div className="w-full aspect-video p-1 flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="w-full aspect-video p-1">
+        <ChartSkeleton />
       </div>
     );
   }

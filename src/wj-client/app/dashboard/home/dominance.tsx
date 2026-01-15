@@ -1,6 +1,7 @@
 import { pieChartColors } from "@/app/constants";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { PieChart, ResponsiveContainer, Pie, Legend, Cell } from "recharts";
+import { ChartSkeleton } from "@/components/loading/Skeleton";
 
 type CustomizedLableType = {
   cx: number;
@@ -12,6 +13,16 @@ type CustomizedLableType = {
   index: number | string;
 };
 export const Dominance = memo(function Dominance() {
+  const [isLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="w-full aspect-video p-1">
+        <ChartSkeleton />
+      </div>
+    );
+  }
+
   const data = [
     { name: "Wallet 1", value: 10 },
     { name: "Wallet 2", value: 20 },

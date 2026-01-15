@@ -1,7 +1,7 @@
 import { ButtonType, resources } from "@/app/constants";
 import { BaseCard } from "@/components/baseCard";
 import { Button } from "@/components/Button";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { TotalBalanceSkeleton } from "@/components/loading/Skeleton";
 import { currencyFormatter } from "@/utils/currencyFormatter";
 import { useQueryGetTotalBalance } from "@/utils/generated/hooks";
 import { memo, useMemo, useState } from "react";
@@ -28,9 +28,7 @@ export const TotalBalance = memo(function TotalBalance() {
     return (
       <div className="py-5 hidden sm:block">
         <BaseCard>
-          <div className="flex items-center justify-center py-5 px-5">
-            <LoadingSpinner />
-          </div>
+          <TotalBalanceSkeleton />
         </BaseCard>
       </div>
     );

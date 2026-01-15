@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -8,7 +8,18 @@ import {
   YAxis,
   XAxis,
 } from "recharts";
+import { ChartSkeleton } from "@/components/loading/Skeleton";
 export const MonthlyDominance = memo(function MonthlyDominance() {
+  const [isLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className=" w-full aspect-video p-1">
+        <ChartSkeleton />
+      </div>
+    );
+  }
+
   const data = [
     {
       month: "Jan",
