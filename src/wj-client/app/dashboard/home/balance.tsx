@@ -15,11 +15,14 @@ import {
 import {
   useQueryGetBalanceHistory,
   useQueryListWallets,
-  useQueryGetAvailableYears,
 } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 
-export const Balance = memo(function Balance() {
+interface BalanceProps {
+  availableYears: number[];
+}
+
+export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedWalletId, setSelectedWalletId] = useState<number | undefined>(
     undefined
@@ -32,9 +35,6 @@ export const Balance = memo(function Balance() {
     },
     { refetchOnMount: "always" }
   );
-
-  // Fetch available years from user's transactions
-  const { data: availableYearsData } = useQueryGetAvailableYears({}, { refetchOnMount: "always" });
 
   // Fetch balance history
   const { data: balanceHistory, isLoading: balanceLoading } =
@@ -59,9 +59,6 @@ export const Balance = memo(function Balance() {
       expense: point.expense,
     })) ?? [];
 
-  // Use available years from API, or default to current year if no transactions
-  const years = availableYearsData?.years?.length ? availableYearsData.years : [new Date().getFullYear()];
-
   if (walletsLoading || balanceLoading) {
     return (
       <div className="w-full aspect-video p-1">
@@ -78,7 +75,7 @@ export const Balance = memo(function Balance() {
           value={selectedYear}
           onChange={(e) => setSelectedYear(parseInt(e.target.value))}
         >
-          {years.map((year) => {
+          {availableYears.map((year) => {
             return (
               <option key={year} value={year}>
                 {year}

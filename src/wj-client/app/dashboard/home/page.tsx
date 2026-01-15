@@ -9,7 +9,7 @@ import { AccountBalance } from "./accountBalance";
 import { User } from "./user";
 import { TotalBalance } from "./totalBalance";
 import { FunctionalButton } from "./functionalButtons";
-import { useQueryListWallets } from "@/utils/generated/hooks";
+import { useQueryListWallets, useQueryGetAvailableYears } from "@/utils/generated/hooks";
 
 export default function Home() {
   const getListWallets = useQueryListWallets(
@@ -18,6 +18,18 @@ export default function Home() {
     },
     { refetchOnMount: "always" }
   );
+
+  // Fetch available years once and pass to child components
+  const { data: availableYearsData } = useQueryGetAvailableYears(
+    {},
+    { refetchOnMount: "always" }
+  );
+
+  // Use available years from API, or default to current year if no transactions
+  const availableYears = availableYearsData?.years?.length
+    ? availableYearsData.years
+    : [new Date().getFullYear()];
+
   return (
     <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
       <div className="sm:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center">
@@ -35,11 +47,11 @@ export default function Home() {
             Total balance fluctuation
           </div>
           <BaseCard>
-            <Balance />
+            <Balance availableYears={availableYears} />
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">Dominance</div>
           <BaseCard>
-            <Dominance />
+            <Dominance availableYears={availableYears} />
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">Monthly Dominance</div>
           <BaseCard>
