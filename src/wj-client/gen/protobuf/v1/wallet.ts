@@ -112,6 +112,10 @@ export interface TransferFundsRequest {
   amount: Money | undefined;
 }
 
+/** GetTotalBalance request */
+export interface GetTotalBalanceRequest {
+}
+
 /** GetWallet response */
 export interface GetWalletResponse {
   success: boolean;
@@ -172,6 +176,14 @@ export interface WithdrawFundsResponse {
 export interface TransferFundsResponse {
   success: boolean;
   message: string;
+  timestamp: string;
+}
+
+/** GetTotalBalance response */
+export interface GetTotalBalanceResponse {
+  success: boolean;
+  message: string;
+  data: Money | undefined;
   timestamp: string;
 }
 
@@ -1003,6 +1015,49 @@ export const TransferFundsRequest: MessageFns<TransferFundsRequest> = {
     message.amount = (object.amount !== undefined && object.amount !== null)
       ? Money.fromPartial(object.amount)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseGetTotalBalanceRequest(): GetTotalBalanceRequest {
+  return {};
+}
+
+export const GetTotalBalanceRequest: MessageFns<GetTotalBalanceRequest> = {
+  encode(_: GetTotalBalanceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetTotalBalanceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTotalBalanceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetTotalBalanceRequest {
+    return {};
+  },
+
+  toJSON(_: GetTotalBalanceRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTotalBalanceRequest>): GetTotalBalanceRequest {
+    return GetTotalBalanceRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetTotalBalanceRequest>): GetTotalBalanceRequest {
+    const message = createBaseGetTotalBalanceRequest();
     return message;
   },
 };
@@ -1852,6 +1907,114 @@ export const TransferFundsResponse: MessageFns<TransferFundsResponse> = {
     const message = createBaseTransferFundsResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetTotalBalanceResponse(): GetTotalBalanceResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
+  encode(message: GetTotalBalanceResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Money.encode(message.data, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetTotalBalanceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTotalBalanceResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTotalBalanceResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Money.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetTotalBalanceResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Money.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTotalBalanceResponse>): GetTotalBalanceResponse {
+    return GetTotalBalanceResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetTotalBalanceResponse>): GetTotalBalanceResponse {
+    const message = createBaseGetTotalBalanceResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Money.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
     return message;
   },

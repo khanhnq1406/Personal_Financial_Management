@@ -359,6 +359,33 @@ func (h *WalletHandlers) TransferFunds(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetTotalBalance returns the total balance across all user wallets.
+// @Summary Get total balance
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.APIResponse{data=protobufv1.Money}
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/wallets/total-balance [get]
+func (h *WalletHandlers) GetTotalBalance(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Call service
+	result, err := h.walletService.GetTotalBalance(c.Request.Context(), userID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // parseIDParam parses an ID parameter from the URL.
 func parseIDParam(c *gin.Context, param string) (int32, error) {
 	idStr := c.Param(param)

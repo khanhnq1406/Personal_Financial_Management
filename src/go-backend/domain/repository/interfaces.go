@@ -69,6 +69,9 @@ type WalletRepository interface {
 	// CountByUserID returns the number of wallets for a user.
 	CountByUserID(ctx context.Context, userID int32) (int, error)
 
+	// GetTotalBalance calculates the sum of all wallet balances for a user.
+	GetTotalBalance(ctx context.Context, userID int32) (int64, error)
+
 	// WithTx returns a repository instance that uses the given transaction.
 	WithTx(tx interface{}) WalletRepository
 }

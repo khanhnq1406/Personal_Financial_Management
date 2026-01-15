@@ -66,6 +66,7 @@ func RegisterRoutes(
 		wallets.POST("/:id/add", h.Wallet.AddFunds)
 		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
 		wallets.POST("/transfer", h.Wallet.TransferFunds)
+		wallets.GET("/total-balance", h.Wallet.GetTotalBalance)
 	}
 
 	// Transaction routes (protected)

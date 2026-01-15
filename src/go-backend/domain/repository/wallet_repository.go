@@ -146,6 +146,22 @@ func (r *walletRepository) CountByUserID(ctx context.Context, userID int32) (int
 	return int(count), nil
 }
 
+// GetTotalBalance calculates the sum of all wallet balances for a user.
+func (r *walletRepository) GetTotalBalance(ctx context.Context, userID int32) (int64, error) {
+	var totalBalance int64
+	result := r.db.DB.WithContext(ctx).
+		Model(&models.Wallet{}).
+		Where("user_id = ?", userID).
+		Select("COALESCE(SUM(balance), 0)").
+		Scan(&totalBalance)
+
+	if result.Error != nil {
+		return 0, apperrors.NewInternalErrorWithCause("failed to calculate total balance", result.Error)
+	}
+
+	return totalBalance, nil
+}
+
 // WithTx returns a repository instance that uses the given transaction.
 func (r *walletRepository) WithTx(tx interface{}) WalletRepository {
 	// For now, we'll implement a simple version that returns a new repository with a transaction

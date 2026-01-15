@@ -385,3 +385,24 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *wa
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
+
+func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*walletv1.GetTotalBalanceResponse, error) {
+	// Validate user ID
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Get total balance from repository
+	totalBalance, err := s.walletRepo.GetTotalBalance(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return response
+	return &walletv1.GetTotalBalanceResponse{
+		Success:   true,
+		Message:   "Total balance retrieved successfully",
+		Data:      &walletv1.Money{Amount: totalBalance, Currency: "VND"},
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}

@@ -33,6 +33,9 @@ type WalletService interface {
 
 	// TransferFunds transfers funds between two wallets belonging to the same user.
 	TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*walletv1.TransferFundsResponse, error)
+
+	// GetTotalBalance calculates the total balance across all user wallets.
+	GetTotalBalance(ctx context.Context, userID int32) (*walletv1.GetTotalBalanceResponse, error)
 }
 
 // UserService defines the interface for user business logic.

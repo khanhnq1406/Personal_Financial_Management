@@ -337,6 +337,27 @@ func local_request_WalletService_TransferFunds_0(ctx context.Context, marshaler 
 	return msg, metadata, err
 }
 
+func request_WalletService_GetTotalBalance_0(ctx context.Context, marshaler runtime.Marshaler, client WalletServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetTotalBalanceRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.GetTotalBalance(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_WalletService_GetTotalBalance_0(ctx context.Context, marshaler runtime.Marshaler, server WalletServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetTotalBalanceRequest
+		metadata runtime.ServerMetadata
+	)
+	msg, err := server.GetTotalBalance(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 // RegisterWalletServiceHandlerServer registers the http handlers for service WalletService to "mux".
 // UnaryRPC     :call WalletServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -502,6 +523,26 @@ func RegisterWalletServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 		forward_WalletService_TransferFunds_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_WalletService_GetTotalBalance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/GetTotalBalance", runtime.WithHTTPPathPattern("/api/v1/wallets/total-balance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_WalletService_GetTotalBalance_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_WalletService_GetTotalBalance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -679,27 +720,46 @@ func RegisterWalletServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_WalletService_TransferFunds_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_WalletService_GetTotalBalance_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/GetTotalBalance", runtime.WithHTTPPathPattern("/api/v1/wallets/total-balance"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_WalletService_GetTotalBalance_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_WalletService_GetTotalBalance_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	return nil
 }
 
 var (
-	pattern_WalletService_GetWallet_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
-	pattern_WalletService_ListWallets_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
-	pattern_WalletService_CreateWallet_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
-	pattern_WalletService_UpdateWallet_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
-	pattern_WalletService_DeleteWallet_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
-	pattern_WalletService_AddFunds_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "add"}, ""))
-	pattern_WalletService_WithdrawFunds_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "withdraw"}, ""))
-	pattern_WalletService_TransferFunds_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "wallets", "transfer"}, ""))
+	pattern_WalletService_GetWallet_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
+	pattern_WalletService_ListWallets_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
+	pattern_WalletService_CreateWallet_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
+	pattern_WalletService_UpdateWallet_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
+	pattern_WalletService_DeleteWallet_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
+	pattern_WalletService_AddFunds_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "add"}, ""))
+	pattern_WalletService_WithdrawFunds_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "withdraw"}, ""))
+	pattern_WalletService_TransferFunds_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "wallets", "transfer"}, ""))
+	pattern_WalletService_GetTotalBalance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "wallets", "total-balance"}, ""))
 )
 
 var (
-	forward_WalletService_GetWallet_0     = runtime.ForwardResponseMessage
-	forward_WalletService_ListWallets_0   = runtime.ForwardResponseMessage
-	forward_WalletService_CreateWallet_0  = runtime.ForwardResponseMessage
-	forward_WalletService_UpdateWallet_0  = runtime.ForwardResponseMessage
-	forward_WalletService_DeleteWallet_0  = runtime.ForwardResponseMessage
-	forward_WalletService_AddFunds_0      = runtime.ForwardResponseMessage
-	forward_WalletService_WithdrawFunds_0 = runtime.ForwardResponseMessage
-	forward_WalletService_TransferFunds_0 = runtime.ForwardResponseMessage
+	forward_WalletService_GetWallet_0       = runtime.ForwardResponseMessage
+	forward_WalletService_ListWallets_0     = runtime.ForwardResponseMessage
+	forward_WalletService_CreateWallet_0    = runtime.ForwardResponseMessage
+	forward_WalletService_UpdateWallet_0    = runtime.ForwardResponseMessage
+	forward_WalletService_DeleteWallet_0    = runtime.ForwardResponseMessage
+	forward_WalletService_AddFunds_0        = runtime.ForwardResponseMessage
+	forward_WalletService_WithdrawFunds_0   = runtime.ForwardResponseMessage
+	forward_WalletService_TransferFunds_0   = runtime.ForwardResponseMessage
+	forward_WalletService_GetTotalBalance_0 = runtime.ForwardResponseMessage
 )

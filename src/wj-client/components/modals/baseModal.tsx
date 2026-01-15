@@ -15,6 +15,7 @@ import {
   useMutationTransferFunds,
   useMutationCreateTransaction,
   EVENT_WalletListWallets,
+  EVENT_WalletGetTotalBalance,
 } from "@/utils/generated/hooks";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 import { useQueryClient } from "@tanstack/react-query";
@@ -81,6 +82,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const createWalletMutation = useMutationCreateWallet({
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       modal.onSuccess?.();
       store.dispatch(closeModal());
       setSuccessMessage("Wallet has been created successfully");
@@ -93,6 +96,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const createTransactionMutation = useMutationCreateTransaction({
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
       queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       modal.onSuccess?.();
       store.dispatch(closeModal());
@@ -106,6 +110,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
 
   const transferFundsMutation = useMutationTransferFunds({
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       modal.onSuccess?.();
       store.dispatch(closeModal());
       setSuccessMessage("Transfer completed successfully");

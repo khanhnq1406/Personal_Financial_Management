@@ -69,6 +69,13 @@ service WalletService {
       body: "*"
     };
   }
+
+  // Get total balance across all user wallets
+  rpc GetTotalBalance(GetTotalBalanceRequest) returns (GetTotalBalanceResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/total-balance"
+    };
+  }
 }
 
 // Enums
@@ -141,6 +148,9 @@ message TransferFundsRequest {
   wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
 }
 
+// GetTotalBalance request
+message GetTotalBalanceRequest {}
+
 // GetWallet response
 message GetWalletResponse {
   bool success = 1 [json_name = "success"];
@@ -202,4 +212,12 @@ message TransferFundsResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+}
+
+// GetTotalBalance response
+message GetTotalBalanceResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  wealthjourney.common.v1.Money data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }

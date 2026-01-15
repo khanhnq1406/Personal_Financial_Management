@@ -1,20 +1,43 @@
 import { ButtonType, resources } from "@/app/constants";
 import { BaseCard } from "@/components/baseCard";
 import { Button } from "@/components/Button";
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { currencyFormatter } from "@/utils/currencyFormatter";
-import { memo, useState } from "react";
+import { useQueryGetTotalBalance } from "@/utils/generated/hooks";
+import { memo, useMemo, useState } from "react";
 
 const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
 export const TotalBalance = memo(function TotalBalance() {
-  const [balance, setBalance] = useState(currencyFormatter.format(123456789));
   const [isHide, setHide] = useState(false);
   const [displayImg, setDisplayImg] = useState(displayImgList[0]);
+
+  const getTotalBalance = useQueryGetTotalBalance({});
+
+  const balance = useMemo(() => {
+    const amount = getTotalBalance.data?.data?.amount || 0;
+    return currencyFormatter.format(amount);
+  }, [getTotalBalance.data]);
+
   const handleHideBalance = (event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
     setHide(!isHide);
     setDisplayImg(displayImgList[Number(!isHide)]);
-    setBalance(currencyFormatter.format(123456789));
   };
+
+  if (getTotalBalance.isLoading) {
+    return (
+      <div className="py-5 hidden sm:block">
+        <BaseCard>
+          <div className="flex items-center justify-center py-5 px-5">
+            <LoadingSpinner />
+          </div>
+        </BaseCard>
+      </div>
+    );
+  }
+
+  const displayBalance = getTotalBalance.error ? "0 ₫" : balance;
+
   return (
     <div className="py-5 hidden sm:block">
       <BaseCard>
@@ -24,7 +47,7 @@ export const TotalBalance = memo(function TotalBalance() {
               Total balance
             </div>
             <div className="font-bold text-2xl break-all">
-              {isHide ? "*****" : balance}
+              {isHide ? "*****" : displayBalance}
             </div>
           </div>
           <div>
