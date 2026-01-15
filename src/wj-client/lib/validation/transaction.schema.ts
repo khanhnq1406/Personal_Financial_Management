@@ -1,0 +1,25 @@
+import { z } from "zod";
+import { amountSchema, optionalNoteSchema } from "./common";
+
+/**
+ * Zod schema for transaction creation
+ * Schema matches form input types exactly (no transformations)
+ * All transformations to API types happen in the submit handler
+ */
+
+export type TransactionType = "income" | "expense";
+
+const transactionTypeEnum = z.enum(["income", "expense"]);
+
+export const createTransactionFormSchema = z.object({
+  transactionType: transactionTypeEnum,
+  amount: amountSchema,
+  walletId: z.string().min(1, "Wallet is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  date: z.string().min(1, "Date is required"),
+  note: optionalNoteSchema,
+});
+
+export type CreateTransactionFormInput = z.infer<
+  typeof createTransactionFormSchema
+>;
