@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { store } from "@/redux/store";
 import { setAuth } from "@/redux/actions";
 import { useQueryVerifyAuth } from "@/utils/generated/hooks";
+import { FullPageLoading } from "@/components/loading/FullPageLoading";
 
 export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -61,7 +62,7 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
     }
   }, [authResponse]);
   if (token === null) {
-    return <div>Loading...</div>;
+    return <FullPageLoading />;
   }
 
   return <>{children}</>;

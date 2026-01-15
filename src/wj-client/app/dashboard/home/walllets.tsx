@@ -4,6 +4,7 @@ import { UseQueryResult } from "@tanstack/react-query";
 import { ListWalletsResponse } from "@/gen/protobuf/v1/wallet";
 import { ErrorType } from "@/utils/generated/hooks.types";
 import { currencyFormatter } from "@/utils/currencyFormatter";
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
 type WalletsProps = {
   getListWallets: UseQueryResult<ListWalletsResponse, ErrorType>;
@@ -12,7 +13,11 @@ const Wallets: React.FC<WalletsProps> = (props) => {
   const { getListWallets } = props;
   const { isLoading, data } = getListWallets;
   if (isLoading) {
-    return <div className="px-2 py-1">Loading...</div>;
+    return (
+      <div className="px-2 py-1 flex items-center ">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (

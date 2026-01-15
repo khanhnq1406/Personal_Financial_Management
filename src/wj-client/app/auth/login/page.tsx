@@ -8,6 +8,7 @@ import { setAuth } from "@/redux/actions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMutationLogin } from "@/utils/generated/hooks";
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
 export default function Login() {
   const router = useRouter();
@@ -67,18 +68,27 @@ export default function Login() {
               Sign up now
             </Link>
           </p>
-          <GoogleOAuthProvider
-            clientId={
-              process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== undefined
-                ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-                : ""
-            }
+          <div
+            className={login.isPending ? "opacity-50 pointer-events-none" : ""}
           >
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={handleGoogleLoginError}
-            />
-          </GoogleOAuthProvider>
+            <GoogleOAuthProvider
+              clientId={
+                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== undefined
+                  ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+                  : ""
+              }
+            >
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={handleGoogleLoginError}
+              />
+            </GoogleOAuthProvider>
+          </div>
+          {login.isPending && (
+            <div className="my-3">
+              <LoadingSpinner text="Logging in..." />
+            </div>
+          )}
           <div className="my-3 text-red-500">{error}</div>
         </div>
       </div>

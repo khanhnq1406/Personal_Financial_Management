@@ -14,9 +14,9 @@ import (
 
 // userService implements UserService.
 type userService struct {
-	userRepo     repository.UserRepository
-	categorySvc  CategoryService
-	mapper       *UserMapper
+	userRepo    repository.UserRepository
+	categorySvc CategoryService
+	mapper      *UserMapper
 }
 
 // NewUserService creates a new UserService.
