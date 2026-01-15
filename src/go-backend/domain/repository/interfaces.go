@@ -87,6 +87,7 @@ type TransactionManager interface {
 // TransactionFilter defines filter options for listing transactions.
 type TransactionFilter struct {
 	WalletID   *int32
+	WalletIDs  []int32 // Support multiple wallet IDs
 	CategoryID *int32
 	Type       *v1.TransactionType
 	StartDate  *time.Time
@@ -118,6 +119,9 @@ type TransactionRepository interface {
 
 	// GetWithWallet retrieves a transaction with its wallet relationship.
 	GetWithWallet(ctx context.Context, id int32) (*models.Transaction, error)
+
+	// GetAvailableYears retrieves distinct years from user's transactions.
+	GetAvailableYears(ctx context.Context, userID int32) ([]int32, error)
 }
 
 // CategoryRepository defines the interface for category data operations.

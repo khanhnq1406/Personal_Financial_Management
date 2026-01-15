@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	WalletService_GetWallet_FullMethodName       = "/wealthjourney.wallet.v1.WalletService/GetWallet"
-	WalletService_ListWallets_FullMethodName     = "/wealthjourney.wallet.v1.WalletService/ListWallets"
-	WalletService_CreateWallet_FullMethodName    = "/wealthjourney.wallet.v1.WalletService/CreateWallet"
-	WalletService_UpdateWallet_FullMethodName    = "/wealthjourney.wallet.v1.WalletService/UpdateWallet"
-	WalletService_DeleteWallet_FullMethodName    = "/wealthjourney.wallet.v1.WalletService/DeleteWallet"
-	WalletService_AddFunds_FullMethodName        = "/wealthjourney.wallet.v1.WalletService/AddFunds"
-	WalletService_WithdrawFunds_FullMethodName   = "/wealthjourney.wallet.v1.WalletService/WithdrawFunds"
-	WalletService_TransferFunds_FullMethodName   = "/wealthjourney.wallet.v1.WalletService/TransferFunds"
-	WalletService_GetTotalBalance_FullMethodName = "/wealthjourney.wallet.v1.WalletService/GetTotalBalance"
+	WalletService_GetWallet_FullMethodName         = "/wealthjourney.wallet.v1.WalletService/GetWallet"
+	WalletService_ListWallets_FullMethodName       = "/wealthjourney.wallet.v1.WalletService/ListWallets"
+	WalletService_CreateWallet_FullMethodName      = "/wealthjourney.wallet.v1.WalletService/CreateWallet"
+	WalletService_UpdateWallet_FullMethodName      = "/wealthjourney.wallet.v1.WalletService/UpdateWallet"
+	WalletService_DeleteWallet_FullMethodName      = "/wealthjourney.wallet.v1.WalletService/DeleteWallet"
+	WalletService_AddFunds_FullMethodName          = "/wealthjourney.wallet.v1.WalletService/AddFunds"
+	WalletService_WithdrawFunds_FullMethodName     = "/wealthjourney.wallet.v1.WalletService/WithdrawFunds"
+	WalletService_TransferFunds_FullMethodName     = "/wealthjourney.wallet.v1.WalletService/TransferFunds"
+	WalletService_GetTotalBalance_FullMethodName   = "/wealthjourney.wallet.v1.WalletService/GetTotalBalance"
+	WalletService_GetBalanceHistory_FullMethodName = "/wealthjourney.wallet.v1.WalletService/GetBalanceHistory"
 )
 
 // WalletServiceClient is the client API for WalletService service.
@@ -52,6 +53,8 @@ type WalletServiceClient interface {
 	TransferFunds(ctx context.Context, in *TransferFundsRequest, opts ...grpc.CallOption) (*TransferFundsResponse, error)
 	// Get total balance across all user wallets
 	GetTotalBalance(ctx context.Context, in *GetTotalBalanceRequest, opts ...grpc.CallOption) (*GetTotalBalanceResponse, error)
+	// Get balance history for chart visualization
+	GetBalanceHistory(ctx context.Context, in *GetBalanceHistoryRequest, opts ...grpc.CallOption) (*GetBalanceHistoryResponse, error)
 }
 
 type walletServiceClient struct {
@@ -143,6 +146,15 @@ func (c *walletServiceClient) GetTotalBalance(ctx context.Context, in *GetTotalB
 	return out, nil
 }
 
+func (c *walletServiceClient) GetBalanceHistory(ctx context.Context, in *GetBalanceHistoryRequest, opts ...grpc.CallOption) (*GetBalanceHistoryResponse, error) {
+	out := new(GetBalanceHistoryResponse)
+	err := c.cc.Invoke(ctx, WalletService_GetBalanceHistory_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WalletServiceServer is the server API for WalletService service.
 // All implementations must embed UnimplementedWalletServiceServer
 // for forward compatibility
@@ -165,6 +177,8 @@ type WalletServiceServer interface {
 	TransferFunds(context.Context, *TransferFundsRequest) (*TransferFundsResponse, error)
 	// Get total balance across all user wallets
 	GetTotalBalance(context.Context, *GetTotalBalanceRequest) (*GetTotalBalanceResponse, error)
+	// Get balance history for chart visualization
+	GetBalanceHistory(context.Context, *GetBalanceHistoryRequest) (*GetBalanceHistoryResponse, error)
 	mustEmbedUnimplementedWalletServiceServer()
 }
 
@@ -198,6 +212,9 @@ func (UnimplementedWalletServiceServer) TransferFunds(context.Context, *Transfer
 }
 func (UnimplementedWalletServiceServer) GetTotalBalance(context.Context, *GetTotalBalanceRequest) (*GetTotalBalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTotalBalance not implemented")
+}
+func (UnimplementedWalletServiceServer) GetBalanceHistory(context.Context, *GetBalanceHistoryRequest) (*GetBalanceHistoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBalanceHistory not implemented")
 }
 func (UnimplementedWalletServiceServer) mustEmbedUnimplementedWalletServiceServer() {}
 
@@ -374,6 +391,24 @@ func _WalletService_GetTotalBalance_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WalletService_GetBalanceHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBalanceHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServiceServer).GetBalanceHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WalletService_GetBalanceHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServiceServer).GetBalanceHistory(ctx, req.(*GetBalanceHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WalletService_ServiceDesc is the grpc.ServiceDesc for WalletService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -416,6 +451,10 @@ var WalletService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTotalBalance",
 			Handler:    _WalletService_GetTotalBalance_Handler,
+		},
+		{
+			MethodName: "GetBalanceHistory",
+			Handler:    _WalletService_GetBalanceHistory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

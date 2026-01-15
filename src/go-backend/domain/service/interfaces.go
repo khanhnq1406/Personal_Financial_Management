@@ -36,6 +36,9 @@ type WalletService interface {
 
 	// GetTotalBalance calculates the total balance across all user wallets.
 	GetTotalBalance(ctx context.Context, userID int32) (*walletv1.GetTotalBalanceResponse, error)
+
+	// GetBalanceHistory retrieves balance history for chart visualization.
+	GetBalanceHistory(ctx context.Context, userID int32, req *walletv1.GetBalanceHistoryRequest) (*walletv1.GetBalanceHistoryResponse, error)
 }
 
 // UserService defines the interface for user business logic.
@@ -78,6 +81,9 @@ type TransactionService interface {
 
 	// DeleteTransaction deletes a transaction and restores the wallet balance.
 	DeleteTransaction(ctx context.Context, transactionID int32, userID int32) (*transactionv1.DeleteTransactionResponse, error)
+
+	// GetAvailableYears retrieves distinct years from user's transactions.
+	GetAvailableYears(ctx context.Context, userID int32) (*transactionv1.GetAvailableYearsResponse, error)
 }
 
 // CategoryService defines the interface for category business logic.

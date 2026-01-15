@@ -45,6 +45,13 @@ service TransactionService {
       delete: "/api/v1/transactions/{transactionId}"
     };
   }
+
+  // Get available years from user's transactions
+  rpc GetAvailableYears(GetAvailableYearsRequest) returns (GetAvailableYearsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/transactions/available-years"
+    };
+  }
 }
 
 // Category service for category management operations.
@@ -287,4 +294,15 @@ message DeleteCategoryResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+}
+
+// GetAvailableYears request
+message GetAvailableYearsRequest {}
+
+// GetAvailableYears response
+message GetAvailableYearsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated int32 years = 3 [json_name = "years"];
+  string timestamp = 4 [json_name = "timestamp"];
 }

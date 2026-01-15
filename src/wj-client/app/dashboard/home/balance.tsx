@@ -1,4 +1,6 @@
-import { memo } from "react";
+"use client";
+
+import { memo, useState } from "react";
 import {
   ComposedChart,
   Line,
@@ -10,51 +12,72 @@ import {
   ResponsiveContainer,
   Bar,
 } from "recharts";
+import {
+  useQueryGetBalanceHistory,
+  useQueryListWallets,
+  useQueryGetAvailableYears,
+} from "@/utils/generated/hooks";
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
 export const Balance = memo(function Balance() {
-  const years = [2024, 2023];
-  const wallets = ["Wallet 1", "Wallet 2", "Wallet 3"];
-  const generateRandomYearData = () => {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedWalletId, setSelectedWalletId] = useState<number | undefined>(
+    undefined
+  );
 
-    let currentBalance = Math.floor(Math.random() * 10000);
+  // Fetch wallets for the dropdown
+  const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets(
+    {
+      pagination: { page: 1, pageSize: 100, orderBy: "", order: "" },
+    },
+    { refetchOnMount: "always" }
+  );
 
-    return months.map((month, index) => {
-      const id = index + 1;
-      const randomIncome = Math.floor(Math.random() * 5000);
-      const randomExpense = Math.floor(Math.random() * 4000);
+  // Fetch available years from user's transactions
+  const { data: availableYearsData } = useQueryGetAvailableYears({}, { refetchOnMount: "always" });
 
-      currentBalance += randomIncome;
-      currentBalance -= randomExpense;
+  // Fetch balance history
+  const { data: balanceHistory, isLoading: balanceLoading } =
+    useQueryGetBalanceHistory(
+      {
+        walletId: selectedWalletId ?? 0,
+        year: selectedYear,
+        month: 0,
+      },
+      {
+        refetchOnMount: "always",
+        enabled: !walletsLoading,
+      }
+    );
 
-      return {
-        id,
-        month,
-        balance: currentBalance,
-        income: randomIncome,
-        expense: randomExpense,
-      };
-    });
-  };
+  // Prepare chart data
+  const chartData =
+    balanceHistory?.data?.map((point) => ({
+      label: point.label,
+      balance: point.balance,
+      income: point.income,
+      expense: point.expense,
+    })) ?? [];
 
-  const balance = generateRandomYearData();
+  // Use available years from API, or default to current year if no transactions
+  const years = availableYearsData?.years?.length ? availableYearsData.years : [new Date().getFullYear()];
+
+  if (walletsLoading || balanceLoading) {
+    return (
+      <div className="w-full aspect-video p-1 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full aspect-video p-1">
       <div className="text-sm">
-        <select className="border-solid border rounded-md p-1 m-2">
+        <select
+          className="border-solid border rounded-md p-1 m-2"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+        >
           {years.map((year) => {
             return (
               <option key={year} value={year}>
@@ -63,11 +86,20 @@ export const Balance = memo(function Balance() {
             );
           })}
         </select>
-        <select className="border-solid border rounded-md p-1">
-          {wallets.map((wallet) => {
+        <select
+          className="border-solid border rounded-md p-1"
+          value={selectedWalletId ?? ""}
+          onChange={(e) =>
+            setSelectedWalletId(
+              e.target.value ? parseInt(e.target.value) : undefined
+            )
+          }
+        >
+          <option value="">All Wallets</option>
+          {walletsData?.wallets?.map((wallet) => {
             return (
-              <option key={wallet} value={wallet}>
-                {wallet}
+              <option key={wallet.id} value={wallet.id}>
+                {wallet.walletName}
               </option>
             );
           })}
@@ -75,13 +107,30 @@ export const Balance = memo(function Balance() {
       </div>
       <ResponsiveContainer>
         <ComposedChart
-          data={balance}
+          data={chartData}
           margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" domain={["dataMin", "dataMax"]} />
-          <YAxis />
-          <Tooltip />
+          <XAxis dataKey="label" />
+          <YAxis
+            tickFormatter={(value) => {
+              if (value >= 1_000_000_000)
+                return `${(value / 1_000_000_000).toFixed(1)}B`;
+              if (value >= 1_000_000)
+                return `${(value / 1_000_000).toFixed(1)}M`;
+              if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+              return `${value}`;
+            }}
+          />
+          <Tooltip
+            formatter={(value: number) => {
+              // Format as VND
+              return new Intl.NumberFormat("vi-VN", {
+                style: "currency",
+                currency: "VND",
+              }).format(value);
+            }}
+          />
           <Legend />
           <Line
             type="monotone"

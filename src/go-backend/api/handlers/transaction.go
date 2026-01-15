@@ -243,6 +243,32 @@ func (h *TransactionHandlers) DeleteTransaction(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetAvailableYears retrieves distinct years from user's transactions.
+// @Summary Get available years from transactions
+// @Tags transactions
+// @Produce json
+// @Success 200 {object} types.APIResponse{data=transactionv1.GetAvailableYearsResponse}
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/transactions/available-years [get]
+func (h *TransactionHandlers) GetAvailableYears(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Call service
+	result, err := h.transactionService.GetAvailableYears(c.Request.Context(), userID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // Helper functions for parsing query parameters
 
 // parseTransactionFilter parses filter parameters from query string.

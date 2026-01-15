@@ -406,3 +406,180 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
+
+// GetBalanceHistory retrieves balance history for chart visualization.
+func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req *walletv1.GetBalanceHistoryRequest) (*walletv1.GetBalanceHistoryResponse, error) {
+	// Validate user ID
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Set default year to current year if not provided
+	year := req.Year
+	if year == 0 {
+		year = int32(time.Now().Year())
+	}
+
+	// Determine the time range based on request
+	var startTime, endTime time.Time
+	if req.Month > 0 && req.Month <= 12 {
+		// Daily data for specific month
+		startTime = time.Date(int(year), time.Month(req.Month), 1, 0, 0, 0, 0, time.UTC)
+		endTime = startTime.AddDate(0, 1, 0)
+	} else {
+		// Monthly data for entire year
+		startTime = time.Date(int(year), 1, 1, 0, 0, 0, 0, time.UTC)
+		endTime = startTime.AddDate(1, 0, 0)
+	}
+
+	// Get wallet IDs to query
+	var walletIDs []int32
+	if req.WalletId > 0 {
+		// Verify wallet belongs to user
+		_, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
+		if err != nil {
+			return nil, err
+		}
+		walletIDs = []int32{req.WalletId}
+	} else {
+		// Get all user wallets
+		wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+			Limit: 1000, // No practical limit for this use case
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, w := range wallets {
+			walletIDs = append(walletIDs, w.ID)
+		}
+	}
+
+	if len(walletIDs) == 0 {
+		return &walletv1.GetBalanceHistoryResponse{
+			Success:   true,
+			Message:   "No wallets found",
+			Data:      []*walletv1.BalanceDataPoint{},
+			Timestamp: time.Now().Format(time.RFC3339),
+		}, nil
+	}
+
+	// Get transactions for the period
+	txFilter := repository.TransactionFilter{
+		WalletIDs:  walletIDs,
+		StartDate:  &startTime,
+		EndDate:    &endTime,
+	}
+
+	transactions, _, err := s.txRepo.List(ctx, userID, txFilter, repository.ListOptions{
+		Limit:   10000,
+		OrderBy: "date",
+		Order:   "asc",
+	})
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch transactions", err)
+	}
+
+	// Get initial balance before the period
+	initialBalance := int64(0)
+	for _, walletID := range walletIDs {
+		wallet, err := s.walletRepo.GetByID(ctx, walletID)
+		if err != nil {
+			continue
+		}
+
+		// Calculate balance change during the period to find initial balance
+		balanceChange := int64(0)
+		for _, tx := range transactions {
+			if tx.WalletID == walletID {
+				if tx.Category != nil {
+					if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
+						balanceChange += tx.Amount
+					} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
+						balanceChange -= tx.Amount
+					}
+				}
+			}
+		}
+		initialBalance += wallet.Balance - balanceChange
+	}
+
+	// Generate data points
+	var dataPoints []*walletv1.BalanceDataPoint
+
+	if req.Month > 0 && req.Month <= 12 {
+		// Daily data for month
+		daysInMonth := int(endTime.Sub(startTime).Hours() / 24)
+		currentBalance := initialBalance
+
+		for day := 0; day < daysInMonth; day++ {
+			dayStart := startTime.AddDate(0, 0, day)
+			dayEnd := dayStart.AddDate(0, 0, 1)
+
+			dailyIncome := int64(0)
+			dailyExpense := int64(0)
+
+			for _, tx := range transactions {
+				if (tx.Date.Equal(dayStart) || tx.Date.After(dayStart)) && tx.Date.Before(dayEnd) {
+					if tx.Category != nil {
+						if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
+							dailyIncome += tx.Amount
+							currentBalance += tx.Amount
+						} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
+							dailyExpense += tx.Amount
+							currentBalance -= tx.Amount
+						}
+					}
+				}
+			}
+
+			dataPoints = append(dataPoints, &walletv1.BalanceDataPoint{
+				Timestamp: dayStart.Unix(),
+				Label:     fmt.Sprintf("%d %d", day+1, req.Month),
+				Balance:   currentBalance,
+				Income:    dailyIncome,
+				Expense:   dailyExpense,
+			})
+		}
+	} else {
+		// Monthly data for year
+		monthNames := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+		currentBalance := initialBalance
+
+		for month := 1; month <= 12; month++ {
+			monthStart := time.Date(int(year), time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+			monthEnd := monthStart.AddDate(0, 1, 0)
+
+			monthlyIncome := int64(0)
+			monthlyExpense := int64(0)
+
+			for _, tx := range transactions {
+				if (tx.Date.Equal(monthStart) || tx.Date.After(monthStart)) && tx.Date.Before(monthEnd) {
+					if tx.Category != nil {
+						if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
+							monthlyIncome += tx.Amount
+							currentBalance += tx.Amount
+						} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
+							monthlyExpense += tx.Amount
+							currentBalance -= tx.Amount
+						}
+					}
+				}
+			}
+
+			dataPoints = append(dataPoints, &walletv1.BalanceDataPoint{
+				Timestamp: monthStart.Unix(),
+				Label:     monthNames[month-1],
+				Balance:   currentBalance,
+				Income:    monthlyIncome,
+				Expense:   monthlyExpense,
+			})
+		}
+	}
+
+	return &walletv1.GetBalanceHistoryResponse{
+		Success:   true,
+		Message:   "Balance history retrieved successfully",
+		Data:      dataPoints,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}

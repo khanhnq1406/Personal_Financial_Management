@@ -351,6 +351,18 @@ export interface DeleteCategoryResponse {
   timestamp: string;
 }
 
+/** GetAvailableYears request */
+export interface GetAvailableYearsRequest {
+}
+
+/** GetAvailableYears response */
+export interface GetAvailableYearsResponse {
+  success: boolean;
+  message: string;
+  years: number[];
+  timestamp: string;
+}
+
 function createBaseTransaction(): Transaction {
   return { id: 0, walletId: 0, categoryId: 0, amount: undefined, date: 0, note: "", createdAt: 0, updatedAt: 0 };
 }
@@ -2815,6 +2827,169 @@ export const DeleteCategoryResponse: MessageFns<DeleteCategoryResponse> = {
     const message = createBaseDeleteCategoryResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetAvailableYearsRequest(): GetAvailableYearsRequest {
+  return {};
+}
+
+export const GetAvailableYearsRequest: MessageFns<GetAvailableYearsRequest> = {
+  encode(_: GetAvailableYearsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAvailableYearsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAvailableYearsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetAvailableYearsRequest {
+    return {};
+  },
+
+  toJSON(_: GetAvailableYearsRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetAvailableYearsRequest>): GetAvailableYearsRequest {
+    return GetAvailableYearsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetAvailableYearsRequest>): GetAvailableYearsRequest {
+    const message = createBaseGetAvailableYearsRequest();
+    return message;
+  },
+};
+
+function createBaseGetAvailableYearsResponse(): GetAvailableYearsResponse {
+  return { success: false, message: "", years: [], timestamp: "" };
+}
+
+export const GetAvailableYearsResponse: MessageFns<GetAvailableYearsResponse> = {
+  encode(message: GetAvailableYearsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    writer.uint32(26).fork();
+    for (const v of message.years) {
+      writer.int32(v);
+    }
+    writer.join();
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAvailableYearsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAvailableYearsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag === 24) {
+            message.years.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 26) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.years.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetAvailableYearsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      years: globalThis.Array.isArray(object?.years) ? object.years.map((e: any) => globalThis.Number(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetAvailableYearsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.years?.length) {
+      obj.years = message.years.map((e) => Math.round(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetAvailableYearsResponse>): GetAvailableYearsResponse {
+    return GetAvailableYearsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetAvailableYearsResponse>): GetAvailableYearsResponse {
+    const message = createBaseGetAvailableYearsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.years = object.years?.map((e) => e) || [];
     message.timestamp = object.timestamp ?? "";
     return message;
   },

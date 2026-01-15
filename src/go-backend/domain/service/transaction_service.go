@@ -302,6 +302,26 @@ func (s *transactionService) DeleteTransaction(ctx context.Context, transactionI
 	}, nil
 }
 
+// GetAvailableYears retrieves distinct years from user's transactions.
+func (s *transactionService) GetAvailableYears(ctx context.Context, userID int32) (*v1.GetAvailableYearsResponse, error) {
+	years, err := s.txRepo.GetAvailableYears(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	message := "Available years retrieved successfully"
+	if len(years) == 0 {
+		message = "No transactions found"
+	}
+
+	return &v1.GetAvailableYearsResponse{
+		Success:   true,
+		Message:   message,
+		Years:     years,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
 // Helper methods
 
 // calculateBalanceDelta calculates the balance change based on amount and category type.

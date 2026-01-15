@@ -95,7 +95,9 @@ func (r *transactionRepository) List(ctx context.Context, userID int32, filter T
 		Where("wallet.user_id = ?", userID)
 
 	// Apply filters
-	if filter.WalletID != nil {
+	if len(filter.WalletIDs) > 0 {
+		query = query.Where("transaction.wallet_id IN ?", filter.WalletIDs)
+	} else if filter.WalletID != nil {
 		query = query.Where("transaction.wallet_id = ?", *filter.WalletID)
 	}
 
@@ -197,4 +199,23 @@ func (r *transactionRepository) ExecuteTransactionWithBalanceUpdate(ctx context.
 
 		return nil
 	})
+}
+
+// GetAvailableYears retrieves distinct years from user's transactions.
+func (r *transactionRepository) GetAvailableYears(ctx context.Context, userID int32) ([]int32, error) {
+	var years []int32
+
+	query := r.db.DB.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Joins("JOIN wallet ON wallet.id = transaction.wallet_id").
+		Where("wallet.user_id = ?", userID).
+		Select("DISTINCT YEAR(transaction.date) as year").
+		Order("year DESC")
+
+	result := query.Pluck("year", &years)
+	if result.Error != nil {
+		return nil, r.handleDBError(result.Error, "transaction", "get available years")
+	}
+
+	return years, nil
 }

@@ -24,6 +24,7 @@ const (
 	TransactionService_CreateTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/CreateTransaction"
 	TransactionService_UpdateTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/UpdateTransaction"
 	TransactionService_DeleteTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/DeleteTransaction"
+	TransactionService_GetAvailableYears_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/GetAvailableYears"
 )
 
 // TransactionServiceClient is the client API for TransactionService service.
@@ -40,6 +41,8 @@ type TransactionServiceClient interface {
 	UpdateTransaction(ctx context.Context, in *UpdateTransactionRequest, opts ...grpc.CallOption) (*UpdateTransactionResponse, error)
 	// Delete a transaction
 	DeleteTransaction(ctx context.Context, in *DeleteTransactionRequest, opts ...grpc.CallOption) (*DeleteTransactionResponse, error)
+	// Get available years from user's transactions
+	GetAvailableYears(ctx context.Context, in *GetAvailableYearsRequest, opts ...grpc.CallOption) (*GetAvailableYearsResponse, error)
 }
 
 type transactionServiceClient struct {
@@ -95,6 +98,15 @@ func (c *transactionServiceClient) DeleteTransaction(ctx context.Context, in *De
 	return out, nil
 }
 
+func (c *transactionServiceClient) GetAvailableYears(ctx context.Context, in *GetAvailableYearsRequest, opts ...grpc.CallOption) (*GetAvailableYearsResponse, error) {
+	out := new(GetAvailableYearsResponse)
+	err := c.cc.Invoke(ctx, TransactionService_GetAvailableYears_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TransactionServiceServer is the server API for TransactionService service.
 // All implementations must embed UnimplementedTransactionServiceServer
 // for forward compatibility
@@ -109,6 +121,8 @@ type TransactionServiceServer interface {
 	UpdateTransaction(context.Context, *UpdateTransactionRequest) (*UpdateTransactionResponse, error)
 	// Delete a transaction
 	DeleteTransaction(context.Context, *DeleteTransactionRequest) (*DeleteTransactionResponse, error)
+	// Get available years from user's transactions
+	GetAvailableYears(context.Context, *GetAvailableYearsRequest) (*GetAvailableYearsResponse, error)
 	mustEmbedUnimplementedTransactionServiceServer()
 }
 
@@ -130,6 +144,9 @@ func (UnimplementedTransactionServiceServer) UpdateTransaction(context.Context, 
 }
 func (UnimplementedTransactionServiceServer) DeleteTransaction(context.Context, *DeleteTransactionRequest) (*DeleteTransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTransaction not implemented")
+}
+func (UnimplementedTransactionServiceServer) GetAvailableYears(context.Context, *GetAvailableYearsRequest) (*GetAvailableYearsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableYears not implemented")
 }
 func (UnimplementedTransactionServiceServer) mustEmbedUnimplementedTransactionServiceServer() {}
 
@@ -234,6 +251,24 @@ func _TransactionService_DeleteTransaction_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TransactionService_GetAvailableYears_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAvailableYearsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TransactionServiceServer).GetAvailableYears(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TransactionService_GetAvailableYears_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TransactionServiceServer).GetAvailableYears(ctx, req.(*GetAvailableYearsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TransactionService_ServiceDesc is the grpc.ServiceDesc for TransactionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -260,6 +295,10 @@ var TransactionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTransaction",
 			Handler:    _TransactionService_DeleteTransaction_Handler,
+		},
+		{
+			MethodName: "GetAvailableYears",
+			Handler:    _TransactionService_GetAvailableYears_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

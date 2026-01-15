@@ -187,6 +187,38 @@ export interface GetTotalBalanceResponse {
   timestamp: string;
 }
 
+/** GetBalanceHistory request */
+export interface GetBalanceHistoryRequest {
+  /** Optional, if null returns total balance history */
+  walletId: number;
+  /** Optional, defaults to current year */
+  year: number;
+  /** Optional, if provided returns daily data for that month */
+  month: number;
+}
+
+/** BalanceDataPoint represents a single data point in the balance history */
+export interface BalanceDataPoint {
+  /** Unix timestamp */
+  timestamp: number;
+  /** Formatted label (e.g., "Jan", "Jan 15") */
+  label: string;
+  /** Balance at this point */
+  balance: number;
+  /** Income in this period */
+  income: number;
+  /** Expense in this period */
+  expense: number;
+}
+
+/** GetBalanceHistory response */
+export interface GetBalanceHistoryResponse {
+  success: boolean;
+  message: string;
+  data: BalanceDataPoint[];
+  timestamp: string;
+}
+
 function createBaseWallet(): Wallet {
   return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: 0, updatedAt: 0, type: 0 };
 }
@@ -2015,6 +2047,330 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.data = (object.data !== undefined && object.data !== null) ? Money.fromPartial(object.data) : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetBalanceHistoryRequest(): GetBalanceHistoryRequest {
+  return { walletId: 0, year: 0, month: 0 };
+}
+
+export const GetBalanceHistoryRequest: MessageFns<GetBalanceHistoryRequest> = {
+  encode(message: GetBalanceHistoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.walletId !== 0) {
+      writer.uint32(8).int32(message.walletId);
+    }
+    if (message.year !== 0) {
+      writer.uint32(16).int32(message.year);
+    }
+    if (message.month !== 0) {
+      writer.uint32(24).int32(message.month);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetBalanceHistoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetBalanceHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.year = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.month = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetBalanceHistoryRequest {
+    return {
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+      year: isSet(object.year) ? globalThis.Number(object.year) : 0,
+      month: isSet(object.month) ? globalThis.Number(object.month) : 0,
+    };
+  },
+
+  toJSON(message: GetBalanceHistoryRequest): unknown {
+    const obj: any = {};
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    if (message.year !== 0) {
+      obj.year = Math.round(message.year);
+    }
+    if (message.month !== 0) {
+      obj.month = Math.round(message.month);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetBalanceHistoryRequest>): GetBalanceHistoryRequest {
+    return GetBalanceHistoryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetBalanceHistoryRequest>): GetBalanceHistoryRequest {
+    const message = createBaseGetBalanceHistoryRequest();
+    message.walletId = object.walletId ?? 0;
+    message.year = object.year ?? 0;
+    message.month = object.month ?? 0;
+    return message;
+  },
+};
+
+function createBaseBalanceDataPoint(): BalanceDataPoint {
+  return { timestamp: 0, label: "", balance: 0, income: 0, expense: 0 };
+}
+
+export const BalanceDataPoint: MessageFns<BalanceDataPoint> = {
+  encode(message: BalanceDataPoint, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timestamp !== 0) {
+      writer.uint32(8).int64(message.timestamp);
+    }
+    if (message.label !== "") {
+      writer.uint32(18).string(message.label);
+    }
+    if (message.balance !== 0) {
+      writer.uint32(24).int64(message.balance);
+    }
+    if (message.income !== 0) {
+      writer.uint32(32).int64(message.income);
+    }
+    if (message.expense !== 0) {
+      writer.uint32(40).int64(message.expense);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BalanceDataPoint {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBalanceDataPoint();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.timestamp = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.label = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.balance = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.income = longToNumber(reader.int64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.expense = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BalanceDataPoint {
+    return {
+      timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
+      label: isSet(object.label) ? globalThis.String(object.label) : "",
+      balance: isSet(object.balance) ? globalThis.Number(object.balance) : 0,
+      income: isSet(object.income) ? globalThis.Number(object.income) : 0,
+      expense: isSet(object.expense) ? globalThis.Number(object.expense) : 0,
+    };
+  },
+
+  toJSON(message: BalanceDataPoint): unknown {
+    const obj: any = {};
+    if (message.timestamp !== 0) {
+      obj.timestamp = Math.round(message.timestamp);
+    }
+    if (message.label !== "") {
+      obj.label = message.label;
+    }
+    if (message.balance !== 0) {
+      obj.balance = Math.round(message.balance);
+    }
+    if (message.income !== 0) {
+      obj.income = Math.round(message.income);
+    }
+    if (message.expense !== 0) {
+      obj.expense = Math.round(message.expense);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BalanceDataPoint>): BalanceDataPoint {
+    return BalanceDataPoint.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BalanceDataPoint>): BalanceDataPoint {
+    const message = createBaseBalanceDataPoint();
+    message.timestamp = object.timestamp ?? 0;
+    message.label = object.label ?? "";
+    message.balance = object.balance ?? 0;
+    message.income = object.income ?? 0;
+    message.expense = object.expense ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetBalanceHistoryResponse(): GetBalanceHistoryResponse {
+  return { success: false, message: "", data: [], timestamp: "" };
+}
+
+export const GetBalanceHistoryResponse: MessageFns<GetBalanceHistoryResponse> = {
+  encode(message: GetBalanceHistoryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.data) {
+      BalanceDataPoint.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetBalanceHistoryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetBalanceHistoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data.push(BalanceDataPoint.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetBalanceHistoryResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => BalanceDataPoint.fromJSON(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetBalanceHistoryResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => BalanceDataPoint.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetBalanceHistoryResponse>): GetBalanceHistoryResponse {
+    return GetBalanceHistoryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetBalanceHistoryResponse>): GetBalanceHistoryResponse {
+    const message = createBaseGetBalanceHistoryResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = object.data?.map((e) => BalanceDataPoint.fromPartial(e)) || [];
     message.timestamp = object.timestamp ?? "";
     return message;
   },

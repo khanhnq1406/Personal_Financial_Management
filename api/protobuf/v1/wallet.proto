@@ -76,6 +76,13 @@ service WalletService {
       get: "/api/v1/wallets/total-balance"
     };
   }
+
+  // Get balance history for chart visualization
+  rpc GetBalanceHistory(GetBalanceHistoryRequest) returns (GetBalanceHistoryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/balance-history"
+    };
+  }
 }
 
 // Enums
@@ -219,5 +226,29 @@ message GetTotalBalanceResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   wealthjourney.common.v1.Money data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// GetBalanceHistory request
+message GetBalanceHistoryRequest {
+  int32 walletId = 1 [json_name = "walletId"];  // Optional, if null returns total balance history
+  int32 year = 2 [json_name = "year"];          // Optional, defaults to current year
+  int32 month = 3 [json_name = "month"];        // Optional, if provided returns daily data for that month
+}
+
+// BalanceDataPoint represents a single data point in the balance history
+message BalanceDataPoint {
+  int64 timestamp = 1 [json_name = "timestamp"];     // Unix timestamp
+  string label = 2 [json_name = "label"];            // Formatted label (e.g., "Jan", "Jan 15")
+  int64 balance = 3 [json_name = "balance"];         // Balance at this point
+  int64 income = 4 [json_name = "income"];           // Income in this period
+  int64 expense = 5 [json_name = "expense"];         // Expense in this period
+}
+
+// GetBalanceHistory response
+message GetBalanceHistoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated BalanceDataPoint data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
 }

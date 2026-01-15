@@ -60,13 +60,16 @@ func RegisterRoutes(
 	{
 		wallets.POST("", h.Wallet.CreateWallet)
 		wallets.GET("", h.Wallet.ListWallets)
+		// Specific routes must come before :id parameterized route
+		wallets.GET("/total-balance", h.Wallet.GetTotalBalance)
+		wallets.GET("/balance-history", h.Wallet.GetBalanceHistory)
+		wallets.POST("/transfer", h.Wallet.TransferFunds)
+		// Parameterized routes
 		wallets.GET("/:id", h.Wallet.GetWallet)
 		wallets.PUT("/:id", h.Wallet.UpdateWallet)
 		wallets.DELETE("/:id", h.Wallet.DeleteWallet)
 		wallets.POST("/:id/add", h.Wallet.AddFunds)
 		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
-		wallets.POST("/transfer", h.Wallet.TransferFunds)
-		wallets.GET("/total-balance", h.Wallet.GetTotalBalance)
 	}
 
 	// Transaction routes (protected)
@@ -78,6 +81,9 @@ func RegisterRoutes(
 	{
 		transactions.POST("", h.Transaction.CreateTransaction)
 		transactions.GET("", h.Transaction.ListTransactions)
+		// Specific routes must come before :id parameterized route
+		transactions.GET("/available-years", h.Transaction.GetAvailableYears)
+		// Parameterized routes
 		transactions.GET("/:id", h.Transaction.GetTransaction)
 		transactions.PUT("/:id", h.Transaction.UpdateTransaction)
 		transactions.DELETE("/:id", h.Transaction.DeleteTransaction)

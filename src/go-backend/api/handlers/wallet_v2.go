@@ -386,6 +386,73 @@ func (h *WalletHandlers) GetTotalBalance(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetBalanceHistory retrieves balance history for chart visualization.
+// @Summary Get balance history
+// @Tags wallets
+// @Produce json
+// @Param walletId query int false "Wallet ID (optional, if not provided returns total balance history)"
+// @Param year query int false "Year (optional, defaults to current year)"
+// @Param month query int false "Month (optional, if provided returns daily data for that month)"
+// @Success 200 {object} types.APIResponse{data=walletv1.GetBalanceHistoryResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/wallets/balance-history [get]
+func (h *WalletHandlers) GetBalanceHistory(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse query parameters
+	var req protobufv1.GetBalanceHistoryRequest
+
+	// Parse walletId (optional)
+	if walletIdStr := c.Query("walletId"); walletIdStr != "" {
+		walletId, err := strconv.ParseInt(walletIdStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("Invalid walletId parameter"))
+			return
+		}
+		req.WalletId = int32(walletId)
+	}
+
+	// Parse year (optional)
+	if yearStr := c.Query("year"); yearStr != "" {
+		year, err := strconv.ParseInt(yearStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("Invalid year parameter"))
+			return
+		}
+		req.Year = int32(year)
+	}
+
+	// Parse month (optional)
+	if monthStr := c.Query("month"); monthStr != "" {
+		month, err := strconv.ParseInt(monthStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("Invalid month parameter"))
+			return
+		}
+		if month < 0 || month > 12 {
+			handler.BadRequest(c, apperrors.NewValidationError("Month must be between 0 and 12 (0 for not specified)"))
+			return
+		}
+		req.Month = int32(month)
+	}
+
+	// Call service
+	result, err := h.walletService.GetBalanceHistory(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // parseIDParam parses an ID parameter from the URL.
 func parseIDParam(c *gin.Context, param string) (int32, error) {
 	idStr := c.Param(param)
