@@ -1,4 +1,6 @@
-import { memo, useState } from "react";
+"use client";
+
+import { memo, useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,79 +11,141 @@ import {
   XAxis,
 } from "recharts";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
-export const MonthlyDominance = memo(function MonthlyDominance() {
-  const [isLoading] = useState(false);
+import { useQueryGetMonthlyDominance } from "@/utils/generated/hooks";
+import { chartColors } from "@/app/constants";
+
+interface MonthlyDominanceProps {
+  availableYears: number[];
+}
+
+export const MonthlyDominance = memo(function MonthlyDominance({ availableYears }: MonthlyDominanceProps) {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Fetch monthly dominance data for the selected year
+  const { data: dominanceData, isLoading } = useQueryGetMonthlyDominance(
+    { year: selectedYear },
+    { refetchOnMount: "always" }
+  );
+
+  // Transform data into stacked area chart format
+  const chartData = useMemo(() => {
+    const walletData = dominanceData?.data ?? [];
+    if (walletData.length === 0) return [];
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // Build monthly data with each wallet's balance
+    const monthlyData: Record<string, any>[] = monthNames.map((month) => ({
+      month,
+    }));
+
+    walletData.forEach((wallet) => {
+      wallet.monthlyBalances.forEach((balance: number, monthIndex: number) => {
+        monthlyData[monthIndex][`wallet_${wallet.walletId}`] = balance;
+        monthlyData[monthIndex][`wallet_name_${wallet.walletId}`] = wallet.walletName;
+      });
+    });
+
+    return monthlyData;
+  }, [dominanceData]);
+
+  // Get wallet list from data
+  const wallets = useMemo(() => dominanceData?.data ?? [], [dominanceData]);
+
+  // Generate unique gradient IDs for each wallet
+  const gradients = useMemo(
+    () =>
+      wallets.map((wallet) => {
+        const color = chartColors[wallets.indexOf(wallet) % chartColors.length];
+        return {
+          id: `color${wallet.walletId}`,
+          color,
+        };
+      }),
+    [wallets]
+  );
 
   if (isLoading) {
     return (
-      <div className=" w-full aspect-video p-1">
+      <div className="w-full aspect-video p-1">
         <ChartSkeleton />
       </div>
     );
   }
 
-  const data = [
-    {
-      month: "Jan",
-      wallet1: 1000,
-      wallet2: 2000,
-      wallet3: 3000,
-    },
-    {
-      month: "Feb",
-      wallet1: 1200,
-      wallet2: 2200,
-      wallet3: 3200,
-    },
-    {
-      month: "Mar",
-      wallet1: 1400,
-      wallet2: 2400,
-      wallet3: 3400,
-    },
-  ];
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 border rounded shadow">
+          <p className="font-semibold">{payload[0].payload.month}</p>
+          {payload.map((entry: any, index: number) => {
+            const walletId = entry.dataKey.replace("wallet_", "");
+            const walletName = entry.payload[`wallet_name_${walletId}`];
+            return (
+              <p key={index} className="text-sm" style={{ color: entry.color }}>
+                {walletName}:{" "}
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(entry.value)}
+              </p>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="w-full aspect-video p-1">
-      <ResponsiveContainer>
-        <AreaChart
-          data={data}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+      <div className="text-sm">
+        <select
+          className="border-solid border rounded-md p-1 m-2"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
         >
+          {availableYears.map((year) => {
+            return (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+      <ResponsiveContainer>
+        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-            </linearGradient>
+            {gradients.map((grad) => (
+              <linearGradient key={grad.id} id={grad.id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={grad.color} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={grad.color} stopOpacity={0.1} />
+              </linearGradient>
+            ))}
           </defs>
           <XAxis dataKey="month" />
-          <YAxis />
+          <YAxis
+            tickFormatter={(value) => {
+              if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+              if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+              if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+              return `${value}`;
+            }}
+          />
           <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip />
-          <Area
-            type="monotone"
-            dataKey="wallet1"
-            stroke="#8884d8"
-            fillOpacity={1}
-            fill="url(#colorUv)"
-          />
-          <Area
-            type="monotone"
-            dataKey="wallet2"
-            stroke="#8884d8"
-            fillOpacity={1}
-            fill="url(#colorUv)"
-          />
-          <Area
-            type="monotone"
-            dataKey="wallet3"
-            stroke="#8884d8"
-            fillOpacity={1}
-            fill="url(#colorUv)"
-          />
+          <Tooltip content={<CustomTooltip />} />
+          {wallets.map((wallet, index) => (
+            <Area
+              key={wallet.walletId}
+              type="monotone"
+              dataKey={`wallet_${wallet.walletId}`}
+              stackId="1"
+              stroke={chartColors[index % chartColors.length]}
+              fillOpacity={1}
+              fill={`url(#color${wallet.walletId})`}
+            />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>

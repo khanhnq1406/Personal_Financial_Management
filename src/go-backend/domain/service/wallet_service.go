@@ -583,3 +583,119 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
+
+// GetMonthlyDominance retrieves monthly balance data for all wallets.
+func (s *walletService) GetMonthlyDominance(ctx context.Context, userID int32, req *walletv1.GetMonthlyDominanceRequest) (*walletv1.GetMonthlyDominanceResponse, error) {
+	// Validate user ID
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Set default year to current year if not provided
+	year := req.Year
+	if year == 0 {
+		year = int32(time.Now().Year())
+	}
+
+	// Get all user wallets
+	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit: 1000,
+	})
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch wallets", err)
+	}
+
+	if len(wallets) == 0 {
+		return &walletv1.GetMonthlyDominanceResponse{
+			Success:   true,
+			Message:   "No wallets found",
+			Data:      []*walletv1.WalletMonthlyData{},
+			Timestamp: time.Now().Format(time.RFC3339),
+		}, nil
+	}
+
+	// Define the time range for the year
+	startTime := time.Date(int(year), 1, 1, 0, 0, 0, 0, time.UTC)
+	endTime := startTime.AddDate(1, 0, 0)
+
+	// Get all wallet IDs
+	walletIDs := make([]int32, len(wallets))
+	for i, w := range wallets {
+		walletIDs[i] = w.ID
+	}
+
+	// Get transactions for the period for all wallets
+	txFilter := repository.TransactionFilter{
+		WalletIDs:  walletIDs,
+		StartDate:  &startTime,
+		EndDate:    &endTime,
+	}
+
+	transactions, _, err := s.txRepo.List(ctx, userID, txFilter, repository.ListOptions{
+		Limit:   10000,
+		OrderBy: "date",
+		Order:   "asc",
+	})
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch transactions", err)
+	}
+
+	// Calculate initial balance for each wallet before the period
+	initialBalances := make(map[int32]int64)
+	for _, wallet := range wallets {
+		balanceChange := int64(0)
+		for _, tx := range transactions {
+			if tx.WalletID == wallet.ID && tx.Category != nil {
+				if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
+					balanceChange += tx.Amount
+				} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
+					balanceChange -= tx.Amount
+				}
+			}
+		}
+		initialBalances[wallet.ID] = wallet.Balance - balanceChange
+	}
+
+	// Build response with monthly data for each wallet
+	var result []*walletv1.WalletMonthlyData
+
+	for _, wallet := range wallets {
+		monthlyBalances := make([]int64, 12)
+		currentBalance := initialBalances[wallet.ID]
+
+		for month := 1; month <= 12; month++ {
+			monthStart := time.Date(int(year), time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+			monthEnd := monthStart.AddDate(0, 1, 0)
+
+			// Calculate balance change for this month
+			for _, tx := range transactions {
+				if tx.WalletID == wallet.ID &&
+					(tx.Date.Equal(monthStart) || tx.Date.After(monthStart)) &&
+					tx.Date.Before(monthEnd) &&
+					tx.Category != nil {
+					if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
+						currentBalance += tx.Amount
+					} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
+						currentBalance -= tx.Amount
+					}
+				}
+			}
+
+			// Store balance at end of month
+			monthlyBalances[month-1] = currentBalance
+		}
+
+		result = append(result, &walletv1.WalletMonthlyData{
+			WalletId:        wallet.ID,
+			WalletName:      wallet.WalletName,
+			MonthlyBalances: monthlyBalances,
+		})
+	}
+
+	return &walletv1.GetMonthlyDominanceResponse{
+		Success:   true,
+		Message:   "Monthly dominance data retrieved successfully",
+		Data:      result,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}

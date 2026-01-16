@@ -83,6 +83,13 @@ service WalletService {
       get: "/api/v1/wallets/balance-history"
     };
   }
+
+  // Get monthly dominance data showing each wallet's balance over time
+  rpc GetMonthlyDominance(GetMonthlyDominanceRequest) returns (GetMonthlyDominanceResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/monthly-dominance"
+    };
+  }
 }
 
 // Enums
@@ -250,5 +257,25 @@ message GetBalanceHistoryResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   repeated BalanceDataPoint data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// GetMonthlyDominance request
+message GetMonthlyDominanceRequest {
+  int32 year = 1 [json_name = "year"];  // Optional, defaults to current year
+}
+
+// WalletMonthlyData contains monthly balance data for a single wallet
+message WalletMonthlyData {
+  int32 walletId = 1 [json_name = "walletId"];
+  string walletName = 2 [json_name = "walletName"];
+  repeated int64 monthlyBalances = 3 [json_name = "monthlyBalances"];  // 12 values, one for each month
+}
+
+// GetMonthlyDominance response
+message GetMonthlyDominanceResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated WalletMonthlyData data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
 }

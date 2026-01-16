@@ -453,6 +453,49 @@ func (h *WalletHandlers) GetBalanceHistory(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetMonthlyDominance retrieves monthly balance data for all wallets.
+// @Summary Get monthly dominance data
+// @Description Get monthly balance data for all wallets for a specific year
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param year query int false "Year (default: current year)"
+// @Success 200 {object} types.APIResponse{data=protobufv1.GetMonthlyDominanceResponse}
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/wallets/monthly-dominance [get]
+func (h *WalletHandlers) GetMonthlyDominance(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse query parameters
+	var req protobufv1.GetMonthlyDominanceRequest
+
+	// Parse year (optional)
+	if yearStr := c.Query("year"); yearStr != "" {
+		year, err := strconv.ParseInt(yearStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("Invalid year parameter"))
+			return
+		}
+		req.Year = int32(year)
+	}
+
+	// Call service
+	result, err := h.walletService.GetMonthlyDominance(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // parseIDParam parses an ID parameter from the URL.
 func parseIDParam(c *gin.Context, param string) (int32, error) {
 	idStr := c.Param(param)

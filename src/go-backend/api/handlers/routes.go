@@ -63,6 +63,7 @@ func RegisterRoutes(
 		// Specific routes must come before :id parameterized route
 		wallets.GET("/total-balance", h.Wallet.GetTotalBalance)
 		wallets.GET("/balance-history", h.Wallet.GetBalanceHistory)
+		wallets.GET("/monthly-dominance", h.Wallet.GetMonthlyDominance)
 		wallets.POST("/transfer", h.Wallet.TransferFunds)
 		// Parameterized routes
 		wallets.GET("/:id", h.Wallet.GetWallet)

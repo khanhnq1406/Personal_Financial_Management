@@ -9,7 +9,10 @@ import { AccountBalance } from "./accountBalance";
 import { User } from "./user";
 import { TotalBalance } from "./totalBalance";
 import { FunctionalButton } from "./functionalButtons";
-import { useQueryListWallets, useQueryGetAvailableYears } from "@/utils/generated/hooks";
+import {
+  useQueryListWallets,
+  useQueryGetAvailableYears,
+} from "@/utils/generated/hooks";
 
 export default function Home() {
   const getListWallets = useQueryListWallets(
@@ -55,7 +58,7 @@ export default function Home() {
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">Monthly Dominance</div>
           <BaseCard>
-            <MonthlyDominance />
+            <MonthlyDominance availableYears={availableYears} />
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">Account Balance</div>
           <BaseCard>

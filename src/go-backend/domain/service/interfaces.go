@@ -39,6 +39,9 @@ type WalletService interface {
 
 	// GetBalanceHistory retrieves balance history for chart visualization.
 	GetBalanceHistory(ctx context.Context, userID int32, req *walletv1.GetBalanceHistoryRequest) (*walletv1.GetBalanceHistoryResponse, error)
+
+	// GetMonthlyDominance retrieves monthly balance data for all wallets.
+	GetMonthlyDominance(ctx context.Context, userID int32, req *walletv1.GetMonthlyDominanceRequest) (*walletv1.GetMonthlyDominanceResponse, error)
 }
 
 // UserService defines the interface for user business logic.
