@@ -62,7 +62,7 @@ export default function Home() {
           </BaseCard>
           <div className="font-semibold mt-4 mb-2">Account Balance</div>
           <BaseCard>
-            <AccountBalance />
+            <AccountBalance availableYears={availableYears} />
           </BaseCard>
         </div>
       </div>
