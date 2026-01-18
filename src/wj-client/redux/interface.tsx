@@ -14,10 +14,26 @@ export interface AuthAction extends ReduxAction {
   payload: AuthPayload;
 }
 
+export type ConfirmationAction = {
+  type: "deleteTransaction" | "deleteWallet" | "deleteCategory" | string;
+  payload?: any;
+};
+
+export interface ConfirmationConfig {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  action: ConfirmationAction;
+  variant?: "default" | "danger";
+}
+
 export interface ModalPayload {
   isOpen: boolean;
-  type: string; // 'Add' or 'Transfer' or 'Create'
+  type: string; // 'Add' or 'Transfer' or 'Create' or 'Edit Transaction' or 'Confirm'
+  transactionId?: number; // Transaction ID for edit operations
   onSuccess?: () => void; // Callback to refetch data after successful mutation
+  confirmConfig?: ConfirmationConfig; // Configuration for confirmation dialog
 }
 export interface ModalAction extends ReduxAction {
   payload: ModalPayload;

@@ -8,13 +8,14 @@ type PropType = {
   src?: string | undefined;
   loading?: boolean;
   disabled?: boolean;
+  className?: string;
 };
 export const Button = (props: PropType) => {
-  const { type, src, onClick, children, loading = false, disabled = false } = props;
+  const { type, src, onClick, children, loading = false, disabled = false, className = "" } = props;
   switch (type) {
     case ButtonType.IMG:
       return (
-        <button className="hover:bg-hover rounded-md p-1 hover:drop-shadow-sm">
+        <button className={`hover:bg-hover rounded-md p-1 hover:drop-shadow-sm ${className}`}>
           <img src={src} alt="" onClick={onClick} className="w-5" />
         </button>
       );
@@ -22,7 +23,7 @@ export const Button = (props: PropType) => {
     case ButtonType.PRIMARY:
       return (
         <button
-          className="bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className={`bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
           onClick={onClick}
           disabled={loading || disabled}
         >
@@ -55,7 +56,7 @@ export const Button = (props: PropType) => {
     case ButtonType.SECONDARY:
       return (
         <button
-          className="bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className={`bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
           onClick={onClick}
           disabled={loading || disabled}
         >

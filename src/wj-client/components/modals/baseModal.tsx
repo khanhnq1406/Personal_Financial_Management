@@ -8,28 +8,41 @@ import { store } from "@/redux/store";
 import { closeModal, openModal } from "@/redux/actions";
 import { ModalPayload } from "@/redux/interface";
 import { Success } from "./success";
+import { ConfirmationDialog } from "./confirmationDialog";
 import {
   useMutationCreateWallet,
   useMutationTransferFunds,
   useMutationCreateTransaction,
+  useMutationUpdateTransaction,
+  useMutationDeleteTransaction,
   EVENT_WalletListWallets,
   EVENT_WalletGetTotalBalance,
+  EVENT_TransactionListTransactions,
 } from "@/utils/generated/hooks";
 import { CreateWalletForm } from "./forms/CreateWalletForm";
 import { AddTransactionForm } from "./forms/AddTransactionForm";
 import { TransferMoneyForm } from "./forms/TransferMoneyForm";
+import { EditTransactionForm } from "./forms/EditTransactionForm";
 import { CreateWalletFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
 import { fromDateTimeLocal } from "@/lib/utils/date";
 
 type BaseModalProps = {
-  modal: ModalPayload | { isOpen: boolean; type: null; onSuccess?: () => void };
+  modal:
+    | ModalPayload
+    | {
+        isOpen: boolean;
+        type: null;
+        transactionId?: number;
+        onSuccess?: () => void;
+      };
 };
 
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const queryClient = useQueryClient();
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState<string>("");
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // Clear error when modal type changes
   useEffect(() => {
@@ -39,12 +52,55 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   // Mutations
   const createWalletMutation = useMutationCreateWallet();
   const createTransactionMutation = useMutationCreateTransaction();
+  const updateTransactionMutation = useMutationUpdateTransaction();
   const transferFundsMutation = useMutationTransferFunds();
+  const deleteTransactionMutation = useMutationDeleteTransaction({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_TransactionListTransactions],
+      });
+      store.dispatch(closeModal());
+      setSuccessMessage("Transaction deleted successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to delete transaction. Please try again");
+      setIsConfirming(false);
+    },
+  });
+
+  // Handle confirmation action
+  const handleConfirmAction = async () => {
+    if (!("confirmConfig" in modal) || !modal.confirmConfig) return;
+
+    const { action } = modal.confirmConfig;
+    setIsConfirming(true);
+    setError("");
+
+    try {
+      switch (action.type) {
+        case "deleteTransaction":
+          await deleteTransactionMutation.mutateAsync(action.payload);
+          break;
+        default:
+          console.warn("[BaseModal] Unknown confirmation action:", action.type);
+          setIsConfirming(false);
+      }
+    } catch (err) {
+      console.error("[BaseModal] Error executing confirmation action:", err);
+      setIsConfirming(false);
+    }
+  };
 
   // Common success handler
   const handleSuccess = (message: string) => {
     queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
     queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_TransactionListTransactions],
+    });
     modal.onSuccess?.();
     store.dispatch(closeModal());
     setSuccessMessage(message);
@@ -64,11 +120,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         type: data.type,
       },
       {
-        onSuccess: () =>
-          handleSuccess("Wallet has been created successfully"),
+        onSuccess: () => handleSuccess("Wallet has been created successfully"),
         onError: (err: any) =>
           setError(err.message || "Failed to create wallet. Please try again"),
-      }
+      },
     );
   };
 
@@ -89,8 +144,32 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       {
         onSuccess: () => handleSuccess("Transaction added successfully"),
         onError: (err: any) =>
-          setError(err.message || "Failed to add transaction. Please try again"),
-      }
+          setError(
+            err.message || "Failed to add transaction. Please try again",
+          ),
+      },
+    );
+  };
+
+  // Handle update transaction submission
+  const handleUpdateTransaction = (formData: any) => {
+    setError("");
+    updateTransactionMutation.mutate(
+      {
+        transactionId: formData.transactionId,
+        walletId: Number(formData.walletId),
+        categoryId: Number(formData.categoryId),
+        amount: formData.amount, // Already a Money object from form
+        date: fromDateTimeLocal(formData.date),
+        note: formData.note,
+      },
+      {
+        onSuccess: () => handleSuccess("Transaction updated successfully"),
+        onError: (err: any) =>
+          setError(
+            err.message || "Failed to update transaction. Please try again",
+          ),
+      },
     );
   };
 
@@ -110,7 +189,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         onSuccess: () => handleSuccess("Transfer completed successfully"),
         onError: (err: any) =>
           setError(err.message || "Failed to transfer funds. Please try again"),
-      }
+      },
     );
   };
 
@@ -121,22 +200,28 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const isLoading =
     createWalletMutation.isPending ||
     createTransactionMutation.isPending ||
+    updateTransactionMutation.isPending ||
     transferFundsMutation.isPending;
 
   const handleButtonClick = () => {
     if (modal.type === ModalType.SUCCESS) {
       handleClose();
+    } else if (modal.type === ModalType.CONFIRM) {
+      // Handled by ConfirmationDialog component
+      return;
     } else {
       // Trigger form submission
       const formId =
         modal.type === ModalType.CREATE_WALLET
           ? "create-wallet-form"
           : modal.type === ModalType.ADD_TRANSACTION
-          ? "add-transaction-form"
-          : "transfer-money-form";
+            ? "add-transaction-form"
+            : modal.type === ModalType.EDIT_TRANSACTION
+              ? "edit-transaction-form"
+              : "transfer-money-form";
       const form = document.getElementById(formId);
       form?.dispatchEvent(
-        new Event("submit", { cancelable: true, bubbles: true })
+        new Event("submit", { cancelable: true, bubbles: true }),
       );
     }
   };
@@ -164,6 +249,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           />
         )}
 
+        {modal.type === ModalType.EDIT_TRANSACTION && modal.transactionId && (
+          <EditTransactionForm
+            transactionId={modal.transactionId}
+            onSubmit={handleUpdateTransaction}
+            isPending={isLoading}
+          />
+        )}
+
         {modal.type === ModalType.TRANSFER_MONEY && (
           <TransferMoneyForm
             onSubmit={handleTransferFunds}
@@ -178,19 +271,36 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           />
         )}
 
-        {modal.type === ModalType.SUCCESS && <Success message={successMessage} />}
+        {modal.type === ModalType.SUCCESS && (
+          <Success message={successMessage} />
+        )}
+
+        {modal.type === ModalType.CONFIRM && "confirmConfig" in modal && modal.confirmConfig && (
+          <ConfirmationDialog
+            title={modal.confirmConfig.title}
+            message={modal.confirmConfig.message}
+            confirmText={modal.confirmConfig.confirmText}
+            cancelText={modal.confirmConfig.cancelText}
+            onConfirm={handleConfirmAction}
+            onCancel={handleClose}
+            isLoading={isConfirming}
+            variant={modal.confirmConfig.variant}
+          />
+        )}
 
         {error && <div className="text-lred mb-2 text-sm">{error}</div>}
 
-        <div className="mt-4">
-          <Button
-            type={ButtonType.PRIMARY}
-            onClick={handleButtonClick}
-            loading={isLoading}
-          >
-            {modal.type === ModalType.SUCCESS ? "Close" : "Save"}
-          </Button>
-        </div>
+        {modal.type !== ModalType.CONFIRM && (
+          <div className="mt-4">
+            <Button
+              type={ButtonType.PRIMARY}
+              onClick={handleButtonClick}
+              loading={isLoading}
+            >
+              {modal.type === ModalType.SUCCESS ? "Close" : "Save"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

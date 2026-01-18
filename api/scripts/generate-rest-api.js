@@ -558,10 +558,18 @@ function generateAPIClient(services) {
           apiCode.push(`        const params: string[] = [];`);
           apiCode.push(`        for (const [key, value] of Object.entries(obj)) {`);
           apiCode.push(`          if (value === undefined || value === null) continue;`);
-          apiCode.push(`          const fullKey = parentKey ? \`\${parentKey}.\${key}\` : key;`);
           apiCode.push(`          if (typeof value === 'object' && !Array.isArray(value)) {`);
-          apiCode.push(`            params.push(toQueryParams(value, fullKey));`);
+          apiCode.push(`            // For nested objects like 'filter', flatten them but skip 'pagination'`);
+          apiCode.push(`            if (key === 'filter') {`);
+          apiCode.push(`              params.push(toQueryParams(value, ''));`);
+          apiCode.push(`            } else if (key !== 'pagination') {`);
+          apiCode.push(`              params.push(toQueryParams(value, key));`);
+          apiCode.push(`            }`);
           apiCode.push(`          } else {`);
+          // Convert camelCase to snake_case for query params
+          apiCode.push(`            // Convert camelCase to snake_case`);
+          apiCode.push(`            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();`);
+          apiCode.push(`            const fullKey = parentKey ? \`\${parentKey}.\${snakeKey}\` : snakeKey;`);
           // Convert enum values to simpler form for backend
           apiCode.push(`            let paramValue = value;`);
           apiCode.push(`            // For numeric enums, pass as-is (backend handles numeric values)`);

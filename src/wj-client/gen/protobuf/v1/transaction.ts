@@ -229,6 +229,7 @@ export interface CreateTransactionRequest {
 /** UpdateTransaction request */
 export interface UpdateTransactionRequest {
   transactionId: number;
+  walletId?: number | undefined;
   categoryId?: number | undefined;
   amount?: Money | undefined;
   date?: number | undefined;
@@ -1155,7 +1156,14 @@ export const CreateTransactionRequest: MessageFns<CreateTransactionRequest> = {
 };
 
 function createBaseUpdateTransactionRequest(): UpdateTransactionRequest {
-  return { transactionId: 0, categoryId: undefined, amount: undefined, date: undefined, note: undefined };
+  return {
+    transactionId: 0,
+    walletId: undefined,
+    categoryId: undefined,
+    amount: undefined,
+    date: undefined,
+    note: undefined,
+  };
 }
 
 export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
@@ -1163,17 +1171,20 @@ export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
     if (message.transactionId !== 0) {
       writer.uint32(8).int32(message.transactionId);
     }
+    if (message.walletId !== undefined) {
+      writer.uint32(16).int32(message.walletId);
+    }
     if (message.categoryId !== undefined) {
-      writer.uint32(16).int32(message.categoryId);
+      writer.uint32(24).int32(message.categoryId);
     }
     if (message.amount !== undefined) {
-      Money.encode(message.amount, writer.uint32(26).fork()).join();
+      Money.encode(message.amount, writer.uint32(34).fork()).join();
     }
     if (message.date !== undefined) {
-      writer.uint32(32).int64(message.date);
+      writer.uint32(40).int64(message.date);
     }
     if (message.note !== undefined) {
-      writer.uint32(42).string(message.note);
+      writer.uint32(50).string(message.note);
     }
     return writer;
   },
@@ -1198,27 +1209,35 @@ export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
             break;
           }
 
-          message.categoryId = reader.int32();
+          message.walletId = reader.int32();
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.categoryId = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
             break;
           }
 
           message.amount = Money.decode(reader, reader.uint32());
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
+        case 5: {
+          if (tag !== 40) {
             break;
           }
 
           message.date = longToNumber(reader.int64());
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -1237,6 +1256,7 @@ export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
   fromJSON(object: any): UpdateTransactionRequest {
     return {
       transactionId: isSet(object.transactionId) ? globalThis.Number(object.transactionId) : 0,
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : undefined,
       categoryId: isSet(object.categoryId) ? globalThis.Number(object.categoryId) : undefined,
       amount: isSet(object.amount) ? Money.fromJSON(object.amount) : undefined,
       date: isSet(object.date) ? globalThis.Number(object.date) : undefined,
@@ -1248,6 +1268,9 @@ export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
     const obj: any = {};
     if (message.transactionId !== 0) {
       obj.transactionId = Math.round(message.transactionId);
+    }
+    if (message.walletId !== undefined) {
+      obj.walletId = Math.round(message.walletId);
     }
     if (message.categoryId !== undefined) {
       obj.categoryId = Math.round(message.categoryId);
@@ -1270,6 +1293,7 @@ export const UpdateTransactionRequest: MessageFns<UpdateTransactionRequest> = {
   fromPartial(object: DeepPartial<UpdateTransactionRequest>): UpdateTransactionRequest {
     const message = createBaseUpdateTransactionRequest();
     message.transactionId = object.transactionId ?? 0;
+    message.walletId = object.walletId ?? undefined;
     message.categoryId = object.categoryId ?? undefined;
     message.amount = (object.amount !== undefined && object.amount !== null)
       ? Money.fromPartial(object.amount)

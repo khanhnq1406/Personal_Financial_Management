@@ -39,15 +39,35 @@ func (r *BaseRepository) handleDBError(err error, entityName, operation string) 
 
 // buildOrderClause constructs an SQL order clause from options
 func (r *BaseRepository) buildOrderClause(opts ListOptions) string {
-	orderClause := "created_at desc"
-	if opts.OrderBy != "" {
-		direction := "asc"
-		if opts.Order == "desc" {
-			direction = "desc"
-		}
-		orderClause = opts.OrderBy + " " + direction
+	// Default order by created_at desc
+	direction := "desc"
+	if opts.Order == "asc" {
+		direction = "asc"
 	}
-	return orderClause
+
+	// Validate and sanitize OrderBy to prevent SQL injection
+	// Only allow alphanumeric characters and underscores
+	if opts.OrderBy == "" {
+		return "created_at " + direction
+	}
+
+	// Basic validation - only allow safe column names
+	allowedColumns := map[string]bool{
+		"id":         true,
+		"created_at": true,
+		"updated_at": true,
+		"date":       true,
+		"amount":     true,
+		"name":       true,
+		"balance":    true,
+		"wallet_name":true,
+	}
+
+	if !allowedColumns[opts.OrderBy] {
+		return "created_at " + direction
+	}
+
+	return opts.OrderBy + " " + direction
 }
 
 // applyPagination applies limit and offset to a query

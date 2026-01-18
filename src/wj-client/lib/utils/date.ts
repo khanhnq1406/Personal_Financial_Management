@@ -47,3 +47,21 @@ export const isValidTimestamp = (timestamp: number): boolean => {
   const max = 4102444800; // Jan 1, 2100
   return timestamp >= min && timestamp <= max;
 };
+
+/**
+ * Format Unix timestamp for display
+ * @param timestamp - Unix timestamp in seconds
+ * @returns Formatted date time string (e.g., "Jan 15, 2025 at 2:30 PM")
+ */
+export const formatDateTime = (timestamp: number | undefined): string => {
+  if (!timestamp) return "";
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};

@@ -1,0 +1,2780 @@
+{
+  "$comment": "This is structural design data exported by the Figma Raw plugin. It is formatted to help LLMs (Large Language Models) understand design structures and components from Figma designs.",
+  "name": "Transaction - Mobile",
+  "type": "FRAME",
+  "width": 440,
+  "height": 956,
+  "cornerRadius": 10,
+  "layoutMode": "NONE",
+  "primaryAxisSizingMode": "AUTO",
+  "counterAxisSizingMode": "FIXED",
+  "primaryAxisAlignItems": "MIN",
+  "counterAxisAlignItems": "MIN",
+  "fills": [
+    {
+      "type": "SOLID",
+      "opacity": 1,
+      "color": {
+        "r": 0.9686274528503418,
+        "g": 0.9725490212440491,
+        "b": 0.9882352948188782,
+        "a": 1,
+        "hex": "#f7f8fc"
+      }
+    }
+  ],
+  "strokeWeight": 1,
+  "strokeAlign": "INSIDE",
+  "strokeCap": "NONE",
+  "strokeJoin": "MITER",
+  "children": [
+    {
+      "name": "Rectangle 2",
+      "type": "RECTANGLE",
+      "width": 440,
+      "height": 236,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0,
+            "g": 0.5058823823928833,
+            "b": 0.2823529541492462,
+            "a": 1,
+            "hex": "#008148"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "menu 1",
+      "type": "RECTANGLE",
+      "width": 30,
+      "height": 30,
+      "fills": [
+        {
+          "type": "IMAGE",
+          "opacity": 0.949999988079071,
+          "imageHash": "453fb4f2a7cb11941573b4f883f73fd005868527",
+          "scaleMode": "FILL",
+          "imageTransform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ]
+          ]
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "Transactions",
+      "type": "TEXT",
+      "width": 197,
+      "height": 40,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1,
+            "hex": "#ffffff"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Transactions",
+      "fontSize": 32,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Total balance",
+      "type": "FRAME",
+      "width": 383,
+      "height": 121,
+      "cornerRadius": 10,
+      "layoutMode": "HORIZONTAL",
+      "primaryAxisSizingMode": "FIXED",
+      "counterAxisSizingMode": "FIXED",
+      "primaryAxisAlignItems": "SPACE_BETWEEN",
+      "counterAxisAlignItems": "CENTER",
+      "paddingLeft": 19,
+      "paddingRight": 19,
+      "paddingTop": 10,
+      "paddingBottom": 10,
+      "itemSpacing": 5,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1,
+            "hex": "#ffffff"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "radius": 10,
+          "spread": 0,
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.25,
+            "hex": "#00000040"
+          }
+        }
+      ],
+      "children": [
+        {
+          "name": "Group 8",
+          "type": "GROUP",
+          "width": 129,
+          "height": 68,
+          "children": [
+            {
+              "name": "Total balance",
+              "type": "TEXT",
+              "width": 129,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0.6000000238418579,
+                    "g": 0.6392157077789307,
+                    "b": 0.6470588445663452,
+                    "a": 1,
+                    "hex": "#99a3a5"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Total balance",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "0.00đ",
+              "type": "TEXT",
+              "width": 96,
+              "height": 38,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0.0941176488995552,
+                    "g": 0.10980392247438431,
+                    "b": 0.0784313753247261,
+                    "a": 1,
+                    "hex": "#181c14"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "0.00đ",
+              "fontSize": 30,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "unhide 1",
+          "type": "RECTANGLE",
+          "width": 45,
+          "height": 45,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "4296b0350f3c3d206dfc877ae39a78e7abf7ad5d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Select wallet",
+      "type": "GROUP",
+      "width": 167,
+      "height": 43.81683349609375,
+      "children": [
+        {
+          "name": "Rectangle 7",
+          "type": "RECTANGLE",
+          "width": 167,
+          "height": 43.81683349609375,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 1",
+          "type": "GROUP",
+          "width": 147.9851531982422,
+          "height": 24.80198097229004,
+          "children": [
+            {
+              "name": "wallet 1",
+              "type": "RECTANGLE",
+              "width": 24.80198097229004,
+              "height": 24.80198097229004,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "9cd04940606e428a1fb4f1adbda0117ee2658fd5",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "My wallet 1",
+              "type": "TEXT",
+              "width": 79,
+              "height": 19,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0.0941176488995552,
+                    "g": 0.10980392247438431,
+                    "b": 0.0784313753247261,
+                    "a": 1,
+                    "hex": "#181c14"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "My wallet 1",
+              "fontSize": 15,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "down 1",
+              "type": "RECTANGLE",
+              "width": 16.534652709960938,
+              "height": 16.534652709960938,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "246abd7db774df2e83565111722364e451760a45",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Search bar",
+      "type": "GROUP",
+      "width": 383,
+      "height": 40,
+      "children": [
+        {
+          "name": "Rectangle 8",
+          "type": "RECTANGLE",
+          "width": 383,
+          "height": 40,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 0.5,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.5,
+                "hex": "#00000080"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search",
+          "type": "TEXT",
+          "width": 74.70278930664062,
+          "height": 23,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.6000000238418579,
+                "g": 0.6392157077789307,
+                "b": 0.6470588445663452,
+                "a": 1,
+                "hex": "#99a3a5"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Search",
+          "fontSize": 18,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        }
+      ]
+    },
+    {
+      "name": "Sort by",
+      "type": "GROUP",
+      "width": 120,
+      "height": 40,
+      "children": [
+        {
+          "name": "Rectangle 9",
+          "type": "RECTANGLE",
+          "width": 120,
+          "height": 40,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 0.5,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.5,
+                "hex": "#00000080"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Category",
+          "type": "TEXT",
+          "width": 72,
+          "height": 23,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.0941176488995552,
+                "g": 0.10980392247438431,
+                "b": 0.0784313753247261,
+                "a": 1,
+                "hex": "#181c14"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Category",
+          "fontSize": 15,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "NONE",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "down 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 15.686274528503418,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "246abd7db774df2e83565111722364e451760a45",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Sort by",
+      "type": "GROUP",
+      "width": 120,
+      "height": 40,
+      "children": [
+        {
+          "name": "Rectangle 9",
+          "type": "RECTANGLE",
+          "width": 120,
+          "height": 40,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 0.5,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.5,
+                "hex": "#00000080"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "This week",
+          "type": "TEXT",
+          "width": 72,
+          "height": 23,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.0941176488995552,
+                "g": 0.10980392247438431,
+                "b": 0.0784313753247261,
+                "a": 1,
+                "hex": "#181c14"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "This week",
+          "fontSize": 15,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "NONE",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "down 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 15.686274528503418,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "246abd7db774df2e83565111722364e451760a45",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Sort by",
+      "type": "GROUP",
+      "width": 120,
+      "height": 40,
+      "children": [
+        {
+          "name": "Rectangle 9",
+          "type": "RECTANGLE",
+          "width": 120,
+          "height": 40,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 0.5,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.5,
+                "hex": "#00000080"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sort by",
+          "type": "TEXT",
+          "width": 72,
+          "height": 23,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.0941176488995552,
+                "g": 0.10980392247438431,
+                "b": 0.0784313753247261,
+                "a": 1,
+                "hex": "#181c14"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Sort by",
+          "fontSize": 15,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "NONE",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "down 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 15.686274528503418,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "246abd7db774df2e83565111722364e451760a45",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Line 4",
+      "type": "LINE",
+      "width": 383,
+      "height": 0,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.9058823585510254,
+            "g": 0.9098039269447327,
+            "b": 0.9254902005195618,
+            "a": 1,
+            "hex": "#e7e8ec"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "CENTER",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "Line 5",
+      "type": "LINE",
+      "width": 383,
+      "height": 0,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.9058823585510254,
+            "g": 0.9098039269447327,
+            "b": 0.9254902005195618,
+            "a": 1,
+            "hex": "#e7e8ec"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "CENTER",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "Line 6",
+      "type": "LINE",
+      "width": 383,
+      "height": 0,
+      "strokes": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.9058823585510254,
+            "g": 0.9098039269447327,
+            "b": 0.9254902005195618,
+            "a": 1,
+            "hex": "#e7e8ec"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "CENTER",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "Category",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Category",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Category",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Category",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Category",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Category",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Food & Beverage",
+      "type": "TEXT",
+      "width": 124,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "Food & Beverage",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Food & Beverage",
+      "type": "TEXT",
+      "width": 124,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "Food & Beverage",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Food & Beverage",
+      "type": "TEXT",
+      "width": 124,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "Food & Beverage",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Amount",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Amount",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Amount",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Amount",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Amount",
+      "type": "TEXT",
+      "width": 72,
+      "height": 23,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Amount",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "$67,853.90",
+      "type": "TEXT",
+      "width": 82,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "$67,853.90",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "$67,853.90",
+      "type": "TEXT",
+      "width": 82,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "$67,853.90",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "$67,853.90",
+      "type": "TEXT",
+      "width": 82,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "$67,853.90",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Date & Time",
+      "type": "TEXT",
+      "width": 88,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Date & Time",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Date & Time",
+      "type": "TEXT",
+      "width": 88,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Date & Time",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Date & Time",
+      "type": "TEXT",
+      "width": 88,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Date & Time",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "type": "TEXT",
+      "width": 132,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "21 Jul 2024, 7:01PM",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "type": "TEXT",
+      "width": 132,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "21 Jul 2024, 7:01PM",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "type": "TEXT",
+      "width": 132,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "variables": {
+        "fontStyle": [
+          {
+            "name": "Mode",
+            "fullName": "Mode"
+          }
+        ]
+      },
+      "fontStyle": [
+        {
+          "name": "Mode",
+          "fullName": "Mode"
+        }
+      ],
+      "characters": "21 Jul 2024, 7:01PM",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Light"
+      },
+      "fontWeight": 300,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "RIGHT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Note",
+      "type": "TEXT",
+      "width": 37,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Note",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Note",
+      "type": "TEXT",
+      "width": 37,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Note",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Note",
+      "type": "TEXT",
+      "width": 37,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Note",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Actions",
+      "type": "TEXT",
+      "width": 56,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Actions",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Actions",
+      "type": "TEXT",
+      "width": 56,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Actions",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Actions",
+      "type": "TEXT",
+      "width": 56,
+      "height": 19,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Actions",
+      "fontSize": 15,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Group 27",
+      "type": "GROUP",
+      "width": 53,
+      "height": 21,
+      "children": [
+        {
+          "name": "remove 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "editing",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 28",
+      "type": "GROUP",
+      "width": 53,
+      "height": 21,
+      "children": [
+        {
+          "name": "remove 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "editing",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 29",
+      "type": "GROUP",
+      "width": 53,
+      "height": 21,
+      "children": [
+        {
+          "name": "remove 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "editing",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "plus 2",
+      "type": "RECTANGLE",
+      "width": 38,
+      "height": 38,
+      "fills": [
+        {
+          "type": "IMAGE",
+          "opacity": 1,
+          "imageHash": "8d9ca35c8af4b416d7ab4293e8d65ddb68e9cc9c",
+          "scaleMode": "FILL",
+          "imageTransform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ]
+          ]
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "radius": 10,
+          "spread": 0,
+          "offset": {
+            "x": 0,
+            "y": 0
+          },
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.25,
+            "hex": "#00000040"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group 15",
+      "type": "GROUP",
+      "width": 35,
+      "height": 35,
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "radius": 4,
+          "spread": 0,
+          "offset": {
+            "x": 0,
+            "y": 4
+          },
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.25,
+            "hex": "#00000040"
+          }
+        }
+      ],
+      "children": [
+        {
+          "name": "Ellipse 2",
+          "type": "ELLIPSE",
+          "width": 35,
+          "height": 35,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0.6431372761726379,
+                "b": 0.2705882489681244,
+                "a": 1,
+                "hex": "#00a445"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "transfer 1",
+          "type": "RECTANGLE",
+          "width": 25,
+          "height": 25,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "3e709591ddf2225cdbae3766a4053635155027d5",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 16",
+      "type": "GROUP",
+      "width": 35,
+      "height": 35,
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "radius": 4,
+          "spread": 0,
+          "offset": {
+            "x": 0,
+            "y": 4
+          },
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.25,
+            "hex": "#00000040"
+          }
+        }
+      ],
+      "children": [
+        {
+          "name": "Ellipse 3",
+          "type": "ELLIPSE",
+          "width": 35,
+          "height": 35,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0.6431372761726379,
+                "b": 0.2705882489681244,
+                "a": 1,
+                "hex": "#00a445"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "transaction 1",
+          "type": "RECTANGLE",
+          "width": 35,
+          "height": 35,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "5d638320d1700e65360328aa30f2e5b43aa83ed6",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    }
+  ],
+  "textContent": [
+    {
+      "name": "Transactions",
+      "text": "Transactions",
+      "path": "Transaction - Mobile/Transactions",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Total balance",
+      "text": "Total balance",
+      "path": "Transaction - Mobile/Total balance/Group 8/Total balance",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "0.00đ",
+      "text": "0.00đ",
+      "path": "Transaction - Mobile/Total balance/Group 8/0.00đ",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "My wallet 1",
+      "text": "My wallet 1",
+      "path": "Transaction - Mobile/Select wallet/Group 1/My wallet 1",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Search",
+      "text": "Search",
+      "path": "Transaction - Mobile/Search bar/Search",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Category",
+      "text": "Category",
+      "path": "Transaction - Mobile/Sort by/Category",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "This week",
+      "text": "This week",
+      "path": "Transaction - Mobile/Sort by/This week",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Sort by",
+      "text": "Sort by",
+      "path": "Transaction - Mobile/Sort by/Sort by",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Category",
+      "text": "Category",
+      "path": "Transaction - Mobile/Category",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Category",
+      "text": "Category",
+      "path": "Transaction - Mobile/Category",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Category",
+      "text": "Category",
+      "path": "Transaction - Mobile/Category",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Food & Beverage",
+      "text": "Food & Beverage",
+      "path": "Transaction - Mobile/Food & Beverage",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Food & Beverage",
+      "text": "Food & Beverage",
+      "path": "Transaction - Mobile/Food & Beverage",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Food & Beverage",
+      "text": "Food & Beverage",
+      "path": "Transaction - Mobile/Food & Beverage",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Amount",
+      "text": "Amount",
+      "path": "Transaction - Mobile/Amount",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Amount",
+      "text": "Amount",
+      "path": "Transaction - Mobile/Amount",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Amount",
+      "text": "Amount",
+      "path": "Transaction - Mobile/Amount",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "$67,853.90",
+      "text": "$67,853.90",
+      "path": "Transaction - Mobile/$67,853.90",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "$67,853.90",
+      "text": "$67,853.90",
+      "path": "Transaction - Mobile/$67,853.90",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "$67,853.90",
+      "text": "$67,853.90",
+      "path": "Transaction - Mobile/$67,853.90",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Date & Time",
+      "text": "Date & Time",
+      "path": "Transaction - Mobile/Date & Time",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Date & Time",
+      "text": "Date & Time",
+      "path": "Transaction - Mobile/Date & Time",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Date & Time",
+      "text": "Date & Time",
+      "path": "Transaction - Mobile/Date & Time",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "text": "21 Jul 2024, 7:01PM",
+      "path": "Transaction - Mobile/21 Jul 2024, 7:01PM",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "text": "21 Jul 2024, 7:01PM",
+      "path": "Transaction - Mobile/21 Jul 2024, 7:01PM",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "21 Jul 2024, 7:01PM",
+      "text": "21 Jul 2024, 7:01PM",
+      "path": "Transaction - Mobile/21 Jul 2024, 7:01PM",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Note",
+      "text": "Note",
+      "path": "Transaction - Mobile/Note",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Note",
+      "text": "Note",
+      "path": "Transaction - Mobile/Note",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Note",
+      "text": "Note",
+      "path": "Transaction - Mobile/Note",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Actions",
+      "text": "Actions",
+      "path": "Transaction - Mobile/Actions",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Actions",
+      "text": "Actions",
+      "path": "Transaction - Mobile/Actions",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Actions",
+      "text": "Actions",
+      "path": "Transaction - Mobile/Actions",
+      "nodeType": "TEXT"
+    }
+  ]
+}

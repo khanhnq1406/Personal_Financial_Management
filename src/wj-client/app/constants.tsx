@@ -121,7 +121,9 @@ export const ButtonType = {
 
 export const ModalType = {
   ADD_TRANSACTION: "Add Transaction",
+  EDIT_TRANSACTION: "Edit Transaction",
   TRANSFER_MONEY: "Transfer Money",
   CREATE_WALLET: "Create New Wallet",
   SUCCESS: "Success",
+  CONFIRM: "Confirm",
 };

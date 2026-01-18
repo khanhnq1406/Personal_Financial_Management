@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 function ActiveLink({
   children,
@@ -10,9 +10,11 @@ function ActiveLink({
   href: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    router.push(href);
   };
 
   return (

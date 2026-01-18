@@ -190,8 +190,19 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 		return nil, err
 	}
 
-	// Get wallet
-	wallet, err := s.walletRepo.GetByID(ctx, oldTransaction.WalletID)
+	// Determine which wallet to use (new wallet from request or existing)
+	targetWalletID := oldTransaction.WalletID
+	if req.WalletId != nil {
+		// Validate new wallet belongs to user
+		newWallet, err := s.walletRepo.GetByIDForUser(ctx, *req.WalletId, userID)
+		if err != nil {
+			return nil, err
+		}
+		targetWalletID = newWallet.ID
+	}
+
+	// Get target wallet
+	wallet, err := s.walletRepo.GetByID(ctx, targetWalletID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,21 +219,53 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 		category, _ = s.categoryRepo.GetByID(ctx, *oldTransaction.CategoryID)
 	}
 
-	// Calculate balance delta (new amount - old amount)
-	oldBalanceDelta := s.calculateBalanceDelta(oldTransaction.Amount, category)
-	newBalanceDelta := s.calculateBalanceDelta(req.Amount.Amount, category)
-	totalDelta := newBalanceDelta - oldBalanceDelta
+	// Handle wallet change if needed
+	if req.WalletId != nil && *req.WalletId != oldTransaction.WalletID {
+		// Revert old transaction's effect on old wallet
+		oldBalanceDelta := s.calculateBalanceDelta(oldTransaction.Amount, category)
 
-	// Check if balance would go negative
-	newBalance := wallet.Balance + totalDelta
-	if newBalance < 0 {
-		return nil, apperrors.NewValidationError("Insufficient balance for this transaction update")
+		// Apply new transaction's effect on new wallet
+		newBalanceDelta := s.calculateBalanceDelta(req.Amount.Amount, category)
+
+		// Check if new wallet would have sufficient balance
+		newWalletBalance := wallet.Balance + newBalanceDelta
+		if newWalletBalance < 0 {
+			return nil, apperrors.NewValidationError("Insufficient balance in target wallet")
+		}
+
+		// Update both wallets
+		_, err = s.walletRepo.UpdateBalance(ctx, oldTransaction.WalletID, -oldBalanceDelta)
+		if err != nil {
+			return nil, err
+		}
+		_, err = s.walletRepo.UpdateBalance(ctx, targetWalletID, newBalanceDelta)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// No wallet change, just calculate delta for same wallet
+		oldBalanceDelta := s.calculateBalanceDelta(oldTransaction.Amount, category)
+		newBalanceDelta := s.calculateBalanceDelta(req.Amount.Amount, category)
+		totalDelta := newBalanceDelta - oldBalanceDelta
+
+		// Check if balance would go negative
+		newBalance := wallet.Balance + totalDelta
+		if newBalance < 0 {
+			return nil, apperrors.NewValidationError("Insufficient balance for this transaction update")
+		}
+
+		// Update wallet balance
+		_, err = s.walletRepo.UpdateBalance(ctx, targetWalletID, totalDelta)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Update transaction fields
 	updates := &models.Transaction{
-		ID:     transactionID,
-		Amount: req.Amount.Amount,
+		ID:       transactionID,
+		WalletID: targetWalletID,
+		Amount:   req.Amount.Amount,
 	}
 	if req.CategoryId != nil {
 		updates.CategoryID = req.CategoryId
@@ -239,15 +282,9 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 		return nil, err
 	}
 
-	// Update wallet balance
-	_, err = s.walletRepo.UpdateBalance(ctx, oldTransaction.WalletID, totalDelta)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get updated data
 	updatedTransaction, _ := s.txRepo.GetByID(ctx, transactionID)
-	updatedWallet, _ := s.walletRepo.GetByID(ctx, oldTransaction.WalletID)
+	updatedWallet, _ := s.walletRepo.GetByID(ctx, targetWalletID)
 
 	return &v1.UpdateTransactionResponse{
 		Success: true,

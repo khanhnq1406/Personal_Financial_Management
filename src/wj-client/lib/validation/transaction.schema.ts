@@ -23,3 +23,20 @@ export const createTransactionFormSchema = z.object({
 export type CreateTransactionFormInput = z.infer<
   typeof createTransactionFormSchema
 >;
+
+/**
+ * Zod schema for transaction update
+ * Similar to create schema but with optional fields for partial updates
+ */
+export const updateTransactionFormSchema = z.object({
+  transactionType: transactionTypeEnum,
+  amount: amountSchema,
+  walletId: z.string().min(1, "Wallet is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  date: z.string().min(1, "Date is required"),
+  note: optionalNoteSchema,
+});
+
+export type UpdateTransactionFormInput = z.infer<
+  typeof updateTransactionFormSchema
+>;

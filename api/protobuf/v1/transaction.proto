@@ -174,10 +174,11 @@ message CreateTransactionRequest {
 // UpdateTransaction request
 message UpdateTransactionRequest {
   int32 transactionId = 1 [json_name = "transactionId"];
-  optional int32 categoryId = 2 [json_name = "categoryId"];
-  optional wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
-  optional int64 date = 4 [json_name = "date"];
-  optional string note = 5 [json_name = "note"];
+  optional int32 walletId = 2 [json_name = "walletId"];
+  optional int32 categoryId = 3 [json_name = "categoryId"];
+  optional wealthjourney.common.v1.Money amount = 4 [json_name = "amount"];
+  optional int64 date = 5 [json_name = "date"];
+  optional string note = 6 [json_name = "note"];
 }
 
 // DeleteTransaction request

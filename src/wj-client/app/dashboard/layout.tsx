@@ -83,8 +83,8 @@ export default function DashboardLayout({
   };
   return (
     <AuthCheck>
-      <div className="bg-bg min-h-full sm:p-3">
-        <div className="block sm:grid grid-cols-[250px_auto] min-h-full">
+      <div className="bg-bg h-full sm:p-3 flex flex-col">
+        <div className="block sm:grid grid-cols-[250px_auto] flex-1 min-h-0">
           <div className="sm:hidden bg-bg flex justify-between p-3">
             <div className="flex items-center">
               <Button
@@ -93,14 +93,16 @@ export default function DashboardLayout({
                 onClick={handleExtend}
               />
             </div>
-            <div className="text-fg font-semibold text-lg">{pathname}</div>
+            <div className="text-fg font-semibold text-lg flex items-center">
+              {pathname}
+            </div>
             <div>
               <img
                 src={
                   user.picture !== null ? user.picture : `${resources}/user.png`
                 }
                 alt=""
-                className="rounded-full h-9"
+                className="rounded-full h-9 w-9"
               />
             </div>
           </div>
@@ -119,7 +121,9 @@ export default function DashboardLayout({
             </div>
             {navigationItems}
           </div>
-          <div className="bg-fg sm:rounded-md">{children}</div>
+          <div className="bg-fg sm:rounded-md h-full overflow-auto">
+            {children}
+          </div>
         </div>
       </div>
       <ButtonGroup />

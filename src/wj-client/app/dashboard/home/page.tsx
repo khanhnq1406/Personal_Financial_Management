@@ -19,13 +19,13 @@ export default function Home() {
     {
       pagination: { page: 1, pageSize: 10, orderBy: "", order: "" },
     },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   // Fetch available years once and pass to child components
   const { data: availableYearsData } = useQueryGetAvailableYears(
     {},
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   // Use available years from API, or default to current year if no transactions
