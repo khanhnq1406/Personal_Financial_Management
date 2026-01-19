@@ -571,7 +571,7 @@ function generateAPIClient(services) {
           apiCode.push(`            const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();`);
           apiCode.push(`            const fullKey = parentKey ? \`\${parentKey}.\${snakeKey}\` : snakeKey;`);
           // Convert enum values to simpler form for backend
-          apiCode.push(`            let paramValue = value;`);
+          apiCode.push(`            let paramValue: string | number;`);
           apiCode.push(`            // For numeric enums, pass as-is (backend handles numeric values)`);
           apiCode.push(`            // For string enums (if any), convert to simplified form`);
           apiCode.push(`            if (typeof value === 'string') {`);
@@ -580,6 +580,10 @@ function generateAPIClient(services) {
           apiCode.push(`                .replace(/^CATEGORY_TYPE_/, '')`);
           apiCode.push(`                .replace(/^TRANSACTION_TYPE_/, '')`);
           apiCode.push(`                .replace(/^SORT_FIELD_/, '');`);
+          apiCode.push(`            } else if (typeof value === 'boolean') {`);
+          apiCode.push(`              paramValue = value ? 'true' : 'false';`);
+          apiCode.push(`            } else {`);
+          apiCode.push(`              paramValue = value as string | number;`);
           apiCode.push(`            }`);
           apiCode.push(`            params.push(\`\${fullKey}=\${encodeURIComponent(paramValue)}\`);`);
           apiCode.push(`          }`);

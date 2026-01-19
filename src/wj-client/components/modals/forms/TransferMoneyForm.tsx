@@ -19,25 +19,18 @@ interface TransferMoneyFormProps {
   isPending?: boolean;
 }
 
-export const TransferMoneyForm = ({
-  onSubmit,
-  isPending = false,
-}: TransferMoneyFormProps) => {
+export const TransferMoneyForm = ({ onSubmit }: TransferMoneyFormProps) => {
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
 
   const wallets = walletsData?.wallets || [];
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<TransferMoneyFormInput>({
+  const { control, handleSubmit } = useForm<TransferMoneyFormInput>({
     resolver: zodResolver(
       transferMoneySchemaWithBalances(
-        wallets.map((w) => ({ id: w.id, balance: w.balance?.amount || 0 }))
-      )
+        wallets.map((w) => ({ id: w.id, balance: w.balance?.amount || 0 })),
+      ),
     ),
     defaultValues: {
       fromWalletId: "",

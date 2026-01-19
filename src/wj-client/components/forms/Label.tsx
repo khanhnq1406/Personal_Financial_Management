@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/utils/cn";
+
 interface LabelProps {
   htmlFor: string;
   required?: boolean;
@@ -14,7 +16,7 @@ export const Label = ({
   className = "",
 }: LabelProps) => {
   return (
-    <label htmlFor={htmlFor} className={`text-sm font-medium cursor-pointer ${className}`}>
+    <label htmlFor={htmlFor} className={cn("text-sm font-medium cursor-pointer", className)}>
       {children}
       {required && <span className="required" aria-label="required">*</span>}
     </label>

@@ -65,8 +65,8 @@ export const ReportControls = memo(function ReportControls({
   };
 
   return (
-    <div className="flex items-center gap-4 mb-4 justify-between">
-      <div className="flex items-center gap-4">
+    <div className="flex sm:flex-row flex-col sm:items-center gap-4 mb-4 justify-between">
+      <div className="flex sm:items-center gap-4 sm:flex-row flex-col">
         {/* Wallet Multi-Select */}
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Wallets:</label>

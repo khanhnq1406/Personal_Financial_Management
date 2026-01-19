@@ -4,6 +4,7 @@ import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
 import { CreatableSelect } from "@/components/select/CreatableSelect";
+import { cn } from "@/lib/utils/cn";
 
 interface FormCreatableSelectProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
@@ -34,7 +35,7 @@ export const FormCreatableSelect = ({
   } = useController(props);
 
   return (
-    <div className={`mb-2 ${className}`}>
+    <div className={cn("mb-2", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>

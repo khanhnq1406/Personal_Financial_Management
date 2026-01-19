@@ -11,6 +11,7 @@ import {
 import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { resources } from "@/app/constants";
+import { cn } from "@/lib/utils/cn";
 
 export interface TanStackTableProps<T> {
   data: T[];
@@ -168,7 +169,7 @@ export function TanStackTable<T>({
 
   // Memoize loading skeleton to avoid recreating on every render
   const loadingSkeleton = useMemo(() => (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={cn("overflow-x-auto", className)}>
       <table className="w-full">
         <thead className="sticky top-0 bg-white z-10 border-b-2 border-gray-200">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -207,7 +208,7 @@ export function TanStackTable<T>({
   // Memoize empty state
   const emptyState = useMemo(() => (
     <div
-      className={`flex flex-col items-center justify-center py-12 ${className}`}
+      className={cn("flex flex-col items-center justify-center py-12", className)}
     >
       <svg
         className="w-16 h-16 mb-4 text-gray-400"
@@ -238,7 +239,7 @@ export function TanStackTable<T>({
   }
 
   return (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={cn("overflow-x-auto", className)}>
       <table className="w-full">
         <thead className="sticky top-0 bg-white z-10 border-b-2 border-gray-200">
           {table.getHeaderGroups().map((headerGroup) => (

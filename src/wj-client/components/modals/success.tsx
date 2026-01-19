@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SuccessAnimation } from "../success/successAnimation";
+import { SuccessAnimation } from "../success/SuccessAnimation";
 
 type SuccessProps = {
   message?: string;

@@ -1,9 +1,7 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
-import {
-  useQueryGetFinancialReport,
-} from "@/utils/generated/hooks";
+import { useQueryGetFinancialReport } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { ExpandableTable } from "./ExpandableTable";
 
@@ -21,16 +19,17 @@ export const FinancialTable = memo(function FinancialTable({
   );
 
   // Fetch financial report data from backend
-  const { data: reportData, isLoading: reportLoading } = useQueryGetFinancialReport(
-    {
-      year: selectedYear,
-      walletIds: walletIds ?? [],
-    },
-    {
-      refetchOnMount: "always",
-      enabled: !!selectedYear,
-    },
-  );
+  const { data: reportData, isLoading: reportLoading } =
+    useQueryGetFinancialReport(
+      {
+        year: selectedYear,
+        walletIds: walletIds ?? [],
+      },
+      {
+        refetchOnMount: "always",
+        enabled: !!selectedYear,
+      },
+    );
 
   // Toggle wallet expansion
   const toggleWallet = (walletId: number) => {
@@ -121,14 +120,14 @@ export const FinancialTable = memo(function FinancialTable({
 
   if (reportLoading) {
     return (
-      <div className="w-full">
+      <div className="w-full h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] flex items-center justify-center">
         <ChartSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)]">
       <ExpandableTable
         months={monthlyData.months}
         wallets={monthlyData.wallets}

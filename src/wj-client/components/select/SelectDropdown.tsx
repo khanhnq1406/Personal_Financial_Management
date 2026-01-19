@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { resources } from "@/app/constants";
+import { cn } from "@/lib/utils/cn";
 
 type SelectDropdownProps = {
   value: string;
@@ -19,7 +20,7 @@ export function SelectDropdown({
   "aria-label": ariaLabel,
 }: SelectDropdownProps) {
   return (
-    <div className={`relative ${className}`}>
+    <div className={cn("relative", className)}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -1,9 +1,9 @@
 "use client";
-import ActiveLink from "@/components/activeLink";
+import ActiveLink from "@/components/ActiveLink";
 import { logout } from "../auth/utils/logout";
 import { routes, ButtonType, resources } from "../constants";
-import { AuthCheck } from "../auth/utils/authCheck";
-import { ButtonGroup } from "@/components/buttonGroup";
+import { AuthCheck } from "../auth/utils/AuthCheck";
+import { ButtonGroup } from "@/components/ButtonGroup";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { store } from "@/redux/store";
 import { useState, useMemo, useRef } from "react";

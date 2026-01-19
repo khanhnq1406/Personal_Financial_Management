@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { cn } from "@/lib/utils/cn";
 
 interface Option {
   value: string;
@@ -124,11 +125,13 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   const selectedOptions = options.filter((opt) => values.includes(opt.value));
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <div
-        className={`p-2 rounded-lg w-full min-h-[42px] flex flex-wrap gap-2 border border-gray-300 focus-within:border-[#008148] focus-within:ring-2 focus-within:ring-[#008148] focus-within:ring-offset-2 bg-white ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
-        } ${scrollOnOverflow ? "overflow-y-auto" : ""}`}
+        className={cn(
+          "p-2 rounded-lg w-full min-h-[42px] flex flex-wrap gap-2 border border-gray-300 focus-within:border-[#008148] focus-within:ring-2 focus-within:ring-[#008148] focus-within:ring-offset-2 bg-white",
+          disabled && "opacity-50 cursor-not-allowed",
+          scrollOnOverflow && "overflow-y-auto"
+        )}
         style={scrollOnOverflow ? { maxHeight: `42px` } : undefined}
         onClick={() => inputRef.current?.focus()}
       >
@@ -208,11 +211,12 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
               <div
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
-                className={`px-3 py-2 cursor-pointer text-sm ${
+                className={cn(
+                  "px-3 py-2 cursor-pointer text-sm",
                   highlightedIndex === index
                     ? "bg-[#008148] text-white"
                     : "hover:bg-gray-100"
-                }`}
+                )}
               >
                 {option.label}
               </div>

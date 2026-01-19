@@ -2,7 +2,7 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   useQueryListWallets,
   useQueryListCategories,
@@ -29,12 +29,8 @@ interface AddTransactionFormProps {
   isPending?: boolean;
 }
 
-export const AddTransactionForm = ({
-  onSubmit,
-  isPending = false,
-}: AddTransactionFormProps) => {
+export const AddTransactionForm = ({ onSubmit }: AddTransactionFormProps) => {
   const queryClient = useQueryClient();
-  const [selectedCategoryName, setSelectedCategoryName] = useState("");
 
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
@@ -45,21 +41,17 @@ export const AddTransactionForm = ({
       pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
     });
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<CreateTransactionFormInput>({
-    resolver: zodResolver(createTransactionFormSchema),
-    defaultValues: {
-      transactionType: "income",
-      walletId: "",
-      categoryId: "",
-      date: toDateTimeLocal(getCurrentTimestamp()),
-      note: "",
-    },
-  });
+  const { control, handleSubmit, setValue } =
+    useForm<CreateTransactionFormInput>({
+      resolver: zodResolver(createTransactionFormSchema),
+      defaultValues: {
+        transactionType: "income",
+        walletId: "",
+        categoryId: "",
+        date: toDateTimeLocal(getCurrentTimestamp()),
+        note: "",
+      },
+    });
 
   const transactionType = useWatch({
     control,
@@ -72,7 +64,7 @@ export const AddTransactionForm = ({
         cat.type ===
         (transactionType === "income"
           ? CategoryType.CATEGORY_TYPE_INCOME
-          : CategoryType.CATEGORY_TYPE_EXPENSE)
+          : CategoryType.CATEGORY_TYPE_EXPENSE),
     ) || [];
 
   const createCategoryMutation = useMutationCreateCategory({
@@ -81,7 +73,6 @@ export const AddTransactionForm = ({
         queryKey: [EVENT_CategoryListCategories],
       });
       if (data.data?.id) {
-        setSelectedCategoryName(data.data.name);
         setValue("categoryId", String(data.data.id));
       }
     },
@@ -90,7 +81,6 @@ export const AddTransactionForm = ({
   // Reset category when transaction type changes
   useEffect(() => {
     setValue("categoryId", "");
-    setSelectedCategoryName("");
   }, [transactionType, setValue]);
 
   const walletOptions: SelectOption[] =

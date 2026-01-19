@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { cn } from "@/lib/utils/cn";
 
 interface Option {
   value: string;
@@ -146,7 +147,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <input
         ref={inputRef}
         type="text"
@@ -172,9 +173,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 pointer-events-none"
         >
           <svg
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -224,11 +223,13 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                 <div
                   key={option.value}
                   onClick={() => handleSelect(option.value)}
-                  className={`px-3 py-2 cursor-pointer text-sm ${
+                  className={cn(
+                    "px-3 py-2 cursor-pointer text-sm",
                     highlightedIndex === index
                       ? "bg-hgreen text-white"
-                      : "hover:bg-gray-100"
-                  } ${value === option.value ? "font-semibold" : ""}`}
+                      : "hover:bg-gray-100",
+                    value === option.value && "font-semibold"
+                  )}
                 >
                   {option.label}
                   {value === option.value && (
@@ -252,11 +253,13 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
               {canCreateNew && (
                 <div
                   onClick={handleCreateNew}
-                  className={`px-3 py-2 cursor-pointer text-sm border-t border-gray-200 flex items-center gap-2 ${
+                  className={cn(
+                    "px-3 py-2 cursor-pointer text-sm border-t border-gray-200 flex items-center gap-2",
                     highlightedIndex === filteredOptions.length
                       ? "bg-hgreen text-white"
-                      : "hover:bg-gray-100 text-hgreen font-semibold"
-                  } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      : "hover:bg-gray-100 text-hgreen font-semibold",
+                    isLoading && "opacity-50 cursor-not-allowed"
+                  )}
                 >
                   {isLoading ? (
                     <>

@@ -3,6 +3,7 @@
 import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
+import { cn } from "@/lib/utils/cn";
 
 interface FormDateTimePickerProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
@@ -33,7 +34,7 @@ export const FormDateTimePicker = ({
   const inputValue = value || "";
 
   return (
-    <div className={`mb-2 ${className}`}>
+    <div className={cn("mb-2", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
@@ -45,9 +46,10 @@ export const FormDateTimePicker = ({
         onChange={handleChange}
         onBlur={onBlur}
         ref={ref}
-        className={`p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed ${
-          error ? "border-2 border-lred" : ""
-        }`}
+        className={cn(
+          "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed",
+          error && "border-2 border-lred"
+        )}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={error ? `${props.name}-error` : undefined}
       />

@@ -3,6 +3,7 @@
 import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
+import { cn } from "@/lib/utils/cn";
 
 interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
@@ -43,7 +44,7 @@ export const FormNumberInput = ({
   };
 
   return (
-    <div className={`mb-2 ${className}`}>
+    <div className={cn("mb-2", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
@@ -65,9 +66,12 @@ export const FormNumberInput = ({
           onChange={handleChange}
           onBlur={onBlur}
           ref={ref}
-          className={`p-2 drop-shadow-round rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed ${
-            prefix ? "pl-8" : ""
-          } ${suffix ? "pr-12" : ""} ${error ? "border-2 border-lred" : ""}`}
+          className={cn(
+            "p-2 drop-shadow-round rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed",
+            prefix && "pl-8",
+            suffix && "pr-12",
+            error && "border-2 border-lred"
+          )}
           aria-invalid={error ? "true" : "false"}
           aria-describedby={error ? `${props.name}-error` : undefined}
         />

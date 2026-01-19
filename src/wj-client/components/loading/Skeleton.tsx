@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils/cn";
+
 type SkeletonProps = {
   className?: string;
 };
@@ -5,7 +7,7 @@ type SkeletonProps = {
 export const Skeleton = ({ className = "" }: SkeletonProps) => {
   return (
     <div
-      className={`animate-pulse bg-gray-200 rounded ${className}`}
+      className={cn("animate-pulse bg-gray-200 rounded", className)}
       aria-hidden="true"
     />
   );

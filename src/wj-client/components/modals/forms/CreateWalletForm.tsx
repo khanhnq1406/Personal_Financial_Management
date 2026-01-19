@@ -18,10 +18,7 @@ interface CreateWalletFormProps {
   isPending?: boolean;
 }
 
-export const CreateWalletForm = ({
-  onSubmit,
-  isPending = false,
-}: CreateWalletFormProps) => {
+export const CreateWalletForm = ({ onSubmit }: CreateWalletFormProps) => {
   const { data: walletsData } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
