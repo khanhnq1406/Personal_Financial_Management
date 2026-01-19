@@ -4,20 +4,31 @@ import { useState } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { ReportControls } from "./ReportControls";
 import { FinancialTable } from "./FinancialTable";
+import { useQueryGetFinancialReport } from "@/utils/generated/hooks";
+import { exportFinancialReportToCSV } from "@/utils/csvExport";
 
 export default function ReportPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedWalletIds, setSelectedWalletIds] = useState<number[]>([]);
 
+  // Fetch financial report data for export
+  const { data: reportData } = useQueryGetFinancialReport(
+    {
+      year: selectedYear,
+      walletIds: selectedWalletIds ?? [],
+    },
+    {
+      refetchOnMount: "always",
+      enabled: !!selectedYear,
+    },
+  );
+
   const handleExport = () => {
-    // TODO: Implement CSV export functionality
-    console.log(
-      "Exporting CSV for year:",
-      selectedYear,
-      "wallets:",
-      selectedWalletIds,
-    );
-    alert("CSV export will be implemented soon!");
+    try {
+      exportFinancialReportToCSV(reportData, selectedYear);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to export CSV");
+    }
   };
 
   const handleYearChange = (year: number) => {
