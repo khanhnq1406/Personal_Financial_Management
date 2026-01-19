@@ -126,4 +126,8 @@ export const ModalType = {
   CREATE_WALLET: "Create New Wallet",
   SUCCESS: "Success",
   CONFIRM: "Confirm",
+  ADD_BUDGET: "Add Budget",
+  EDIT_BUDGET: "Edit Budget",
+  ADD_BUDGET_ITEM: "Add Budget Item",
+  EDIT_BUDGET_ITEM: "Edit Budget Item",
 };

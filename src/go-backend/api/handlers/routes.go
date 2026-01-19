@@ -104,4 +104,22 @@ func RegisterRoutes(
 		categories.PUT("/:id", h.Category.UpdateCategory)
 		categories.DELETE("/:id", h.Category.DeleteCategory)
 	}
+
+	// Budget routes (protected)
+	budgets := v1.Group("/budgets")
+	if rateLimiter != nil {
+		budgets.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	budgets.Use(AuthMiddleware())
+	{
+		budgets.POST("", h.Budget.CreateBudget)
+		budgets.GET("", h.Budget.ListBudgets)
+		budgets.GET("/:id", h.Budget.GetBudget)
+		budgets.PUT("/:id", h.Budget.UpdateBudget)
+		budgets.DELETE("/:id", h.Budget.DeleteBudget)
+		budgets.GET("/:id/items", h.Budget.GetBudgetItems)
+		budgets.POST("/:id/items", h.Budget.CreateBudgetItem)
+		budgets.PUT("/:id/items/:itemId", h.Budget.UpdateBudgetItem)
+		budgets.DELETE("/:id/items/:itemId", h.Budget.DeleteBudgetItem)
+	}
 }

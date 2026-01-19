@@ -10,6 +10,7 @@ type Services struct {
 	User        UserService
 	Transaction TransactionService
 	Category    CategoryService
+	Budget      BudgetService
 }
 
 // NewServices creates all service instances.
@@ -27,6 +28,7 @@ func NewServices(repos *Repositories) *Services {
 		User:        userSvc,
 		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category),
 		Category:    categorySvc,
+		Budget:      NewBudgetService(repos.Budget, repos.BudgetItem, repos.User),
 	}
 }
 
@@ -36,6 +38,8 @@ type Repositories struct {
 	User        repository.UserRepository
 	Transaction repository.TransactionRepository
 	Category    repository.CategoryRepository
+	Budget      repository.BudgetRepository
+	BudgetItem  repository.BudgetItemRepository
 }
 
 // NewRepositories creates all repository instances.

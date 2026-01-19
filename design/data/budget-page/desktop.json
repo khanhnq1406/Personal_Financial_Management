@@ -1,0 +1,3294 @@
+{
+  "$comment": "This is structural design data exported by the Figma Raw plugin. It is formatted to help LLMs (Large Language Models) understand design structures and components from Figma designs.",
+  "name": "Budget - Desktop",
+  "type": "FRAME",
+  "width": 1440,
+  "height": 1024,
+  "layoutMode": "NONE",
+  "primaryAxisSizingMode": "AUTO",
+  "counterAxisSizingMode": "FIXED",
+  "primaryAxisAlignItems": "MIN",
+  "counterAxisAlignItems": "MIN",
+  "fills": [
+    {
+      "type": "SOLID",
+      "opacity": 1,
+      "color": {
+        "r": 0,
+        "g": 0.5058823823928833,
+        "b": 0.2823529541492462,
+        "a": 1,
+        "hex": "#008148"
+      }
+    }
+  ],
+  "strokeWeight": 1,
+  "strokeAlign": "INSIDE",
+  "strokeCap": "NONE",
+  "strokeJoin": "MITER",
+  "children": [
+    {
+      "name": "Rectangle 1",
+      "type": "RECTANGLE",
+      "width": 1108,
+      "height": 994,
+      "cornerRadius": 10,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.9686274528503418,
+            "g": 0.9725490212440491,
+            "b": 0.9882352948188782,
+            "a": 1,
+            "hex": "#f7f8fc"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER"
+    },
+    {
+      "name": "Add",
+      "type": "GROUP",
+      "width": 82,
+      "height": 86,
+      "children": [
+        {
+          "name": "plus 1",
+          "type": "RECTANGLE",
+          "width": 38,
+          "height": 38,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "8d9ca35c8af4b416d7ab4293e8d65ddb68e9cc9c",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transfer",
+          "type": "GROUP",
+          "width": 35,
+          "height": 35,
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 4,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 4
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ],
+          "children": [
+            {
+              "name": "Ellipse 2",
+              "type": "ELLIPSE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0,
+                    "g": 0.6431372761726379,
+                    "b": 0.2705882489681244,
+                    "a": 1,
+                    "hex": "#00a445"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "transfer 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "3e709591ddf2225cdbae3766a4053635155027d5",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Transaction",
+          "type": "GROUP",
+          "width": 35,
+          "height": 35,
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 4,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 4
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ],
+          "children": [
+            {
+              "name": "Ellipse 3",
+              "type": "ELLIPSE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0,
+                    "g": 0.6431372761726379,
+                    "b": 0.2705882489681244,
+                    "a": 1,
+                    "hex": "#00a445"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "transaction 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "5d638320d1700e65360328aa30f2e5b43aa83ed6",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar",
+      "type": "GROUP",
+      "width": 255,
+      "height": 577,
+      "children": [
+        {
+          "name": "Budget",
+          "type": "FRAME",
+          "width": 255,
+          "height": 52,
+          "cornerRadius": 10,
+          "layoutMode": "HORIZONTAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "CENTER",
+          "paddingLeft": 22,
+          "paddingRight": 22,
+          "paddingTop": 10,
+          "paddingBottom": 10,
+          "itemSpacing": 16,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 0,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 0,
+                "hex": "#ffffff00"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "wallet-white 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "2af83042347d66eb4bdc0bbf8c7e37218f3ef7b2",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "Wallets",
+              "type": "TEXT",
+              "width": 73,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Wallets",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Home",
+          "type": "FRAME",
+          "width": 255,
+          "height": 52,
+          "cornerRadius": 10,
+          "layoutMode": "HORIZONTAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "CENTER",
+          "paddingLeft": 22,
+          "paddingRight": 22,
+          "paddingTop": 10,
+          "paddingBottom": 10,
+          "itemSpacing": 16,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 0,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 0,
+                "hex": "#ffffff00"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "home 2",
+              "type": "RECTANGLE",
+              "width": 30,
+              "height": 30,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "55c30b0dd282a713b592a4937da596bcf1038c8e",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "Home",
+              "type": "TEXT",
+              "width": 59,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Home",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Transactions",
+          "type": "FRAME",
+          "width": 255,
+          "height": 52,
+          "cornerRadius": 10,
+          "layoutMode": "HORIZONTAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "CENTER",
+          "paddingLeft": 22,
+          "paddingRight": 22,
+          "paddingTop": 10,
+          "paddingBottom": 10,
+          "itemSpacing": 16,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 0,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 0,
+                "hex": "#ffffff00"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "transaction 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "5d638320d1700e65360328aa30f2e5b43aa83ed6",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "Transactions",
+              "type": "TEXT",
+              "width": 124,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Transactions",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Report",
+          "type": "FRAME",
+          "width": 255,
+          "height": 52,
+          "cornerRadius": 10,
+          "layoutMode": "HORIZONTAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "CENTER",
+          "paddingLeft": 22,
+          "paddingRight": 22,
+          "paddingTop": 10,
+          "paddingBottom": 10,
+          "itemSpacing": 16,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 0,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 0,
+                "hex": "#ffffff00"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "report 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "rotation": -180,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "4f9727a033b910f2c8c52bd2de66733241f988a7",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "Report",
+              "type": "TEXT",
+              "width": 68,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Report",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Budget",
+          "type": "FRAME",
+          "width": 255,
+          "height": 52,
+          "cornerRadius": 10,
+          "layoutMode": "HORIZONTAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "CENTER",
+          "paddingLeft": 22,
+          "paddingRight": 22,
+          "paddingTop": 10,
+          "paddingBottom": 10,
+          "itemSpacing": 16,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 0.3400000035762787,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 0.3400000035762787,
+                "hex": "#ffffff57"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "money-bag 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "3ab380528cde89a2e5d7de68242ec9e2a27d85c8",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "Budget",
+              "type": "TEXT",
+              "width": 73,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Budget",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Logo",
+          "type": "GROUP",
+          "width": 255,
+          "height": 62,
+          "children": [
+            {
+              "name": "asset-management 1",
+              "type": "RECTANGLE",
+              "width": 62,
+              "height": 62,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "20993ad4115ddf8adda30a57a2a9f27596c8e522",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "WealthJourney",
+              "type": "TEXT",
+              "width": 183,
+              "height": 32,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "WealthJourney",
+              "fontSize": 25,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "ExtraBold"
+              },
+              "fontWeight": 800,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        },
+        {
+          "name": "Group 14",
+          "type": "GROUP",
+          "width": 122,
+          "height": 35,
+          "children": [
+            {
+              "name": "Logout",
+              "type": "TEXT",
+              "width": 71,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1,
+                    "hex": "#ffffff"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Logout",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "WIDTH_AND_HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "logout (white) 1",
+              "type": "RECTANGLE",
+              "width": 35,
+              "height": 35,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "ae2173fa4dfede520b1cd62b0952183e397b52bf",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Budget",
+      "type": "TEXT",
+      "width": 73,
+      "height": 25,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.10980392247438431,
+            "b": 0.0784313753247261,
+            "a": 1,
+            "hex": "#181c14"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Budget",
+      "fontSize": 20,
+      "fontName": {
+        "family": "Plus Jakarta Sans",
+        "style": "Bold"
+      },
+      "fontWeight": 700,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "WIDTH_AND_HEIGHT",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Group 49",
+      "type": "GROUP",
+      "width": 425,
+      "height": 472,
+      "children": [
+        {
+          "name": "Rectangle 22",
+          "type": "RECTANGLE",
+          "width": 425,
+          "height": 472,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 51",
+          "type": "GROUP",
+          "width": 261,
+          "height": 40,
+          "children": [
+            {
+              "name": "Filled",
+              "type": "GROUP",
+              "width": 117,
+              "height": 38,
+              "children": [
+                {
+                  "name": "Rectangle 6",
+                  "type": "RECTANGLE",
+                  "width": 117,
+                  "height": 38,
+                  "cornerRadius": 4,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0,
+                        "g": 0.6431372761726379,
+                        "b": 0.2705882489681244,
+                        "a": 1,
+                        "hex": "#00a445"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "INSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "effects": [
+                    {
+                      "name": "Depth/0",
+                      "fullName": "Depth/0",
+                      "actualValue": {
+                        "type": "DROP_SHADOW",
+                        "radius": 10,
+                        "color": {
+                          "r": 0,
+                          "g": 0,
+                          "b": 0,
+                          "a": 0.25,
+                          "hex": "#00000040"
+                        }
+                      }
+                    }
+                  ],
+                  "variables": {
+                    "topLeftRadius": {
+                      "name": "Corner/Extra-small",
+                      "fullName": "Corner/Extra-small"
+                    },
+                    "topRightRadius": {
+                      "name": "Corner/Extra-small",
+                      "fullName": "Corner/Extra-small"
+                    },
+                    "bottomLeftRadius": {
+                      "name": "Corner/Extra-small",
+                      "fullName": "Corner/Extra-small"
+                    },
+                    "bottomRightRadius": {
+                      "name": "Corner/Extra-small",
+                      "fullName": "Corner/Extra-small"
+                    },
+                    "effects": [
+                      {
+                        "name": "Depth/0",
+                        "fullName": "Depth/0",
+                        "actualValue": {
+                          "type": "DROP_SHADOW",
+                          "radius": 10,
+                          "color": {
+                            "r": 0,
+                            "g": 0,
+                            "b": 0,
+                            "a": 0.25,
+                            "hex": "#00000040"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "topLeftRadius": {
+                    "name": "Corner/Extra-small",
+                    "fullName": "Corner/Extra-small"
+                  },
+                  "topRightRadius": {
+                    "name": "Corner/Extra-small",
+                    "fullName": "Corner/Extra-small"
+                  },
+                  "bottomLeftRadius": {
+                    "name": "Corner/Extra-small",
+                    "fullName": "Corner/Extra-small"
+                  },
+                  "bottomRightRadius": {
+                    "name": "Corner/Extra-small",
+                    "fullName": "Corner/Extra-small"
+                  }
+                },
+                {
+                  "name": "Edit Budget",
+                  "type": "TEXT",
+                  "width": 98,
+                  "height": 21,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0.9607843160629272,
+                        "g": 0.9686274528503418,
+                        "b": 0.9921568632125854,
+                        "a": 1,
+                        "hex": "#f5f7fd"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "characters": "Edit Budget",
+                  "fontSize": 17,
+                  "fontName": {
+                    "family": "Plus Jakarta Sans",
+                    "style": "Bold"
+                  },
+                  "fontWeight": 700,
+                  "letterSpacing": {
+                    "unit": "PERCENT",
+                    "value": 0
+                  },
+                  "lineHeight": {
+                    "unit": "AUTO"
+                  },
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "textAutoResize": "WIDTH_AND_HEIGHT",
+                  "textCase": "ORIGINAL",
+                  "textDecoration": "NONE"
+                }
+              ]
+            },
+            {
+              "name": "Sort by",
+              "type": "GROUP",
+              "width": 122,
+              "height": 40,
+              "children": [
+                {
+                  "name": "Rectangle 9",
+                  "type": "RECTANGLE",
+                  "width": 122,
+                  "height": 40,
+                  "cornerRadius": 10,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 1,
+                        "g": 1,
+                        "b": 1,
+                        "a": 1,
+                        "hex": "#ffffff"
+                      }
+                    }
+                  ],
+                  "strokes": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 0.5,
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 0.5,
+                        "hex": "#00000080"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "effects": [
+                    {
+                      "type": "DROP_SHADOW",
+                      "radius": 10,
+                      "spread": 0,
+                      "offset": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 0.25,
+                        "hex": "#00000040"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "Group 50",
+                  "type": "GROUP",
+                  "width": 105,
+                  "height": 23,
+                  "children": [
+                    {
+                      "name": "Budget 1",
+                      "type": "TEXT",
+                      "width": 76,
+                      "height": 23,
+                      "fills": [
+                        {
+                          "type": "SOLID",
+                          "opacity": 1,
+                          "color": {
+                            "r": 0.0941176488995552,
+                            "g": 0.10980392247438431,
+                            "b": 0.0784313753247261,
+                            "a": 1,
+                            "hex": "#181c14"
+                          }
+                        }
+                      ],
+                      "strokeWeight": 1,
+                      "strokeAlign": "OUTSIDE",
+                      "strokeCap": "NONE",
+                      "strokeJoin": "MITER",
+                      "characters": "Budget 1",
+                      "fontSize": 18,
+                      "fontName": {
+                        "family": "Plus Jakarta Sans",
+                        "style": "Bold"
+                      },
+                      "fontWeight": 700,
+                      "letterSpacing": {
+                        "unit": "PERCENT",
+                        "value": 0
+                      },
+                      "lineHeight": {
+                        "unit": "AUTO"
+                      },
+                      "textAlignHorizontal": "LEFT",
+                      "textAlignVertical": "TOP",
+                      "textAutoResize": "WIDTH_AND_HEIGHT",
+                      "textCase": "ORIGINAL",
+                      "textDecoration": "NONE"
+                    },
+                    {
+                      "name": "down 1",
+                      "type": "RECTANGLE",
+                      "width": 25,
+                      "height": 19.60784339904785,
+                      "fills": [
+                        {
+                          "type": "IMAGE",
+                          "opacity": 1,
+                          "imageHash": "246abd7db774df2e83565111722364e451760a45",
+                          "scaleMode": "FILL",
+                          "imageTransform": [
+                            [
+                              1,
+                              0,
+                              0
+                            ],
+                            [
+                              0,
+                              1,
+                              0
+                            ]
+                          ]
+                        }
+                      ],
+                      "strokeWeight": 1,
+                      "strokeAlign": "INSIDE",
+                      "strokeCap": "NONE",
+                      "strokeJoin": "MITER"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Ellipse 4",
+          "type": "ELLIPSE",
+          "width": 351,
+          "height": 351,
+          "cornerRadius": 70,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.8509804010391235,
+                "g": 0.8509804010391235,
+                "b": 0.8509804010391235,
+                "a": 1,
+                "hex": "#d9d9d9"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "Ellipse 5",
+          "type": "ELLIPSE",
+          "width": 351,
+          "height": 351,
+          "cornerRadius": 70,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0.6431372761726379,
+                "b": 0.2705882489681244,
+                "a": 1,
+                "hex": "#00a445"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "Frame 52",
+          "type": "FRAME",
+          "width": 269,
+          "height": 161,
+          "layoutMode": "VERTICAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "CENTER",
+          "counterAxisAlignItems": "CENTER",
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "Total Budget",
+              "type": "TEXT",
+              "width": 269,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0.6000000238418579,
+                    "g": 0.6392157077789307,
+                    "b": 0.6470588445663452,
+                    "a": 1,
+                    "hex": "#99a3a5"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Total Budget",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "10,000,000",
+              "type": "TEXT",
+              "width": 269,
+              "height": 50,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0,
+                    "g": 0.5058823823928833,
+                    "b": 0.2823529541492462,
+                    "a": 1,
+                    "hex": "#008148"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "10,000,000",
+              "fontSize": 40,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "Amount you can spend",
+              "type": "TEXT",
+              "width": 269,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0.6000000238418579,
+                    "g": 0.6392157077789307,
+                    "b": 0.6470588445663452,
+                    "a": 1,
+                    "hex": "#99a3a5"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "Amount you can spend",
+              "fontSize": 20,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            },
+            {
+              "name": "2,000,000",
+              "type": "TEXT",
+              "width": 269,
+              "height": 50,
+              "fills": [
+                {
+                  "type": "SOLID",
+                  "opacity": 1,
+                  "color": {
+                    "r": 0,
+                    "g": 0,
+                    "b": 0,
+                    "a": 1,
+                    "hex": "#000000"
+                  }
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "OUTSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "characters": "2,000,000",
+              "fontSize": 40,
+              "fontName": {
+                "family": "Plus Jakarta Sans",
+                "style": "Bold"
+              },
+              "fontWeight": 700,
+              "letterSpacing": {
+                "unit": "PERCENT",
+                "value": 0
+              },
+              "lineHeight": {
+                "unit": "AUTO"
+              },
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "textAutoResize": "HEIGHT",
+              "textCase": "ORIGINAL",
+              "textDecoration": "NONE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Filled",
+      "type": "GROUP",
+      "width": 163.1787109375,
+      "height": 38,
+      "children": [
+        {
+          "name": "Rectangle 6",
+          "type": "RECTANGLE",
+          "width": 163.1787109375,
+          "height": 38,
+          "cornerRadius": 4,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0.6431372761726379,
+                "b": 0.2705882489681244,
+                "a": 1,
+                "hex": "#00a445"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "name": "Depth/0",
+              "fullName": "Depth/0",
+              "actualValue": {
+                "type": "DROP_SHADOW",
+                "radius": 10,
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 0.25,
+                  "hex": "#00000040"
+                }
+              }
+            }
+          ],
+          "variables": {
+            "topLeftRadius": {
+              "name": "Corner/Extra-small",
+              "fullName": "Corner/Extra-small"
+            },
+            "topRightRadius": {
+              "name": "Corner/Extra-small",
+              "fullName": "Corner/Extra-small"
+            },
+            "bottomLeftRadius": {
+              "name": "Corner/Extra-small",
+              "fullName": "Corner/Extra-small"
+            },
+            "bottomRightRadius": {
+              "name": "Corner/Extra-small",
+              "fullName": "Corner/Extra-small"
+            },
+            "effects": [
+              {
+                "name": "Depth/0",
+                "fullName": "Depth/0",
+                "actualValue": {
+                  "type": "DROP_SHADOW",
+                  "radius": 10,
+                  "color": {
+                    "r": 0,
+                    "g": 0,
+                    "b": 0,
+                    "a": 0.25,
+                    "hex": "#00000040"
+                  }
+                }
+              }
+            ]
+          },
+          "topLeftRadius": {
+            "name": "Corner/Extra-small",
+            "fullName": "Corner/Extra-small"
+          },
+          "topRightRadius": {
+            "name": "Corner/Extra-small",
+            "fullName": "Corner/Extra-small"
+          },
+          "bottomLeftRadius": {
+            "name": "Corner/Extra-small",
+            "fullName": "Corner/Extra-small"
+          },
+          "bottomRightRadius": {
+            "name": "Corner/Extra-small",
+            "fullName": "Corner/Extra-small"
+          }
+        },
+        {
+          "name": "Create budget",
+          "type": "TEXT",
+          "width": 122,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.9607843160629272,
+                "g": 0.9686274528503418,
+                "b": 0.9921568632125854,
+                "a": 1,
+                "hex": "#f5f7fd"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Create budget",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        }
+      ]
+    },
+    {
+      "name": "Group 43",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Food & Beverage",
+          "type": "TEXT",
+          "width": 143,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Food & Beverage",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "3,000,000",
+          "type": "TEXT",
+          "width": 95,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "3,000,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 47",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Play",
+          "type": "TEXT",
+          "width": 36,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Play",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "500,000",
+          "type": "TEXT",
+          "width": 77,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "500,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 44",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Saving",
+          "type": "TEXT",
+          "width": 56,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Saving",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "1,000,000",
+          "type": "TEXT",
+          "width": 92,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "1,000,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 48",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Rental",
+          "type": "TEXT",
+          "width": 53,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Rental",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "2,000,000",
+          "type": "TEXT",
+          "width": 95,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "2,000,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 45",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Investment",
+          "type": "TEXT",
+          "width": 94,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Investment",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "1,000,000",
+          "type": "TEXT",
+          "width": 92,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "1,000,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    },
+    {
+      "name": "Group 46",
+      "type": "GROUP",
+      "width": 406,
+      "height": 82,
+      "children": [
+        {
+          "name": "Rectangle 21",
+          "type": "RECTANGLE",
+          "width": 406,
+          "height": 82,
+          "cornerRadius": 10,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1,
+                "hex": "#ffffff"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "effects": [
+            {
+              "type": "DROP_SHADOW",
+              "radius": 10,
+              "spread": 0,
+              "offset": {
+                "x": 0,
+                "y": 0
+              },
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.25,
+                "hex": "#00000040"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Group 27",
+          "type": "GROUP",
+          "width": 58,
+          "height": 26,
+          "children": [
+            {
+              "name": "remove 1",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "0823e7d04e270524d61957db751f2f2f13a5a9f9",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            },
+            {
+              "name": "editing",
+              "type": "RECTANGLE",
+              "width": 25,
+              "height": 25,
+              "fills": [
+                {
+                  "type": "IMAGE",
+                  "opacity": 1,
+                  "imageHash": "e2636b6b02e1a521dc03e72d4a13a2023225a199",
+                  "scaleMode": "FILL",
+                  "imageTransform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ],
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER"
+            }
+          ]
+        },
+        {
+          "name": "Give",
+          "type": "TEXT",
+          "width": 38,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Give",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "500,000",
+          "type": "TEXT",
+          "width": 77,
+          "height": 21,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1,
+                "hex": "#000000"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "500,000",
+          "fontSize": 17,
+          "fontName": {
+            "family": "Plus Jakarta Sans",
+            "style": "Bold"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "WIDTH_AND_HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "check 1",
+          "type": "RECTANGLE",
+          "width": 20,
+          "height": 20,
+          "fills": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "imageHash": "987ea9b4e677f6aeb064f51d0a71ac2a9c08754a",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    }
+  ],
+  "textContent": [
+    {
+      "name": "Wallets",
+      "text": "Wallets",
+      "path": "Budget - Desktop/Navbar/Budget/Wallets",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Home",
+      "text": "Home",
+      "path": "Budget - Desktop/Navbar/Home/Home",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Transactions",
+      "text": "Transactions",
+      "path": "Budget - Desktop/Navbar/Transactions/Transactions",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Report",
+      "text": "Report",
+      "path": "Budget - Desktop/Navbar/Report/Report",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Budget",
+      "text": "Budget",
+      "path": "Budget - Desktop/Navbar/Budget/Budget",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "WealthJourney",
+      "text": "WealthJourney",
+      "path": "Budget - Desktop/Navbar/Logo/WealthJourney",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Logout",
+      "text": "Logout",
+      "path": "Budget - Desktop/Navbar/Group 14/Logout",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Budget",
+      "text": "Budget",
+      "path": "Budget - Desktop/Budget",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Edit Budget",
+      "text": "Edit Budget",
+      "path": "Budget - Desktop/Group 49/Group 51/Filled/Edit Budget",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Budget 1",
+      "text": "Budget 1",
+      "path": "Budget - Desktop/Group 49/Group 51/Sort by/Group 50/Budget 1",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Total Budget",
+      "text": "Total Budget",
+      "path": "Budget - Desktop/Group 49/Frame 52/Total Budget",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "10,000,000",
+      "text": "10,000,000",
+      "path": "Budget - Desktop/Group 49/Frame 52/10,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Amount you can spend",
+      "text": "Amount you can spend",
+      "path": "Budget - Desktop/Group 49/Frame 52/Amount you can spend",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "2,000,000",
+      "text": "2,000,000",
+      "path": "Budget - Desktop/Group 49/Frame 52/2,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Create budget",
+      "text": "Create budget",
+      "path": "Budget - Desktop/Filled/Create budget",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Food & Beverage",
+      "text": "Food & Beverage",
+      "path": "Budget - Desktop/Group 43/Food & Beverage",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "3,000,000",
+      "text": "3,000,000",
+      "path": "Budget - Desktop/Group 43/3,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Play",
+      "text": "Play",
+      "path": "Budget - Desktop/Group 47/Play",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "500,000",
+      "text": "500,000",
+      "path": "Budget - Desktop/Group 47/500,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Saving",
+      "text": "Saving",
+      "path": "Budget - Desktop/Group 44/Saving",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "1,000,000",
+      "text": "1,000,000",
+      "path": "Budget - Desktop/Group 44/1,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Rental",
+      "text": "Rental",
+      "path": "Budget - Desktop/Group 48/Rental",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "2,000,000",
+      "text": "2,000,000",
+      "path": "Budget - Desktop/Group 48/2,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Investment",
+      "text": "Investment",
+      "path": "Budget - Desktop/Group 45/Investment",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "1,000,000",
+      "text": "1,000,000",
+      "path": "Budget - Desktop/Group 45/1,000,000",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Give",
+      "text": "Give",
+      "path": "Budget - Desktop/Group 46/Give",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "500,000",
+      "text": "500,000",
+      "path": "Budget - Desktop/Group 46/500,000",
+      "nodeType": "TEXT"
+    }
+  ]
+}

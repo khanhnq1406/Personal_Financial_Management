@@ -160,3 +160,57 @@ type CategoryRepository interface {
 	// CreateDefaultCategories creates default categories for a new user.
 	CreateDefaultCategories(ctx context.Context, userID int32) error
 }
+
+// BudgetRepository defines the interface for budget data operations.
+type BudgetRepository interface {
+	// Create creates a new budget.
+	Create(ctx context.Context, budget *models.Budget) error
+
+	// GetByID retrieves a budget by ID.
+	GetByID(ctx context.Context, id int32) (*models.Budget, error)
+
+	// GetByIDForUser retrieves a budget by ID, ensuring it belongs to the user.
+	GetByIDForUser(ctx context.Context, budgetID, userID int32) (*models.Budget, error)
+
+	// ListByUserID retrieves all budgets for a user.
+	ListByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.Budget, int, error)
+
+	// Update updates a budget.
+	Update(ctx context.Context, budget *models.Budget) error
+
+	// Delete soft deletes a budget by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// ExistsForUser checks if a budget exists by ID and belongs to the user.
+	ExistsForUser(ctx context.Context, budgetID, userID int32) (bool, error)
+
+	// CountByUserID returns the number of budgets for a user.
+	CountByUserID(ctx context.Context, userID int32) (int, error)
+}
+
+// BudgetItemRepository defines the interface for budget item data operations.
+type BudgetItemRepository interface {
+	// Create creates a new budget item.
+	Create(ctx context.Context, item *models.BudgetItem) error
+
+	// GetByID retrieves a budget item by ID.
+	GetByID(ctx context.Context, id int32) (*models.BudgetItem, error)
+
+	// GetByIDForBudget retrieves a budget item by ID, ensuring it belongs to the budget.
+	GetByIDForBudget(ctx context.Context, itemID, budgetID int32) (*models.BudgetItem, error)
+
+	// ListByBudgetID retrieves all budget items for a budget.
+	ListByBudgetID(ctx context.Context, budgetID int32) ([]*models.BudgetItem, error)
+
+	// Update updates a budget item.
+	Update(ctx context.Context, item *models.BudgetItem) error
+
+	// Delete soft deletes a budget item by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// DeleteByBudgetID deletes all budget items for a budget.
+	DeleteByBudgetID(ctx context.Context, budgetID int32) error
+
+	// CountByBudgetID returns the number of budget items for a budget.
+	CountByBudgetID(ctx context.Context, budgetID int32) (int, error)
+}

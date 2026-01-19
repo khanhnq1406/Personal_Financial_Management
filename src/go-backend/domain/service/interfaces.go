@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"wealthjourney/pkg/types"
+	budgetv1 "wealthjourney/protobuf/v1"
 	transactionv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
 )
@@ -111,4 +112,34 @@ type CategoryService interface {
 
 	// CreateDefaultCategories creates default categories for a new user.
 	CreateDefaultCategories(ctx context.Context, userID int32) error
+}
+
+// BudgetService defines the interface for budget business logic.
+type BudgetService interface {
+	// GetBudget retrieves a budget by ID, ensuring it belongs to the user.
+	GetBudget(ctx context.Context, budgetID int32, userID int32) (*budgetv1.GetBudgetResponse, error)
+
+	// ListBudgets retrieves all budgets for a user with pagination.
+	ListBudgets(ctx context.Context, userID int32, params types.PaginationParams) (*budgetv1.ListBudgetsResponse, error)
+
+	// CreateBudget creates a new budget for a user.
+	CreateBudget(ctx context.Context, userID int32, req *budgetv1.CreateBudgetRequest) (*budgetv1.CreateBudgetResponse, error)
+
+	// UpdateBudget updates a budget's information.
+	UpdateBudget(ctx context.Context, budgetID int32, userID int32, req *budgetv1.UpdateBudgetRequest) (*budgetv1.UpdateBudgetResponse, error)
+
+	// DeleteBudget deletes a budget.
+	DeleteBudget(ctx context.Context, budgetID int32, userID int32) (*budgetv1.DeleteBudgetResponse, error)
+
+	// GetBudgetItems retrieves all budget items for a budget.
+	GetBudgetItems(ctx context.Context, budgetID int32, userID int32) (*budgetv1.GetBudgetItemsResponse, error)
+
+	// CreateBudgetItem creates a new budget item.
+	CreateBudgetItem(ctx context.Context, budgetID int32, userID int32, req *budgetv1.CreateBudgetItemRequest) (*budgetv1.CreateBudgetItemResponse, error)
+
+	// UpdateBudgetItem updates a budget item's information.
+	UpdateBudgetItem(ctx context.Context, budgetID int32, itemID int32, userID int32, req *budgetv1.UpdateBudgetItemRequest) (*budgetv1.UpdateBudgetItemResponse, error)
+
+	// DeleteBudgetItem deletes a budget item.
+	DeleteBudgetItem(ctx context.Context, budgetID int32, itemID int32, userID int32) (*budgetv1.DeleteBudgetItemResponse, error)
 }

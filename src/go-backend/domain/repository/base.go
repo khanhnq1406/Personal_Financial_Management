@@ -53,14 +53,15 @@ func (r *BaseRepository) buildOrderClause(opts ListOptions) string {
 
 	// Basic validation - only allow safe column names
 	allowedColumns := map[string]bool{
-		"id":         true,
-		"created_at": true,
-		"updated_at": true,
-		"date":       true,
-		"amount":     true,
-		"name":       true,
-		"balance":    true,
-		"wallet_name":true,
+		"id":          true,
+		"created_at":  true,
+		"updated_at":  true,
+		"date":        true,
+		"amount":      true,
+		"name":        true,
+		"balance":     true,
+		"wallet_name": true,
+		"total":       true,
 	}
 
 	if !allowedColumns[opts.OrderBy] {

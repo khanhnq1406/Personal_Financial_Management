@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+package wealthjourney.budget.v1;
+
+import "protobuf/v1/common.proto";
+import "google/api/annotations.proto";
+
+option go_package = "protobuf/v1";
+
+// Budget service for budget management operations
+service BudgetService {
+  // Get a budget by ID
+  rpc GetBudget(GetBudgetRequest) returns (GetBudgetResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/budgets/{budgetId}"
+    };
+  }
+
+  // List all budgets for authenticated user with pagination
+  rpc ListBudgets(ListBudgetsRequest) returns (ListBudgetsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/budgets"
+    };
+  }
+
+  // Create a new budget
+  rpc CreateBudget(CreateBudgetRequest) returns (CreateBudgetResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/budgets"
+      body: "*"
+    };
+  }
+
+  // Update budget information
+  rpc UpdateBudget(UpdateBudgetRequest) returns (UpdateBudgetResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/budgets/{budgetId}"
+      body: "*"
+    };
+  }
+
+  // Delete a budget
+  rpc DeleteBudget(DeleteBudgetRequest) returns (DeleteBudgetResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/budgets/{budgetId}"
+    };
+  }
+
+  // Get budget items for a budget
+  rpc GetBudgetItems(GetBudgetItemsRequest) returns (GetBudgetItemsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/budgets/{budgetId}/items"
+    };
+  }
+
+  // Create a budget item
+  rpc CreateBudgetItem(CreateBudgetItemRequest) returns (CreateBudgetItemResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/budgets/{budgetId}/items"
+      body: "*"
+    };
+  }
+
+  // Update a budget item
+  rpc UpdateBudgetItem(UpdateBudgetItemRequest) returns (UpdateBudgetItemResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/budgets/{budgetId}/items/{itemId}"
+      body: "*"
+    };
+  }
+
+  // Delete a budget item
+  rpc DeleteBudgetItem(DeleteBudgetItemRequest) returns (DeleteBudgetItemResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/budgets/{budgetId}/items/{itemId}"
+    };
+  }
+}
+
+// Budget message
+message Budget {
+  int32 id = 1 [json_name = "id"];
+  int32 userId = 2 [json_name = "userId"];
+  string name = 3 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 4 [json_name = "total"];
+  int64 createdAt = 5 [json_name = "createdAt"];
+  int64 updatedAt = 6 [json_name = "updatedAt"];
+}
+
+// BudgetItem message
+message BudgetItem {
+  int32 id = 1 [json_name = "id"];
+  int32 budgetId = 2 [json_name = "budgetId"];
+  string name = 3 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 4 [json_name = "total"];
+  int64 createdAt = 5 [json_name = "createdAt"];
+  int64 updatedAt = 6 [json_name = "updatedAt"];
+}
+
+// GetBudget request
+message GetBudgetRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+}
+
+// ListBudgets request
+message ListBudgetsRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+}
+
+// CreateBudget request
+message CreateBudgetRequest {
+  string name = 1 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 2 [json_name = "total"];
+  repeated CreateBudgetItemRequest items = 3 [json_name = "items"];
+}
+
+// UpdateBudget request
+message UpdateBudgetRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+  string name = 2 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 3 [json_name = "total"];
+}
+
+// DeleteBudget request
+message DeleteBudgetRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+}
+
+// GetBudgetItems request
+message GetBudgetItemsRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+}
+
+// CreateBudgetItem request
+message CreateBudgetItemRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+  string name = 2 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 3 [json_name = "total"];
+}
+
+// UpdateBudgetItem request
+message UpdateBudgetItemRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+  int32 itemId = 2 [json_name = "itemId"];
+  string name = 3 [json_name = "name"];
+  wealthjourney.common.v1.Money total = 4 [json_name = "total"];
+}
+
+// DeleteBudgetItem request
+message DeleteBudgetItemRequest {
+  int32 budgetId = 1 [json_name = "budgetId"];
+  int32 itemId = 2 [json_name = "itemId"];
+}
+
+// Response messages (standard format)
+message GetBudgetResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Budget data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ListBudgetsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Budget budgets = 3 [json_name = "budgets"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message CreateBudgetResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Budget data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdateBudgetResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Budget data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteBudgetResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message GetBudgetItemsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated BudgetItem items = 3 [json_name = "items"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message CreateBudgetItemResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  BudgetItem data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdateBudgetItemResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  BudgetItem data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteBudgetItemResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}

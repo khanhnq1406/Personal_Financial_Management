@@ -15,7 +15,7 @@ export interface AuthAction extends ReduxAction {
 }
 
 export type ConfirmationAction = {
-  type: "deleteTransaction" | "deleteWallet" | "deleteCategory" | string;
+  type: "deleteTransaction" | "deleteWallet" | "deleteCategory" | "deleteBudget" | string;
   payload?: any;
 };
 
@@ -34,6 +34,7 @@ export interface ModalPayload {
   transactionId?: number; // Transaction ID for edit operations
   onSuccess?: () => void; // Callback to refetch data after successful mutation
   confirmConfig?: ConfirmationConfig; // Configuration for confirmation dialog
+  data?: any; // Additional data for modals (budget, budgetId, item, etc.)
 }
 export interface ModalAction extends ReduxAction {
   payload: ModalPayload;

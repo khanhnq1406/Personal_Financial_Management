@@ -15,16 +15,34 @@ import {
   useMutationCreateTransaction,
   useMutationUpdateTransaction,
   useMutationDeleteTransaction,
+  useMutationCreateBudget,
+  useMutationUpdateBudget,
+  useMutationDeleteBudget,
+  useMutationCreateBudgetItem,
+  useMutationUpdateBudgetItem,
+  useMutationDeleteBudgetItem,
   EVENT_WalletListWallets,
   EVENT_WalletGetTotalBalance,
   EVENT_TransactionListTransactions,
+  EVENT_BudgetListBudgets,
+  EVENT_BudgetGetBudgetItems,
 } from "@/utils/generated/hooks";
 import { CreateWalletForm } from "./forms/CreateWalletForm";
 import { AddTransactionForm } from "./forms/AddTransactionForm";
 import { TransferMoneyForm } from "./forms/TransferMoneyForm";
 import { EditTransactionForm } from "./forms/EditTransactionForm";
+import { CreateBudgetForm } from "./forms/CreateBudgetForm";
+import { EditBudgetForm } from "./forms/EditBudgetForm";
+import { CreateBudgetItemForm } from "./forms/CreateBudgetItemForm";
+import { EditBudgetItemForm } from "./forms/EditBudgetItemForm";
 import { CreateWalletFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
+import {
+  CreateBudgetFormInput,
+  UpdateBudgetFormInput,
+  CreateBudgetItemFormInput,
+  UpdateBudgetItemFormInput,
+} from "@/lib/validation/budget.schema";
 import { fromDateTimeLocal } from "@/lib/utils/date";
 
 type BaseModalProps = {
@@ -43,6 +61,11 @@ const INVALIDATION_QUERIES = [
   EVENT_WalletGetTotalBalance,
   EVENT_WalletListWallets,
   EVENT_TransactionListTransactions,
+] as const;
+
+const BUDGET_INVALIDATION_QUERIES = [
+  EVENT_BudgetListBudgets,
+  EVENT_BudgetGetBudgetItems,
 ] as const;
 
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
@@ -87,6 +110,38 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     },
   });
 
+  const deleteBudgetItemMutation = useMutationDeleteBudgetItem({
+    onSuccess: () => {
+      BUDGET_INVALIDATION_QUERIES.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      });
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage("Budget item deleted successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to delete budget item. Please try again");
+      setIsConfirming(false);
+    },
+  });
+
+  const deleteBudgetMutation = useMutationDeleteBudget({
+    onSuccess: () => {
+      BUDGET_INVALIDATION_QUERIES.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      });
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage("Budget deleted successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to delete budget. Please try again");
+      setIsConfirming(false);
+    },
+  });
+
   // Handle confirmation action
   const handleConfirmAction = useCallback(async () => {
     if (!("confirmConfig" in modal) || !modal.confirmConfig) return;
@@ -100,6 +155,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         case "deleteTransaction":
           await deleteTransactionMutation.mutateAsync(action.payload);
           break;
+        case "deleteBudgetItem":
+          await deleteBudgetItemMutation.mutateAsync(action.payload);
+          break;
+        case "deleteBudget":
+          await deleteBudgetMutation.mutateAsync(action.payload);
+          break;
         default:
           console.warn("[BaseModal] Unknown confirmation action:", action.type);
           setIsConfirming(false);
@@ -108,7 +169,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       console.error("[BaseModal] Error executing confirmation action:", err);
       setIsConfirming(false);
     }
-  }, [modal, deleteTransactionMutation]);
+  }, [
+    modal,
+    deleteTransactionMutation,
+    deleteBudgetItemMutation,
+    deleteBudgetMutation,
+  ]);
 
   // Common success handler
   const handleSuccess = useCallback(
@@ -122,11 +188,29 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     [invalidateQueries, modal],
   );
 
+  // Budget-specific success handler (invalidates budget queries)
+  const handleBudgetSuccess = useCallback(
+    (message: string) => {
+      BUDGET_INVALIDATION_QUERIES.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      });
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage(message);
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    [modal, queryClient],
+  );
+
   // Mutations for forms - memoized to avoid recreation
   const createWalletMutation = useMutationCreateWallet();
   const createTransactionMutation = useMutationCreateTransaction();
   const updateTransactionMutation = useMutationUpdateTransaction();
   const transferFundsMutation = useMutationTransferFunds();
+  const createBudgetMutation = useMutationCreateBudget();
+  const updateBudgetMutation = useMutationUpdateBudget();
+  const createBudgetItemMutation = useMutationCreateBudgetItem();
+  const updateBudgetItemMutation = useMutationUpdateBudgetItem();
 
   // Handle create wallet submission
   const handleCreateWallet = useCallback(
@@ -231,6 +315,126 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     [transferFundsMutation, handleSuccess],
   );
 
+  // Handle create budget submission
+  const handleCreateBudget = useCallback(
+    (data: CreateBudgetFormInput) => {
+      setError("");
+      createBudgetMutation.mutate(
+        {
+          name: data.name,
+          total: {
+            amount: data.total,
+            currency: "VND",
+          },
+          items: [],
+        },
+        {
+          onSuccess: () =>
+            handleBudgetSuccess("Budget has been created successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to create budget. Please try again",
+            ),
+        },
+      );
+    },
+    [createBudgetMutation, handleBudgetSuccess],
+  );
+
+  // Handle update budget submission
+  const handleUpdateBudget = useCallback(
+    (data: UpdateBudgetFormInput) => {
+      setError("");
+      if (!("data" in modal) || !modal.data?.budget) {
+        setError("Budget data not found");
+        return;
+      }
+      const budget = modal.data.budget;
+      updateBudgetMutation.mutate(
+        {
+          budgetId: budget.id,
+          name: data.name,
+          total: {
+            amount: data.total,
+            currency: "VND",
+          },
+        },
+        {
+          onSuccess: () =>
+            handleBudgetSuccess("Budget has been updated successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to update budget. Please try again",
+            ),
+        },
+      );
+    },
+    [updateBudgetMutation, handleBudgetSuccess, modal],
+  );
+
+  // Handle create budget item submission
+  const handleCreateBudgetItem = useCallback(
+    (data: CreateBudgetItemFormInput) => {
+      setError("");
+      if (!("data" in modal) || !modal.data?.budgetId) {
+        setError("Budget ID not found");
+        return;
+      }
+      const budgetId = modal.data.budgetId;
+      createBudgetItemMutation.mutate(
+        {
+          budgetId,
+          name: data.name,
+          total: {
+            amount: data.total,
+            currency: "VND",
+          },
+        },
+        {
+          onSuccess: () =>
+            handleBudgetSuccess("Budget item has been created successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to create budget item. Please try again",
+            ),
+        },
+      );
+    },
+    [createBudgetItemMutation, handleBudgetSuccess, modal],
+  );
+
+  // Handle update budget item submission
+  const handleUpdateBudgetItem = useCallback(
+    (data: UpdateBudgetItemFormInput) => {
+      setError("");
+      if (!("data" in modal) || !modal.data?.budgetId || !modal.data?.item) {
+        setError("Budget item data not found");
+        return;
+      }
+      const { budgetId, item } = modal.data;
+      updateBudgetItemMutation.mutate(
+        {
+          budgetId,
+          itemId: item.id,
+          name: data.name,
+          total: {
+            amount: data.total,
+            currency: "VND",
+          },
+        },
+        {
+          onSuccess: () =>
+            handleBudgetSuccess("Budget item has been updated successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to update budget item. Please try again",
+            ),
+        },
+      );
+    },
+    [updateBudgetItemMutation, handleBudgetSuccess, modal],
+  );
+
   const handleClose = useCallback(() => {
     store.dispatch(closeModal());
   }, []);
@@ -255,12 +459,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       createWalletMutation.isPending ||
       createTransactionMutation.isPending ||
       updateTransactionMutation.isPending ||
-      transferFundsMutation.isPending,
+      transferFundsMutation.isPending ||
+      createBudgetMutation.isPending ||
+      updateBudgetMutation.isPending ||
+      createBudgetItemMutation.isPending ||
+      updateBudgetItemMutation.isPending,
     [
       createWalletMutation.isPending,
       createTransactionMutation.isPending,
       updateTransactionMutation.isPending,
       transferFundsMutation.isPending,
+      createBudgetMutation.isPending,
+      updateBudgetMutation.isPending,
+      createBudgetItemMutation.isPending,
+      updateBudgetItemMutation.isPending,
     ],
   );
 
@@ -279,7 +491,17 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             ? "add-transaction-form"
             : modal.type === ModalType.EDIT_TRANSACTION
               ? "edit-transaction-form"
-              : "transfer-money-form";
+              : modal.type === ModalType.TRANSFER_MONEY
+                ? "transfer-money-form"
+                : modal.type === ModalType.ADD_BUDGET
+                  ? "create-budget-form"
+                  : modal.type === ModalType.EDIT_BUDGET
+                    ? "edit-budget-form"
+                    : modal.type === ModalType.ADD_BUDGET_ITEM
+                      ? "create-budget-item-form"
+                      : modal.type === ModalType.EDIT_BUDGET_ITEM
+                        ? "edit-budget-item-form"
+                        : "";
       const form = document.getElementById(formId);
       form?.dispatchEvent(
         new Event("submit", { cancelable: true, bubbles: true }),
@@ -346,6 +568,40 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             isPending={isLoading}
           />
         )}
+
+        {modal.type === ModalType.ADD_BUDGET && (
+          <CreateBudgetForm
+            onSubmit={handleCreateBudget}
+            isPending={isLoading}
+          />
+        )}
+
+        {modal.type === ModalType.EDIT_BUDGET &&
+          "data" in modal &&
+          modal.data?.budget && (
+            <EditBudgetForm
+              budget={modal.data.budget}
+              onSubmit={handleUpdateBudget}
+              isPending={isLoading}
+            />
+          )}
+
+        {modal.type === ModalType.ADD_BUDGET_ITEM && (
+          <CreateBudgetItemForm
+            onSubmit={handleCreateBudgetItem}
+            isPending={isLoading}
+          />
+        )}
+
+        {modal.type === ModalType.EDIT_BUDGET_ITEM &&
+          "data" in modal &&
+          modal.data?.item && (
+            <EditBudgetItemForm
+              item={modal.data.item}
+              onSubmit={handleUpdateBudgetItem}
+              isPending={isLoading}
+            />
+          )}
 
         {modal.type === ModalType.SUCCESS && (
           <Success message={successMessage} />

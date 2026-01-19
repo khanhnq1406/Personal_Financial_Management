@@ -55,6 +55,8 @@ func main() {
 		Wallet:      repository.NewWalletRepository(db),
 		Transaction: repository.NewTransactionRepository(db),
 		Category:    repository.NewCategoryRepository(db),
+		Budget:      repository.NewBudgetRepository(db),
+		BudgetItem:  repository.NewBudgetItemRepository(db),
 	}
 
 	// Initialize services
