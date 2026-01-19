@@ -2,7 +2,7 @@ type FullPageLoadingProps = {
   text?: string;
 };
 
-export const FullPageLoading = ({ text = "Loading..." }: FullPageLoadingProps) => {
+export const FullPageLoading = ({ text = "Loading…" }: FullPageLoadingProps) => {
   return (
     <div className="flex items-center justify-center h-screen bg-fg">
       <div className="flex flex-col items-center gap-4">

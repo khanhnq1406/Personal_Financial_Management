@@ -56,6 +56,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     setError("");
   }, [modal.type]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (modal.isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [modal.isOpen]);
+
   // Common invalidation function
   const invalidateQueries = useCallback(() => {
     INVALIDATION_QUERIES.forEach((queryKey) => {
@@ -205,6 +215,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     store.dispatch(closeModal());
   }, []);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && modal.type !== ModalType.SUCCESS) {
+        handleClose();
+      }
+    };
+
+    if (modal.isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [modal.isOpen, modal.type, handleClose]);
+
   // Memoize loading state
   const isLoading = useMemo(() =>
     createWalletMutation.isPending ||
@@ -237,16 +261,26 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   }, [modal.type, handleClose]);
 
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-modal flex justify-center items-center z-50">
-      <div className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4">
+    <div
+      className="fixed top-0 left-0 w-full h-full bg-modal flex justify-center items-center z-50 overscroll-contain"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={modal.type ? `modal-title-${modal.type}` : undefined}
+    >
+      <div
+        className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain"
+        onClick={(e) => e.stopPropagation()}
+      >
         {modal.type !== ModalType.SUCCESS && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <div className="font-bold text-lg">{modal.type}</div>
+              <h2 id={`modal-title-${modal.type}`} className="font-bold text-lg">{modal.type}</h2>
               <Button
                 type={ButtonType.IMG}
                 src={`${resources}/close.png`}
                 onClick={handleClose}
+                aria-label="Close modal"
               />
             </div>
           </div>

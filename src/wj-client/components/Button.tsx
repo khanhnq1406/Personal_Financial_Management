@@ -72,7 +72,7 @@ export const Button = React.memo(function Button({
   switch (type) {
     case ButtonType.IMG:
       return (
-        <button className={`hover:bg-hover rounded-md p-1 hover:drop-shadow-sm ${className}`}>
+        <button className={`hover:bg-hover rounded-md p-1 hover:drop-shadow-sm focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${className}`}>
           <img src={src} alt="" onClick={onClick} className="w-5" />
         </button>
       );
@@ -80,7 +80,7 @@ export const Button = React.memo(function Button({
     case ButtonType.PRIMARY:
       return (
         <button
-          className={`bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+          className={`bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${className}`}
           onClick={onClick}
           disabled={loading || disabled}
         >
@@ -92,7 +92,7 @@ export const Button = React.memo(function Button({
     case ButtonType.SECONDARY:
       return (
         <button
-          className={`bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+          className={`bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${className}`}
           onClick={onClick}
           disabled={loading || disabled}
         >

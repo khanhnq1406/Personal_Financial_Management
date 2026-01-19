@@ -155,8 +155,10 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         disabled={disabled || isLoading}
-        placeholder={placeholder}
-        className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
+        placeholder={placeholder && placeholder.length > 0 ? `${placeholder}…` : ""}
+        autoComplete="off"
+        spellCheck={false}
+        className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2"
       />
 
       {/* Dropdown arrow icon / Loading spinner */}

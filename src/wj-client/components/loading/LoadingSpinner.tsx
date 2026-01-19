@@ -2,7 +2,7 @@ type LoadingSpinnerProps = {
   text?: string;
 };
 
-export const LoadingSpinner = ({ text = "Loading..." }: LoadingSpinnerProps) => {
+export const LoadingSpinner = ({ text = "Loading…" }: LoadingSpinnerProps) => {
   return (
     <div className="flex items-center gap-2">
       <svg

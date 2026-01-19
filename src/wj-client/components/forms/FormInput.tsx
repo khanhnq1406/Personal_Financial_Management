@@ -36,10 +36,16 @@ export const FormInput = ({
       <input
         id={props.name}
         type={type}
-        placeholder={placeholder}
+        placeholder={
+          placeholder && placeholder.length > 0 ? `${placeholder}…` : ""
+        }
         disabled={disabled}
+        autoComplete={
+          type === "email" ? "email" : type === "tel" ? "tel" : "off"
+        }
+        spellCheck={false}
         {...field}
-        className={`p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${
           error ? "border-2 border-lred" : ""
         }`}
         aria-invalid={error ? "true" : "false"}

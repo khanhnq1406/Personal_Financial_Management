@@ -14,9 +14,9 @@ export const Label = ({
   className = "",
 }: LabelProps) => {
   return (
-    <div className={`text-sm font-medium ${className}`}>
+    <label htmlFor={htmlFor} className={`text-sm font-medium cursor-pointer ${className}`}>
       {children}
-      {required && <span className="required">*</span>}
-    </div>
+      {required && <span className="required" aria-label="required">*</span>}
+    </label>
   );
 };
