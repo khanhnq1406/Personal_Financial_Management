@@ -19,6 +19,8 @@ import { ModalType, resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
 
+const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
+
 export default function TransactionPage() {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +29,8 @@ export default function TransactionPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isHideBalance, setHideBalance] = useState(false);
+  const [displayImg, setDisplayImg] = useState(displayImgList[0]);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Fetch data - use memoized filter to prevent re-renders on every keystroke
@@ -136,9 +140,18 @@ export default function TransactionPage() {
   ]);
 
   const totalBalance = totalBalanceData?.data?.amount || 0;
+  const formattedBalance = useMemo(() => {
+    return currencyFormatter.format(totalBalance);
+  }, [totalBalance]);
   const transactions = transactionsData?.transactions || [];
   const totalCount =
-    transactionsData?.pagination?.totalCount || transactions.length;
+    transactionsData?.pagination?.totalCount ?? transactions.length;
+
+  const handleHideBalance = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    setHideBalance(!isHideBalance);
+    setDisplayImg(displayImgList[Number(!isHideBalance)]);
+  };
 
   // Prepare filter options
   const walletOptions = [
@@ -168,7 +181,19 @@ export default function TransactionPage() {
       <div className="sm:hidden bg-bg p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-white text-3xl font-bold ">Transactions</h1>
-          <div className="w-8" />
+          <div className="flex items-center gap-4">
+            {/* Wallet Selector */}
+            {walletsData &&
+              walletsData.wallets &&
+              walletsData.wallets.length > 0 && (
+                <SelectDropdown
+                  value={selectedWallet || ""}
+                  onChange={(val) => setSelectedWallet(val || null)}
+                  options={walletOptions}
+                  aria-label="Select wallet"
+                />
+              )}
+          </div>
         </div>
 
         {/* Balance Card */}
@@ -179,12 +204,16 @@ export default function TransactionPage() {
                 Total balance
               </p>
               <p className="text-gray-900 text-3xl font-bold ">
-                {currencyFormatter.format(totalBalance)}
+                {isHideBalance ? "*****" : formattedBalance}
               </p>
             </div>
-            <button className="w-12 h-12" aria-label="Show balance">
+            <button
+              className="w-12 h-12"
+              aria-label="Show balance"
+              onClick={handleHideBalance}
+            >
               <Image
-                src={`${resources}/unhide.png`}
+                src={displayImg}
                 width={48}
                 height={48}
                 alt="Show balance"
@@ -201,11 +230,27 @@ export default function TransactionPage() {
           <h1 className="text-gray-900 text-xl font-bold ">Transactions</h1>
         </div>
 
-        <div className="mt-2 flex flex-col justify-center items-center">
-          <p className="text-gray-400 text-sm font-bold">Balance</p>
-          <p className="text-gray-900 text-xl font-bold ">
-            {currencyFormatter.format(totalBalance)}
-          </p>
+        <div className="flex gap-2 items-center">
+          <div className="mt-2 flex flex-col justify-center items-center">
+            <p className="text-gray-400 text-sm font-bold">Balance</p>
+            <p className="text-gray-900 text-xl font-bold ">
+              {isHideBalance ? "*****" : formattedBalance}
+            </p>
+          </div>
+          {/* Hide/Show Balance Button */}
+          {/* <button
+            className="w-6 h-6"
+            aria-label="Toggle balance visibility"
+            onClick={handleHideBalance}
+          >
+            <Image
+              src={displayImg}
+              width={24}
+              height={24}
+              alt="Toggle balance"
+              className="w-full h-full object-contain"
+            />
+          </button> */}
         </div>
 
         <div className="flex items-center gap-4">
@@ -224,7 +269,7 @@ export default function TransactionPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="px-3 sm:px-6 py-4 flex-shrink-0">
+      <div className="px-4 sm:px-6 py-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search Bar */}
           <div className="relative flex-1">
@@ -269,7 +314,7 @@ export default function TransactionPage() {
           </div>
 
           {/* Filter Dropdowns */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 justify-between">
             <SelectDropdown
               value={categoryFilter}
               onChange={setCategoryFilter}
@@ -277,7 +322,7 @@ export default function TransactionPage() {
               aria-label="Filter by category"
             />
 
-            <div className="relative hidden sm:block">
+            <div className="relative sm:block">
               <SelectDropdown
                 value={`${sortField}-${sortOrder}`}
                 onChange={(val) => {
@@ -323,131 +368,175 @@ export default function TransactionPage() {
         </BaseCard>
 
         {/* Mobile Transaction List */}
-        <div className="sm:hidden overflow-auto h-full">
-          {transactions.length > 0 ? (
-            <div className="space-y-3">
-              {transactions.map((transaction) => (
-                <BaseCard key={transaction.id}>
-                  <div className="p-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-gray-900 text-sm font-bold  mb-1">
-                          Category
+        <div className="sm:hidden flex flex-col h-full">
+          <div className="flex-1 overflow-auto p-1">
+            {transactions.length > 0 ? (
+              <div className="space-y-3">
+                {transactions.map((transaction) => (
+                  <BaseCard key={transaction.id}>
+                    <div className="p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm font-bold mb-1">
+                            Category
+                          </p>
+                          <p className="text-gray-900 text-sm font-light  text-right">
+                            {getCategoryName(transaction.categoryId)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-gray-200" />
+
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm font-bold  mb-1">
+                            Amount
+                          </p>
+                          <p className="text-gray-900 text-sm font-light  text-right">
+                            {currencyFormatter.format(
+                              transaction.amount?.amount || 0,
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-gray-200" />
+
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm font-bold  mb-1">
+                            Date & Time
+                          </p>
+                          <p className="text-gray-900 text-sm font-light  text-right">
+                            {formatDate(transaction.date)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-gray-200" />
+
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm font-bold  mb-1">
+                            Note
+                          </p>
+                          <p className="text-gray-900 text-sm font-light  text-right">
+                            {transaction.note || "-"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-gray-200" />
+
+                      <div className="flex justify-between items-center">
+                        <p className="text-gray-900 text-sm font-bold ">
+                          Actions
                         </p>
-                        <p className="text-gray-900 text-sm font-light  text-right">
-                          {getCategoryName(transaction.categoryId)}
-                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handleEditTransaction(transaction.id)
+                            }
+                            className="w-5 h-5 hover:opacity-70 transition-opacity"
+                            aria-label="Edit transaction"
+                          >
+                            <Image
+                              src={`${resources}/editing.png`}
+                              width={20}
+                              height={20}
+                              alt="Edit transaction"
+                              className="w-full h-full object-contain"
+                            />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteTransaction(transaction.id)
+                            }
+                            className="w-5 h-5 hover:opacity-70 transition-opacity"
+                            aria-label="Delete transaction"
+                          >
+                            <Image
+                              src={`${resources}/remove.png`}
+                              width={20}
+                              height={20}
+                              alt="Delete transaction"
+                              className="w-full h-full object-contain"
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="border-t border-gray-200" />
-
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-gray-900 text-sm font-bold  mb-1">
-                          Amount
-                        </p>
-                        <p className="text-gray-900 text-sm font-light  text-right">
-                          {currencyFormatter.format(
-                            transaction.amount?.amount || 0,
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200" />
-
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-gray-900 text-sm font-bold  mb-1">
-                          Date & Time
-                        </p>
-                        <p className="text-gray-900 text-sm font-light  text-right">
-                          {formatDate(transaction.date)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200" />
-
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-gray-900 text-sm font-bold  mb-1">
-                          Note
-                        </p>
-                        <p className="text-gray-900 text-sm font-light  text-right">
-                          {transaction.note || "-"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-200" />
-
-                    <div className="flex justify-between items-center">
-                      <p className="text-gray-900 text-sm font-bold ">
-                        Actions
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditTransaction(transaction.id)}
-                          className="w-5 h-5 hover:opacity-70 transition-opacity"
-                          aria-label="Edit transaction"
-                        >
-                          <Image
-                            src={`${resources}/editing.png`}
-                            width={20}
-                            height={20}
-                            alt="Edit transaction"
-                            className="w-full h-full object-contain"
-                          />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDeleteTransaction(transaction.id)
-                          }
-                          className="w-5 h-5 hover:opacity-70 transition-opacity"
-                          aria-label="Delete transaction"
-                        >
-                          <Image
-                            src={`${resources}/remove.png`}
-                            width={20}
-                            height={20}
-                            alt="Delete transaction"
-                            className="w-full h-full object-contain"
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </BaseCard>
-              ))}
-            </div>
-          ) : !isLoading ? (
-            <BaseCard>
-              <div className="flex flex-col items-center justify-center py-12">
-                <svg
-                  className="w-16 h-16 mb-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <p className="text-lg font-medium text-gray-900">
-                  No transactions found
-                </p>
-                <p className="text-sm text-gray-400">
-                  Add your first transaction to get started
-                </p>
+                  </BaseCard>
+                ))}
               </div>
-            </BaseCard>
-          ) : null}
+            ) : !isLoading ? (
+              <BaseCard>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <svg
+                    className="w-16 h-16 mb-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <p className="text-lg font-medium text-gray-900">
+                    No transactions found
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Add your first transaction to get started
+                  </p>
+                </div>
+              </BaseCard>
+            ) : null}
+          </div>
+
+          {/* Mobile Pagination */}
+          {!isLoading && transactions.length > 0 && (
+            <div className="flex-shrink-0 pt-3">
+              <BaseCard>
+                <div className="flex items-center justify-between px-4 py-3 gap-3">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                    aria-label="Previous page"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">
+                      Page {currentPage} of{" "}
+                      {Math.ceil(totalCount / rowsPerPage)}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) =>
+                        Math.min(Math.ceil(totalCount / rowsPerPage), p + 1),
+                      )
+                    }
+                    disabled={
+                      currentPage >= Math.ceil(totalCount / rowsPerPage)
+                    }
+                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                    aria-label="Next page"
+                  >
+                    Next
+                  </button>
+                </div>
+              </BaseCard>
+            </div>
+          )}
         </div>
       </div>
     </div>

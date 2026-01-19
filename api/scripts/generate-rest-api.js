@@ -559,10 +559,10 @@ function generateAPIClient(services) {
           apiCode.push(`        for (const [key, value] of Object.entries(obj)) {`);
           apiCode.push(`          if (value === undefined || value === null) continue;`);
           apiCode.push(`          if (typeof value === 'object' && !Array.isArray(value)) {`);
-          apiCode.push(`            // For nested objects like 'filter', flatten them but skip 'pagination'`);
-          apiCode.push(`            if (key === 'filter') {`);
+          apiCode.push(`            // For nested objects like 'filter' and 'pagination', flatten them`);
+          apiCode.push(`            if (key === 'filter' || key === 'pagination') {`);
           apiCode.push(`              params.push(toQueryParams(value, ''));`);
-          apiCode.push(`            } else if (key !== 'pagination') {`);
+          apiCode.push(`            } else {`);
           apiCode.push(`              params.push(toQueryParams(value, key));`);
           apiCode.push(`            }`);
           apiCode.push(`          } else {`);
