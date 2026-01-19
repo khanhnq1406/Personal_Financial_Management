@@ -26,6 +26,7 @@ export interface BudgetItem {
   budgetId: number;
   name: string;
   total: Money | undefined;
+  checked: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -77,6 +78,7 @@ export interface UpdateBudgetItemRequest {
   itemId: number;
   name: string;
   total: Money | undefined;
+  checked: boolean;
 }
 
 /** DeleteBudgetItem request */
@@ -289,7 +291,7 @@ export const Budget: MessageFns<Budget> = {
 };
 
 function createBaseBudgetItem(): BudgetItem {
-  return { id: 0, budgetId: 0, name: "", total: undefined, createdAt: 0, updatedAt: 0 };
+  return { id: 0, budgetId: 0, name: "", total: undefined, checked: false, createdAt: 0, updatedAt: 0 };
 }
 
 export const BudgetItem: MessageFns<BudgetItem> = {
@@ -305,6 +307,9 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     }
     if (message.total !== undefined) {
       Money.encode(message.total, writer.uint32(34).fork()).join();
+    }
+    if (message.checked !== false) {
+      writer.uint32(56).bool(message.checked);
     }
     if (message.createdAt !== 0) {
       writer.uint32(40).int64(message.createdAt);
@@ -354,6 +359,14 @@ export const BudgetItem: MessageFns<BudgetItem> = {
           message.total = Money.decode(reader, reader.uint32());
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.checked = reader.bool();
+          continue;
+        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -385,6 +398,7 @@ export const BudgetItem: MessageFns<BudgetItem> = {
       budgetId: isSet(object.budgetId) ? globalThis.Number(object.budgetId) : 0,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       total: isSet(object.total) ? Money.fromJSON(object.total) : undefined,
+      checked: isSet(object.checked) ? globalThis.Boolean(object.checked) : false,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
     };
@@ -404,6 +418,9 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     if (message.total !== undefined) {
       obj.total = Money.toJSON(message.total);
     }
+    if (message.checked !== false) {
+      obj.checked = message.checked;
+    }
     if (message.createdAt !== 0) {
       obj.createdAt = Math.round(message.createdAt);
     }
@@ -422,6 +439,7 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     message.budgetId = object.budgetId ?? 0;
     message.name = object.name ?? "";
     message.total = (object.total !== undefined && object.total !== null) ? Money.fromPartial(object.total) : undefined;
+    message.checked = object.checked ?? false;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
     return message;
@@ -941,7 +959,7 @@ export const CreateBudgetItemRequest: MessageFns<CreateBudgetItemRequest> = {
 };
 
 function createBaseUpdateBudgetItemRequest(): UpdateBudgetItemRequest {
-  return { budgetId: 0, itemId: 0, name: "", total: undefined };
+  return { budgetId: 0, itemId: 0, name: "", total: undefined, checked: false };
 }
 
 export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
@@ -957,6 +975,9 @@ export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
     }
     if (message.total !== undefined) {
       Money.encode(message.total, writer.uint32(34).fork()).join();
+    }
+    if (message.checked !== false) {
+      writer.uint32(40).bool(message.checked);
     }
     return writer;
   },
@@ -1000,6 +1021,14 @@ export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
           message.total = Money.decode(reader, reader.uint32());
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.checked = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1015,6 +1044,7 @@ export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
       itemId: isSet(object.itemId) ? globalThis.Number(object.itemId) : 0,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       total: isSet(object.total) ? Money.fromJSON(object.total) : undefined,
+      checked: isSet(object.checked) ? globalThis.Boolean(object.checked) : false,
     };
   },
 
@@ -1032,6 +1062,9 @@ export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
     if (message.total !== undefined) {
       obj.total = Money.toJSON(message.total);
     }
+    if (message.checked !== false) {
+      obj.checked = message.checked;
+    }
     return obj;
   },
 
@@ -1044,6 +1077,7 @@ export const UpdateBudgetItemRequest: MessageFns<UpdateBudgetItemRequest> = {
     message.itemId = object.itemId ?? 0;
     message.name = object.name ?? "";
     message.total = (object.total !== undefined && object.total !== null) ? Money.fromPartial(object.total) : undefined;
+    message.checked = object.checked ?? false;
     return message;
   },
 };

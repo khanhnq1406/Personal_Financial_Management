@@ -3,12 +3,12 @@
 import { BaseCard } from "@/components/BaseCard";
 import { Budget } from "@/gen/protobuf/v1/budget";
 import { currencyFormatter } from "@/utils/currency-formatter";
-import { CircularProgress } from "./circularProgress";
+import { CircularProgress } from "./CircularProgress";
 import { useQueryGetBudgetItems } from "@/utils/generated/hooks";
-import { BudgetItemCard } from "./budgetItemCard";
+import { BudgetItemCard } from "./BudgetItemCard";
 import { store } from "@/redux/store";
 import { openModal } from "@/redux/actions";
-import { ModalType, ButtonType } from "@/app/constants";
+import { ModalType, ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 
 interface BudgetCardProps {
@@ -91,12 +91,12 @@ export function BudgetCard({ budget, onRefresh }: BudgetCardProps) {
         <div className="flex gap-2">
           <Button
             type={ButtonType.IMG}
-            src="https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/editing.png"
+            src={`${resources}/editing.png`}
             onClick={handleEditBudget}
           />
           <Button
             type={ButtonType.IMG}
-            src="https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/remove.png"
+            src={`${resources}/remove.png`}
             onClick={handleDeleteBudget}
           />
         </div>
@@ -125,7 +125,7 @@ export function BudgetCard({ budget, onRefresh }: BudgetCardProps) {
           <h4 className="text-sm font-semibold text-gray-700">Budget Items</h4>
           <Button
             type={ButtonType.IMG}
-            src="https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/plus.png"
+            src={`${resources}/plus.png`}
             onClick={handleAddBudgetItem}
           />
         </div>

@@ -421,6 +421,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             amount: data.total,
             currency: "VND",
           },
+          checked: item.checked ?? false,
         },
         {
           onSuccess: () =>

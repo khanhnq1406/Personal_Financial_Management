@@ -93,6 +93,7 @@ message BudgetItem {
   int32 budgetId = 2 [json_name = "budgetId"];
   string name = 3 [json_name = "name"];
   wealthjourney.common.v1.Money total = 4 [json_name = "total"];
+  bool checked = 7 [json_name = "checked"];
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
 }
@@ -144,6 +145,7 @@ message UpdateBudgetItemRequest {
   int32 itemId = 2 [json_name = "itemId"];
   string name = 3 [json_name = "name"];
   wealthjourney.common.v1.Money total = 4 [json_name = "total"];
+  bool checked = 5 [json_name = "checked"];
 }
 
 // DeleteBudgetItem request

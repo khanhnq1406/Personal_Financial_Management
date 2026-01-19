@@ -349,14 +349,18 @@ func (s *budgetService) UpdateBudgetItem(ctx context.Context, budgetID int32, it
 		return nil, err
 	}
 
-	// Validate item name
-	if err := validateBudgetItemName(req.Name); err != nil {
-		return nil, err
+	// Validate item name if provided
+	if req.Name != "" {
+		if err := validateBudgetItemName(req.Name); err != nil {
+			return nil, err
+		}
 	}
 
 	// Validate total amount if provided
-	if err := validateMoneyAmount(req.Total); err != nil {
-		return nil, err
+	if req.Total != nil {
+		if err := validateMoneyAmount(req.Total); err != nil {
+			return nil, err
+		}
 	}
 
 	// Verify budget ownership
@@ -371,11 +375,15 @@ func (s *budgetService) UpdateBudgetItem(ctx context.Context, budgetID int32, it
 		return nil, err
 	}
 
-	// Update fields
+	// Update fields if provided
 	if req.Total != nil {
 		item.Total = req.Total.Amount
 	}
-	item.Name = req.Name
+	if req.Name != "" {
+		item.Name = req.Name
+	}
+	// Handle checked field - protobuf provides default false for bool
+	item.Checked = req.Checked
 
 	if err := s.budgetItemRepo.Update(ctx, item); err != nil {
 		return nil, err

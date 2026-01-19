@@ -158,6 +158,7 @@ func (m *BudgetMapper) ModelItemToProto(item *models.BudgetItem) *protobufv1.Bud
 			Amount:   item.Total,
 			Currency: "VND", // Budget items use VND as default currency
 		},
+		Checked:   item.Checked,
 		CreatedAt: item.CreatedAt.Unix(),
 		UpdatedAt: item.UpdatedAt.Unix(),
 	}
