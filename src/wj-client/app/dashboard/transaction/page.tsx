@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   useQueryListTransactions,
   useQueryListCategories,
@@ -46,18 +46,21 @@ export default function TransactionPage() {
     [debouncedSearchQuery, selectedWallet, categoryFilter],
   );
 
+  // Memoize pagination config
+  const paginationConfig = useMemo(() => ({
+    page: currentPage,
+    pageSize: rowsPerPage,
+    orderBy: sortField,
+    order: sortOrder,
+  }), [currentPage, rowsPerPage, sortField, sortOrder]);
+
   const {
     data: transactionsData,
     isLoading,
     refetch,
   } = useQueryListTransactions(
     {
-      pagination: {
-        page: currentPage,
-        pageSize: rowsPerPage,
-        orderBy: sortField,
-        order: sortOrder,
-      },
+      pagination: paginationConfig,
       filter,
       sortField: SortField.DATE,
       sortOrder: sortOrder,
@@ -75,7 +78,7 @@ export default function TransactionPage() {
 
   const { data: totalBalanceData } = useQueryGetTotalBalance({});
 
-  // Get category name by ID
+  // Get category name by ID - memoized with proper dependency
   const getCategoryName = useMemo(() => {
     const categoryMap = new Map<number, string>();
     categoriesData?.categories?.forEach((cat) => {
@@ -84,8 +87,8 @@ export default function TransactionPage() {
     return (id: number) => categoryMap.get(id) || "Uncategorized";
   }, [categoriesData]);
 
-  // Format date
-  const formatDate = (timestamp: number) => {
+  // Format date - memoized
+  const formatDate = useCallback((timestamp: number) => {
     const date = new Date(timestamp * 1000);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -94,10 +97,10 @@ export default function TransactionPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  // Handle actions
-  const handleEditTransaction = (transactionId: number) => {
+  // Handle actions - memoized callbacks
+  const handleEditTransaction = useCallback((transactionId: number) => {
     store.dispatch(
       openModal({
         isOpen: true,
@@ -106,9 +109,9 @@ export default function TransactionPage() {
         onSuccess: () => refetch(),
       }),
     );
-  };
+  }, [refetch]);
 
-  const handleDeleteTransaction = (transactionId: number) => {
+  const handleDeleteTransaction = useCallback((transactionId: number) => {
     store.dispatch(
       openModal({
         isOpen: true,
@@ -126,7 +129,7 @@ export default function TransactionPage() {
         },
       }),
     );
-  };
+  }, []);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -147,33 +150,170 @@ export default function TransactionPage() {
   const totalCount =
     transactionsData?.pagination?.totalCount ?? transactions.length;
 
-  const handleHideBalance = (event: React.MouseEvent<HTMLElement>) => {
+  const handleHideBalance = useCallback((event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
-    setHideBalance(!isHideBalance);
-    setDisplayImg(displayImgList[Number(!isHideBalance)]);
-  };
+    setHideBalance((prev) => !prev);
+    setDisplayImg(displayImgList[Number(isHideBalance)]);
+  }, [isHideBalance]);
 
-  // Prepare filter options
-  const walletOptions = [
-    { value: "", label: "All Wallets" },
-    ...(walletsData?.wallets?.map((w) => ({
-      value: w.id.toString(),
-      label: w.walletName,
-    })) || []),
-  ];
+  // Prepare filter options - memoized
+  const walletOptions = useMemo(
+    () => [
+      { value: "", label: "All Wallets" },
+      ...(walletsData?.wallets?.map((w) => ({
+        value: w.id.toString(),
+        label: w.walletName,
+      })) || []),
+    ],
+    [walletsData?.wallets]
+  );
 
-  const categoryOptions = [
-    { value: "all", label: "All Categories" },
-    ...(categoriesData?.categories?.map((c) => ({
-      value: c.id.toString(),
-      label: c.name,
-    })) || []),
-  ];
+  const categoryOptions = useMemo(
+    () => [
+      { value: "all", label: "All Categories" },
+      ...(categoriesData?.categories?.map((c) => ({
+        value: c.id.toString(),
+        label: c.name,
+      })) || []),
+    ],
+    [categoriesData?.categories]
+  );
 
-  const sortOptions = [
-    { value: "date-desc", label: "Newest first" },
-    { value: "date-asc", label: "Oldest first" },
-  ];
+  const sortOptions = useMemo(
+    () => [
+      { value: "date-desc", label: "Newest first" },
+      { value: "date-asc", label: "Oldest first" },
+    ],
+    []
+  );
+
+  // Memoized transaction item for mobile view
+  const MobileTransactionItem = useMemo(() =>
+    function MobileTransactionItem({ transaction }: { transaction: typeof transactions[number] }) {
+      return (
+        <BaseCard>
+          <div className="p-3 space-y-2">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <p className="text-gray-900 text-sm font-bold mb-1">
+                  Category
+                </p>
+                <p className="text-gray-900 text-sm font-light  text-right">
+                  {getCategoryName(transaction.categoryId)}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200" />
+
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <p className="text-gray-900 text-sm font-bold  mb-1">
+                  Amount
+                </p>
+                <p className="text-gray-900 text-sm font-light  text-right">
+                  {currencyFormatter.format(
+                    transaction.amount?.amount || 0,
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200" />
+
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <p className="text-gray-900 text-sm font-bold  mb-1">
+                  Date & Time
+                </p>
+                <p className="text-gray-900 text-sm font-light  text-right">
+                  {formatDate(transaction.date)}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200" />
+
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <p className="text-gray-900 text-sm font-bold  mb-1">
+                  Note
+                </p>
+                <p className="text-gray-900 text-sm font-light  text-right">
+                  {transaction.note || "-"}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200" />
+
+            <div className="flex justify-between items-center">
+              <p className="text-gray-900 text-sm font-bold ">
+                Actions
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEditTransaction(transaction.id)}
+                  className="w-5 h-5 hover:opacity-70 transition-opacity"
+                  aria-label="Edit transaction"
+                >
+                  <Image
+                    src={`${resources}/editing.png`}
+                    width={20}
+                    height={20}
+                    alt="Edit transaction"
+                    className="w-full h-full object-contain"
+                  />
+                </button>
+                <button
+                  onClick={() => handleDeleteTransaction(transaction.id)}
+                  className="w-5 h-5 hover:opacity-70 transition-opacity"
+                  aria-label="Delete transaction"
+                >
+                  <Image
+                    src={`${resources}/remove.png`}
+                    width={20}
+                    height={20}
+                    alt="Delete transaction"
+                    className="w-full h-full object-contain"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </BaseCard>
+      );
+    },
+    [getCategoryName, formatDate, handleEditTransaction, handleDeleteTransaction]
+  );
+
+  // Memoize empty state
+  const emptyState = useMemo(() => (
+    <BaseCard>
+      <div className="flex flex-col items-center justify-center py-12">
+        <svg
+          className="w-16 h-16 mb-4 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <p className="text-lg font-medium text-gray-900">
+          No transactions found
+        </p>
+        <p className="text-sm text-gray-400">
+          Add your first transaction to get started
+        </p>
+      </div>
+    </BaseCard>
+  ), []);
 
   return (
     <div className="h-full flex flex-col">
@@ -237,20 +377,6 @@ export default function TransactionPage() {
               {isHideBalance ? "*****" : formattedBalance}
             </p>
           </div>
-          {/* Hide/Show Balance Button */}
-          {/* <button
-            className="w-6 h-6"
-            aria-label="Toggle balance visibility"
-            onClick={handleHideBalance}
-          >
-            <Image
-              src={displayImg}
-              width={24}
-              height={24}
-              alt="Toggle balance"
-              className="w-full h-full object-contain"
-            />
-          </button> */}
         </div>
 
         <div className="flex items-center gap-4">
@@ -360,7 +486,7 @@ export default function TransactionPage() {
               onPageChange={setCurrentPage}
               onPageSizeChange={(size) => {
                 setRowsPerPage(size);
-                setCurrentPage(1); // Reset to first page when changing page size
+                setCurrentPage(1);
               }}
               showPageNumbers={true}
             />
@@ -373,128 +499,11 @@ export default function TransactionPage() {
             {transactions.length > 0 ? (
               <div className="space-y-3">
                 {transactions.map((transaction) => (
-                  <BaseCard key={transaction.id}>
-                    <div className="p-3 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-gray-900 text-sm font-bold mb-1">
-                            Category
-                          </p>
-                          <p className="text-gray-900 text-sm font-light  text-right">
-                            {getCategoryName(transaction.categoryId)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200" />
-
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-gray-900 text-sm font-bold  mb-1">
-                            Amount
-                          </p>
-                          <p className="text-gray-900 text-sm font-light  text-right">
-                            {currencyFormatter.format(
-                              transaction.amount?.amount || 0,
-                            )}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200" />
-
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-gray-900 text-sm font-bold  mb-1">
-                            Date & Time
-                          </p>
-                          <p className="text-gray-900 text-sm font-light  text-right">
-                            {formatDate(transaction.date)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200" />
-
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-gray-900 text-sm font-bold  mb-1">
-                            Note
-                          </p>
-                          <p className="text-gray-900 text-sm font-light  text-right">
-                            {transaction.note || "-"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200" />
-
-                      <div className="flex justify-between items-center">
-                        <p className="text-gray-900 text-sm font-bold ">
-                          Actions
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              handleEditTransaction(transaction.id)
-                            }
-                            className="w-5 h-5 hover:opacity-70 transition-opacity"
-                            aria-label="Edit transaction"
-                          >
-                            <Image
-                              src={`${resources}/editing.png`}
-                              width={20}
-                              height={20}
-                              alt="Edit transaction"
-                              className="w-full h-full object-contain"
-                            />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDeleteTransaction(transaction.id)
-                            }
-                            className="w-5 h-5 hover:opacity-70 transition-opacity"
-                            aria-label="Delete transaction"
-                          >
-                            <Image
-                              src={`${resources}/remove.png`}
-                              width={20}
-                              height={20}
-                              alt="Delete transaction"
-                              className="w-full h-full object-contain"
-                            />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </BaseCard>
+                  <MobileTransactionItem key={transaction.id} transaction={transaction} />
                 ))}
               </div>
             ) : !isLoading ? (
-              <BaseCard>
-                <div className="flex flex-col items-center justify-center py-12">
-                  <svg
-                    className="w-16 h-16 mb-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <p className="text-lg font-medium text-gray-900">
-                    No transactions found
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Add your first transaction to get started
-                  </p>
-                </div>
-              </BaseCard>
+              emptyState
             ) : null}
           </div>
 

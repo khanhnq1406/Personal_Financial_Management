@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ButtonType, ModalType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
@@ -38,6 +38,13 @@ type BaseModalProps = {
       };
 };
 
+// Query keys to invalidate - memoized to avoid recreation
+const INVALIDATION_QUERIES = [
+  EVENT_WalletGetTotalBalance,
+  EVENT_WalletListWallets,
+  EVENT_TransactionListTransactions,
+] as const;
+
 export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const queryClient = useQueryClient();
   const [successMessage, setSuccessMessage] = useState("");
@@ -49,18 +56,17 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     setError("");
   }, [modal.type]);
 
-  // Mutations
-  const createWalletMutation = useMutationCreateWallet();
-  const createTransactionMutation = useMutationCreateTransaction();
-  const updateTransactionMutation = useMutationUpdateTransaction();
-  const transferFundsMutation = useMutationTransferFunds();
+  // Common invalidation function
+  const invalidateQueries = useCallback(() => {
+    INVALIDATION_QUERIES.forEach((queryKey) => {
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+    });
+  }, [queryClient]);
+
+  // Mutations - only create mutation hooks that are actually needed
   const deleteTransactionMutation = useMutationDeleteTransaction({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
-      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
-      queryClient.invalidateQueries({
-        queryKey: [EVENT_TransactionListTransactions],
-      });
+      invalidateQueries();
       store.dispatch(closeModal());
       setSuccessMessage("Transaction deleted successfully");
       store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
@@ -72,7 +78,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   });
 
   // Handle confirmation action
-  const handleConfirmAction = async () => {
+  const handleConfirmAction = useCallback(async () => {
     if (!("confirmConfig" in modal) || !modal.confirmConfig) return;
 
     const { action } = modal.confirmConfig;
@@ -92,23 +98,25 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       console.error("[BaseModal] Error executing confirmation action:", err);
       setIsConfirming(false);
     }
-  };
+  }, [modal, deleteTransactionMutation]);
 
   // Common success handler
-  const handleSuccess = (message: string) => {
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_TransactionListTransactions],
-    });
+  const handleSuccess = useCallback((message: string) => {
+    invalidateQueries();
     modal.onSuccess?.();
     store.dispatch(closeModal());
     setSuccessMessage(message);
     store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
-  };
+  }, [invalidateQueries, modal]);
+
+  // Mutations for forms - memoized to avoid recreation
+  const createWalletMutation = useMutationCreateWallet();
+  const createTransactionMutation = useMutationCreateTransaction();
+  const updateTransactionMutation = useMutationUpdateTransaction();
+  const transferFundsMutation = useMutationTransferFunds();
 
   // Handle create wallet submission
-  const handleCreateWallet = (data: CreateWalletFormOutput) => {
+  const handleCreateWallet = useCallback((data: CreateWalletFormOutput) => {
     setError("");
     createWalletMutation.mutate(
       {
@@ -125,10 +133,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           setError(err.message || "Failed to create wallet. Please try again"),
       },
     );
-  };
+  }, [createWalletMutation, handleSuccess]);
 
   // Handle create transaction submission
-  const handleCreateTransaction = (formData: any) => {
+  const handleCreateTransaction = useCallback((formData: any) => {
     setError("");
     createTransactionMutation.mutate(
       {
@@ -149,10 +157,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           ),
       },
     );
-  };
+  }, [createTransactionMutation, handleSuccess]);
 
   // Handle update transaction submission
-  const handleUpdateTransaction = (formData: any) => {
+  const handleUpdateTransaction = useCallback((formData: any) => {
     setError("");
     updateTransactionMutation.mutate(
       {
@@ -171,10 +179,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           ),
       },
     );
-  };
+  }, [updateTransactionMutation, handleSuccess]);
 
   // Handle transfer funds submission
-  const handleTransferFunds = (data: TransferMoneyFormInput) => {
+  const handleTransferFunds = useCallback((data: TransferMoneyFormInput) => {
     setError("");
     transferFundsMutation.mutate(
       {
@@ -191,19 +199,21 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           setError(err.message || "Failed to transfer funds. Please try again"),
       },
     );
-  };
+  }, [transferFundsMutation, handleSuccess]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     store.dispatch(closeModal());
-  };
+  }, []);
 
-  const isLoading =
+  // Memoize loading state
+  const isLoading = useMemo(() =>
     createWalletMutation.isPending ||
     createTransactionMutation.isPending ||
     updateTransactionMutation.isPending ||
-    transferFundsMutation.isPending;
+    transferFundsMutation.isPending,
+  [createWalletMutation.isPending, createTransactionMutation.isPending, updateTransactionMutation.isPending, transferFundsMutation.isPending]);
 
-  const handleButtonClick = () => {
+  const handleButtonClick = useCallback(() => {
     if (modal.type === ModalType.SUCCESS) {
       handleClose();
     } else if (modal.type === ModalType.CONFIRM) {
@@ -224,7 +234,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         new Event("submit", { cancelable: true, bubbles: true }),
       );
     }
-  };
+  }, [modal.type, handleClose]);
 
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-modal flex justify-center items-center z-50">

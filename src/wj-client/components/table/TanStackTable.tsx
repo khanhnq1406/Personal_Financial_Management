@@ -8,7 +8,7 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { resources } from "@/app/constants";
 
@@ -35,7 +35,7 @@ export interface TablePaginationProps {
 /**
  * Pagination component for tables
  */
-export function TablePagination({
+export const TablePagination = ({
   currentPage,
   pageSize,
   totalCount,
@@ -43,10 +43,44 @@ export function TablePagination({
   onPageChange,
   onPageSizeChange,
   showPageNumbers = true,
-}: TablePaginationProps) {
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const startRecord = (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, totalCount);
+}: TablePaginationProps) => {
+  // Memoize calculated values to avoid recalculation on every render
+  const { totalPages, startRecord, endRecord } = useMemo(() => {
+    const calculatedTotalPages = Math.ceil(totalCount / pageSize);
+    const calculatedStartRecord = (currentPage - 1) * pageSize + 1;
+    const calculatedEndRecord = Math.min(currentPage * pageSize, totalCount);
+    return {
+      totalPages: calculatedTotalPages,
+      startRecord: calculatedStartRecord,
+      endRecord: calculatedEndRecord,
+    };
+  }, [currentPage, pageSize, totalCount]);
+
+  // Memoize page size options to avoid recreating array
+  const memoizedPageSizeOptions = useMemo(
+    () => pageSizeOptions,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pageSizeOptions.join(",")]
+  );
+
+  const handlePreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      onPageChange?.(currentPage - 1);
+    }
+  }, [currentPage, onPageChange]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      onPageChange?.(currentPage + 1);
+    }
+  }, [currentPage, totalPages, onPageChange]);
+
+  const handlePageSizeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onPageSizeChange?.(parseInt(e.target.value));
+    },
+    [onPageSizeChange]
+  );
 
   return (
     <div className="flex items-center justify-between p-4 border-t border-gray-200">
@@ -60,10 +94,10 @@ export function TablePagination({
             <div className="relative">
               <select
                 value={pageSize.toString()}
-                onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
+                onChange={handlePageSizeChange}
                 className="appearance-none bg-fg border-2 border-black/50 rounded px-3 py-1 pr-8 text-gray-900 text-sm font-bold cursor-pointer focus:outline-none focus:border-bg"
               >
-                {pageSizeOptions.map((size) => (
+                {memoizedPageSizeOptions.map((size) => (
                   <option key={size} value={size}>
                     {size}
                   </option>
@@ -83,7 +117,7 @@ export function TablePagination({
         {showPageNumbers && onPageChange && totalPages > 1 && (
           <div className="flex items-center gap-2 ml-4">
             <button
-              onClick={() => onPageChange(currentPage - 1)}
+              onClick={handlePreviousPage}
               disabled={currentPage === 1}
               className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
@@ -93,7 +127,7 @@ export function TablePagination({
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() => onPageChange(currentPage + 1)}
+              onClick={handleNextPage}
               disabled={currentPage === totalPages}
               className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
@@ -104,7 +138,7 @@ export function TablePagination({
       </div>
     </div>
   );
-}
+};
 
 /**
  * Generic TanStack Table component with built-in sorting
@@ -132,69 +166,75 @@ export function TanStackTable<T>({
     onSortingChange: setSorting,
   });
 
+  // Memoize loading skeleton to avoid recreating on every render
+  const loadingSkeleton = useMemo(() => (
+    <div className={`overflow-x-auto ${className}`}>
+      <table className="w-full">
+        <thead className="sticky top-0 bg-white z-10 border-b-2 border-gray-200">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="text-left py-3 px-4 text-gray-900 text-base font-bold"
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {Array.from({ length: loadingRowCount }).map((_, index) => (
+            <tr key={`loading-${index}`} className="border-b border-gray-200">
+              {columns.map((_, cellIndex) => (
+                <td key={`loading-cell-${cellIndex}`} className="py-3 px-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ), [className, columns, loadingRowCount, table]);
+
+  // Memoize empty state
+  const emptyState = useMemo(() => (
+    <div
+      className={`flex flex-col items-center justify-center py-12 ${className}`}
+    >
+      <svg
+        className="w-16 h-16 mb-4 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+      <p className="text-lg font-medium text-gray-900">{emptyMessage}</p>
+      <p className="text-sm text-gray-400">{emptyDescription}</p>
+    </div>
+  ), [className, emptyMessage, emptyDescription]);
+
   // Show loading state
   if (isLoading) {
-    return (
-      <div className={`overflow-x-auto ${className}`}>
-        <table className="w-full">
-          <thead className="sticky top-0 bg-white z-10 border-b-2 border-gray-200">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="text-left py-3 px-4 text-gray-900 text-base font-bold"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {Array.from({ length: loadingRowCount }).map((_, index) => (
-              <tr key={`loading-${index}`} className="border-b border-gray-200">
-                {columns.map((_, cellIndex) => (
-                  <td key={`loading-cell-${cellIndex}`} className="py-3 px-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+    return loadingSkeleton;
   }
 
   if (data.length === 0) {
-    return (
-      <div
-        className={`flex flex-col items-center justify-center py-12 ${className}`}
-      >
-        <svg
-          className="w-16 h-16 mb-4 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        <p className="text-lg font-medium text-gray-900">{emptyMessage}</p>
-        <p className="text-sm text-gray-400">{emptyDescription}</p>
-      </div>
-    );
+    return emptyState;
   }
 
   return (

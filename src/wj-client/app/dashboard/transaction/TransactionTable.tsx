@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { createColumnHelper } from "@tanstack/react-table";
+import { useMemo, useCallback, memo } from "react";
 import { TanStackTable } from "../../../components/table/TanStackTable";
 import { resources } from "@/app/constants";
 import { Transaction } from "@/gen/protobuf/v1/transaction";
@@ -16,7 +17,57 @@ interface TransactionTableProps {
   className?: string;
 }
 
-export function TransactionTable({
+// Memoized action button component to prevent re-renders
+const TransactionActions = memo(function TransactionActions({
+  transactionId,
+  onEdit,
+  onDelete,
+}: {
+  transactionId: number;
+  onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
+}) {
+  const handleEdit = useCallback(() => {
+    onEdit(transactionId);
+  }, [transactionId, onEdit]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(transactionId);
+  }, [transactionId, onDelete]);
+
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={handleEdit}
+        className="w-6 h-6 hover:opacity-70 transition-opacity"
+        aria-label="Edit transaction"
+      >
+        <Image
+          src={`${resources}/editing.png`}
+          width={24}
+          height={24}
+          alt="Edit transaction"
+          className="w-full h-full object-contain"
+        />
+      </button>
+      <button
+        onClick={handleDelete}
+        className="w-6 h-6 hover:opacity-70 transition-opacity"
+        aria-label="Delete transaction"
+      >
+        <Image
+          src={`${resources}/remove.png`}
+          width={24}
+          height={24}
+          alt="Delete transaction"
+          className="w-full h-full object-contain"
+        />
+      </button>
+    </div>
+  );
+});
+
+export const TransactionTable = memo(function TransactionTable({
   transactions,
   getCategoryName,
   onEdit,
@@ -26,8 +77,8 @@ export function TransactionTable({
 }: TransactionTableProps) {
   const columnHelper = createColumnHelper<Transaction>();
 
-  // Format date for display
-  const formatDate = (timestamp: number) => {
+  // Memoize date formatter to avoid recreating on every render
+  const formatDate = useCallback((timestamp: number) => {
     const date = new Date(timestamp * 1000);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -36,10 +87,10 @@ export function TransactionTable({
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  // Define columns
-  const columns = [
+  // Memoize columns to avoid recreating on every render
+  const columns = useMemo(() => [
     columnHelper.accessor("categoryId", {
       id: "category",
       header: "Category",
@@ -64,37 +115,14 @@ export function TransactionTable({
       id: "actions",
       header: "Actions",
       cell: (info) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(info.row.original.id)}
-            className="w-6 h-6 hover:opacity-70 transition-opacity"
-            aria-label="Edit transaction"
-          >
-            <Image
-              src={`${resources}/editing.png`}
-              width={24}
-              height={24}
-              alt="Edit transaction"
-              className="w-full h-full object-contain"
-            />
-          </button>
-          <button
-            onClick={() => onDelete(info.row.original.id)}
-            className="w-6 h-6 hover:opacity-70 transition-opacity"
-            aria-label="Delete transaction"
-          >
-            <Image
-              src={`${resources}/remove.png`}
-              width={24}
-              height={24}
-              alt="Delete transaction"
-              className="w-full h-full object-contain"
-            />
-          </button>
-        </div>
+        <TransactionActions
+          transactionId={info.row.original.id}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ),
     }),
-  ];
+  ], [columnHelper, getCategoryName, formatDate, onEdit, onDelete]);
 
   return (
     <TanStackTable
@@ -106,4 +134,4 @@ export function TransactionTable({
       className={className}
     />
   );
-}
+});

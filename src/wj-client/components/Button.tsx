@@ -10,8 +10,65 @@ type PropType = {
   disabled?: boolean;
   className?: string;
 };
-export const Button = (props: PropType) => {
-  const { type, src, onClick, children, loading = false, disabled = false, className = "" } = props;
+
+// Hoist SVG content outside component to avoid recreating on each render
+const LOADING_SPINNER_WHITE = (
+  <svg
+    className="animate-spin h-5 w-5 text-white"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    ></circle>
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+);
+
+const LOADING_SPINNER_GREEN = (
+  <svg
+    className="animate-spin h-5 w-5 text-hgreen"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    ></circle>
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+);
+
+export const Button = React.memo(function Button({
+  type,
+  src,
+  onClick,
+  children,
+  loading = false,
+  disabled = false,
+  className = "",
+}: PropType) {
   switch (type) {
     case ButtonType.IMG:
       return (
@@ -27,28 +84,7 @@ export const Button = (props: PropType) => {
           onClick={onClick}
           disabled={loading || disabled}
         >
-          {loading && (
-            <svg
-              className="animate-spin h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          )}
+          {loading && LOADING_SPINNER_WHITE}
           {children}
         </button>
       );
@@ -60,33 +96,12 @@ export const Button = (props: PropType) => {
           onClick={onClick}
           disabled={loading || disabled}
         >
-          {loading && (
-            <svg
-              className="animate-spin h-5 w-5 text-hgreen"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          )}
+          {loading && LOADING_SPINNER_GREEN}
           {children}
         </button>
       );
 
     default:
-      break;
+      return null;
   }
-};
+});
