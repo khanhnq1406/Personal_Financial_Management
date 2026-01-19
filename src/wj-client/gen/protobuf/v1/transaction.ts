@@ -364,6 +364,39 @@ export interface GetAvailableYearsResponse {
   timestamp: string;
 }
 
+/** Monthly financial data for a wallet */
+export interface MonthlyFinancialData {
+  /** 0-11 (Jan-Dec) */
+  month: number;
+  income: Money | undefined;
+  expense: Money | undefined;
+}
+
+/** Wallet financial data for a year */
+export interface WalletFinancialData {
+  walletId: number;
+  walletName: string;
+  monthlyData: MonthlyFinancialData[];
+}
+
+/** GetFinancialReport request */
+export interface GetFinancialReportRequest {
+  year: number;
+  /** Optional: filter by specific wallets */
+  walletIds: number[];
+}
+
+/** GetFinancialReport response */
+export interface GetFinancialReportResponse {
+  success: boolean;
+  message: string;
+  year: number;
+  walletData: WalletFinancialData[];
+  /** Total across all wallets per month */
+  totals: MonthlyFinancialData[];
+  timestamp: string;
+}
+
 function createBaseTransaction(): Transaction {
   return { id: 0, walletId: 0, categoryId: 0, amount: undefined, date: 0, note: "", createdAt: 0, updatedAt: 0 };
 }
@@ -3014,6 +3047,430 @@ export const GetAvailableYearsResponse: MessageFns<GetAvailableYearsResponse> = 
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.years = object.years?.map((e) => e) || [];
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseMonthlyFinancialData(): MonthlyFinancialData {
+  return { month: 0, income: undefined, expense: undefined };
+}
+
+export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
+  encode(message: MonthlyFinancialData, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.month !== 0) {
+      writer.uint32(8).int32(message.month);
+    }
+    if (message.income !== undefined) {
+      Money.encode(message.income, writer.uint32(18).fork()).join();
+    }
+    if (message.expense !== undefined) {
+      Money.encode(message.expense, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MonthlyFinancialData {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMonthlyFinancialData();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.month = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.income = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.expense = Money.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MonthlyFinancialData {
+    return {
+      month: isSet(object.month) ? globalThis.Number(object.month) : 0,
+      income: isSet(object.income) ? Money.fromJSON(object.income) : undefined,
+      expense: isSet(object.expense) ? Money.fromJSON(object.expense) : undefined,
+    };
+  },
+
+  toJSON(message: MonthlyFinancialData): unknown {
+    const obj: any = {};
+    if (message.month !== 0) {
+      obj.month = Math.round(message.month);
+    }
+    if (message.income !== undefined) {
+      obj.income = Money.toJSON(message.income);
+    }
+    if (message.expense !== undefined) {
+      obj.expense = Money.toJSON(message.expense);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MonthlyFinancialData>): MonthlyFinancialData {
+    return MonthlyFinancialData.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MonthlyFinancialData>): MonthlyFinancialData {
+    const message = createBaseMonthlyFinancialData();
+    message.month = object.month ?? 0;
+    message.income = (object.income !== undefined && object.income !== null)
+      ? Money.fromPartial(object.income)
+      : undefined;
+    message.expense = (object.expense !== undefined && object.expense !== null)
+      ? Money.fromPartial(object.expense)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseWalletFinancialData(): WalletFinancialData {
+  return { walletId: 0, walletName: "", monthlyData: [] };
+}
+
+export const WalletFinancialData: MessageFns<WalletFinancialData> = {
+  encode(message: WalletFinancialData, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.walletId !== 0) {
+      writer.uint32(8).int32(message.walletId);
+    }
+    if (message.walletName !== "") {
+      writer.uint32(18).string(message.walletName);
+    }
+    for (const v of message.monthlyData) {
+      MonthlyFinancialData.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WalletFinancialData {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWalletFinancialData();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.walletName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.monthlyData.push(MonthlyFinancialData.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WalletFinancialData {
+    return {
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+      walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
+      monthlyData: globalThis.Array.isArray(object?.monthlyData)
+        ? object.monthlyData.map((e: any) => MonthlyFinancialData.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: WalletFinancialData): unknown {
+    const obj: any = {};
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    if (message.walletName !== "") {
+      obj.walletName = message.walletName;
+    }
+    if (message.monthlyData?.length) {
+      obj.monthlyData = message.monthlyData.map((e) => MonthlyFinancialData.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<WalletFinancialData>): WalletFinancialData {
+    return WalletFinancialData.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<WalletFinancialData>): WalletFinancialData {
+    const message = createBaseWalletFinancialData();
+    message.walletId = object.walletId ?? 0;
+    message.walletName = object.walletName ?? "";
+    message.monthlyData = object.monthlyData?.map((e) => MonthlyFinancialData.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGetFinancialReportRequest(): GetFinancialReportRequest {
+  return { year: 0, walletIds: [] };
+}
+
+export const GetFinancialReportRequest: MessageFns<GetFinancialReportRequest> = {
+  encode(message: GetFinancialReportRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.year !== 0) {
+      writer.uint32(8).int32(message.year);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.walletIds) {
+      writer.int32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFinancialReportRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFinancialReportRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.year = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.walletIds.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.walletIds.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFinancialReportRequest {
+    return {
+      year: isSet(object.year) ? globalThis.Number(object.year) : 0,
+      walletIds: globalThis.Array.isArray(object?.walletIds)
+        ? object.walletIds.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetFinancialReportRequest): unknown {
+    const obj: any = {};
+    if (message.year !== 0) {
+      obj.year = Math.round(message.year);
+    }
+    if (message.walletIds?.length) {
+      obj.walletIds = message.walletIds.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetFinancialReportRequest>): GetFinancialReportRequest {
+    return GetFinancialReportRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetFinancialReportRequest>): GetFinancialReportRequest {
+    const message = createBaseGetFinancialReportRequest();
+    message.year = object.year ?? 0;
+    message.walletIds = object.walletIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseGetFinancialReportResponse(): GetFinancialReportResponse {
+  return { success: false, message: "", year: 0, walletData: [], totals: [], timestamp: "" };
+}
+
+export const GetFinancialReportResponse: MessageFns<GetFinancialReportResponse> = {
+  encode(message: GetFinancialReportResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.year !== 0) {
+      writer.uint32(24).int32(message.year);
+    }
+    for (const v of message.walletData) {
+      WalletFinancialData.encode(v!, writer.uint32(34).fork()).join();
+    }
+    for (const v of message.totals) {
+      MonthlyFinancialData.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(50).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetFinancialReportResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetFinancialReportResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.year = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.walletData.push(WalletFinancialData.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.totals.push(MonthlyFinancialData.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetFinancialReportResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      year: isSet(object.year) ? globalThis.Number(object.year) : 0,
+      walletData: globalThis.Array.isArray(object?.walletData)
+        ? object.walletData.map((e: any) => WalletFinancialData.fromJSON(e))
+        : [],
+      totals: globalThis.Array.isArray(object?.totals)
+        ? object.totals.map((e: any) => MonthlyFinancialData.fromJSON(e))
+        : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetFinancialReportResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.year !== 0) {
+      obj.year = Math.round(message.year);
+    }
+    if (message.walletData?.length) {
+      obj.walletData = message.walletData.map((e) => WalletFinancialData.toJSON(e));
+    }
+    if (message.totals?.length) {
+      obj.totals = message.totals.map((e) => MonthlyFinancialData.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetFinancialReportResponse>): GetFinancialReportResponse {
+    return GetFinancialReportResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetFinancialReportResponse>): GetFinancialReportResponse {
+    const message = createBaseGetFinancialReportResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.year = object.year ?? 0;
+    message.walletData = object.walletData?.map((e) => WalletFinancialData.fromPartial(e)) || [];
+    message.totals = object.totals?.map((e) => MonthlyFinancialData.fromPartial(e)) || [];
     message.timestamp = object.timestamp ?? "";
     return message;
   },

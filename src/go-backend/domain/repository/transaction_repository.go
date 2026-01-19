@@ -209,7 +209,7 @@ func (r *transactionRepository) GetAvailableYears(ctx context.Context, userID in
 		Model(&models.Transaction{}).
 		Joins("JOIN wallet ON wallet.id = transaction.wallet_id").
 		Where("wallet.user_id = ?", userID).
-		Select("DISTINCT YEAR(transaction.date) as year").
+		Select("DISTINCT EXTRACT(YEAR FROM transaction.date) as year").
 		Order("year DESC")
 
 	result := query.Pluck("year", &years)

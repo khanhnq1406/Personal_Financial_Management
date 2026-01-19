@@ -1,14 +1,14 @@
 "use client";
 
-import { BaseCard } from "@/components/baseCard";
-import { Wallets } from "./walllets";
-import { Balance } from "./balance";
-import { Dominance } from "./dominance";
-import { MonthlyDominance } from "./monthlyDominance";
-import { AccountBalance } from "./accountBalance";
-import { User } from "./user";
-import { TotalBalance } from "./totalBalance";
-import { FunctionalButton } from "./functionalButtons";
+import { BaseCard } from "@/components/BaseCard";
+import { Wallets } from "./Walllets";
+import { Balance } from "./Balance";
+import { Dominance } from "./Dominance";
+import { MonthlyDominance } from "./MonthlyDominance";
+import { AccountBalance } from "./AccountBalance";
+import { User } from "./User";
+import { TotalBalance } from "./TotalBalance";
+import { FunctionalButton } from "./FunctionalButtons";
 import {
   useQueryListWallets,
   useQueryGetAvailableYears,

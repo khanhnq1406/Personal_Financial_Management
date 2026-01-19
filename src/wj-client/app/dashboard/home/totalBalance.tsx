@@ -1,8 +1,8 @@
 import { ButtonType, resources } from "@/app/constants";
-import { BaseCard } from "@/components/baseCard";
+import { BaseCard } from "@/components/BaseCard";
 import { Button } from "@/components/Button";
 import { TotalBalanceSkeleton } from "@/components/loading/Skeleton";
-import { currencyFormatter } from "@/utils/currencyFormatter";
+import { currencyFormatter } from "@/utils/currency-formatter";
 import { useQueryGetTotalBalance } from "@/utils/generated/hooks";
 import { memo, useMemo, useState } from "react";
 

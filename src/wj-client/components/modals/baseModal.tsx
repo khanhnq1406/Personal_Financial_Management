@@ -7,8 +7,8 @@ import { Button } from "@/components/Button";
 import { store } from "@/redux/store";
 import { closeModal, openModal } from "@/redux/actions";
 import { ModalPayload } from "@/redux/interface";
-import { Success } from "./success";
-import { ConfirmationDialog } from "./confirmationDialog";
+import { Success } from "./Success";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 import {
   useMutationCreateWallet,
   useMutationTransferFunds,
@@ -111,13 +111,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   }, [modal, deleteTransactionMutation]);
 
   // Common success handler
-  const handleSuccess = useCallback((message: string) => {
-    invalidateQueries();
-    modal.onSuccess?.();
-    store.dispatch(closeModal());
-    setSuccessMessage(message);
-    store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
-  }, [invalidateQueries, modal]);
+  const handleSuccess = useCallback(
+    (message: string) => {
+      invalidateQueries();
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage(message);
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    [invalidateQueries, modal],
+  );
 
   // Mutations for forms - memoized to avoid recreation
   const createWalletMutation = useMutationCreateWallet();
@@ -126,90 +129,107 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const transferFundsMutation = useMutationTransferFunds();
 
   // Handle create wallet submission
-  const handleCreateWallet = useCallback((data: CreateWalletFormOutput) => {
-    setError("");
-    createWalletMutation.mutate(
-      {
-        walletName: data.walletName,
-        initialBalance: {
-          amount: data.initialBalance,
-          currency: "VND",
+  const handleCreateWallet = useCallback(
+    (data: CreateWalletFormOutput) => {
+      setError("");
+      createWalletMutation.mutate(
+        {
+          walletName: data.walletName,
+          initialBalance: {
+            amount: data.initialBalance,
+            currency: "VND",
+          },
+          type: data.type,
         },
-        type: data.type,
-      },
-      {
-        onSuccess: () => handleSuccess("Wallet has been created successfully"),
-        onError: (err: any) =>
-          setError(err.message || "Failed to create wallet. Please try again"),
-      },
-    );
-  }, [createWalletMutation, handleSuccess]);
+        {
+          onSuccess: () =>
+            handleSuccess("Wallet has been created successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to create wallet. Please try again",
+            ),
+        },
+      );
+    },
+    [createWalletMutation, handleSuccess],
+  );
 
   // Handle create transaction submission
-  const handleCreateTransaction = useCallback((formData: any) => {
-    setError("");
-    createTransactionMutation.mutate(
-      {
-        walletId: Number(formData.walletId),
-        categoryId: Number(formData.categoryId),
-        amount: {
-          amount: formData.amount,
-          currency: "VND",
+  const handleCreateTransaction = useCallback(
+    (formData: any) => {
+      setError("");
+      createTransactionMutation.mutate(
+        {
+          walletId: Number(formData.walletId),
+          categoryId: Number(formData.categoryId),
+          amount: {
+            amount: formData.amount,
+            currency: "VND",
+          },
+          date: fromDateTimeLocal(formData.date),
+          note: formData.note,
         },
-        date: fromDateTimeLocal(formData.date),
-        note: formData.note,
-      },
-      {
-        onSuccess: () => handleSuccess("Transaction added successfully"),
-        onError: (err: any) =>
-          setError(
-            err.message || "Failed to add transaction. Please try again",
-          ),
-      },
-    );
-  }, [createTransactionMutation, handleSuccess]);
+        {
+          onSuccess: () => handleSuccess("Transaction added successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to add transaction. Please try again",
+            ),
+        },
+      );
+    },
+    [createTransactionMutation, handleSuccess],
+  );
 
   // Handle update transaction submission
-  const handleUpdateTransaction = useCallback((formData: any) => {
-    setError("");
-    updateTransactionMutation.mutate(
-      {
-        transactionId: formData.transactionId,
-        walletId: Number(formData.walletId),
-        categoryId: Number(formData.categoryId),
-        amount: formData.amount, // Already a Money object from form
-        date: fromDateTimeLocal(formData.date),
-        note: formData.note,
-      },
-      {
-        onSuccess: () => handleSuccess("Transaction updated successfully"),
-        onError: (err: any) =>
-          setError(
-            err.message || "Failed to update transaction. Please try again",
-          ),
-      },
-    );
-  }, [updateTransactionMutation, handleSuccess]);
+  const handleUpdateTransaction = useCallback(
+    (formData: any) => {
+      setError("");
+      updateTransactionMutation.mutate(
+        {
+          transactionId: formData.transactionId,
+          walletId: Number(formData.walletId),
+          categoryId: Number(formData.categoryId),
+          amount: formData.amount, // Already a Money object from form
+          date: fromDateTimeLocal(formData.date),
+          note: formData.note,
+        },
+        {
+          onSuccess: () => handleSuccess("Transaction updated successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to update transaction. Please try again",
+            ),
+        },
+      );
+    },
+    [updateTransactionMutation, handleSuccess],
+  );
 
   // Handle transfer funds submission
-  const handleTransferFunds = useCallback((data: TransferMoneyFormInput) => {
-    setError("");
-    transferFundsMutation.mutate(
-      {
-        fromWalletId: Number(data.fromWalletId),
-        toWalletId: Number(data.toWalletId),
-        amount: {
-          amount: data.amount,
-          currency: "VND",
+  const handleTransferFunds = useCallback(
+    (data: TransferMoneyFormInput) => {
+      setError("");
+      transferFundsMutation.mutate(
+        {
+          fromWalletId: Number(data.fromWalletId),
+          toWalletId: Number(data.toWalletId),
+          amount: {
+            amount: data.amount,
+            currency: "VND",
+          },
         },
-      },
-      {
-        onSuccess: () => handleSuccess("Transfer completed successfully"),
-        onError: (err: any) =>
-          setError(err.message || "Failed to transfer funds. Please try again"),
-      },
-    );
-  }, [transferFundsMutation, handleSuccess]);
+        {
+          onSuccess: () => handleSuccess("Transfer completed successfully"),
+          onError: (err: any) =>
+            setError(
+              err.message || "Failed to transfer funds. Please try again",
+            ),
+        },
+      );
+    },
+    [transferFundsMutation, handleSuccess],
+  );
 
   const handleClose = useCallback(() => {
     store.dispatch(closeModal());
@@ -230,12 +250,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   }, [modal.isOpen, modal.type, handleClose]);
 
   // Memoize loading state
-  const isLoading = useMemo(() =>
-    createWalletMutation.isPending ||
-    createTransactionMutation.isPending ||
-    updateTransactionMutation.isPending ||
-    transferFundsMutation.isPending,
-  [createWalletMutation.isPending, createTransactionMutation.isPending, updateTransactionMutation.isPending, transferFundsMutation.isPending]);
+  const isLoading = useMemo(
+    () =>
+      createWalletMutation.isPending ||
+      createTransactionMutation.isPending ||
+      updateTransactionMutation.isPending ||
+      transferFundsMutation.isPending,
+    [
+      createWalletMutation.isPending,
+      createTransactionMutation.isPending,
+      updateTransactionMutation.isPending,
+      transferFundsMutation.isPending,
+    ],
+  );
 
   const handleButtonClick = useCallback(() => {
     if (modal.type === ModalType.SUCCESS) {
@@ -275,7 +302,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         {modal.type !== ModalType.SUCCESS && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 id={`modal-title-${modal.type}`} className="font-bold text-lg">{modal.type}</h2>
+              <h2
+                id={`modal-title-${modal.type}`}
+                className="font-bold text-lg"
+              >
+                {modal.type}
+              </h2>
               <Button
                 type={ButtonType.IMG}
                 src={`${resources}/close.png`}
@@ -319,18 +351,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
           <Success message={successMessage} />
         )}
 
-        {modal.type === ModalType.CONFIRM && "confirmConfig" in modal && modal.confirmConfig && (
-          <ConfirmationDialog
-            title={modal.confirmConfig.title}
-            message={modal.confirmConfig.message}
-            confirmText={modal.confirmConfig.confirmText}
-            cancelText={modal.confirmConfig.cancelText}
-            onConfirm={handleConfirmAction}
-            onCancel={handleClose}
-            isLoading={isConfirming}
-            variant={modal.confirmConfig.variant}
-          />
-        )}
+        {modal.type === ModalType.CONFIRM &&
+          "confirmConfig" in modal &&
+          modal.confirmConfig && (
+            <ConfirmationDialog
+              title={modal.confirmConfig.title}
+              message={modal.confirmConfig.message}
+              confirmText={modal.confirmConfig.confirmText}
+              cancelText={modal.confirmConfig.cancelText}
+              onConfirm={handleConfirmAction}
+              onCancel={handleClose}
+              isLoading={isConfirming}
+              variant={modal.confirmConfig.variant}
+            />
+          )}
 
         {error && <div className="text-lred mb-2 text-sm">{error}</div>}
 

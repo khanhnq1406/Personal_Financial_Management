@@ -87,6 +87,9 @@ type TransactionService interface {
 
 	// GetAvailableYears retrieves distinct years from user's transactions.
 	GetAvailableYears(ctx context.Context, userID int32) (*transactionv1.GetAvailableYearsResponse, error)
+
+	// GetFinancialReport retrieves monthly financial breakdown for wallets in a given year.
+	GetFinancialReport(ctx context.Context, userID int32, req *transactionv1.GetFinancialReportRequest) (*transactionv1.GetFinancialReportResponse, error)
 }
 
 // CategoryService defines the interface for category business logic.

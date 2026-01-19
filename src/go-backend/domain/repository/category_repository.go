@@ -55,6 +55,27 @@ func (r *categoryRepository) GetByIDForUser(ctx context.Context, categoryID, use
 	return &category, nil
 }
 
+// GetByIDs retrieves multiple categories by their IDs in a single query.
+func (r *categoryRepository) GetByIDs(ctx context.Context, ids []int32) (map[int32]*models.Category, error) {
+	if len(ids) == 0 {
+		return make(map[int32]*models.Category), nil
+	}
+
+	var categories []*models.Category
+	result := r.db.DB.WithContext(ctx).Where("id IN ?", ids).Find(&categories)
+	if result.Error != nil {
+		return nil, r.handleDBError(result.Error, "category", "get categories by ids")
+	}
+
+	// Build map for easy lookup
+	categoryMap := make(map[int32]*models.Category, len(categories))
+	for _, category := range categories {
+		categoryMap[category.ID] = category
+	}
+
+	return categoryMap, nil
+}
+
 // Update updates a category.
 func (r *categoryRepository) Update(ctx context.Context, category *models.Category) error {
 	return r.executeUpdate(ctx, category, "category")

@@ -84,6 +84,7 @@ func RegisterRoutes(
 		transactions.GET("", h.Transaction.ListTransactions)
 		// Specific routes must come before :id parameterized route
 		transactions.GET("/available-years", h.Transaction.GetAvailableYears)
+		transactions.GET("/financial-report", h.Transaction.GetFinancialReport)
 		// Parameterized routes
 		transactions.GET("/:id", h.Transaction.GetTransaction)
 		transactions.PUT("/:id", h.Transaction.UpdateTransaction)

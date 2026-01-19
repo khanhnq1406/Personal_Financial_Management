@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CreatableSelect } from "./creatableSelect";
+import { CreatableSelect } from "./CreatableSelect";
 
 // Example 1: Basic usage with categories
 export const CategorySelectExample = () => {

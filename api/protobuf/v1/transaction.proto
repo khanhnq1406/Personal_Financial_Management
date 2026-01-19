@@ -52,6 +52,13 @@ service TransactionService {
       get: "/api/v1/transactions/available-years"
     };
   }
+
+  // Get financial report data with monthly breakdown per wallet
+  rpc GetFinancialReport(GetFinancialReportRequest) returns (GetFinancialReportResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/transactions/financial-report"
+    };
+  }
 }
 
 // Category service for category management operations.
@@ -306,4 +313,34 @@ message GetAvailableYearsResponse {
   string message = 2 [json_name = "message"];
   repeated int32 years = 3 [json_name = "years"];
   string timestamp = 4 [json_name = "timestamp"];
+}
+
+// Monthly financial data for a wallet
+message MonthlyFinancialData {
+  int32 month = 1 [json_name = "month"]; // 0-11 (Jan-Dec)
+  wealthjourney.common.v1.Money income = 2 [json_name = "income"];
+  wealthjourney.common.v1.Money expense = 3 [json_name = "expense"];
+}
+
+// Wallet financial data for a year
+message WalletFinancialData {
+  int32 walletId = 1 [json_name = "walletId"];
+  string walletName = 2 [json_name = "walletName"];
+  repeated MonthlyFinancialData monthlyData = 3 [json_name = "monthlyData"];
+}
+
+// GetFinancialReport request
+message GetFinancialReportRequest {
+  int32 year = 1 [json_name = "year"];
+  repeated int32 walletIds = 2 [json_name = "walletIds"]; // Optional: filter by specific wallets
+}
+
+// GetFinancialReport response
+message GetFinancialReportResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  int32 year = 3 [json_name = "year"];
+  repeated WalletFinancialData walletData = 4 [json_name = "walletData"];
+  repeated MonthlyFinancialData totals = 5 [json_name = "totals"]; // Total across all wallets per month
+  string timestamp = 6 [json_name = "timestamp"];
 }

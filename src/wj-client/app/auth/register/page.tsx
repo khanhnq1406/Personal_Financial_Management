@@ -4,7 +4,7 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 import { NotificationCode, routes } from "@/app/constants";
 import { useState } from "react";
-import Notification from "@/components/notification";
+import Notification from "@/components/Notification";
 import { api } from "@/utils/generated/api";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
@@ -60,7 +60,7 @@ export default function Register() {
           >
             Try again
           </button>
-        </div>
+        </div>,
       );
     }
   };

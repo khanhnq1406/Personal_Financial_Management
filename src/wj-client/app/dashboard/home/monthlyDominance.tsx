@@ -13,19 +13,21 @@ import {
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { useQueryGetMonthlyDominance } from "@/utils/generated/hooks";
 import { chartColors } from "@/app/constants";
-import { formatTickValue } from "@/utils/numberFormatter";
+import { formatTickValue } from "@/utils/number-formatter";
 
 interface MonthlyDominanceProps {
   availableYears: number[];
 }
 
-export const MonthlyDominance = memo(function MonthlyDominance({ availableYears }: MonthlyDominanceProps) {
+export const MonthlyDominance = memo(function MonthlyDominance({
+  availableYears,
+}: MonthlyDominanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Fetch monthly dominance data for the selected year
   const { data: dominanceData, isLoading } = useQueryGetMonthlyDominance(
     { year: selectedYear },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   // Transform data into stacked area chart format
@@ -33,7 +35,20 @@ export const MonthlyDominance = memo(function MonthlyDominance({ availableYears 
     const walletData = dominanceData?.data ?? [];
     if (walletData.length === 0) return [];
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
 
     // Build monthly data with each wallet's balance
     const monthlyData: Record<string, any>[] = monthNames.map((month) => ({
@@ -43,7 +58,8 @@ export const MonthlyDominance = memo(function MonthlyDominance({ availableYears 
     walletData.forEach((wallet) => {
       wallet.monthlyBalances.forEach((balance: number, monthIndex: number) => {
         monthlyData[monthIndex][`wallet_${wallet.walletId}`] = balance;
-        monthlyData[monthIndex][`wallet_name_${wallet.walletId}`] = wallet.walletName;
+        monthlyData[monthIndex][`wallet_name_${wallet.walletId}`] =
+          wallet.walletName;
       });
     });
 
@@ -63,7 +79,7 @@ export const MonthlyDominance = memo(function MonthlyDominance({ availableYears 
           color,
         };
       }),
-    [wallets]
+    [wallets],
   );
 
   if (isLoading) {
@@ -116,10 +132,20 @@ export const MonthlyDominance = memo(function MonthlyDominance({ availableYears 
         </select>
       </div>
       <ResponsiveContainer>
-        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
           <defs>
             {gradients.map((grad) => (
-              <linearGradient key={grad.id} id={grad.id} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                key={grad.id}
+                id={grad.id}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop offset="5%" stopColor={grad.color} stopOpacity={0.8} />
                 <stop offset="95%" stopColor={grad.color} stopOpacity={0.1} />
               </linearGradient>

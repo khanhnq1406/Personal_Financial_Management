@@ -12,18 +12,16 @@ import {
   ResponsiveContainer,
   Area,
 } from "recharts";
-import {
-  useQueryGetBalanceHistory,
-} from "@/utils/generated/hooks";
+import { useQueryGetBalanceHistory } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
-import { formatTickValue } from "@/utils/numberFormatter";
+import { formatTickValue } from "@/utils/number-formatter";
 
 interface AccountBalanceProps {
   availableYears?: number[];
 }
 
 export const AccountBalance = memo(function AccountBalance({
-  availableYears = [new Date().getFullYear()]
+  availableYears = [new Date().getFullYear()],
 }: AccountBalanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -36,7 +34,7 @@ export const AccountBalance = memo(function AccountBalance({
     },
     {
       refetchOnMount: "always",
-    }
+    },
   );
 
   // Prepare chart data with gradient-like styling

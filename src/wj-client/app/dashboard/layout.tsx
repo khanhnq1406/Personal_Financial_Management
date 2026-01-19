@@ -4,7 +4,7 @@ import { logout } from "../auth/utils/logout";
 import { routes, ButtonType, resources } from "../constants";
 import { AuthCheck } from "../auth/utils/authCheck";
 import { ButtonGroup } from "@/components/buttonGroup";
-import { BaseModal } from "@/components/modals/baseModal";
+import { BaseModal } from "@/components/modals/BaseModal";
 import { store } from "@/redux/store";
 import { useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";

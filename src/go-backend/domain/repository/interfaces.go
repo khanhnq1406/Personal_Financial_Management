@@ -135,6 +135,9 @@ type CategoryRepository interface {
 	// GetByIDForUser retrieves a category by ID, ensuring it belongs to the user.
 	GetByIDForUser(ctx context.Context, categoryID, userID int32) (*models.Category, error)
 
+	// GetByIDs retrieves multiple categories by their IDs in a single query.
+	GetByIDs(ctx context.Context, ids []int32) (map[int32]*models.Category, error)
+
 	// GetByNameAndType retrieves a category by name and type for a user.
 	// Returns the category if found, or creates it if it doesn't exist.
 	GetByNameAndType(ctx context.Context, userID int32, name string, categoryType v1.CategoryType) (*models.Category, error)

@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	TransactionService_GetTransaction_FullMethodName    = "/wealthjourney.transaction.v1.TransactionService/GetTransaction"
-	TransactionService_ListTransactions_FullMethodName  = "/wealthjourney.transaction.v1.TransactionService/ListTransactions"
-	TransactionService_CreateTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/CreateTransaction"
-	TransactionService_UpdateTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/UpdateTransaction"
-	TransactionService_DeleteTransaction_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/DeleteTransaction"
-	TransactionService_GetAvailableYears_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/GetAvailableYears"
+	TransactionService_GetTransaction_FullMethodName     = "/wealthjourney.transaction.v1.TransactionService/GetTransaction"
+	TransactionService_ListTransactions_FullMethodName   = "/wealthjourney.transaction.v1.TransactionService/ListTransactions"
+	TransactionService_CreateTransaction_FullMethodName  = "/wealthjourney.transaction.v1.TransactionService/CreateTransaction"
+	TransactionService_UpdateTransaction_FullMethodName  = "/wealthjourney.transaction.v1.TransactionService/UpdateTransaction"
+	TransactionService_DeleteTransaction_FullMethodName  = "/wealthjourney.transaction.v1.TransactionService/DeleteTransaction"
+	TransactionService_GetAvailableYears_FullMethodName  = "/wealthjourney.transaction.v1.TransactionService/GetAvailableYears"
+	TransactionService_GetFinancialReport_FullMethodName = "/wealthjourney.transaction.v1.TransactionService/GetFinancialReport"
 )
 
 // TransactionServiceClient is the client API for TransactionService service.
@@ -43,6 +44,8 @@ type TransactionServiceClient interface {
 	DeleteTransaction(ctx context.Context, in *DeleteTransactionRequest, opts ...grpc.CallOption) (*DeleteTransactionResponse, error)
 	// Get available years from user's transactions
 	GetAvailableYears(ctx context.Context, in *GetAvailableYearsRequest, opts ...grpc.CallOption) (*GetAvailableYearsResponse, error)
+	// Get financial report data with monthly breakdown per wallet
+	GetFinancialReport(ctx context.Context, in *GetFinancialReportRequest, opts ...grpc.CallOption) (*GetFinancialReportResponse, error)
 }
 
 type transactionServiceClient struct {
@@ -107,6 +110,15 @@ func (c *transactionServiceClient) GetAvailableYears(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *transactionServiceClient) GetFinancialReport(ctx context.Context, in *GetFinancialReportRequest, opts ...grpc.CallOption) (*GetFinancialReportResponse, error) {
+	out := new(GetFinancialReportResponse)
+	err := c.cc.Invoke(ctx, TransactionService_GetFinancialReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TransactionServiceServer is the server API for TransactionService service.
 // All implementations must embed UnimplementedTransactionServiceServer
 // for forward compatibility
@@ -123,6 +135,8 @@ type TransactionServiceServer interface {
 	DeleteTransaction(context.Context, *DeleteTransactionRequest) (*DeleteTransactionResponse, error)
 	// Get available years from user's transactions
 	GetAvailableYears(context.Context, *GetAvailableYearsRequest) (*GetAvailableYearsResponse, error)
+	// Get financial report data with monthly breakdown per wallet
+	GetFinancialReport(context.Context, *GetFinancialReportRequest) (*GetFinancialReportResponse, error)
 	mustEmbedUnimplementedTransactionServiceServer()
 }
 
@@ -147,6 +161,9 @@ func (UnimplementedTransactionServiceServer) DeleteTransaction(context.Context, 
 }
 func (UnimplementedTransactionServiceServer) GetAvailableYears(context.Context, *GetAvailableYearsRequest) (*GetAvailableYearsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableYears not implemented")
+}
+func (UnimplementedTransactionServiceServer) GetFinancialReport(context.Context, *GetFinancialReportRequest) (*GetFinancialReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFinancialReport not implemented")
 }
 func (UnimplementedTransactionServiceServer) mustEmbedUnimplementedTransactionServiceServer() {}
 
@@ -269,6 +286,24 @@ func _TransactionService_GetAvailableYears_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TransactionService_GetFinancialReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFinancialReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TransactionServiceServer).GetFinancialReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TransactionService_GetFinancialReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TransactionServiceServer).GetFinancialReport(ctx, req.(*GetFinancialReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TransactionService_ServiceDesc is the grpc.ServiceDesc for TransactionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -299,6 +334,10 @@ var TransactionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAvailableYears",
 			Handler:    _TransactionService_GetAvailableYears_Handler,
+		},
+		{
+			MethodName: "GetFinancialReport",
+			Handler:    _TransactionService_GetFinancialReport_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

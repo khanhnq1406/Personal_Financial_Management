@@ -72,7 +72,9 @@ export const Button = React.memo(function Button({
   switch (type) {
     case ButtonType.IMG:
       return (
-        <button className={`hover:bg-hover rounded-md p-1 hover:drop-shadow-sm focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${className}`}>
+        <button
+          className={`hover:bg-hover rounded-md p-1 hover:drop-shadow-sm focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 ${className}`}
+        >
           <img src={src} alt="" onClick={onClick} className="w-5" />
         </button>
       );

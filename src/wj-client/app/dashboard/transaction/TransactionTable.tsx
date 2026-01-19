@@ -6,7 +6,7 @@ import { useMemo, useCallback, memo } from "react";
 import { TanStackTable } from "../../../components/table/TanStackTable";
 import { resources } from "@/app/constants";
 import { Transaction } from "@/gen/protobuf/v1/transaction";
-import { currencyFormatter } from "@/utils/currencyFormatter";
+import { currencyFormatter } from "@/utils/currency-formatter";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -90,39 +90,42 @@ export const TransactionTable = memo(function TransactionTable({
   }, []);
 
   // Memoize columns to avoid recreating on every render
-  const columns = useMemo(() => [
-    columnHelper.accessor("categoryId", {
-      id: "category",
-      header: "Category",
-      cell: (info) => getCategoryName(info.getValue()),
-    }),
-    columnHelper.accessor("amount", {
-      id: "amount",
-      header: "Amount",
-      cell: (info) => currencyFormatter.format(info.getValue()?.amount || 0),
-    }),
-    columnHelper.accessor("date", {
-      id: "date",
-      header: "Date & Time",
-      cell: (info) => formatDate(info.getValue()),
-    }),
-    columnHelper.accessor("note", {
-      id: "note",
-      header: "Note",
-      cell: (info) => info.getValue() || "-",
-    }),
-    columnHelper.display({
-      id: "actions",
-      header: "Actions",
-      cell: (info) => (
-        <TransactionActions
-          transactionId={info.row.original.id}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ),
-    }),
-  ], [columnHelper, getCategoryName, formatDate, onEdit, onDelete]);
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("categoryId", {
+        id: "category",
+        header: "Category",
+        cell: (info) => getCategoryName(info.getValue()),
+      }),
+      columnHelper.accessor("amount", {
+        id: "amount",
+        header: "Amount",
+        cell: (info) => currencyFormatter.format(info.getValue()?.amount || 0),
+      }),
+      columnHelper.accessor("date", {
+        id: "date",
+        header: "Date & Time",
+        cell: (info) => formatDate(info.getValue()),
+      }),
+      columnHelper.accessor("note", {
+        id: "note",
+        header: "Note",
+        cell: (info) => info.getValue() || "-",
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Actions",
+        cell: (info) => (
+          <TransactionActions
+            transactionId={info.row.original.id}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ),
+      }),
+    ],
+    [columnHelper, getCategoryName, formatDate, onEdit, onDelete],
+  );
 
   return (
     <TanStackTable

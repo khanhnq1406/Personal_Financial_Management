@@ -7,7 +7,7 @@ import Image from "next/image";
 import { store } from "@/redux/store";
 import { openModal } from "@/redux/actions";
 import { formatDateTime } from "@/lib/utils/date";
-import { currencyFormatter } from "@/utils/currencyFormatter";
+import { currencyFormatter } from "@/utils/currency-formatter";
 
 type TransactionItemProps = {
   transaction: Transaction;
@@ -38,7 +38,7 @@ export const TransactionItem = ({
         onSuccess: () => {
           // This will be handled by the parent component's refetch
         },
-      })
+      }),
     );
   };
 
@@ -78,7 +78,9 @@ export const TransactionItem = ({
             {transaction.note && (
               <>
                 <span>•</span>
-                <span className="truncate max-w-[200px]">{transaction.note}</span>
+                <span className="truncate max-w-[200px]">
+                  {transaction.note}
+                </span>
               </>
             )}
           </div>

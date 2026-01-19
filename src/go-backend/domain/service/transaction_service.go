@@ -359,6 +359,185 @@ func (s *transactionService) GetAvailableYears(ctx context.Context, userID int32
 	}, nil
 }
 
+// GetFinancialReport retrieves monthly financial breakdown for wallets in a given year.
+func (s *transactionService) GetFinancialReport(ctx context.Context, userID int32, req *v1.GetFinancialReportRequest) (*v1.GetFinancialReportResponse, error) {
+	// Validate year
+	if req.Year <= 0 {
+		return nil, apperrors.NewValidationError("Invalid year")
+	}
+
+	// Calculate date range for the requested year
+	startDate := time.Date(int(req.Year), 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(int(req.Year), 12, 31, 23, 59, 59, 0, time.UTC)
+
+	// Get user's wallets using list method
+	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter wallets based on request
+	var targetWallets []*models.Wallet
+	if len(req.WalletIds) > 0 {
+		// Filter by specified wallet IDs
+		walletIDMap := make(map[int32]bool)
+		for _, id := range req.WalletIds {
+			walletIDMap[id] = true
+		}
+		for _, wallet := range wallets {
+			if walletIDMap[wallet.ID] {
+				targetWallets = append(targetWallets, wallet)
+			}
+		}
+	} else {
+		// Use all wallets
+		targetWallets = wallets
+	}
+
+	if len(targetWallets) == 0 {
+		return &v1.GetFinancialReportResponse{
+			Success:   true,
+			Message:   "No wallets found",
+			Year:      req.Year,
+			WalletData: []*v1.WalletFinancialData{},
+			Totals:    make([]*v1.MonthlyFinancialData, 12),
+			Timestamp: time.Now().Format(time.RFC3339),
+		}, nil
+	}
+
+	// Get transactions for the year
+	var walletIDs []int32
+	for _, w := range targetWallets {
+		walletIDs = append(walletIDs, w.ID)
+	}
+
+	filter := repository.TransactionFilter{
+		WalletIDs: walletIDs,
+		StartDate: &startDate,
+		EndDate:   &endDate,
+	}
+
+	transactions, _, err := s.txRepo.List(ctx, userID, filter, repository.ListOptions{
+		Limit:   100000,
+		Offset:  0,
+		OrderBy: "date",
+		Order:   "asc",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create monthly data structure for each wallet
+	walletDataMap := make(map[int32]*v1.WalletFinancialData)
+	for _, wallet := range targetWallets {
+		monthlyData := make([]*v1.MonthlyFinancialData, 12)
+		for month := 0; month < 12; month++ {
+			monthlyData[month] = &v1.MonthlyFinancialData{
+				Month:   int32(month),
+				Income:  &v1.Money{Amount: 0, Currency: wallet.Currency},
+				Expense: &v1.Money{Amount: 0, Currency: wallet.Currency},
+			}
+		}
+		walletDataMap[wallet.ID] = &v1.WalletFinancialData{
+			WalletId:    wallet.ID,
+			WalletName:  wallet.WalletName,
+			MonthlyData: monthlyData,
+		}
+	}
+
+	// Batch load all unique categories from transactions
+	categoryIDsSet := make(map[int32]bool)
+	for _, tx := range transactions {
+		if tx.CategoryID != nil {
+			categoryIDsSet[*tx.CategoryID] = true
+		}
+	}
+
+	// Convert set to slice
+	categoryIDs := make([]int32, 0, len(categoryIDsSet))
+	for id := range categoryIDsSet {
+		categoryIDs = append(categoryIDs, id)
+	}
+
+	// Batch load categories in a single query
+	categories, _ := s.categoryRepo.GetByIDs(ctx, categoryIDs)
+
+	// Process transactions and aggregate by wallet and month
+	for _, tx := range transactions {
+		walletData := walletDataMap[tx.WalletID]
+		if walletData == nil {
+			continue
+		}
+
+		// Get month from transaction date
+		month := int(tx.Date.Month()) - 1 // 0-11 for Jan-Dec
+		if month < 0 || month >= 12 {
+			continue
+		}
+
+		monthlyEntry := walletData.MonthlyData[month]
+
+		// Get category from pre-loaded map
+		var category *models.Category
+		if tx.CategoryID != nil {
+			category = categories[*tx.CategoryID]
+		}
+
+		// Add to income or expense based on category type
+		if category != nil && category.Type == v1.CategoryType_CATEGORY_TYPE_INCOME {
+			monthlyEntry.Income.Amount += tx.Amount
+		} else {
+			monthlyEntry.Expense.Amount += tx.Amount
+		}
+	}
+
+	// Build response
+	walletDataList := make([]*v1.WalletFinancialData, 0, len(walletDataMap))
+	for _, data := range walletDataMap {
+		walletDataList = append(walletDataList, data)
+	}
+
+	// Calculate totals across all wallets for each month
+	totals := make([]*v1.MonthlyFinancialData, 12)
+	for month := 0; month < 12; month++ {
+		var totalIncome, totalExpense int64
+		currency := "VND" // Default currency
+
+		for _, walletData := range walletDataList {
+			if len(walletData.MonthlyData) > month {
+				monthlyData := walletData.MonthlyData[month]
+				totalIncome += monthlyData.Income.Amount
+				totalExpense += monthlyData.Expense.Amount
+				if monthlyData.Income.Currency != "" {
+					currency = monthlyData.Income.Currency
+				}
+			}
+		}
+
+		totals[month] = &v1.MonthlyFinancialData{
+			Month:   int32(month),
+			Income:  &v1.Money{Amount: totalIncome, Currency: currency},
+			Expense: &v1.Money{Amount: totalExpense, Currency: currency},
+		}
+	}
+
+	message := "Financial report retrieved successfully"
+	if len(walletDataList) == 0 {
+		message = "No financial data found for the specified period"
+	}
+
+	return &v1.GetFinancialReportResponse{
+		Success:   true,
+		Message:   message,
+		Year:      req.Year,
+		WalletData: walletDataList,
+		Totals:    totals,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
 // Helper methods
 
 // calculateBalanceDelta calculates the balance change based on amount and category type.

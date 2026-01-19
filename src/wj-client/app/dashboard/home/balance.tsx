@@ -17,7 +17,7 @@ import {
   useQueryListWallets,
 } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
-import { formatTickValue } from "@/utils/numberFormatter";
+import { formatTickValue } from "@/utils/number-formatter";
 
 interface BalanceProps {
   availableYears: number[];
@@ -26,7 +26,7 @@ interface BalanceProps {
 export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedWalletId, setSelectedWalletId] = useState<number | undefined>(
-    undefined
+    undefined,
   );
 
   // Fetch wallets for the dropdown
@@ -34,7 +34,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
     {
       pagination: { page: 1, pageSize: 100, orderBy: "", order: "" },
     },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   // Fetch balance history
@@ -48,7 +48,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
       {
         refetchOnMount: "always",
         enabled: !walletsLoading,
-      }
+      },
     );
 
   // Prepare chart data
@@ -89,7 +89,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
           value={selectedWalletId ?? ""}
           onChange={(e) =>
             setSelectedWalletId(
-              e.target.value ? parseInt(e.target.value) : undefined
+              e.target.value ? parseInt(e.target.value) : undefined,
             )
           }
         >

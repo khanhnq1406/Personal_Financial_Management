@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -269,6 +270,63 @@ func (h *TransactionHandlers) GetAvailableYears(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetFinancialReport retrieves monthly financial breakdown for wallets in a given year.
+// @Summary Get financial report with monthly breakdown
+// @Tags transactions
+// @Produce json
+// @Param year query int true "Year to get report for"
+// @Param wallet_ids query string false "Comma-separated wallet IDs to filter"
+// @Success 200 {object} types.APIResponse{data=transactionv1.GetFinancialReportResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/transactions/financial-report [get]
+func (h *TransactionHandlers) GetFinancialReport(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse year parameter
+	yearStr := c.Query("year")
+	if yearStr == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("year parameter is required"))
+		return
+	}
+
+	year, err := strconv.ParseInt(yearStr, 10, 32)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid year format"))
+		return
+	}
+
+	// Build request
+	req := &transactionv1.GetFinancialReportRequest{
+		Year: int32(year),
+	}
+
+	// Parse wallet_ids if provided
+	if walletIDsStr := c.Query("wallet_ids"); walletIDsStr != "" {
+		walletIDs, err := parseCommaSeparatedInt32(walletIDsStr)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid wallet_ids format"))
+			return
+		}
+		req.WalletIds = walletIDs
+	}
+
+	// Call service
+	result, err := h.transactionService.GetFinancialReport(c.Request.Context(), userID, req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // Helper functions for parsing query parameters
 
 // parseTransactionFilter parses filter parameters from query string.
@@ -415,4 +473,39 @@ func parsePaginationParamsProto(c *gin.Context) *transactionv1.PaginationParams 
 		OrderBy:  orderBy,
 		Order:    order,
 	}
+}
+
+// parseCommaSeparatedInt32 parses a comma-separated string into int32 slice.
+func parseCommaSeparatedInt32(s string) ([]int32, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	parts := splitCommaSeparated(s)
+	result := make([]int32, 0, len(parts))
+
+	for _, part := range parts {
+		num, err := strconv.ParseInt(part, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, int32(num))
+	}
+
+	return result, nil
+}
+
+// splitCommaSeparated splits a string by commas and trims whitespace.
+func splitCommaSeparated(s string) []string {
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+
+	return result
 }
