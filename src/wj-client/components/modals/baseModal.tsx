@@ -23,6 +23,7 @@ import {
   useMutationCreateBudgetItem,
   useMutationUpdateBudgetItem,
   useMutationDeleteBudgetItem,
+  useMutationAdjustBalance,
   EVENT_WalletListWallets,
   EVENT_WalletGetTotalBalance,
   EVENT_TransactionListTransactions,
@@ -38,7 +39,7 @@ import { CreateBudgetForm } from "./forms/CreateBudgetForm";
 import { EditBudgetForm } from "./forms/EditBudgetForm";
 import { CreateBudgetItemForm } from "./forms/CreateBudgetItemForm";
 import { EditBudgetItemForm } from "./forms/EditBudgetItemForm";
-import { CreateWalletFormOutput, UpdateWalletFormOutput } from "@/lib/validation/wallet.schema";
+import { CreateWalletFormOutput, UpdateWalletFormOutput, AdjustBalanceFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
 import {
   CreateBudgetFormInput,
@@ -234,7 +235,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const updateBudgetItemMutation = useMutationUpdateBudgetItem();
 
   // Wallet mutations
-  const updateWalletMutation = useMutationUpdateWallet();
+  const updateWalletMutation = useMutationUpdateWallet({
+    onError: (error: any) => {
+      setError(error.message || "Failed to update wallet. Please try again");
+    },
+  });
+  const adjustBalanceMutation = useMutationAdjustBalance({
+    onError: (error: any) => {
+      setError(error.message || "Failed to adjust balance. Please try again");
+    },
+  });
 
   // Handle create wallet submission
   const handleCreateWallet = useCallback(
@@ -461,26 +471,47 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   );
 
   const handleEditWallet = useCallback(
-    (data: UpdateWalletFormOutput) => {
+    async (walletData: UpdateWalletFormOutput, adjustment?: AdjustBalanceFormOutput) => {
       setError("");
       if (!("data" in modal) || !modal.data?.wallet) {
         setError("Wallet data not found");
         return;
       }
       const wallet = modal.data.wallet;
-      updateWalletMutation.mutate(
-        {
-          walletId: wallet.id,
-          walletName: data.walletName,
-        },
-        {
-          onSuccess: () => handleSuccess("Wallet has been updated successfully"),
-          onError: (err: any) =>
-            setError(err.message || "Failed to update wallet. Please try again"),
-        },
-      );
+
+      try {
+        // First, adjust balance if provided
+        if (adjustment && adjustment.adjustmentAmount !== 0) {
+          await adjustBalanceMutation.mutateAsync({
+            walletId: wallet.id,
+            amount: {
+              amount: Math.round(adjustment.adjustmentAmount), // VND is already in smallest unit
+              currency: wallet.balance?.currency || "VND",
+            },
+            reason: adjustment.reason || "Balance adjustment",
+          });
+        }
+
+        // Then update wallet name if changed
+        if (walletData.walletName !== wallet.walletName) {
+          await updateWalletMutation.mutateAsync({
+            walletId: wallet.id,
+            walletName: walletData.walletName,
+          });
+        }
+
+        // Show success if any changes were made
+        if (walletData.walletName !== wallet.walletName || (adjustment && adjustment.adjustmentAmount !== 0)) {
+          handleSuccess("Wallet has been updated successfully");
+        } else {
+          // No changes at all
+          store.dispatch(closeModal());
+        }
+      } catch {
+        // Error handling is done by mutation onError callbacks
+      }
     },
-    [updateWalletMutation, handleSuccess, modal],
+    [adjustBalanceMutation, updateWalletMutation, handleSuccess, modal],
   );
 
   const handleClose = useCallback(() => {
@@ -506,6 +537,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     () =>
       createWalletMutation.isPending ||
       updateWalletMutation.isPending ||
+      adjustBalanceMutation.isPending ||
       deleteWalletMutation.isPending ||
       createTransactionMutation.isPending ||
       updateTransactionMutation.isPending ||
@@ -517,6 +549,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     [
       createWalletMutation.isPending,
       updateWalletMutation.isPending,
+      adjustBalanceMutation.isPending,
       deleteWalletMutation.isPending,
       createTransactionMutation.isPending,
       updateTransactionMutation.isPending,

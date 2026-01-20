@@ -54,3 +54,25 @@ export const updateWalletSchema = (
 export type UpdateWalletFormOutput = z.infer<
   ReturnType<typeof updateWalletSchema>
 >;
+
+/**
+ * Zod schema for wallet balance adjustment
+ * Validates that amount is non-zero and creates proper adjustment
+ * Accepts both positive (add funds) and negative (subtract funds) values
+ */
+export const adjustBalanceSchema = z.object({
+  adjustmentAmount: z
+    .number({
+      message: "Amount must be a number",
+    })
+    .refine((amount) => amount !== 0, {
+      message: "Adjustment amount cannot be zero",
+    })
+    .refine((amount) => Math.abs(amount) >= 0.01, {
+      message: "Amount must be at least 0.01 in absolute value",
+    }),
+  reason: z.string().max(200, "Reason must be less than 200 characters").optional(),
+});
+
+// Infer the form type from the schema
+export type AdjustBalanceFormOutput = z.infer<typeof adjustBalanceSchema>;

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"wealthjourney/domain/models"
 	"wealthjourney/pkg/types"
 	budgetv1 "wealthjourney/protobuf/v1"
 	transactionv1 "wealthjourney/protobuf/v1"
@@ -34,6 +35,9 @@ type WalletService interface {
 
 	// TransferFunds transfers funds between two wallets belonging to the same user.
 	TransferFunds(ctx context.Context, userID int32, req *walletv1.TransferFundsRequest) (*walletv1.TransferFundsResponse, error)
+
+	// AdjustBalance adjusts a wallet's balance and creates a transaction for audit trail.
+	AdjustBalance(ctx context.Context, walletID int32, userID int32, req *walletv1.AdjustBalanceRequest) (*walletv1.AdjustBalanceResponse, error)
 
 	// GetTotalBalance calculates the total balance across all user wallets.
 	GetTotalBalance(ctx context.Context, userID int32) (*walletv1.GetTotalBalanceResponse, error)
@@ -112,6 +116,10 @@ type CategoryService interface {
 
 	// CreateDefaultCategories creates default categories for a new user.
 	CreateDefaultCategories(ctx context.Context, userID int32) error
+
+	// GetOrCreateBalanceAdjustmentCategory gets or creates a balance adjustment category.
+	// Based on whether the adjustment is positive (income) or negative (expense).
+	GetOrCreateBalanceAdjustmentCategory(ctx context.Context, userID int32, isPositiveAdjustment bool) (*models.Category, error)
 }
 
 // BudgetService defines the interface for budget business logic.

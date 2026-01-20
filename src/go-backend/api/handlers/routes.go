@@ -71,6 +71,7 @@ func RegisterRoutes(
 		wallets.DELETE("/:id", h.Wallet.DeleteWallet)
 		wallets.POST("/:id/add", h.Wallet.AddFunds)
 		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
+		wallets.POST("/:id/adjust", h.Wallet.AdjustBalance)
 	}
 
 	// Transaction routes (protected)

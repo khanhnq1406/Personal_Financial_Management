@@ -359,6 +359,52 @@ func (h *WalletHandlers) TransferFunds(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// AdjustBalance adjusts a wallet's balance with audit trail.
+// @Summary Adjust wallet balance
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Param id path int true "Wallet ID"
+// @Param request body walletv1.AdjustBalanceRequest true "Adjust balance request"
+// @Success 200 {object} types.APIResponse{data=walletv1.Wallet}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 403 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/wallets/{id}/adjust [post]
+func (h *WalletHandlers) AdjustBalance(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse wallet ID
+	walletID, err := parseIDParam(c, "id")
+	if err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Bind and validate request
+	var req protobufv1.AdjustBalanceRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Call service
+	result, err := h.walletService.AdjustBalance(c.Request.Context(), walletID, userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // GetTotalBalance returns the total balance across all user wallets.
 // @Summary Get total balance
 // @Tags wallets

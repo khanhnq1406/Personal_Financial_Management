@@ -112,6 +112,17 @@ export interface TransferFundsRequest {
   amount: Money | undefined;
 }
 
+/** AdjustBalance request */
+export interface AdjustBalanceRequest {
+  walletId: number;
+  /** Can be positive or negative */
+  amount:
+    | Money
+    | undefined;
+  /** Optional: why adjustment was made */
+  reason: string;
+}
+
 /** GetTotalBalance request */
 export interface GetTotalBalanceRequest {
 }
@@ -176,6 +187,15 @@ export interface WithdrawFundsResponse {
 export interface TransferFundsResponse {
   success: boolean;
   message: string;
+  timestamp: string;
+}
+
+/** AdjustBalance response */
+export interface AdjustBalanceResponse {
+  success: boolean;
+  message: string;
+  /** Updated wallet */
+  data: Wallet | undefined;
   timestamp: string;
 }
 
@@ -1073,6 +1093,100 @@ export const TransferFundsRequest: MessageFns<TransferFundsRequest> = {
   },
 };
 
+function createBaseAdjustBalanceRequest(): AdjustBalanceRequest {
+  return { walletId: 0, amount: undefined, reason: "" };
+}
+
+export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
+  encode(message: AdjustBalanceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.walletId !== 0) {
+      writer.uint32(8).int32(message.walletId);
+    }
+    if (message.amount !== undefined) {
+      Money.encode(message.amount, writer.uint32(18).fork()).join();
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AdjustBalanceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdjustBalanceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.amount = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdjustBalanceRequest {
+    return {
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+      amount: isSet(object.amount) ? Money.fromJSON(object.amount) : undefined,
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+    };
+  },
+
+  toJSON(message: AdjustBalanceRequest): unknown {
+    const obj: any = {};
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    if (message.amount !== undefined) {
+      obj.amount = Money.toJSON(message.amount);
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdjustBalanceRequest>): AdjustBalanceRequest {
+    return AdjustBalanceRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AdjustBalanceRequest>): AdjustBalanceRequest {
+    const message = createBaseAdjustBalanceRequest();
+    message.walletId = object.walletId ?? 0;
+    message.amount = (object.amount !== undefined && object.amount !== null)
+      ? Money.fromPartial(object.amount)
+      : undefined;
+    message.reason = object.reason ?? "";
+    return message;
+  },
+};
+
 function createBaseGetTotalBalanceRequest(): GetTotalBalanceRequest {
   return {};
 }
@@ -1961,6 +2075,114 @@ export const TransferFundsResponse: MessageFns<TransferFundsResponse> = {
     const message = createBaseTransferFundsResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseAdjustBalanceResponse(): AdjustBalanceResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const AdjustBalanceResponse: MessageFns<AdjustBalanceResponse> = {
+  encode(message: AdjustBalanceResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      Wallet.encode(message.data, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AdjustBalanceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAdjustBalanceResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = Wallet.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AdjustBalanceResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? Wallet.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: AdjustBalanceResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = Wallet.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AdjustBalanceResponse>): AdjustBalanceResponse {
+    return AdjustBalanceResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AdjustBalanceResponse>): AdjustBalanceResponse {
+    const message = createBaseAdjustBalanceResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? Wallet.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
     return message;
   },

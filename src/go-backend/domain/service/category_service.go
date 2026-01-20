@@ -168,6 +168,36 @@ func (s *categoryService) CreateDefaultCategories(ctx context.Context, userID in
 	return s.categoryRepo.CreateDefaultCategories(ctx, userID)
 }
 
+// GetOrCreateBalanceAdjustmentCategory gets or creates a balance adjustment category.
+// Based on whether the adjustment is positive (income) or negative (expense).
+func (s *categoryService) GetOrCreateBalanceAdjustmentCategory(ctx context.Context, userID int32, isPositiveAdjustment bool) (*models.Category, error) {
+	categoryType := v1.CategoryType_CATEGORY_TYPE_EXPENSE
+	if isPositiveAdjustment {
+		categoryType = v1.CategoryType_CATEGORY_TYPE_INCOME
+	}
+
+	categoryName := "Balance Adjustment"
+
+	// Try to get existing category
+	category, err := s.categoryRepo.GetByNameAndType(ctx, userID, categoryName, categoryType)
+	if err == nil && category != nil {
+		return category, nil
+	}
+
+	// Create new category if it doesn't exist
+	newCategory := &models.Category{
+		UserID: userID,
+		Name:   categoryName,
+		Type:   categoryType,
+	}
+
+	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to create balance adjustment category", err)
+	}
+
+	return newCategory, nil
+}
+
 // Helper methods
 
 // validateCategoryName validates the category name.

@@ -70,6 +70,14 @@ service WalletService {
     };
   }
 
+  // Adjust wallet balance with audit trail
+  rpc AdjustBalance(AdjustBalanceRequest) returns (AdjustBalanceResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/wallets/{walletId}/adjust"
+      body: "*"
+    };
+  }
+
   // Get total balance across all user wallets
   rpc GetTotalBalance(GetTotalBalanceRequest) returns (GetTotalBalanceResponse) {
     option (google.api.http) = {
@@ -162,6 +170,13 @@ message TransferFundsRequest {
   wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
 }
 
+// AdjustBalance request
+message AdjustBalanceRequest {
+  int32 walletId = 1 [json_name = "walletId"];
+  wealthjourney.common.v1.Money amount = 2 [json_name = "amount"];  // Can be positive or negative
+  string reason = 3 [json_name = "reason"];  // Optional: why adjustment was made
+}
+
 // GetTotalBalance request
 message GetTotalBalanceRequest {}
 
@@ -226,6 +241,14 @@ message TransferFundsResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+}
+
+// AdjustBalance response
+message AdjustBalanceResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Wallet data = 3 [json_name = "data"];  // Updated wallet
+  string timestamp = 4 [json_name = "timestamp"];
 }
 
 // GetTotalBalance response

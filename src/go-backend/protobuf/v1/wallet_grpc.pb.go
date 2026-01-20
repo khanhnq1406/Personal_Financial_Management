@@ -27,6 +27,7 @@ const (
 	WalletService_AddFunds_FullMethodName            = "/wealthjourney.wallet.v1.WalletService/AddFunds"
 	WalletService_WithdrawFunds_FullMethodName       = "/wealthjourney.wallet.v1.WalletService/WithdrawFunds"
 	WalletService_TransferFunds_FullMethodName       = "/wealthjourney.wallet.v1.WalletService/TransferFunds"
+	WalletService_AdjustBalance_FullMethodName       = "/wealthjourney.wallet.v1.WalletService/AdjustBalance"
 	WalletService_GetTotalBalance_FullMethodName     = "/wealthjourney.wallet.v1.WalletService/GetTotalBalance"
 	WalletService_GetBalanceHistory_FullMethodName   = "/wealthjourney.wallet.v1.WalletService/GetBalanceHistory"
 	WalletService_GetMonthlyDominance_FullMethodName = "/wealthjourney.wallet.v1.WalletService/GetMonthlyDominance"
@@ -52,6 +53,8 @@ type WalletServiceClient interface {
 	WithdrawFunds(ctx context.Context, in *WithdrawFundsRequest, opts ...grpc.CallOption) (*WithdrawFundsResponse, error)
 	// Transfer funds between wallets
 	TransferFunds(ctx context.Context, in *TransferFundsRequest, opts ...grpc.CallOption) (*TransferFundsResponse, error)
+	// Adjust wallet balance with audit trail
+	AdjustBalance(ctx context.Context, in *AdjustBalanceRequest, opts ...grpc.CallOption) (*AdjustBalanceResponse, error)
 	// Get total balance across all user wallets
 	GetTotalBalance(ctx context.Context, in *GetTotalBalanceRequest, opts ...grpc.CallOption) (*GetTotalBalanceResponse, error)
 	// Get balance history for chart visualization
@@ -140,6 +143,15 @@ func (c *walletServiceClient) TransferFunds(ctx context.Context, in *TransferFun
 	return out, nil
 }
 
+func (c *walletServiceClient) AdjustBalance(ctx context.Context, in *AdjustBalanceRequest, opts ...grpc.CallOption) (*AdjustBalanceResponse, error) {
+	out := new(AdjustBalanceResponse)
+	err := c.cc.Invoke(ctx, WalletService_AdjustBalance_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *walletServiceClient) GetTotalBalance(ctx context.Context, in *GetTotalBalanceRequest, opts ...grpc.CallOption) (*GetTotalBalanceResponse, error) {
 	out := new(GetTotalBalanceResponse)
 	err := c.cc.Invoke(ctx, WalletService_GetTotalBalance_FullMethodName, in, out, opts...)
@@ -187,6 +199,8 @@ type WalletServiceServer interface {
 	WithdrawFunds(context.Context, *WithdrawFundsRequest) (*WithdrawFundsResponse, error)
 	// Transfer funds between wallets
 	TransferFunds(context.Context, *TransferFundsRequest) (*TransferFundsResponse, error)
+	// Adjust wallet balance with audit trail
+	AdjustBalance(context.Context, *AdjustBalanceRequest) (*AdjustBalanceResponse, error)
 	// Get total balance across all user wallets
 	GetTotalBalance(context.Context, *GetTotalBalanceRequest) (*GetTotalBalanceResponse, error)
 	// Get balance history for chart visualization
@@ -223,6 +237,9 @@ func (UnimplementedWalletServiceServer) WithdrawFunds(context.Context, *Withdraw
 }
 func (UnimplementedWalletServiceServer) TransferFunds(context.Context, *TransferFundsRequest) (*TransferFundsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TransferFunds not implemented")
+}
+func (UnimplementedWalletServiceServer) AdjustBalance(context.Context, *AdjustBalanceRequest) (*AdjustBalanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdjustBalance not implemented")
 }
 func (UnimplementedWalletServiceServer) GetTotalBalance(context.Context, *GetTotalBalanceRequest) (*GetTotalBalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTotalBalance not implemented")
@@ -390,6 +407,24 @@ func _WalletService_TransferFunds_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WalletService_AdjustBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdjustBalanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServiceServer).AdjustBalance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WalletService_AdjustBalance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServiceServer).AdjustBalance(ctx, req.(*AdjustBalanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WalletService_GetTotalBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTotalBalanceRequest)
 	if err := dec(in); err != nil {
@@ -482,6 +517,10 @@ var WalletService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TransferFunds",
 			Handler:    _WalletService_TransferFunds_Handler,
+		},
+		{
+			MethodName: "AdjustBalance",
+			Handler:    _WalletService_AdjustBalance_Handler,
 		},
 		{
 			MethodName: "GetTotalBalance",
