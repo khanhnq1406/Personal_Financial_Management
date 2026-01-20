@@ -49,7 +49,8 @@ service WalletService {
   // Delete a wallet
   rpc DeleteWallet(DeleteWalletRequest) returns (DeleteWalletResponse) {
     option (google.api.http) = {
-      delete: "/api/v1/wallets/{walletId}"
+      post: "/api/v1/wallets/{walletId}/delete"
+      body: "*"
     };
   }
 
@@ -113,6 +114,22 @@ enum WalletType {
   INVESTMENT = 1;
 }
 
+// WalletStatus represents the current status of a wallet
+enum WalletStatus {
+  WALLET_STATUS_UNSPECIFIED = 0;
+  WALLET_STATUS_ACTIVE = 1;      // Wallet is active and visible
+  WALLET_STATUS_ARCHIVED = 2;    // Wallet is archived and hidden from default views
+  WALLET_STATUS_DELETED = 3;     // Wallet is deleted (for future hard delete capability)
+}
+
+// WalletDeletionOption specifies how to handle transactions when deleting a wallet
+enum WalletDeletionOption {
+  WALLET_DELETION_OPTION_UNSPECIFIED = 0;
+  WALLET_DELETION_OPTION_ARCHIVE = 1;           // Archive wallet (recommended) - preserves all data
+  WALLET_DELETION_OPTION_TRANSFER = 2;          // Transfer transactions to another wallet
+  WALLET_DELETION_OPTION_DELETE_ONLY = 3;       // Delete wallet only, keep transactions (not recommended)
+}
+
 // Wallet message
 message Wallet {
   int32 id = 1 [json_name = "id"];
@@ -122,6 +139,8 @@ message Wallet {
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
   WalletType type = 7 [json_name = "type"];
+  WalletStatus status = 8 [json_name = "status"];
+  string currency = 9 [json_name = "currency"];
 }
 
 // GetWallet request
@@ -156,6 +175,8 @@ message UpdateWalletRequest {
 // DeleteWallet request
 message DeleteWalletRequest {
   int32 walletId = 1 [json_name = "walletId"];
+  WalletDeletionOption option = 2 [json_name = "option"];  // How to handle transactions
+  int32 targetWalletId = 3 [json_name = "targetWalletId"];  // Required if option = TRANSFER
 }
 
 // AddFunds request
@@ -226,6 +247,7 @@ message DeleteWalletResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+  int32 transactionsAffected = 4 [json_name = "transactionsAffected"];  // Number of transactions impacted
 }
 
 // AddFunds response

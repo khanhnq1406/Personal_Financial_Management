@@ -122,6 +122,16 @@ type TransactionRepository interface {
 
 	// GetAvailableYears retrieves distinct years from user's transactions.
 	GetAvailableYears(ctx context.Context, userID int32) ([]int32, error)
+
+	// CountByWalletID returns the number of transactions for a wallet.
+	CountByWalletID(ctx context.Context, walletID int32) (int32, error)
+
+	// GetSumAmounts returns the sum of all transaction amounts for a wallet (signed).
+	// Positive values indicate income, negative values indicate expense.
+	GetSumAmounts(ctx context.Context, walletID int32) (int64, error)
+
+	// TransferToWallet transfers all transactions from one wallet to another.
+	TransferToWallet(ctx context.Context, fromWalletID, toWalletID int32) error
 }
 
 // CategoryRepository defines the interface for category data operations.

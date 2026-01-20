@@ -187,6 +187,9 @@ func request_WalletService_DeleteWallet_0(ctx context.Context, marshaler runtime
 		metadata runtime.ServerMetadata
 		err      error
 	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
@@ -208,6 +211,9 @@ func local_request_WalletService_DeleteWallet_0(ctx context.Context, marshaler r
 		metadata runtime.ServerMetadata
 		err      error
 	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 	val, ok := pathParams["walletId"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "walletId")
@@ -559,13 +565,13 @@ func RegisterWalletServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_WalletService_UpdateWallet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_WalletService_DeleteWallet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_WalletService_DeleteWallet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/DeleteWallet", runtime.WithHTTPPathPattern("/api/v1/wallets/{walletId}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/DeleteWallet", runtime.WithHTTPPathPattern("/api/v1/wallets/{walletId}/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -827,11 +833,11 @@ func RegisterWalletServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_WalletService_UpdateWallet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_WalletService_DeleteWallet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_WalletService_DeleteWallet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/DeleteWallet", runtime.WithHTTPPathPattern("/api/v1/wallets/{walletId}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.wallet.v1.WalletService/DeleteWallet", runtime.WithHTTPPathPattern("/api/v1/wallets/{walletId}/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -971,7 +977,7 @@ var (
 	pattern_WalletService_ListWallets_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
 	pattern_WalletService_CreateWallet_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "wallets"}, ""))
 	pattern_WalletService_UpdateWallet_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
-	pattern_WalletService_DeleteWallet_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "wallets", "walletId"}, ""))
+	pattern_WalletService_DeleteWallet_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "delete"}, ""))
 	pattern_WalletService_AddFunds_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "add"}, ""))
 	pattern_WalletService_WithdrawFunds_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "withdraw"}, ""))
 	pattern_WalletService_TransferFunds_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "wallets", "transfer"}, ""))

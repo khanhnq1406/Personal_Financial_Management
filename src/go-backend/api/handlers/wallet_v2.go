@@ -195,9 +195,11 @@ func (h *WalletHandlers) UpdateWallet(c *gin.Context) {
 // DeleteWallet deletes a wallet.
 // @Summary Delete a wallet
 // @Tags wallets
+// @Accept json
 // @Produce json
 // @Param id path int true "Wallet ID"
-// @Success 204
+// @Param request body protobufv1.DeleteWalletRequest true "Delete wallet request"
+// @Success 200 {object} types.APIResponse{data=protobufv1.DeleteWalletResponse}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 403 {object} types.APIResponse
@@ -219,14 +221,30 @@ func (h *WalletHandlers) DeleteWallet(c *gin.Context) {
 		return
 	}
 
+	// Parse request body
+	var req protobufv1.DeleteWalletRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// For backward compatibility, if body is empty or invalid, use default option
+		req = protobufv1.DeleteWalletRequest{
+			WalletId: walletID,
+			Option:   protobufv1.WalletDeletionOption_WALLET_DELETION_OPTION_ARCHIVE,
+		}
+	} else {
+		req.WalletId = walletID
+		// Default to ARCHIVE if option is unspecified
+		if req.Option == protobufv1.WalletDeletionOption_WALLET_DELETION_OPTION_UNSPECIFIED {
+			req.Option = protobufv1.WalletDeletionOption_WALLET_DELETION_OPTION_ARCHIVE
+		}
+	}
+
 	// Call service
-	_, err = h.walletService.DeleteWallet(c.Request.Context(), walletID, userID)
+	result, err := h.walletService.DeleteWallet(c.Request.Context(), walletID, userID, &req)
 	if err != nil {
 		handler.HandleError(c, err)
 		return
 	}
 
-	handler.NoContent(c)
+	handler.Success(c, result)
 }
 
 // AddFunds adds funds to a wallet.

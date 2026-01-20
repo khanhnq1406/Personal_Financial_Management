@@ -217,8 +217,8 @@ func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID
 	}, nil
 }
 
-// DeleteWallet deletes a wallet.
-func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID int32) (*walletv1.DeleteWalletResponse, error) {
+// DeleteWallet deletes a wallet with options for handling related transactions.
+func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.DeleteWalletRequest) (*walletv1.DeleteWalletResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
@@ -227,20 +227,99 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 	}
 
 	// Verify ownership
-	_, err := s.walletRepo.GetByIDForUser(ctx, walletID, userID)
+	wallet, err := s.walletRepo.GetByIDForUser(ctx, walletID, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.walletRepo.Delete(ctx, walletID); err != nil {
-		return nil, err
+	// Get transaction count for response
+	txCount, err := s.txRepo.CountByWalletID(ctx, walletID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to count transactions", err)
 	}
 
-	return &walletv1.DeleteWalletResponse{
-		Success:   true,
-		Message:   "Wallet deleted successfully",
-		Timestamp: time.Now().Format(time.RFC3339),
-	}, nil
+	// Handle based on deletion option
+	switch req.Option {
+	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_ARCHIVE:
+		// Archive wallet - set status to ARCHIVED
+		wallet.Status = walletv1.WalletStatus_WALLET_STATUS_ARCHIVED
+		if err := s.walletRepo.Update(ctx, wallet); err != nil {
+			return nil, err
+		}
+		return &walletv1.DeleteWalletResponse{
+			Success:               true,
+			Message:               "Wallet archived successfully",
+			Timestamp:             time.Now().Format(time.RFC3339),
+			TransactionsAffected:  txCount,
+		}, nil
+
+	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_TRANSFER:
+		// Transfer transactions to another wallet
+		if req.TargetWalletId == 0 {
+			return nil, apperrors.NewValidationError("target wallet required for transfer option")
+		}
+
+		// Validate target wallet
+		targetWallet, err := s.walletRepo.GetByIDForUser(ctx, req.TargetWalletId, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check currency match
+		if targetWallet.Currency != wallet.Currency {
+			return nil, apperrors.NewValidationError("target wallet must have same currency")
+		}
+
+		// Get the sum of transaction amounts from source wallet before transfer
+		// Since transactions are signed (+income, -expense), this gives us the net balance change
+		txSum, err := s.txRepo.GetSumAmounts(ctx, walletID)
+		if err != nil {
+			return nil, apperrors.NewInternalErrorWithCause("failed to calculate transaction sum", err)
+		}
+
+		// Transfer all transactions
+		if err := s.txRepo.TransferToWallet(ctx, walletID, req.TargetWalletId); err != nil {
+			return nil, err
+		}
+
+		// Update target wallet balance by adding the transaction sum
+		// This ensures the target wallet's balance reflects the transferred transactions
+		if txSum != 0 {
+			_, err = s.walletRepo.UpdateBalance(ctx, req.TargetWalletId, txSum)
+			if err != nil {
+				// Rollback: reverse the transfer
+				_ = s.txRepo.TransferToWallet(ctx, req.TargetWalletId, walletID)
+				return nil, apperrors.NewInternalErrorWithCause("failed to update target wallet balance", err)
+			}
+		}
+
+		// Soft delete source wallet
+		if err := s.walletRepo.Delete(ctx, walletID); err != nil {
+			return nil, err
+		}
+
+		return &walletv1.DeleteWalletResponse{
+			Success:               true,
+			Message:               fmt.Sprintf("Transferred %d transactions and deleted wallet", txCount),
+			Timestamp:             time.Now().Format(time.RFC3339),
+			TransactionsAffected:  txCount,
+		}, nil
+
+	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_DELETE_ONLY:
+		// Current behavior - soft delete only
+		if err := s.walletRepo.Delete(ctx, walletID); err != nil {
+			return nil, err
+		}
+		return &walletv1.DeleteWalletResponse{
+			Success:               true,
+			Message:               fmt.Sprintf("Wallet deleted. %d transactions will be preserved but inaccessible", txCount),
+			Timestamp:             time.Now().Format(time.RFC3339),
+			TransactionsAffected:  txCount,
+		}, nil
+
+	default:
+		return nil, apperrors.NewValidationError("invalid deletion option")
+	}
 }
 
 // AddFunds adds funds to a wallet.

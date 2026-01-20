@@ -9,7 +9,7 @@ import { Wallet } from "@/gen/protobuf/v1/wallet";
 interface WalletCardProps {
   wallet: Wallet;
   onEdit: (wallet: Wallet) => void;
-  onDelete: (walletId: number) => void;
+  onDelete: (wallet: Wallet) => void;
 }
 
 export const WalletCard = memo(function WalletCard({
@@ -42,7 +42,7 @@ export const WalletCard = memo(function WalletCard({
             <Button
               type={ButtonType.IMG}
               src={`${resources}/remove.png`}
-              onClick={() => onDelete(wallet.id)}
+              onClick={() => onDelete(wallet)}
             />
           </div>
         </div>

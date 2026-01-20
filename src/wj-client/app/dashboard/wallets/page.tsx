@@ -5,7 +5,7 @@ import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { Button } from "@/components/Button";
 import Image from "next/image";
 import { store } from "@/redux/store";
-import { openModal, closeModal } from "@/redux/actions";
+import { openModal } from "@/redux/actions";
 import { ModalType, ButtonType, resources } from "@/app/constants";
 import { WalletGrid } from "./WalletGrid";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
@@ -41,25 +41,14 @@ export default function WalletsPage() {
     );
   };
 
-  const handleDeleteWallet = (walletId: number) => {
+  const handleDeleteWallet = (wallet: Wallet) => {
     store.dispatch(
       openModal({
         isOpen: true,
-        type: ModalType.CONFIRM,
-        confirmConfig: {
-          title: "Delete Wallet",
-          message: "Are you sure you want to delete this wallet? This action cannot be undone.",
-          confirmText: "Delete",
-          cancelText: "Cancel",
-          action: {
-            type: "deleteWallet",
-            payload: { walletId },
-          },
-          variant: "danger",
-        },
+        type: ModalType.DELETE_WALLET,
+        data: { wallet },
         onSuccess: () => {
           getListWallets.refetch();
-          store.dispatch(closeModal());
         },
       }),
     );

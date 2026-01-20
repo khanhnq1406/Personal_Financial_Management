@@ -68,7 +68,7 @@ func RegisterRoutes(
 		// Parameterized routes
 		wallets.GET("/:id", h.Wallet.GetWallet)
 		wallets.PUT("/:id", h.Wallet.UpdateWallet)
-		wallets.DELETE("/:id", h.Wallet.DeleteWallet)
+		wallets.POST("/:id/delete", h.Wallet.DeleteWallet)
 		wallets.POST("/:id/add", h.Wallet.AddFunds)
 		wallets.POST("/:id/withdraw", h.Wallet.WithdrawFunds)
 		wallets.POST("/:id/adjust", h.Wallet.AdjustBalance)

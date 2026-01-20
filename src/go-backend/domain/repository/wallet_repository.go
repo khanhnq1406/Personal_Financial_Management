@@ -57,14 +57,14 @@ func (r *walletRepository) ListByUserID(ctx context.Context, userID int32, opts 
 	var wallets []*models.Wallet
 	var total int64
 
-	// Get total count for this user
-	if err := r.db.DB.WithContext(ctx).Model(&models.Wallet{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	// Get total count for this user (only active wallets)
+	if err := r.db.DB.WithContext(ctx).Model(&models.Wallet{}).Where("user_id = ? AND status = 1", userID).Count(&total).Error; err != nil {
 		return nil, 0, apperrors.NewInternalErrorWithCause("failed to count wallets", err)
 	}
 
-	// Build query with user filter and pagination
+	// Build query with user filter, active status, and pagination
 	orderClause := r.buildOrderClause(opts)
-	query := r.db.DB.WithContext(ctx).Model(&models.Wallet{}).Where("user_id = ?", userID).Order(orderClause)
+	query := r.db.DB.WithContext(ctx).Model(&models.Wallet{}).Where("user_id = ? AND status = 1", userID).Order(orderClause)
 	query = r.applyPagination(query, opts)
 
 	result := query.Find(&wallets)
@@ -146,12 +146,12 @@ func (r *walletRepository) CountByUserID(ctx context.Context, userID int32) (int
 	return int(count), nil
 }
 
-// GetTotalBalance calculates the sum of all wallet balances for a user.
+// GetTotalBalance calculates the sum of all wallet balances for a user (only active wallets).
 func (r *walletRepository) GetTotalBalance(ctx context.Context, userID int32) (int64, error) {
 	var totalBalance int64
 	result := r.db.DB.WithContext(ctx).
 		Model(&models.Wallet{}).
-		Where("user_id = ?", userID).
+		Where("user_id = ? AND status = 1", userID).
 		Select("COALESCE(SUM(balance), 0)").
 		Scan(&totalBalance)
 

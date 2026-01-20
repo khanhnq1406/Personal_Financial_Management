@@ -97,7 +97,12 @@ func (s *walletServer) DeleteWallet(ctx context.Context, req *protobufv1.DeleteW
 		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
 
-	return s.walletService.DeleteWallet(ctx, req.WalletId, userID)
+	// Default to ARCHIVE option if not specified
+	if req.Option == protobufv1.WalletDeletionOption_WALLET_DELETION_OPTION_UNSPECIFIED {
+		req.Option = protobufv1.WalletDeletionOption_WALLET_DELETION_OPTION_ARCHIVE
+	}
+
+	return s.walletService.DeleteWallet(ctx, req.WalletId, userID, req)
 }
 
 // AddFunds adds funds to a wallet

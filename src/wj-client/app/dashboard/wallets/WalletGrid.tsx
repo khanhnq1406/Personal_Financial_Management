@@ -9,7 +9,7 @@ interface WalletGridProps {
   wallets: Wallet[];
   isLoading: boolean;
   onEdit: (wallet: Wallet) => void;
-  onDelete: (walletId: number) => void;
+  onDelete: (wallet: Wallet) => void;
 }
 
 // Skeleton card component

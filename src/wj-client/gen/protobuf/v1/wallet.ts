@@ -99,6 +99,124 @@ export function walletTypeToJSON(object: WalletType): string {
   }
 }
 
+/** WalletStatus represents the current status of a wallet */
+export const WalletStatus = {
+  WALLET_STATUS_UNSPECIFIED: 0,
+  /** WALLET_STATUS_ACTIVE - Wallet is active and visible */
+  WALLET_STATUS_ACTIVE: 1,
+  /** WALLET_STATUS_ARCHIVED - Wallet is archived and hidden from default views */
+  WALLET_STATUS_ARCHIVED: 2,
+  /** WALLET_STATUS_DELETED - Wallet is deleted (for future hard delete capability) */
+  WALLET_STATUS_DELETED: 3,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type WalletStatus = typeof WalletStatus[keyof typeof WalletStatus];
+
+export namespace WalletStatus {
+  export type WALLET_STATUS_UNSPECIFIED = typeof WalletStatus.WALLET_STATUS_UNSPECIFIED;
+  export type WALLET_STATUS_ACTIVE = typeof WalletStatus.WALLET_STATUS_ACTIVE;
+  export type WALLET_STATUS_ARCHIVED = typeof WalletStatus.WALLET_STATUS_ARCHIVED;
+  export type WALLET_STATUS_DELETED = typeof WalletStatus.WALLET_STATUS_DELETED;
+  export type UNRECOGNIZED = typeof WalletStatus.UNRECOGNIZED;
+}
+
+export function walletStatusFromJSON(object: any): WalletStatus {
+  switch (object) {
+    case 0:
+    case "WALLET_STATUS_UNSPECIFIED":
+      return WalletStatus.WALLET_STATUS_UNSPECIFIED;
+    case 1:
+    case "WALLET_STATUS_ACTIVE":
+      return WalletStatus.WALLET_STATUS_ACTIVE;
+    case 2:
+    case "WALLET_STATUS_ARCHIVED":
+      return WalletStatus.WALLET_STATUS_ARCHIVED;
+    case 3:
+    case "WALLET_STATUS_DELETED":
+      return WalletStatus.WALLET_STATUS_DELETED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WalletStatus.UNRECOGNIZED;
+  }
+}
+
+export function walletStatusToJSON(object: WalletStatus): string {
+  switch (object) {
+    case WalletStatus.WALLET_STATUS_UNSPECIFIED:
+      return "WALLET_STATUS_UNSPECIFIED";
+    case WalletStatus.WALLET_STATUS_ACTIVE:
+      return "WALLET_STATUS_ACTIVE";
+    case WalletStatus.WALLET_STATUS_ARCHIVED:
+      return "WALLET_STATUS_ARCHIVED";
+    case WalletStatus.WALLET_STATUS_DELETED:
+      return "WALLET_STATUS_DELETED";
+    case WalletStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** WalletDeletionOption specifies how to handle transactions when deleting a wallet */
+export const WalletDeletionOption = {
+  WALLET_DELETION_OPTION_UNSPECIFIED: 0,
+  /** WALLET_DELETION_OPTION_ARCHIVE - Archive wallet (recommended) - preserves all data */
+  WALLET_DELETION_OPTION_ARCHIVE: 1,
+  /** WALLET_DELETION_OPTION_TRANSFER - Transfer transactions to another wallet */
+  WALLET_DELETION_OPTION_TRANSFER: 2,
+  /** WALLET_DELETION_OPTION_DELETE_ONLY - Delete wallet only, keep transactions (not recommended) */
+  WALLET_DELETION_OPTION_DELETE_ONLY: 3,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type WalletDeletionOption = typeof WalletDeletionOption[keyof typeof WalletDeletionOption];
+
+export namespace WalletDeletionOption {
+  export type WALLET_DELETION_OPTION_UNSPECIFIED = typeof WalletDeletionOption.WALLET_DELETION_OPTION_UNSPECIFIED;
+  export type WALLET_DELETION_OPTION_ARCHIVE = typeof WalletDeletionOption.WALLET_DELETION_OPTION_ARCHIVE;
+  export type WALLET_DELETION_OPTION_TRANSFER = typeof WalletDeletionOption.WALLET_DELETION_OPTION_TRANSFER;
+  export type WALLET_DELETION_OPTION_DELETE_ONLY = typeof WalletDeletionOption.WALLET_DELETION_OPTION_DELETE_ONLY;
+  export type UNRECOGNIZED = typeof WalletDeletionOption.UNRECOGNIZED;
+}
+
+export function walletDeletionOptionFromJSON(object: any): WalletDeletionOption {
+  switch (object) {
+    case 0:
+    case "WALLET_DELETION_OPTION_UNSPECIFIED":
+      return WalletDeletionOption.WALLET_DELETION_OPTION_UNSPECIFIED;
+    case 1:
+    case "WALLET_DELETION_OPTION_ARCHIVE":
+      return WalletDeletionOption.WALLET_DELETION_OPTION_ARCHIVE;
+    case 2:
+    case "WALLET_DELETION_OPTION_TRANSFER":
+      return WalletDeletionOption.WALLET_DELETION_OPTION_TRANSFER;
+    case 3:
+    case "WALLET_DELETION_OPTION_DELETE_ONLY":
+      return WalletDeletionOption.WALLET_DELETION_OPTION_DELETE_ONLY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WalletDeletionOption.UNRECOGNIZED;
+  }
+}
+
+export function walletDeletionOptionToJSON(object: WalletDeletionOption): string {
+  switch (object) {
+    case WalletDeletionOption.WALLET_DELETION_OPTION_UNSPECIFIED:
+      return "WALLET_DELETION_OPTION_UNSPECIFIED";
+    case WalletDeletionOption.WALLET_DELETION_OPTION_ARCHIVE:
+      return "WALLET_DELETION_OPTION_ARCHIVE";
+    case WalletDeletionOption.WALLET_DELETION_OPTION_TRANSFER:
+      return "WALLET_DELETION_OPTION_TRANSFER";
+    case WalletDeletionOption.WALLET_DELETION_OPTION_DELETE_ONLY:
+      return "WALLET_DELETION_OPTION_DELETE_ONLY";
+    case WalletDeletionOption.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Wallet message */
 export interface Wallet {
   id: number;
@@ -108,6 +226,8 @@ export interface Wallet {
   createdAt: number;
   updatedAt: number;
   type: WalletType;
+  status: WalletStatus;
+  currency: string;
 }
 
 /** GetWallet request */
@@ -142,6 +262,10 @@ export interface UpdateWalletRequest {
 /** DeleteWallet request */
 export interface DeleteWalletRequest {
   walletId: number;
+  /** How to handle transactions */
+  option: WalletDeletionOption;
+  /** Required if option = TRANSFER */
+  targetWalletId: number;
 }
 
 /** AddFunds request */
@@ -218,6 +342,8 @@ export interface DeleteWalletResponse {
   success: boolean;
   message: string;
   timestamp: string;
+  /** Number of transactions impacted */
+  transactionsAffected: number;
 }
 
 /** AddFunds response */
@@ -315,7 +441,17 @@ export interface GetMonthlyDominanceResponse {
 }
 
 function createBaseWallet(): Wallet {
-  return { id: 0, userId: 0, walletName: "", balance: undefined, createdAt: 0, updatedAt: 0, type: 0 };
+  return {
+    id: 0,
+    userId: 0,
+    walletName: "",
+    balance: undefined,
+    createdAt: 0,
+    updatedAt: 0,
+    type: 0,
+    status: 0,
+    currency: "",
+  };
 }
 
 export const Wallet: MessageFns<Wallet> = {
@@ -340,6 +476,12 @@ export const Wallet: MessageFns<Wallet> = {
     }
     if (message.type !== 0) {
       writer.uint32(56).int32(message.type);
+    }
+    if (message.status !== 0) {
+      writer.uint32(64).int32(message.status);
+    }
+    if (message.currency !== "") {
+      writer.uint32(74).string(message.currency);
     }
     return writer;
   },
@@ -407,6 +549,22 @@ export const Wallet: MessageFns<Wallet> = {
           message.type = reader.int32() as any;
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -425,6 +583,8 @@ export const Wallet: MessageFns<Wallet> = {
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
       type: isSet(object.type) ? walletTypeFromJSON(object.type) : 0,
+      status: isSet(object.status) ? walletStatusFromJSON(object.status) : 0,
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
     };
   },
 
@@ -451,6 +611,12 @@ export const Wallet: MessageFns<Wallet> = {
     if (message.type !== 0) {
       obj.type = walletTypeToJSON(message.type);
     }
+    if (message.status !== 0) {
+      obj.status = walletStatusToJSON(message.status);
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
     return obj;
   },
 
@@ -468,6 +634,8 @@ export const Wallet: MessageFns<Wallet> = {
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
     message.type = object.type ?? 0;
+    message.status = object.status ?? 0;
+    message.currency = object.currency ?? "";
     return message;
   },
 };
@@ -839,13 +1007,19 @@ export const UpdateWalletRequest: MessageFns<UpdateWalletRequest> = {
 };
 
 function createBaseDeleteWalletRequest(): DeleteWalletRequest {
-  return { walletId: 0 };
+  return { walletId: 0, option: 0, targetWalletId: 0 };
 }
 
 export const DeleteWalletRequest: MessageFns<DeleteWalletRequest> = {
   encode(message: DeleteWalletRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.walletId !== 0) {
       writer.uint32(8).int32(message.walletId);
+    }
+    if (message.option !== 0) {
+      writer.uint32(16).int32(message.option);
+    }
+    if (message.targetWalletId !== 0) {
+      writer.uint32(24).int32(message.targetWalletId);
     }
     return writer;
   },
@@ -865,6 +1039,22 @@ export const DeleteWalletRequest: MessageFns<DeleteWalletRequest> = {
           message.walletId = reader.int32();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.option = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.targetWalletId = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -875,13 +1065,23 @@ export const DeleteWalletRequest: MessageFns<DeleteWalletRequest> = {
   },
 
   fromJSON(object: any): DeleteWalletRequest {
-    return { walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0 };
+    return {
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+      option: isSet(object.option) ? walletDeletionOptionFromJSON(object.option) : 0,
+      targetWalletId: isSet(object.targetWalletId) ? globalThis.Number(object.targetWalletId) : 0,
+    };
   },
 
   toJSON(message: DeleteWalletRequest): unknown {
     const obj: any = {};
     if (message.walletId !== 0) {
       obj.walletId = Math.round(message.walletId);
+    }
+    if (message.option !== 0) {
+      obj.option = walletDeletionOptionToJSON(message.option);
+    }
+    if (message.targetWalletId !== 0) {
+      obj.targetWalletId = Math.round(message.targetWalletId);
     }
     return obj;
   },
@@ -892,6 +1092,8 @@ export const DeleteWalletRequest: MessageFns<DeleteWalletRequest> = {
   fromPartial(object: DeepPartial<DeleteWalletRequest>): DeleteWalletRequest {
     const message = createBaseDeleteWalletRequest();
     message.walletId = object.walletId ?? 0;
+    message.option = object.option ?? 0;
+    message.targetWalletId = object.targetWalletId ?? 0;
     return message;
   },
 };
@@ -1750,7 +1952,7 @@ export const UpdateWalletResponse: MessageFns<UpdateWalletResponse> = {
 };
 
 function createBaseDeleteWalletResponse(): DeleteWalletResponse {
-  return { success: false, message: "", timestamp: "" };
+  return { success: false, message: "", timestamp: "", transactionsAffected: 0 };
 }
 
 export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
@@ -1763,6 +1965,9 @@ export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
     }
     if (message.timestamp !== "") {
       writer.uint32(26).string(message.timestamp);
+    }
+    if (message.transactionsAffected !== 0) {
+      writer.uint32(32).int32(message.transactionsAffected);
     }
     return writer;
   },
@@ -1798,6 +2003,14 @@ export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
           message.timestamp = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.transactionsAffected = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1812,6 +2025,7 @@ export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
       timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+      transactionsAffected: isSet(object.transactionsAffected) ? globalThis.Number(object.transactionsAffected) : 0,
     };
   },
 
@@ -1826,6 +2040,9 @@ export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
     if (message.timestamp !== "") {
       obj.timestamp = message.timestamp;
     }
+    if (message.transactionsAffected !== 0) {
+      obj.transactionsAffected = Math.round(message.transactionsAffected);
+    }
     return obj;
   },
 
@@ -1837,6 +2054,7 @@ export const DeleteWalletResponse: MessageFns<DeleteWalletResponse> = {
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.timestamp = object.timestamp ?? "";
+    message.transactionsAffected = object.transactionsAffected ?? 0;
     return message;
   },
 };

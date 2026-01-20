@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { nameSchema, amountSchema } from "./common";
+import { nameSchema } from "./common";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 
 /**
@@ -18,9 +18,9 @@ export const createWalletSchemaWithExisting = (existingWalletNames: string[]) =>
       (name) => !existingWalletNames.includes(name),
       {
         message: "A wallet with this name already exists",
-      }
+      },
     ),
-    initialBalance: amountSchema,
+    initialBalance: z.number(),
     type: walletTypeEnum,
   });
 
@@ -35,18 +35,18 @@ export type CreateWalletFormOutput = z.infer<
  */
 export const updateWalletSchema = (
   existingWalletNames: string[],
-  currentWalletName: string
+  currentWalletName: string,
 ) =>
   z.object({
     walletName: nameSchema.refine(
       (name) =>
         !existingWalletNames.some(
           (existingName) =>
-            existingName === name && existingName !== currentWalletName
+            existingName === name && existingName !== currentWalletName,
         ),
       {
         message: "A wallet with this name already exists",
-      }
+      },
     ),
   });
 
@@ -68,7 +68,10 @@ export const adjustBalanceSchema = z.object({
   adjustmentType: z.enum(["add", "remove"], {
     message: "Please select whether to add or remove funds",
   }),
-  reason: z.string().max(200, "Reason must be less than 200 characters").optional(),
+  reason: z
+    .string()
+    .max(200, "Reason must be less than 200 characters")
+    .optional(),
 });
 
 // Infer the form type from the schema

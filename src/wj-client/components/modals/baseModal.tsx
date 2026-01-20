@@ -42,6 +42,7 @@ import { EditBudgetItemForm } from "./forms/EditBudgetItemForm";
 import { CreateWalletFormOutput, UpdateWalletFormOutput, AdjustBalanceFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
 import { AdjustmentType } from "@/gen/protobuf/v1/wallet";
+import { DeleteWalletModal } from "./DeleteWalletModal";
 import {
   CreateBudgetFormInput,
   UpdateBudgetFormInput,
@@ -713,6 +714,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             />
           )}
 
+        {modal.type === ModalType.DELETE_WALLET &&
+          "data" in modal &&
+          modal.data?.wallet && (
+            <DeleteWalletModal
+              wallet={modal.data.wallet}
+              onSuccess={modal.onSuccess}
+              isPending={isLoading}
+            />
+          )}
+
         {modal.type === ModalType.SUCCESS && (
           <Success message={successMessage} />
         )}
@@ -732,9 +743,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             />
           )}
 
-        {error && <div className="text-lred mb-2 text-sm">{error}</div>}
+        {error && modal.type !== ModalType.CONFIRM && modal.type !== ModalType.DELETE_WALLET && (
+          <div className="text-lred mb-2 text-sm">{error}</div>
+        )}
 
-        {modal.type !== ModalType.CONFIRM && (
+        {modal.type !== ModalType.CONFIRM && modal.type !== ModalType.DELETE_WALLET && (
           <div className="mt-4">
             <Button
               type={ButtonType.PRIMARY}

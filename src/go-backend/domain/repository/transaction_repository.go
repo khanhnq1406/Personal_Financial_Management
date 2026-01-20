@@ -88,11 +88,11 @@ func (r *transactionRepository) List(ctx context.Context, userID int32, filter T
 	var transactions []*models.Transaction
 	var total int64
 
-	// Build the base query with wallet join for user ownership
+	// Build the base query with wallet join for user ownership and active status
 	query := r.db.DB.WithContext(ctx).
 		Model(&models.Transaction{}).
 		Joins("JOIN wallet ON wallet.id = transaction.wallet_id").
-		Where("wallet.user_id = ?", userID)
+		Where("wallet.user_id = ? AND wallet.status = 1", userID)
 
 	// Apply filters
 	if len(filter.WalletIDs) > 0 {
@@ -208,7 +208,7 @@ func (r *transactionRepository) GetAvailableYears(ctx context.Context, userID in
 	query := r.db.DB.WithContext(ctx).
 		Model(&models.Transaction{}).
 		Joins("JOIN wallet ON wallet.id = transaction.wallet_id").
-		Where("wallet.user_id = ?", userID).
+		Where("wallet.user_id = ? AND wallet.status = 1", userID).
 		Select("DISTINCT EXTRACT(YEAR FROM transaction.date) as year").
 		Order("year DESC")
 
@@ -218,4 +218,49 @@ func (r *transactionRepository) GetAvailableYears(ctx context.Context, userID in
 	}
 
 	return years, nil
+}
+
+// CountByWalletID returns the number of transactions for a wallet.
+func (r *transactionRepository) CountByWalletID(ctx context.Context, walletID int32) (int32, error) {
+	var count int64
+	result := r.db.DB.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Where("wallet_id = ? AND deleted_at IS NULL", walletID).
+		Count(&count)
+
+	if result.Error != nil {
+		return 0, apperrors.NewInternalErrorWithCause("failed to count transactions", result.Error)
+	}
+
+	return int32(count), nil
+}
+
+// GetSumAmounts returns the sum of all transaction amounts for a wallet (signed).
+func (r *transactionRepository) GetSumAmounts(ctx context.Context, walletID int32) (int64, error) {
+	var sum int64
+	result := r.db.DB.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Where("wallet_id = ? AND deleted_at IS NULL", walletID).
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&sum)
+
+	if result.Error != nil {
+		return 0, apperrors.NewInternalErrorWithCause("failed to sum transaction amounts", result.Error)
+	}
+
+	return sum, nil
+}
+
+// TransferToWallet transfers all transactions from one wallet to another.
+func (r *transactionRepository) TransferToWallet(ctx context.Context, fromWalletID, toWalletID int32) error {
+	result := r.db.DB.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Where("wallet_id = ? AND deleted_at IS NULL", fromWalletID).
+		Update("wallet_id", toWalletID)
+
+	if result.Error != nil {
+		return apperrors.NewInternalErrorWithCause("failed to transfer transactions", result.Error)
+	}
+
+	return nil
 }

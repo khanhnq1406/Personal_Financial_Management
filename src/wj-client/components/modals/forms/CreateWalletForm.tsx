@@ -12,6 +12,7 @@ import {
   CreateWalletFormOutput,
 } from "@/lib/validation/wallet.schema";
 import { SelectOption } from "@/components/forms/FormSelect";
+import { useMemo } from "react";
 
 interface CreateWalletFormProps {
   onSubmit: (data: CreateWalletFormOutput) => void;
@@ -23,8 +24,10 @@ export const CreateWalletForm = ({ onSubmit }: CreateWalletFormProps) => {
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
 
-  const existingWalletNames =
-    walletsData?.wallets?.map((w) => w.walletName) || [];
+  const existingWalletNames = useMemo(
+    () => walletsData?.wallets?.map((w) => w.walletName) || [],
+    [walletsData],
+  );
 
   const { control, handleSubmit } = useForm<CreateWalletFormOutput>({
     resolver: zodResolver(createWalletSchemaWithExisting(existingWalletNames)),

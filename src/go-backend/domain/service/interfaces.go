@@ -24,8 +24,8 @@ type WalletService interface {
 	// UpdateWallet updates a wallet's name.
 	UpdateWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.UpdateWalletRequest) (*walletv1.UpdateWalletResponse, error)
 
-	// DeleteWallet deletes a wallet.
-	DeleteWallet(ctx context.Context, walletID int32, userID int32) (*walletv1.DeleteWalletResponse, error)
+	// DeleteWallet deletes a wallet with options for handling related transactions.
+	DeleteWallet(ctx context.Context, walletID int32, userID int32, req *walletv1.DeleteWalletRequest) (*walletv1.DeleteWalletResponse, error)
 
 	// AddFunds adds funds to a wallet.
 	AddFunds(ctx context.Context, walletID int32, userID int32, req *walletv1.AddFundsRequest) (*walletv1.AddFundsResponse, error)
