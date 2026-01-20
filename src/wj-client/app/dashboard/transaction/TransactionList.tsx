@@ -6,7 +6,7 @@ import {
   useQueryListCategories,
   useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
-import { SortField, CategoryType } from "@/gen/protobuf/v1/transaction";
+import { SortField, CategoryType, TransactionType } from "@/gen/protobuf/v1/transaction";
 import { TransactionFilter } from "./TransactionFilter";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { TransactionGroup } from "./TransactionGroup";
@@ -45,7 +45,7 @@ export const TransactionList = () => {
     }
   );
 
-  // Fetch categories for filtering
+  // Fetch categories for filtering (needed for TransactionGroup to display category names)
   const { data: categoriesData } = useQueryListCategories({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
@@ -65,25 +65,23 @@ export const TransactionList = () => {
     return map;
   }, [categoriesData]);
 
-  // Filter transactions by type
+  // Filter transactions by type - now using the returned type field from backend
   const filteredTransactions = useMemo(() => {
     if (!transactionsData?.transactions) return [];
 
     return transactionsData.transactions.filter((transaction) => {
       if (filterType === "all") return true;
 
-      // Get category type from map
-      const categoryType = transaction.categoryId
-        ? categoryTypeMap.get(transaction.categoryId)
-        : undefined;
+      // Use the type field returned by the backend
+      const transactionType = transaction.type;
 
       if (filterType === "income") {
-        return categoryType === CategoryType.CATEGORY_TYPE_INCOME;
+        return transactionType === TransactionType.TRANSACTION_TYPE_INCOME;
       } else {
-        return categoryType === CategoryType.CATEGORY_TYPE_EXPENSE;
+        return transactionType === TransactionType.TRANSACTION_TYPE_EXPENSE;
       }
     });
-  }, [transactionsData, filterType, categoryTypeMap]);
+  }, [transactionsData, filterType]);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {

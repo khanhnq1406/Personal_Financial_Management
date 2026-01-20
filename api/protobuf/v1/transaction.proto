@@ -127,11 +127,12 @@ message Transaction {
   int32 id = 1 [json_name = "id"];
   int32 walletId = 2 [json_name = "walletId"];
   int32 categoryId = 3 [json_name = "categoryId"];
-  wealthjourney.common.v1.Money amount = 4 [json_name = "amount"];
-  int64 date = 5 [json_name = "date"];
-  string note = 6 [json_name = "note"];
-  int64 createdAt = 7 [json_name = "createdAt"];
-  int64 updatedAt = 8 [json_name = "updatedAt"];
+  TransactionType type = 4 [json_name = "type"];  // Derived from category
+  wealthjourney.common.v1.Money amount = 5 [json_name = "amount"];
+  int64 date = 6 [json_name = "date"];
+  string note = 7 [json_name = "note"];
+  int64 createdAt = 8 [json_name = "createdAt"];
+  int64 updatedAt = 9 [json_name = "updatedAt"];
 }
 
 // Category message

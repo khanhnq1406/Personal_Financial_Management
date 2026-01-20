@@ -8,7 +8,7 @@ import {
   useQueryListCategories,
   useQueryGetTransaction,
 } from "@/utils/generated/hooks";
-import { CategoryType } from "@/gen/protobuf/v1/transaction";
+import { CategoryType, TransactionType as TransactionTypeEnum } from "@/gen/protobuf/v1/transaction";
 import { FormToggle } from "@/components/forms/FormToggle";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
@@ -75,11 +75,19 @@ export const EditTransactionForm = ({
   useEffect(() => {
     if (transactionData?.data) {
       const transaction = transactionData.data;
+
+      // Map backend TransactionType enum to form values
+      // TransactionType enum: INCOME = 1, EXPENSE = 2
+      const getTransactionTypeValue = (type: number | undefined): "income" | "expense" => {
+        if (type === TransactionTypeEnum.TRANSACTION_TYPE_INCOME) return "income";
+        if (type === TransactionTypeEnum.TRANSACTION_TYPE_EXPENSE) return "expense";
+        return "expense"; // Default fallback
+      };
+
       const amount = transaction.amount?.amount || 0;
-      const isIncom = amount >= 0;
 
       reset({
-        transactionType: isIncom ? "income" : "expense",
+        transactionType: getTransactionTypeValue(transaction.type),
         walletId: String(transaction.walletId),
         categoryId: transaction.categoryId
           ? String(transaction.categoryId)

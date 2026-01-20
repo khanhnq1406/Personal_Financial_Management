@@ -616,6 +616,7 @@ func (s *transactionService) modelToProto(tx *models.Transaction, wallet *models
 	proto := &v1.Transaction{
 		Id:       tx.ID,
 		WalletId: tx.WalletID,
+		Type:     deriveTransactionType(category),
 		Amount: &v1.Money{
 			Amount:   tx.Amount,
 			Currency: wallet.Currency,
@@ -638,6 +639,7 @@ func (s *transactionService) modelToProtoSimple(tx *models.Transaction) *v1.Tran
 	proto := &v1.Transaction{
 		Id:       tx.ID,
 		WalletId: tx.WalletID,
+		Type:     deriveTransactionType(tx.Category),
 		Amount: &v1.Money{
 			Amount:   tx.Amount,
 			Currency: "VND", // Default, should be loaded from wallet
@@ -653,4 +655,19 @@ func (s *transactionService) modelToProtoSimple(tx *models.Transaction) *v1.Tran
 	}
 
 	return proto
+}
+
+// deriveTransactionType converts category type to transaction type
+func deriveTransactionType(category *models.Category) v1.TransactionType {
+	if category == nil {
+		return v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
+	}
+	switch category.Type {
+	case v1.CategoryType_CATEGORY_TYPE_INCOME:
+		return v1.TransactionType_TRANSACTION_TYPE_INCOME
+	case v1.CategoryType_CATEGORY_TYPE_EXPENSE:
+		return v1.TransactionType_TRANSACTION_TYPE_EXPENSE
+	default:
+		return v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
+	}
 }
