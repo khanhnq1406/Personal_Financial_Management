@@ -120,6 +120,9 @@ type CategoryService interface {
 	// GetOrCreateBalanceAdjustmentCategory gets or creates a balance adjustment category.
 	// Based on whether the adjustment is positive (income) or negative (expense).
 	GetOrCreateBalanceAdjustmentCategory(ctx context.Context, userID int32, isPositiveAdjustment bool) (*models.Category, error)
+
+	// GetOrCreateInitialBalanceCategory gets or creates an initial balance category (income type).
+	GetOrCreateInitialBalanceCategory(ctx context.Context, userID int32) (*models.Category, error)
 }
 
 // BudgetService defines the interface for budget business logic.

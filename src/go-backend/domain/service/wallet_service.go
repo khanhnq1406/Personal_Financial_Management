@@ -42,6 +42,7 @@ func NewWalletService(
 }
 
 // CreateWallet creates a new wallet for a user.
+// If initialBalance is provided, it creates a transaction with "Initial Balance" category.
 func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *walletv1.CreateWalletRequest) (*walletv1.CreateWalletResponse, error) {
 	// Validate inputs
 	if err := validator.ID(userID); err != nil {
@@ -71,17 +72,54 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *wal
 		}
 	}
 
-	// Create wallet model
+	// Create wallet model with zero balance initially
 	wallet := &models.Wallet{
 		UserID:     userID,
 		WalletName: req.WalletName,
-		Balance:    initialBalance,
+		Balance:    0,
 		Currency:   currency,
 		Type:       req.Type,
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {
 		return nil, err
+	}
+
+	// If initial balance is provided, create a transaction for it
+	if initialBalance > 0 {
+		// Get or create the Initial Balance category
+		category, err := s.categoryService.GetOrCreateInitialBalanceCategory(ctx, userID)
+		if err != nil {
+			// Rollback wallet creation on failure
+			_ = s.walletRepo.Delete(ctx, wallet.ID)
+			return nil, apperrors.NewInternalErrorWithCause("failed to get initial balance category", err)
+		}
+
+		// Create initial balance transaction
+		initialBalanceTx := &models.Transaction{
+			WalletID:   wallet.ID,
+			CategoryID: &category.ID,
+			Amount:     initialBalance,
+			Date:       time.Now(),
+			Note:       "Initial balance",
+		}
+
+		if err := s.txRepo.Create(ctx, initialBalanceTx); err != nil {
+			// Rollback wallet creation on failure
+			_ = s.walletRepo.Delete(ctx, wallet.ID)
+			return nil, apperrors.NewInternalErrorWithCause("failed to create initial balance transaction", err)
+		}
+
+		// Update wallet balance to reflect the initial balance
+		updatedWallet, err := s.walletRepo.UpdateBalance(ctx, wallet.ID, initialBalance)
+		if err != nil {
+			// Rollback: delete transaction and wallet
+			_ = s.txRepo.Delete(ctx, initialBalanceTx.ID)
+			_ = s.walletRepo.Delete(ctx, wallet.ID)
+			return nil, apperrors.NewInternalErrorWithCause("failed to update wallet balance", err)
+		}
+
+		wallet = updatedWallet
 	}
 
 	return &walletv1.CreateWalletResponse{

@@ -198,6 +198,31 @@ func (s *categoryService) GetOrCreateBalanceAdjustmentCategory(ctx context.Conte
 	return newCategory, nil
 }
 
+// GetOrCreateInitialBalanceCategory gets or creates an initial balance category (income type).
+func (s *categoryService) GetOrCreateInitialBalanceCategory(ctx context.Context, userID int32) (*models.Category, error) {
+	categoryName := "Initial Balance"
+	categoryType := v1.CategoryType_CATEGORY_TYPE_INCOME
+
+	// Try to get existing category
+	category, err := s.categoryRepo.GetByNameAndType(ctx, userID, categoryName, categoryType)
+	if err == nil && category != nil {
+		return category, nil
+	}
+
+	// Create new category if it doesn't exist
+	newCategory := &models.Category{
+		UserID: userID,
+		Name:   categoryName,
+		Type:   categoryType,
+	}
+
+	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to create initial balance category", err)
+	}
+
+	return newCategory, nil
+}
+
 // Helper methods
 
 // validateCategoryName validates the category name.
