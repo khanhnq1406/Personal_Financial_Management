@@ -57,20 +57,17 @@ export type UpdateWalletFormOutput = z.infer<
 
 /**
  * Zod schema for wallet balance adjustment
- * Validates that amount is non-zero and creates proper adjustment
- * Accepts both positive (add funds) and negative (subtract funds) values
+ * Amount must be positive, type determines add/remove
  */
 export const adjustBalanceSchema = z.object({
   adjustmentAmount: z
     .number({
       message: "Amount must be a number",
     })
-    .refine((amount) => amount !== 0, {
-      message: "Adjustment amount cannot be zero",
-    })
-    .refine((amount) => Math.abs(amount) >= 0.01, {
-      message: "Amount must be at least 0.01 in absolute value",
-    }),
+    .min(0.01, { message: "Adjustment amount must be at least 0.01" }),
+  adjustmentType: z.enum(["add", "remove"], {
+    message: "Please select whether to add or remove funds",
+  }),
   reason: z.string().max(200, "Reason must be less than 200 characters").optional(),
 });
 

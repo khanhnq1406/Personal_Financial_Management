@@ -41,6 +41,7 @@ import { CreateBudgetItemForm } from "./forms/CreateBudgetItemForm";
 import { EditBudgetItemForm } from "./forms/EditBudgetItemForm";
 import { CreateWalletFormOutput, UpdateWalletFormOutput, AdjustBalanceFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
+import { AdjustmentType } from "@/gen/protobuf/v1/wallet";
 import {
   CreateBudgetFormInput,
   UpdateBudgetFormInput,
@@ -482,6 +483,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       try {
         // First, adjust balance if provided
         if (adjustment && adjustment.adjustmentAmount !== 0) {
+          // Map "add"/"remove" to protobuf enum values
+          const adjustmentType = adjustment.adjustmentType === "add"
+            ? AdjustmentType.ADJUSTMENT_TYPE_ADD
+            : AdjustmentType.ADJUSTMENT_TYPE_REMOVE;
+
           await adjustBalanceMutation.mutateAsync({
             walletId: wallet.id,
             amount: {
@@ -489,6 +495,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
               currency: wallet.balance?.currency || "VND",
             },
             reason: adjustment.reason || "Balance adjustment",
+            adjustmentType,
           });
         }
 

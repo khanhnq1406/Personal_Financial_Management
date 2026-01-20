@@ -428,7 +428,7 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *wa
 }
 
 // AdjustBalance adjusts a wallet's balance and creates a transaction for audit trail.
-// Positive amounts increase balance (income adjustment), negative decrease (expense adjustment).
+// The amount is always positive; adjustmentType determines if it's added or removed.
 func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userID int32, req *walletv1.AdjustBalanceRequest) (*walletv1.AdjustBalanceResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
@@ -444,32 +444,37 @@ func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userI
 	}
 
 	// Validate amount
-	if req.Amount == nil || req.Amount.Amount == 0 {
-		return nil, apperrors.NewValidationError("adjustment amount cannot be zero")
+	if req.Amount == nil || req.Amount.Amount <= 0 {
+		return nil, apperrors.NewValidationError("adjustment amount must be positive")
 	}
 	if req.Amount.Currency != wallet.Currency {
 		return nil, apperrors.NewValidationError("currency mismatch")
 	}
 
-	// Determine if adjustment is positive (income) or negative (expense)
-	isPositiveAdjustment := req.Amount.Amount > 0
+	// Validate adjustment type
+	if req.AdjustmentType == walletv1.AdjustmentType_ADJUSTMENT_TYPE_UNSPECIFIED {
+		return nil, apperrors.NewValidationError("adjustment type must be specified")
+	}
 
-	// Check sufficient balance for negative adjustments
-	if !isPositiveAdjustment && wallet.Balance < -req.Amount.Amount {
+	// Determine if this is an add (income) or remove (expense) operation
+	isAddOperation := req.AdjustmentType == walletv1.AdjustmentType_ADJUSTMENT_TYPE_ADD
+
+	// Check sufficient balance for remove operations
+	if !isAddOperation && wallet.Balance < req.Amount.Amount {
 		return nil, apperrors.NewValidationError("Insufficient balance for this adjustment")
 	}
 
 	// Get or create balance adjustment category using CategoryService
-	category, err := s.categoryService.GetOrCreateBalanceAdjustmentCategory(ctx, userID, isPositiveAdjustment)
+	category, err := s.categoryService.GetOrCreateBalanceAdjustmentCategory(ctx, userID, isAddOperation)
 	if err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to get balance adjustment category", err)
 	}
 
-	// Create adjustment transaction
+	// Create adjustment transaction - amount is always positive
 	adjustmentTx := &models.Transaction{
 		WalletID:   walletID,
 		CategoryID: &category.ID,
-		Amount:     req.Amount.Amount, // Store signed amount
+		Amount:     req.Amount.Amount, // Always positive
 		Date:       time.Now(),
 		Note:       req.Reason,
 	}
@@ -478,8 +483,14 @@ func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userI
 		return nil, apperrors.NewInternalErrorWithCause("failed to create adjustment transaction", err)
 	}
 
+	// Calculate the balance delta
+	delta := req.Amount.Amount
+	if !isAddOperation {
+		delta = -delta
+	}
+
 	// Update wallet balance
-	updatedWallet, err := s.walletRepo.UpdateBalance(ctx, walletID, req.Amount.Amount)
+	updatedWallet, err := s.walletRepo.UpdateBalance(ctx, walletID, delta)
 	if err != nil {
 		// Rollback: delete transaction if balance update fails
 		_ = s.txRepo.Delete(ctx, adjustmentTx.ID)

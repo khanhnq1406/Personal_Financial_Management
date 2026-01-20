@@ -10,6 +10,57 @@ import { Money, PaginationParams, PaginationResult } from "./common";
 
 export const protobufPackage = "wealthjourney.wallet.v1";
 
+/** AdjustmentType specifies whether this adjustment adds or removes funds */
+export const AdjustmentType = {
+  ADJUSTMENT_TYPE_UNSPECIFIED: 0,
+  /** ADJUSTMENT_TYPE_ADD - Add funds (income adjustment) */
+  ADJUSTMENT_TYPE_ADD: 1,
+  /** ADJUSTMENT_TYPE_REMOVE - Remove funds (expense adjustment) */
+  ADJUSTMENT_TYPE_REMOVE: 2,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type AdjustmentType = typeof AdjustmentType[keyof typeof AdjustmentType];
+
+export namespace AdjustmentType {
+  export type ADJUSTMENT_TYPE_UNSPECIFIED = typeof AdjustmentType.ADJUSTMENT_TYPE_UNSPECIFIED;
+  export type ADJUSTMENT_TYPE_ADD = typeof AdjustmentType.ADJUSTMENT_TYPE_ADD;
+  export type ADJUSTMENT_TYPE_REMOVE = typeof AdjustmentType.ADJUSTMENT_TYPE_REMOVE;
+  export type UNRECOGNIZED = typeof AdjustmentType.UNRECOGNIZED;
+}
+
+export function adjustmentTypeFromJSON(object: any): AdjustmentType {
+  switch (object) {
+    case 0:
+    case "ADJUSTMENT_TYPE_UNSPECIFIED":
+      return AdjustmentType.ADJUSTMENT_TYPE_UNSPECIFIED;
+    case 1:
+    case "ADJUSTMENT_TYPE_ADD":
+      return AdjustmentType.ADJUSTMENT_TYPE_ADD;
+    case 2:
+    case "ADJUSTMENT_TYPE_REMOVE":
+      return AdjustmentType.ADJUSTMENT_TYPE_REMOVE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AdjustmentType.UNRECOGNIZED;
+  }
+}
+
+export function adjustmentTypeToJSON(object: AdjustmentType): string {
+  switch (object) {
+    case AdjustmentType.ADJUSTMENT_TYPE_UNSPECIFIED:
+      return "ADJUSTMENT_TYPE_UNSPECIFIED";
+    case AdjustmentType.ADJUSTMENT_TYPE_ADD:
+      return "ADJUSTMENT_TYPE_ADD";
+    case AdjustmentType.ADJUSTMENT_TYPE_REMOVE:
+      return "ADJUSTMENT_TYPE_REMOVE";
+    case AdjustmentType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Enums */
 export const WalletType = { BASIC: 0, INVESTMENT: 1, UNRECOGNIZED: -1 } as const;
 
@@ -115,12 +166,14 @@ export interface TransferFundsRequest {
 /** AdjustBalance request */
 export interface AdjustBalanceRequest {
   walletId: number;
-  /** Can be positive or negative */
+  /** Always positive */
   amount:
     | Money
     | undefined;
   /** Optional: why adjustment was made */
   reason: string;
+  /** ADD or REMOVE */
+  adjustmentType: AdjustmentType;
 }
 
 /** GetTotalBalance request */
@@ -1094,7 +1147,7 @@ export const TransferFundsRequest: MessageFns<TransferFundsRequest> = {
 };
 
 function createBaseAdjustBalanceRequest(): AdjustBalanceRequest {
-  return { walletId: 0, amount: undefined, reason: "" };
+  return { walletId: 0, amount: undefined, reason: "", adjustmentType: 0 };
 }
 
 export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
@@ -1107,6 +1160,9 @@ export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
     }
     if (message.reason !== "") {
       writer.uint32(26).string(message.reason);
+    }
+    if (message.adjustmentType !== 0) {
+      writer.uint32(32).int32(message.adjustmentType);
     }
     return writer;
   },
@@ -1142,6 +1198,14 @@ export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
           message.reason = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.adjustmentType = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1156,6 +1220,7 @@ export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
       walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
       amount: isSet(object.amount) ? Money.fromJSON(object.amount) : undefined,
       reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      adjustmentType: isSet(object.adjustmentType) ? adjustmentTypeFromJSON(object.adjustmentType) : 0,
     };
   },
 
@@ -1170,6 +1235,9 @@ export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
     if (message.reason !== "") {
       obj.reason = message.reason;
     }
+    if (message.adjustmentType !== 0) {
+      obj.adjustmentType = adjustmentTypeToJSON(message.adjustmentType);
+    }
     return obj;
   },
 
@@ -1183,6 +1251,7 @@ export const AdjustBalanceRequest: MessageFns<AdjustBalanceRequest> = {
       ? Money.fromPartial(object.amount)
       : undefined;
     message.reason = object.reason ?? "";
+    message.adjustmentType = object.adjustmentType ?? 0;
     return message;
   },
 };

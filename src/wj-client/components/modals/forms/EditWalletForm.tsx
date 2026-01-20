@@ -43,12 +43,13 @@ export const EditWalletForm = ({
   const { control, handleSubmit, reset, watch, setError } = useForm<{
     walletName: string;
     adjustmentAmount?: number;
+    adjustmentType?: "add" | "remove";
     reason?: string;
   }>({
-    // We'll validate manually based on showAdjustment state
     defaultValues: {
       walletName: "",
       adjustmentAmount: 0,
+      adjustmentType: "add",
       reason: "",
     },
     mode: "onSubmit",
@@ -59,11 +60,13 @@ export const EditWalletForm = ({
     reset({
       walletName: wallet.walletName,
       adjustmentAmount: 0,
+      adjustmentType: "add",
       reason: "",
     });
   }, [wallet, reset]);
 
   const watchAdjustmentAmount = watch("adjustmentAmount");
+  const watchAdjustmentType = watch("adjustmentType");
 
   const onFormSubmit = (data: typeof control._defaultValues) => {
     // Validate wallet name
@@ -92,17 +95,20 @@ export const EditWalletForm = ({
       data.adjustmentAmount &&
       data.adjustmentAmount !== 0
     ) {
-      // Validate adjustment amount
+      // Validate adjustment amount and type
       const result = adjustBalanceSchema.safeParse({
         adjustmentAmount: data.adjustmentAmount,
+        adjustmentType: data.adjustmentType || "add",
         reason: data.reason,
       });
 
       if (!result.success) {
-        // Handle validation error - set errors on form
         result.error.issues.forEach((issue) => {
           if (issue.path[0] === "adjustmentAmount") {
             setError("adjustmentAmount" as const, { message: issue.message });
+          }
+          if (issue.path[0] === "adjustmentType") {
+            setError("adjustmentType" as const, { message: issue.message });
           }
           if (issue.path[0] === "reason") {
             setError("reason" as const, { message: issue.message });
@@ -120,7 +126,10 @@ export const EditWalletForm = ({
   // Calculate projected balance
   const currentBalance = wallet.balance?.amount || 0;
   const adjustmentAmount = watchAdjustmentAmount || 0;
-  const projectedBalance = currentBalance + adjustmentAmount;
+  const adjustmentType = watchAdjustmentType || "add";
+  const isAdd = adjustmentType === "add";
+  const delta = isAdd ? adjustmentAmount : -adjustmentAmount;
+  const projectedBalance = currentBalance + delta;
 
   return (
     <form
@@ -160,16 +169,46 @@ export const EditWalletForm = ({
               Current Balance: {currentBalance.toLocaleString()} VND
             </div>
 
+            {/* Adjustment Type Radio Buttons */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adjustment Type <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    {...control.register("adjustmentType")}
+                    value="add"
+                    className="mr-2"
+                    disabled={isPending}
+                  />
+                  <span className="text-sm">Add funds</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    {...control.register("adjustmentType")}
+                    value="remove"
+                    className="mr-2"
+                    disabled={isPending}
+                  />
+                  <span className="text-sm">Remove funds</span>
+                </label>
+              </div>
+            </div>
+
             <FormNumberInput
               name="adjustmentAmount"
               control={control}
               label="Adjustment Amount (VND)"
-              placeholder="Enter amount (positive to add, negative to subtract)"
+              placeholder="Enter amount"
               step="1"
+              min={0}
               disabled={isPending}
             />
             <div className="text-xs text-gray-500 ml-1 -mt-1">
-              Positive numbers add funds, negative numbers remove funds
+              Enter the amount to add or remove from your wallet
             </div>
 
             {adjustmentAmount !== 0 && adjustmentAmount !== undefined && (

@@ -7,6 +7,13 @@ import "google/api/annotations.proto";
 
 option go_package = "protobuf/v1";
 
+// AdjustmentType specifies whether this adjustment adds or removes funds
+enum AdjustmentType {
+  ADJUSTMENT_TYPE_UNSPECIFIED = 0;
+  ADJUSTMENT_TYPE_ADD = 1;      // Add funds (income adjustment)
+  ADJUSTMENT_TYPE_REMOVE = 2;   // Remove funds (expense adjustment)
+}
+
 // Wallet service for wallet management operations.
 service WalletService {
   // Get a wallet by ID
@@ -173,8 +180,9 @@ message TransferFundsRequest {
 // AdjustBalance request
 message AdjustBalanceRequest {
   int32 walletId = 1 [json_name = "walletId"];
-  wealthjourney.common.v1.Money amount = 2 [json_name = "amount"];  // Can be positive or negative
+  wealthjourney.common.v1.Money amount = 2 [json_name = "amount"];  // Always positive
   string reason = 3 [json_name = "reason"];  // Optional: why adjustment was made
+  AdjustmentType adjustmentType = 4 [json_name = "adjustmentType"];  // ADD or REMOVE
 }
 
 // GetTotalBalance request
