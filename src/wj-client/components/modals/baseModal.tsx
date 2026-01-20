@@ -11,6 +11,8 @@ import { Success } from "./Success";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import {
   useMutationCreateWallet,
+  useMutationUpdateWallet,
+  useMutationDeleteWallet,
   useMutationTransferFunds,
   useMutationCreateTransaction,
   useMutationUpdateTransaction,
@@ -28,6 +30,7 @@ import {
   EVENT_BudgetGetBudgetItems,
 } from "@/utils/generated/hooks";
 import { CreateWalletForm } from "./forms/CreateWalletForm";
+import { EditWalletForm } from "./forms/EditWalletForm";
 import { AddTransactionForm } from "./forms/AddTransactionForm";
 import { TransferMoneyForm } from "./forms/TransferMoneyForm";
 import { EditTransactionForm } from "./forms/EditTransactionForm";
@@ -35,7 +38,7 @@ import { CreateBudgetForm } from "./forms/CreateBudgetForm";
 import { EditBudgetForm } from "./forms/EditBudgetForm";
 import { CreateBudgetItemForm } from "./forms/CreateBudgetItemForm";
 import { EditBudgetItemForm } from "./forms/EditBudgetItemForm";
-import { CreateWalletFormOutput } from "@/lib/validation/wallet.schema";
+import { CreateWalletFormOutput, UpdateWalletFormOutput } from "@/lib/validation/wallet.schema";
 import { TransferMoneyFormInput } from "@/lib/validation/transfer.schema";
 import {
   CreateBudgetFormInput,
@@ -142,6 +145,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     },
   });
 
+  const deleteWalletMutation = useMutationDeleteWallet({
+    onSuccess: () => {
+      invalidateQueries();
+      modal.onSuccess?.();
+      store.dispatch(closeModal());
+      setSuccessMessage("Wallet deleted successfully");
+      store.dispatch(openModal({ isOpen: true, type: ModalType.SUCCESS }));
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to delete wallet. Please try again");
+      setIsConfirming(false);
+    },
+  });
+
   // Handle confirmation action
   const handleConfirmAction = useCallback(async () => {
     if (!("confirmConfig" in modal) || !modal.confirmConfig) return;
@@ -161,6 +178,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
         case "deleteBudget":
           await deleteBudgetMutation.mutateAsync(action.payload);
           break;
+        case "deleteWallet":
+          await deleteWalletMutation.mutateAsync(action.payload);
+          break;
         default:
           console.warn("[BaseModal] Unknown confirmation action:", action.type);
           setIsConfirming(false);
@@ -174,6 +194,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     deleteTransactionMutation,
     deleteBudgetItemMutation,
     deleteBudgetMutation,
+    deleteWalletMutation,
   ]);
 
   // Common success handler
@@ -211,6 +232,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const updateBudgetMutation = useMutationUpdateBudget();
   const createBudgetItemMutation = useMutationCreateBudgetItem();
   const updateBudgetItemMutation = useMutationUpdateBudgetItem();
+
+  // Wallet mutations
+  const updateWalletMutation = useMutationUpdateWallet();
 
   // Handle create wallet submission
   const handleCreateWallet = useCallback(
@@ -436,6 +460,29 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
     [updateBudgetItemMutation, handleBudgetSuccess, modal],
   );
 
+  const handleEditWallet = useCallback(
+    (data: UpdateWalletFormOutput) => {
+      setError("");
+      if (!("data" in modal) || !modal.data?.wallet) {
+        setError("Wallet data not found");
+        return;
+      }
+      const wallet = modal.data.wallet;
+      updateWalletMutation.mutate(
+        {
+          walletId: wallet.id,
+          walletName: data.walletName,
+        },
+        {
+          onSuccess: () => handleSuccess("Wallet has been updated successfully"),
+          onError: (err: any) =>
+            setError(err.message || "Failed to update wallet. Please try again"),
+        },
+      );
+    },
+    [updateWalletMutation, handleSuccess, modal],
+  );
+
   const handleClose = useCallback(() => {
     store.dispatch(closeModal());
   }, []);
@@ -458,6 +505,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const isLoading = useMemo(
     () =>
       createWalletMutation.isPending ||
+      updateWalletMutation.isPending ||
+      deleteWalletMutation.isPending ||
       createTransactionMutation.isPending ||
       updateTransactionMutation.isPending ||
       transferFundsMutation.isPending ||
@@ -467,6 +516,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       updateBudgetItemMutation.isPending,
     [
       createWalletMutation.isPending,
+      updateWalletMutation.isPending,
+      deleteWalletMutation.isPending,
       createTransactionMutation.isPending,
       updateTransactionMutation.isPending,
       transferFundsMutation.isPending,
@@ -488,21 +539,23 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
       const formId =
         modal.type === ModalType.CREATE_WALLET
           ? "create-wallet-form"
-          : modal.type === ModalType.ADD_TRANSACTION
-            ? "add-transaction-form"
-            : modal.type === ModalType.EDIT_TRANSACTION
-              ? "edit-transaction-form"
-              : modal.type === ModalType.TRANSFER_MONEY
-                ? "transfer-money-form"
-                : modal.type === ModalType.ADD_BUDGET
-                  ? "create-budget-form"
-                  : modal.type === ModalType.EDIT_BUDGET
-                    ? "edit-budget-form"
-                    : modal.type === ModalType.ADD_BUDGET_ITEM
-                      ? "create-budget-item-form"
-                      : modal.type === ModalType.EDIT_BUDGET_ITEM
-                        ? "edit-budget-item-form"
-                        : "";
+          : modal.type === ModalType.EDIT_WALLET
+            ? "edit-wallet-form"
+            : modal.type === ModalType.ADD_TRANSACTION
+              ? "add-transaction-form"
+              : modal.type === ModalType.EDIT_TRANSACTION
+                ? "edit-transaction-form"
+                : modal.type === ModalType.TRANSFER_MONEY
+                  ? "transfer-money-form"
+                  : modal.type === ModalType.ADD_BUDGET
+                    ? "create-budget-form"
+                    : modal.type === ModalType.EDIT_BUDGET
+                      ? "edit-budget-form"
+                      : modal.type === ModalType.ADD_BUDGET_ITEM
+                        ? "create-budget-item-form"
+                        : modal.type === ModalType.EDIT_BUDGET_ITEM
+                          ? "edit-budget-item-form"
+                          : "";
       const form = document.getElementById(formId);
       form?.dispatchEvent(
         new Event("submit", { cancelable: true, bubbles: true }),
@@ -569,6 +622,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
             isPending={isLoading}
           />
         )}
+
+        {modal.type === ModalType.EDIT_WALLET &&
+          "data" in modal &&
+          modal.data?.wallet && (
+            <EditWalletForm
+              wallet={modal.data.wallet}
+              onSubmit={handleEditWallet}
+              isPending={isLoading}
+            />
+          )}
 
         {modal.type === ModalType.ADD_BUDGET && (
           <CreateBudgetForm

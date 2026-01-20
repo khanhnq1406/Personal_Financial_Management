@@ -124,6 +124,8 @@ export const ModalType = {
   EDIT_TRANSACTION: "Edit Transaction",
   TRANSFER_MONEY: "Transfer Money",
   CREATE_WALLET: "Create New Wallet",
+  EDIT_WALLET: "Edit Wallet",
+  DELETE_WALLET: "Delete Wallet",
   SUCCESS: "Success",
   CONFIRM: "Confirm",
   ADD_BUDGET: "Add Budget",

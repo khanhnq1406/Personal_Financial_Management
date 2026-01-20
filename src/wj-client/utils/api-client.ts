@@ -59,26 +59,35 @@ async function handleErrorResponse(response: Response): Promise<never> {
   let errorCode: string | undefined;
   let errorDetails: string | undefined;
 
-  try {
-    const errorData = await response.json();
+  // Check if response has content before trying to parse JSON
+  const contentType = response.headers.get("content-type");
+  const hasJsonContent = contentType?.includes("application/json");
 
-    // Handle standard Go backend format with error object
-    if (errorData.error && typeof errorData.error === "object") {
-      errorMessage = errorData.error.message || errorMessage;
-      errorCode = errorData.error.code;
-      errorDetails = errorData.error.details;
+  if (hasJsonContent) {
+    try {
+      const errorData = await response.json();
+
+      // Handle standard Go backend format with error object
+      if (errorData.error && typeof errorData.error === "object") {
+        errorMessage = errorData.error.message || errorMessage;
+        errorCode = errorData.error.code;
+        errorDetails = errorData.error.details;
+      }
+      // Handle flat error format with error code string and message
+      else if (errorData.error && typeof errorData.error === "string") {
+        errorCode = errorData.error;
+        errorMessage = errorData.message || errorMessage;
+      }
+      // Handle simple message format
+      else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // If JSON parsing fails, fall through to status text
+      errorMessage = response.statusText || errorMessage;
     }
-    // Handle flat error format with error code string and message
-    else if (errorData.error && typeof errorData.error === "string") {
-      errorCode = errorData.error;
-      errorMessage = errorData.message || errorMessage;
-    }
-    // Handle simple message format
-    else if (errorData.message) {
-      errorMessage = errorData.message;
-    }
-  } catch {
-    // If parsing fails, use status text
+  } else {
+    // No JSON content, use status text
     errorMessage = response.statusText || errorMessage;
   }
 
@@ -246,6 +255,11 @@ export const apiClient = {
 
     if (!response.ok) {
       return handleErrorResponse(response);
+    }
+
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return {} as ApiResponse<T>;
     }
 
     return response.json();

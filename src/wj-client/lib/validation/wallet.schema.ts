@@ -28,3 +28,29 @@ export const createWalletSchemaWithExisting = (existingWalletNames: string[]) =>
 export type CreateWalletFormOutput = z.infer<
   ReturnType<typeof createWalletSchemaWithExisting>
 >;
+
+/**
+ * Zod schema for wallet update
+ * Only validates wallet name - balance updates are handled separately via AddFunds/WithdrawFunds
+ */
+export const updateWalletSchema = (
+  existingWalletNames: string[],
+  currentWalletName: string
+) =>
+  z.object({
+    walletName: nameSchema.refine(
+      (name) =>
+        !existingWalletNames.some(
+          (existingName) =>
+            existingName === name && existingName !== currentWalletName
+        ),
+      {
+        message: "A wallet with this name already exists",
+      }
+    ),
+  });
+
+// Infer the form type from the schema
+export type UpdateWalletFormOutput = z.infer<
+  ReturnType<typeof updateWalletSchema>
+>;
