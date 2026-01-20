@@ -371,20 +371,20 @@ func (s *walletService) TransferFunds(ctx context.Context, userID int32, req *wa
 		return nil, apperrors.NewInternalErrorWithCause("failed to get incoming transfer category", err)
 	}
 
-	// Create outgoing transaction (expense) for source wallet
+	// Create outgoing transaction (expense) for source wallet - negative amount
 	outgoingTx := &models.Transaction{
 		WalletID:   req.FromWalletId,
 		CategoryID: &outgoingCategory.ID,
-		Amount:     req.Amount.Amount,
+		Amount:     -req.Amount.Amount, // Negative for expense
 		Date:       time.Now(),
 		Note:       fmt.Sprintf("Transfer to wallet: %s", toWallet.WalletName),
 	}
 
-	// Create incoming transaction (income) for destination wallet
+	// Create incoming transaction (income) for destination wallet - positive amount
 	incomingTx := &models.Transaction{
 		WalletID:   req.ToWalletId,
 		CategoryID: &incomingCategory.ID,
-		Amount:     req.Amount.Amount,
+		Amount:     req.Amount.Amount, // Positive for income
 		Date:       time.Now(),
 		Note:       fmt.Sprintf("Transfer from wallet: %s", fromWallet.WalletName),
 	}
@@ -470,11 +470,18 @@ func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userI
 		return nil, apperrors.NewInternalErrorWithCause("failed to get balance adjustment category", err)
 	}
 
-	// Create adjustment transaction - amount is always positive
+	// Calculate the signed amount based on adjustment type
+	// ADD = positive (income), REMOVE = negative (expense)
+	signedAmount := req.Amount.Amount
+	if !isAddOperation {
+		signedAmount = -signedAmount
+	}
+
+	// Create adjustment transaction with signed amount
 	adjustmentTx := &models.Transaction{
 		WalletID:   walletID,
 		CategoryID: &category.ID,
-		Amount:     req.Amount.Amount, // Always positive
+		Amount:     signedAmount, // Signed amount: positive for ADD, negative for REMOVE
 		Date:       time.Now(),
 		Note:       req.Reason,
 	}
@@ -483,14 +490,8 @@ func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userI
 		return nil, apperrors.NewInternalErrorWithCause("failed to create adjustment transaction", err)
 	}
 
-	// Calculate the balance delta
-	delta := req.Amount.Amount
-	if !isAddOperation {
-		delta = -delta
-	}
-
-	// Update wallet balance
-	updatedWallet, err := s.walletRepo.UpdateBalance(ctx, walletID, delta)
+	// Update wallet balance using signed amount
+	updatedWallet, err := s.walletRepo.UpdateBalance(ctx, walletID, signedAmount)
 	if err != nil {
 		// Rollback: delete transaction if balance update fails
 		_ = s.txRepo.Delete(ctx, adjustmentTx.ID)
@@ -607,16 +608,11 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 		}
 
 		// Calculate balance change during the period to find initial balance
+		// Amounts are now signed: positive for income, negative for expense
 		balanceChange := int64(0)
 		for _, tx := range transactions {
 			if tx.WalletID == walletID {
-				if tx.Category != nil {
-					if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
-						balanceChange += tx.Amount
-					} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
-						balanceChange -= tx.Amount
-					}
-				}
+				balanceChange += tx.Amount  // Add signed amount directly
 			}
 		}
 		initialBalance += wallet.Balance - balanceChange
@@ -639,15 +635,13 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 
 			for _, tx := range transactions {
 				if (tx.Date.Equal(dayStart) || tx.Date.After(dayStart)) && tx.Date.Before(dayEnd) {
-					if tx.Category != nil {
-						if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
-							dailyIncome += tx.Amount
-							currentBalance += tx.Amount
-						} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
-							dailyExpense += tx.Amount
-							currentBalance -= tx.Amount
-						}
+					// Amounts are signed: positive for income, negative for expense
+					if tx.Amount > 0 {
+						dailyIncome += tx.Amount
+					} else {
+						dailyExpense += -tx.Amount  // Convert to positive for display
 					}
+					currentBalance += tx.Amount  // Add signed amount directly
 				}
 			}
 
@@ -673,15 +667,13 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 
 			for _, tx := range transactions {
 				if (tx.Date.Equal(monthStart) || tx.Date.After(monthStart)) && tx.Date.Before(monthEnd) {
-					if tx.Category != nil {
-						if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
-							monthlyIncome += tx.Amount
-							currentBalance += tx.Amount
-						} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
-							monthlyExpense += tx.Amount
-							currentBalance -= tx.Amount
-						}
+					// Amounts are signed: positive for income, negative for expense
+					if tx.Amount > 0 {
+						monthlyIncome += tx.Amount
+					} else {
+						monthlyExpense += -tx.Amount  // Convert to positive for display
 					}
+					currentBalance += tx.Amount  // Add signed amount directly
 				}
 			}
 

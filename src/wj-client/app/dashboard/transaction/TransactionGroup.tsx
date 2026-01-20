@@ -17,19 +17,11 @@ export const TransactionGroup = ({
   categoryTypeMap,
   onDelete,
 }: TransactionGroupProps) => {
-  // Calculate daily total
+  // Calculate daily total using signed amounts
+  // Amounts are signed: positive for income, negative for expense
   const dailyTotal = transactions.reduce((total, transaction) => {
     const amount = transaction.amount?.amount || 0;
-    const categoryType = transaction.categoryId
-      ? categoryTypeMap.get(transaction.categoryId)
-      : undefined;
-
-    // Subtract expenses, add income
-    if (categoryType === CategoryType.CATEGORY_TYPE_EXPENSE) {
-      return total - Math.abs(amount);
-    } else {
-      return total + Math.abs(amount);
-    }
+    return total + amount;  // Simply add the signed amount
   }, 0);
 
   return (

@@ -277,12 +277,18 @@ export const BaseModal: React.FC<BaseModalProps> = ({ modal }) => {
   const handleCreateTransaction = useCallback(
     (formData: any) => {
       setError("");
+      // Apply sign based on transaction type: income = positive, expense = negative
+      const signedAmount =
+        formData.transactionType === "income"
+          ? formData.amount
+          : -Math.abs(formData.amount);
+
       createTransactionMutation.mutate(
         {
           walletId: Number(formData.walletId),
           categoryId: Number(formData.categoryId),
           amount: {
-            amount: formData.amount,
+            amount: signedAmount,
             currency: "VND",
           },
           date: fromDateTimeLocal(formData.date),

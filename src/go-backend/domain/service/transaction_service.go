@@ -447,23 +447,6 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 		}
 	}
 
-	// Batch load all unique categories from transactions
-	categoryIDsSet := make(map[int32]bool)
-	for _, tx := range transactions {
-		if tx.CategoryID != nil {
-			categoryIDsSet[*tx.CategoryID] = true
-		}
-	}
-
-	// Convert set to slice
-	categoryIDs := make([]int32, 0, len(categoryIDsSet))
-	for id := range categoryIDsSet {
-		categoryIDs = append(categoryIDs, id)
-	}
-
-	// Batch load categories in a single query
-	categories, _ := s.categoryRepo.GetByIDs(ctx, categoryIDs)
-
 	// Process transactions and aggregate by wallet and month
 	for _, tx := range transactions {
 		walletData := walletDataMap[tx.WalletID]
@@ -479,17 +462,12 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 
 		monthlyEntry := walletData.MonthlyData[month]
 
-		// Get category from pre-loaded map
-		var category *models.Category
-		if tx.CategoryID != nil {
-			category = categories[*tx.CategoryID]
-		}
-
-		// Add to income or expense based on category type
-		if category != nil && category.Type == v1.CategoryType_CATEGORY_TYPE_INCOME {
+		// Add to income or expense based on signed amount
+		// Amounts are signed: positive for income, negative for expense
+		if tx.Amount > 0 {
 			monthlyEntry.Income.Amount += tx.Amount
 		} else {
-			monthlyEntry.Expense.Amount += tx.Amount
+			monthlyEntry.Expense.Amount += -tx.Amount  // Convert to positive for display
 		}
 	}
 
@@ -540,22 +518,14 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 
 // Helper methods
 
-// calculateBalanceDelta calculates the balance change based on amount and category type.
-// Income adds to balance, Expense subtracts from balance.
+// calculateBalanceDelta calculates the balance change based on signed amount.
+// Positive amounts add to balance (income), negative amounts subtract from balance (expense).
+// The category parameter is kept for interface compatibility but no longer used for calculation.
 func (s *transactionService) calculateBalanceDelta(amount int64, category *models.Category) int64 {
-	if category == nil || category.Type == v1.CategoryType_CATEGORY_TYPE_UNSPECIFIED {
-		// Default to expense if no category
-		return -amount
-	}
-
-	switch category.Type {
-	case v1.CategoryType_CATEGORY_TYPE_INCOME:
-		return amount
-	case v1.CategoryType_CATEGORY_TYPE_EXPENSE:
-		return -amount
-	default:
-		return -amount
-	}
+	// Simply return the amount - let the sign determine direction
+	// Positive = income (adds to balance)
+	// Negative = expense (subtracts from balance)
+	return amount
 }
 
 // parsePaginationParams converts protobuf pagination params to internal types.
