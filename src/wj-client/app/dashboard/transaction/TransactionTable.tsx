@@ -11,6 +11,7 @@ import { currencyFormatter } from "@/utils/currency-formatter";
 interface TransactionTableProps {
   transactions: Transaction[];
   getCategoryName: (id: number) => string;
+  getWalletName: (id: number) => string;
   onEdit: (transactionId: number) => void;
   onDelete: (transactionId: number) => void;
   isLoading?: boolean;
@@ -70,6 +71,7 @@ const TransactionActions = memo(function TransactionActions({
 export const TransactionTable = memo(function TransactionTable({
   transactions,
   getCategoryName,
+  getWalletName,
   onEdit,
   onDelete,
   isLoading = false,
@@ -96,6 +98,11 @@ export const TransactionTable = memo(function TransactionTable({
         id: "category",
         header: "Category",
         cell: (info) => getCategoryName(info.getValue()),
+      }),
+      columnHelper.accessor("walletId", {
+        id: "wallet",
+        header: "Wallet",
+        cell: (info) => getWalletName(info.getValue()),
       }),
       columnHelper.accessor("amount", {
         id: "amount",
@@ -124,7 +131,7 @@ export const TransactionTable = memo(function TransactionTable({
         ),
       }),
     ],
-    [columnHelper, getCategoryName, formatDate, onEdit, onDelete],
+    [columnHelper, getCategoryName, getWalletName, formatDate, onEdit, onDelete],
   );
 
   return (

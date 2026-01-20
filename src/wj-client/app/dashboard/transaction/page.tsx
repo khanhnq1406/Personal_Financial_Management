@@ -90,6 +90,15 @@ export default function TransactionPage() {
     return (id: number) => categoryMap.get(id) || "Uncategorized";
   }, [categoriesData]);
 
+  // Get wallet name by ID - memoized with proper dependency
+  const getWalletName = useMemo(() => {
+    const walletMap = new Map<number, string>();
+    walletsData?.wallets?.forEach((wallet) => {
+      walletMap.set(wallet.id, wallet.walletName);
+    });
+    return (id: number) => walletMap.get(id) || "Unknown Wallet";
+  }, [walletsData]);
+
   // Format date - memoized
   const formatDate = useCallback((timestamp: number) => {
     const date = new Date(timestamp * 1000);
@@ -222,6 +231,19 @@ export default function TransactionPage() {
 
               <div className="flex justify-between items-start">
                 <div className="flex-1">
+                  <p className="text-gray-900 text-sm font-bold mb-1">
+                    Wallet
+                  </p>
+                  <p className="text-gray-900 text-sm font-light text-right">
+                    {getWalletName(transaction.walletId)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200" />
+
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
                   <p className="text-gray-900 text-sm font-bold  mb-1">
                     Amount
                   </p>
@@ -294,6 +316,7 @@ export default function TransactionPage() {
       },
     [
       getCategoryName,
+      getWalletName,
       formatDate,
       handleEditTransaction,
       handleDeleteTransaction,
@@ -487,6 +510,7 @@ export default function TransactionPage() {
           <TransactionTable
             transactions={transactions}
             getCategoryName={getCategoryName}
+            getWalletName={getWalletName}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
             isLoading={isLoading}
