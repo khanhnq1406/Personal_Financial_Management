@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -20,12 +21,18 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.5 },
   },
 };
 
 // Dashboard Preview Component
 function DashboardPreview() {
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   return (
     <div className="relative rounded-lg shadow-2xl overflow-hidden bg-fg">
       {/* Header */}
@@ -35,7 +42,7 @@ function DashboardPreview() {
         <div className="w-3 h-3 rounded-full bg-green-400"></div>
         <div className="flex-1 bg-gray-100 rounded-md h-6 mx-4 flex items-center px-3">
           <span className="text-xs text-gray-400">
-            {`${window.location.origin}/dashboard/home`}
+            {origin ? `${origin}/dashboard/home` : "/dashboard/home"}
           </span>
         </div>
       </div>
