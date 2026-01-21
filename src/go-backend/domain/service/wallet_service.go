@@ -831,16 +831,13 @@ func (s *walletService) GetMonthlyDominance(ctx context.Context, userID int32, r
 	}
 
 	// Calculate initial balance for each wallet before the period
+	// Transaction amounts are signed: positive for income, negative for expense
 	initialBalances := make(map[int32]int64)
 	for _, wallet := range wallets {
 		balanceChange := int64(0)
 		for _, tx := range transactions {
-			if tx.WalletID == wallet.ID && tx.Category != nil {
-				if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
-					balanceChange += tx.Amount
-				} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
-					balanceChange -= tx.Amount
-				}
+			if tx.WalletID == wallet.ID {
+				balanceChange += tx.Amount // Add signed amount directly
 			}
 		}
 		initialBalances[wallet.ID] = wallet.Balance - balanceChange
@@ -858,16 +855,12 @@ func (s *walletService) GetMonthlyDominance(ctx context.Context, userID int32, r
 			monthEnd := monthStart.AddDate(0, 1, 0)
 
 			// Calculate balance change for this month
+			// Transaction amounts are signed: positive for income, negative for expense
 			for _, tx := range transactions {
 				if tx.WalletID == wallet.ID &&
 					(tx.Date.Equal(monthStart) || tx.Date.After(monthStart)) &&
-					tx.Date.Before(monthEnd) &&
-					tx.Category != nil {
-					if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_INCOME {
-						currentBalance += tx.Amount
-					} else if tx.Category.Type == walletv1.CategoryType_CATEGORY_TYPE_EXPENSE {
-						currentBalance -= tx.Amount
-					}
+					tx.Date.Before(monthEnd) {
+					currentBalance += tx.Amount // Add signed amount directly
 				}
 			}
 
