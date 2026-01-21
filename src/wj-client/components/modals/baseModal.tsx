@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { resources } from "@/app/constants";
@@ -17,7 +17,7 @@ export interface BaseModalProps {
 }
 
 /**
- * Simplified modal wrapper component.
+ * Simplified modal wrapper component with focus trap.
  * This is a "dumb" component that only provides modal behavior (backdrop, container, close button).
  * All form logic, mutation handling, and error handling is done by the child form components.
  */
@@ -28,6 +28,57 @@ export function BaseModal({
   children,
   footer,
 }: BaseModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  // Focus trap: keep focus within modal when open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Store the previously focused element
+    previousActiveElement.current = document.activeElement as HTMLElement;
+
+    // Focus the modal container
+    modalRef.current?.focus();
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      const modal = modalRef.current;
+      if (!modal) return;
+
+      const focusableElements = modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[
+        focusableElements.length - 1
+      ] as HTMLElement;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleTabKey);
+
+    return () => {
+      document.removeEventListener("keydown", handleTabKey);
+      // Restore focus to previous element when modal closes
+      previousActiveElement.current?.focus();
+    };
+  }, [isOpen]);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -53,7 +104,10 @@ export function BaseModal({
   }, [isOpen, onClose]);
 
   // Memoize modal title ID to avoid recalculating (rendering-hoist-jsx)
-  const modalTitleId = useMemo(() => `modal-title-${title.replace(SPACE_REGEX, "-")}`, [title]);
+  const modalTitleId = useMemo(
+    () => `modal-title-${title.replace(SPACE_REGEX, "-")}`,
+    [title],
+  );
 
   if (!isOpen) return null;
 
@@ -66,14 +120,13 @@ export function BaseModal({
       aria-labelledby={modalTitleId}
     >
       <div
-        className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain"
+        ref={modalRef}
+        tabIndex={-1}
+        className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2
-            id={modalTitleId}
-            className="font-bold text-lg"
-          >
+          <h2 id={modalTitleId} className="font-bold text-lg">
             {title}
           </h2>
           <Button

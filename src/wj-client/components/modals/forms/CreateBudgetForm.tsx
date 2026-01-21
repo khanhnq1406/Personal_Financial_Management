@@ -12,6 +12,7 @@ import {
   createBudgetSchema,
   CreateBudgetFormInput,
 } from "@/lib/validation/budget.schema";
+import { Success } from "@/components/modals/Success";
 
 interface CreateBudgetFormProps {
   onSuccess?: () => void;
@@ -24,6 +25,8 @@ interface CreateBudgetFormProps {
  */
 export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const createBudget = useMutationCreateBudget();
 
@@ -48,8 +51,12 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
         items: [],
       },
       {
-        onSuccess: () => {
-          onSuccess?.();
+        onSuccess: (data) => {
+          const message =
+            data?.message || `Budget "${data?.data?.name || ""}" has been created successfully`;
+          setSuccessMessage(message);
+          setShowSuccess(true);
+          setErrorMessage("");
         },
         onError: (error: any) => {
           setErrorMessage(
@@ -59,6 +66,11 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
       },
     );
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

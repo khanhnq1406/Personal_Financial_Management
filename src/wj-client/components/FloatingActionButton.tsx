@@ -6,6 +6,7 @@ import { BaseModal } from "@/components/modals/BaseModal";
 import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
 import { TransferMoneyForm } from "@/components/modals/forms/TransferMoneyForm";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import {
   EVENT_WalletListWallets,
   EVENT_WalletGetTotalBalance,
@@ -91,29 +92,35 @@ export function FloatingActionButton({ onRefresh }: FloatingActionButtonProps) {
           <button
             className="relative hover:drop-shadow-round z-50"
             onClick={handleExtend}
+            aria-label="Quick actions menu"
+            aria-expanded={extend}
           >
-            <img src={`${resources}/plus.png`} alt="Add" className="w-8" />
+            <Image src={`${resources}/plus.png`} alt="" width={32} height={32} />
           </button>
           <button
             className="btn-transaction fixed hover:drop-shadow-round bottom-8 right-14 bg-bg rounded-full w-8"
             ref={transactionButtonRef}
             onClick={() => setModalType("add-transaction")}
+            aria-label="Add transaction"
           >
-            <img
+            <Image
               src={`${resources}/transaction.png`}
-              alt="Transaction"
-              className="w-8"
+              alt=""
+              width={32}
+              height={32}
             />
           </button>
           <button
             className="btn-transfer fixed hover:drop-shadow-round bottom-14 right-6 bg-bg rounded-full w-8 p-1"
             ref={transferButtonRef}
             onClick={() => setModalType("transfer-money")}
+            aria-label="Transfer money"
           >
-            <img
+            <Image
               src={`${resources}/transfer.png`}
-              alt="Transfer"
-              className=""
+              alt=""
+              width={32}
+              height={32}
             />
           </button>
         </div>

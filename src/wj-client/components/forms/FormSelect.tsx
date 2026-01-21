@@ -64,7 +64,7 @@ export const FormSelect = memo(function FormSelect({
         aria-describedby={error ? `${props.name}-error` : undefined}
       >
         <option value="" disabled>
-          {loading ? "Loading..." : placeholder}
+          {loading ? "Loading…" : placeholder}
         </option>
         {options.map((option) => (
           <option

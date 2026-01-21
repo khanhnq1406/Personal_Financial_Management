@@ -17,6 +17,7 @@ import {
   transferMoneySchemaWithBalances,
   TransferMoneyFormInput,
 } from "@/lib/validation/transfer.schema";
+import { Success } from "@/components/modals/Success";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { toDateTimeLocal, getCurrentTimestamp } from "@/lib/utils/date";
 
@@ -31,6 +32,8 @@ interface TransferMoneyFormProps {
  */
 export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const transferFunds = useMutationTransferFunds();
 
@@ -93,8 +96,12 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         },
       },
       {
-        onSuccess: () => {
-          onSuccess?.();
+        onSuccess: (data) => {
+          const message =
+            data?.message || "Funds have been transferred successfully";
+          setSuccessMessage(message);
+          setShowSuccess(true);
+          setErrorMessage("");
         },
         onError: (error: any) => {
           setErrorMessage(
@@ -104,6 +111,11 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
       },
     );
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

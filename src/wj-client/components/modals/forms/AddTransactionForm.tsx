@@ -24,6 +24,7 @@ import {
   createTransactionFormSchema,
   CreateTransactionFormInput,
 } from "@/lib/validation/transaction.schema";
+import { Success } from "@/components/modals/Success";
 import { SelectOption } from "@/components/forms/FormSelect";
 import {
   getCurrentTimestamp,
@@ -44,6 +45,8 @@ interface AddTransactionFormProps {
 export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const createTransaction = useMutationCreateTransaction();
 
@@ -150,8 +153,12 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
         note: data.note,
       },
       {
-        onSuccess: () => {
-          onSuccess?.();
+        onSuccess: (data) => {
+          const message =
+            data?.message || "Transaction has been added successfully";
+          setSuccessMessage(message);
+          setShowSuccess(true);
+          setErrorMessage("");
         },
         onError: (error: any) => {
           setErrorMessage(
@@ -161,6 +168,11 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
       },
     );
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

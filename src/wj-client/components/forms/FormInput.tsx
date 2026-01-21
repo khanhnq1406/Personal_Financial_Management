@@ -38,6 +38,7 @@ export const FormInput = memo(function FormInput({
       <input
         id={props.name}
         type={type}
+        inputMode={type === "email" ? "email" : type === "tel" ? "tel" : "text"}
         placeholder={
           placeholder && placeholder.length > 0 ? `${placeholder}…` : ""
         }

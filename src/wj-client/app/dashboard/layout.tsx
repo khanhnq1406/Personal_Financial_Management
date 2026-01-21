@@ -8,6 +8,7 @@ import { useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import NextImage from "next/image";
 
 export default function DashboardLayout({
   children,
@@ -58,8 +59,9 @@ export default function DashboardLayout({
         <button
           className="text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)]"
           onClick={logout}
+          aria-label="Logout"
         >
-          <img className="w-[20px] h-[20px]" src="/logout(white).png" />
+          <img className="w-[20px] h-[20px]" src="/logout(white).png" alt="" />
           <div>Logout</div>
         </button>
       </div>
@@ -98,20 +100,25 @@ export default function DashboardLayout({
                 src={
                   user.picture !== null ? user.picture : `${resources}/user.png`
                 }
-                alt=""
+                alt={user.fullname || "User avatar"}
                 className="rounded-full h-9 w-9"
               />
             </div>
           </div>
           <div
-            className="sm:hidden overflow-hidden opacity-0 scale-95 transform transition-all duration-300 ease-out pointer-events-none h-0"
+            className="sm:hidden overflow-hidden opacity-0 scale-95 pointer-events-none h-0 transition-opacity transition-transform duration-300 ease-out"
             ref={menuRef}
           >
             <div className="pb-3">{navigationItems}</div>
           </div>
           <div className="hidden sm:flex flex-wrap justify-center h-fit">
             <div className="flex h-fit items-center gap-2 my-8">
-              <img alt="logo" src="/logo.png" className="w-[50px] h-[50px]" />
+              <NextImage
+                alt="Wealth Journey logo"
+                src="/logo.png"
+                width={50}
+                height={50}
+              />
               <div className="text-fg font-bold h-fit text-lg">
                 Wealth Journey
               </div>

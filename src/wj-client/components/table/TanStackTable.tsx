@@ -94,6 +94,7 @@ export const TablePagination = ({
             <span className="text-gray-900 text-base font-light">Rows</span>
             <div className="relative">
               <select
+                name="rows-per-page"
                 value={pageSize.toString()}
                 onChange={handlePageSizeChange}
                 className="appearance-none bg-fg border-2 border-black/50 rounded px-3 py-1 pr-8 text-gray-900 text-sm font-bold cursor-pointer focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 focus:border-bg"

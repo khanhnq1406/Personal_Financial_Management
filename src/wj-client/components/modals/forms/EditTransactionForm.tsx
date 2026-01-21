@@ -26,6 +26,7 @@ import {
   updateTransactionFormSchema,
   UpdateTransactionFormInput,
 } from "@/lib/validation/transaction.schema";
+import { Success } from "@/components/modals/Success";
 import { toDateTimeLocal, fromDateTimeLocal } from "@/lib/utils/date";
 
 interface EditTransactionFormProps {
@@ -43,6 +44,8 @@ export function EditTransactionForm({
   onSuccess,
 }: EditTransactionFormProps) {
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const updateTransaction = useMutationUpdateTransaction();
 
@@ -164,8 +167,12 @@ export function EditTransactionForm({
         note: data.note,
       },
       {
-        onSuccess: () => {
-          onSuccess?.();
+        onSuccess: (data) => {
+          const message =
+            data?.message || "Transaction has been updated successfully";
+          setSuccessMessage(message);
+          setShowSuccess(true);
+          setErrorMessage("");
         },
         onError: (error: any) => {
           setErrorMessage(
@@ -175,6 +182,11 @@ export function EditTransactionForm({
       },
     );
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   if (transactionLoading) {
     return (

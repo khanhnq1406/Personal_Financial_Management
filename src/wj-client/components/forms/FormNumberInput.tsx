@@ -57,6 +57,7 @@ export const FormNumberInput = ({
         <input
           id={props.name}
           type="number"
+          inputMode="decimal"
           placeholder={placeholder}
           disabled={disabled}
           min={min}

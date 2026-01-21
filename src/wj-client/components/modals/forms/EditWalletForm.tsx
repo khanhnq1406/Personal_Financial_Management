@@ -13,6 +13,7 @@ import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
+import { Success } from "@/components/modals/Success";
 import { AdjustmentType } from "@/gen/protobuf/v1/wallet";
 import {
   updateWalletSchema,
@@ -33,6 +34,8 @@ interface EditWalletFormProps {
 export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
   const [errorMessage, setErrorMessage] = useState<string>();
   const [showAdjustment, setShowAdjustment] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const updateWalletMutation = useMutationUpdateWallet({
     onError: (error: any) => {
@@ -173,12 +176,29 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
 
       // Show success if any changes were made
       if (nameChanged || adjustmentMade) {
-        onSuccess?.();
+        const message =
+          nameChanged && adjustmentMade
+            ? "Wallet name and balance have been updated successfully"
+            : nameChanged
+              ? "Wallet name has been updated successfully"
+              : "Balance has been adjusted successfully";
+        setSuccessMessage(message);
+        setShowSuccess(true);
+        setErrorMessage("");
       }
     } catch {
       // Error handling is done by mutation onError callbacks
     }
   };
+
+  const handleDone = () => {
+    onSuccess?.();
+  };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={handleDone} />;
+  }
 
   // Calculate projected balance
   const currentBalance = wallet.balance?.amount || 0;

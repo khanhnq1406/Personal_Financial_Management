@@ -14,6 +14,7 @@ import {
   updateBudgetSchema,
   UpdateBudgetFormInput,
 } from "@/lib/validation/budget.schema";
+import { Success } from "@/components/modals/Success";
 
 interface EditBudgetFormProps {
   budget: Budget;
@@ -27,8 +28,17 @@ interface EditBudgetFormProps {
  */
 export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const updateBudget = useMutationUpdateBudget({
+    onSuccess: (data) => {
+      const message =
+        data?.message || "Budget has been updated successfully";
+      setSuccessMessage(message);
+      setShowSuccess(true);
+      setErrorMessage("");
+    },
     onError: (error: any) => {
       setErrorMessage(
         error.message || "Failed to update budget. Please try again",
@@ -55,22 +65,20 @@ export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
 
   const onSubmit = (data: UpdateBudgetFormInput) => {
     setErrorMessage("");
-    updateBudget.mutate(
-      {
-        budgetId: budget.id,
-        name: data.name,
-        total: {
-          amount: data.total,
-          currency: "VND",
-        },
+    updateBudget.mutate({
+      budgetId: budget.id,
+      name: data.name,
+      total: {
+        amount: data.total,
+        currency: "VND",
       },
-      {
-        onSuccess: () => {
-          onSuccess?.();
-        },
-      },
-    );
+    });
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

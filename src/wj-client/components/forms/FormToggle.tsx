@@ -29,13 +29,21 @@ export const FormToggle = ({
 
   return (
     <div className={cn("mb-3", className)}>
-      <div className="text-sm font-medium mb-1">Transaction Type</div>
-      <div className="flex gap-2">
+      <div className="text-sm font-medium mb-1" id="transaction-type-label">
+        Transaction Type
+      </div>
+      <div
+        className="flex gap-2"
+        role="radiogroup"
+        aria-labelledby="transaction-type-label"
+      >
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             disabled={disabled}
+            role="radio"
+            aria-checked={value === option.value}
             className={cn(
               "flex-1 py-2 px-4 rounded-lg transition-colors",
               value === option.value
@@ -50,7 +58,9 @@ export const FormToggle = ({
         ))}
       </div>
       {error ? (
-        <div className="text-lred text-sm mt-1">{error.message}</div>
+        <div className="text-lred text-sm mt-1" role="alert">
+          {error.message}
+        </div>
       ) : null}
     </div>
   );

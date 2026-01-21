@@ -10,6 +10,8 @@ type PropType = {
   loading?: boolean;
   disabled?: boolean;
   className?: string;
+  "aria-label"?: string;
+  "aria-pressed"?: boolean;
 };
 
 // Hoist SVG content outside component to avoid recreating on each render
@@ -69,6 +71,8 @@ export const Button = React.memo(function Button({
   loading = false,
   disabled = false,
   className = "",
+  "aria-label": ariaLabel,
+  "aria-pressed": ariaPressed,
 }: PropType) {
   switch (type) {
     case ButtonType.IMG:
@@ -78,8 +82,11 @@ export const Button = React.memo(function Button({
             "hover:bg-hover rounded-md p-1 hover:drop-shadow-sm focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
             className
           )}
+          onClick={onClick}
+          aria-label={ariaLabel}
+          aria-pressed={ariaPressed}
         >
-          <img src={src} alt="" onClick={onClick} className="w-5" />
+          <img src={src} alt="" className="w-5" />
         </button>
       );
 

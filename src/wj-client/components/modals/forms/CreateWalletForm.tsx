@@ -13,6 +13,7 @@ import { FormSelect } from "@/components/forms/FormSelect";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
+import { Success } from "@/components/modals/Success";
 import {
   createWalletSchemaWithExisting,
   CreateWalletFormOutput,
@@ -32,6 +33,8 @@ interface CreateWalletFormProps {
 export function CreateWalletForm({ onSuccess }: CreateWalletFormProps) {
   const createWallet = useMutationCreateWallet();
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: walletsData } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
@@ -69,8 +72,12 @@ export function CreateWalletForm({ onSuccess }: CreateWalletFormProps) {
         type: data.type,
       },
       {
-        onSuccess: () => {
-          onSuccess?.();
+        onSuccess: (data) => {
+          const message =
+            data?.message || `Wallet "${data?.data?.walletName || ""}" has been created successfully`;
+          setSuccessMessage(message);
+          setShowSuccess(true);
+          setErrorMessage("");
         },
         onError: (error: any) => {
           setErrorMessage(
@@ -80,6 +87,11 @@ export function CreateWalletForm({ onSuccess }: CreateWalletFormProps) {
       },
     );
   };
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={onSuccess} />;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

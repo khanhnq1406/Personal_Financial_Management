@@ -151,6 +151,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
       <input
         ref={inputRef}
         type="text"
+        name="creatable-select"
         value={inputValue}
         onChange={handleInputChange}
         onFocus={handleFocus}
@@ -160,6 +161,10 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         autoComplete="off"
         spellCheck={false}
         className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-autocomplete="list"
       />
 
       {/* Dropdown arrow icon / Loading spinner */}

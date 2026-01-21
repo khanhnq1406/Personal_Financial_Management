@@ -6,6 +6,7 @@ import {
   useQueryListWallets,
 } from "@/utils/generated/hooks";
 import { Wallet, WalletDeletionOption } from "@/gen/protobuf/v1/wallet";
+import { Success } from "./Success";
 
 interface DeleteWalletModalProps {
   wallet: Wallet;
@@ -25,6 +26,8 @@ export function DeleteWalletModal({
   const [option, setOption] = useState<DeletionOption>("archive");
   const [targetWalletId, setTargetWalletId] = useState<number>(0);
   const [error, setError] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const getListWallets = useQueryListWallets(
     { pagination: { page: 1, pageSize: 100, orderBy: "", order: "" } },
@@ -33,9 +36,13 @@ export function DeleteWalletModal({
 
   const deleteWalletMutation = useMutationDeleteWallet({
     onSuccess: (data) => {
-      // Show success message with transaction count via alert
-      alert(data.message || "Wallet has been processed successfully");
-      onSuccess?.();
+      // Show success message
+      const message =
+        data?.message ||
+        `Wallet "${wallet.walletName}" has been ${option === "archive" ? "archived" : option === "transfer" ? "deleted" : "processed"} successfully`;
+      setSuccessMessage(message);
+      setShowSuccess(true);
+      setError("");
     },
     onError: (err: any) => {
       setError(err.message || "Failed to process wallet. Please try again");
@@ -44,6 +51,8 @@ export function DeleteWalletModal({
 
   const handleSubmit = useCallback(() => {
     setError("");
+    setSuccessMessage("");
+    setShowSuccess(false);
 
     let deletionOption: WalletDeletionOption;
     switch (option) {
@@ -74,6 +83,15 @@ export function DeleteWalletModal({
   }, [option, targetWalletId, wallet.id, deleteWalletMutation]);
 
   const isLoading = deleteWalletMutation.isPending || isPending;
+
+  const handleDone = useCallback(() => {
+    onSuccess?.();
+  }, [onSuccess]);
+
+  // Show success state
+  if (showSuccess) {
+    return <Success message={successMessage} onDone={handleDone} />;
+  }
 
   // Get other wallets for transfer option (filter out current wallet and different currencies)
   const otherWallets = (getListWallets.data?.wallets ?? []).filter(
@@ -127,11 +145,13 @@ export function DeleteWalletModal({
             </div>
             {option === "transfer" && (
               <select
+                name="target-wallet"
                 value={targetWalletId}
                 onChange={(e) => setTargetWalletId(Number(e.target.value))}
                 className="w-full border rounded p-2 text-sm"
                 disabled={isLoading}
                 required
+                aria-label="Select target wallet for transfer"
               >
                 <option value="">Select a wallet...</option>
                 {otherWallets.map((w) => (
@@ -173,7 +193,7 @@ export function DeleteWalletModal({
       </div>
 
       {error && (
-        <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+        <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm" role="alert">
           {error}
         </div>
       )}
@@ -191,7 +211,7 @@ export function DeleteWalletModal({
           className="px-4 py-2 bg-bg text-white rounded hover:bg-green-700 disabled:opacity-50"
           disabled={isLoading || (option === "transfer" && !targetWalletId)}
         >
-          {isLoading ? "Processing..." : "Confirm"}
+          {isLoading ? "Processing…" : "Confirm"}
         </button>
       </div>
     </>

@@ -453,6 +453,7 @@ export default function TransactionPage() {
           <div className="relative flex-1">
             <input
               type="text"
+              name="search"
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
