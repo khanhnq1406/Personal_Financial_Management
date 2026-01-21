@@ -6,11 +6,12 @@ vendor/
 .env.local
 .git/
 .proto.bak
-
-# Only include necessary files for build
-!go.mod
-!go.sum
-!api/
-!pkg/
-!internal/
-!proto/
+.gitignore
+.vercel/
+vercel.json
+Dockerfile
+docker-compose.yml
+Makefile
+README.md
+.env.example
+cmd/

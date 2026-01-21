@@ -13,7 +13,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"wealthjourney/api/handlers"
+	"wealthjourney/handlers"
 	"wealthjourney/domain/auth"
 	gateway "wealthjourney/domain/gateway"
 	grpcserver "wealthjourney/domain/grpcserver"

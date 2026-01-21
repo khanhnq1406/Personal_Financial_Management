@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"wealthjourney/api/handlers"
 	"wealthjourney/domain/auth"
 	grpcserver "wealthjourney/domain/grpcserver"
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
+	apihandlers "wealthjourney/handlers"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
@@ -46,14 +46,15 @@ func (w *corsWrapper) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
 }
 
 var (
-	app        *gin.Engine
-	h          *handlers.AllHandlers
-	cfg        *config.Config
-	gatewayMux *runtime.ServeMux
-	svc        *service.Services
-	walletSrv  grpcv1.WalletServiceServer
-	authSrv    grpcv1.AuthServiceServer
-	userSrv    grpcv1.UserServiceServer
+	app         *gin.Engine
+	h           *apihandlers.AllHandlers
+	cfg         *config.Config
+	gatewayMux  *runtime.ServeMux
+	svc         *service.Services
+	walletSrv   grpcv1.WalletServiceServer
+	authSrv     grpcv1.AuthServiceServer
+	userSrv     grpcv1.UserServiceServer
+	initialized bool
 )
 
 func init() {
@@ -90,15 +91,19 @@ func init() {
 		} else {
 			// Initialize repositories
 			repos := &service.Repositories{
-				User:   repository.NewUserRepository(db),
-				Wallet: repository.NewWalletRepository(db),
+				User:        repository.NewUserRepository(db),
+				Wallet:      repository.NewWalletRepository(db),
+				Transaction: repository.NewTransactionRepository(db),
+				Category:    repository.NewCategoryRepository(db),
+				Budget:      repository.NewBudgetRepository(db),
+				BudgetItem:  repository.NewBudgetItemRepository(db),
 			}
 
 			// Initialize services
 			svc = service.NewServices(repos)
 
 			// Initialize handlers
-			h = handlers.NewHandlers(svc)
+			h = apihandlers.NewHandlers(svc)
 
 			// Initialize auth domain server
 			authDomainSrv := auth.NewServer(db, nil, cfg)
@@ -125,12 +130,13 @@ func init() {
 		if err != nil {
 			log.Printf("Warning: Redis connection failed: %v", err)
 		} else {
-			handlers.SetRedis(rdb)
+			apihandlers.SetRedis(rdb)
 		}
 	}
 
 	// Register routes
 	registerRoutes(app)
+	initialized = true
 }
 
 // registerGatewayServices registers gRPC services with the gateway mux
@@ -154,7 +160,14 @@ func registerGatewayServices(ctx context.Context) error {
 }
 
 // Handler is the entry point for Vercel serverless functions
+// Vercel routes /api/* to this handler (strips /api prefix)
 func Handler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Handler called: %s %s (initialized: %v)", r.Method, r.URL.Path, initialized)
+	if !initialized {
+		log.Printf("ERROR: Gin app not initialized!")
+		http.Error(w, "Service not initialized", http.StatusInternalServerError)
+		return
+	}
 	// Wrap the Gin app with CORS handling
 	wrappedHandler := &corsWrapper{handler: app}
 	wrappedHandler.ServeHTTP(w, r)
@@ -173,21 +186,24 @@ func registerRoutes(app *gin.Engine) {
 		c.AbortWithStatus(http.StatusNoContent)
 	})
 
-	// Health check endpoint
-	app.GET("/health", func(c *gin.Context) {
+	// Root endpoint for /api/v1
+	app.GET("/api/v1", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"service": "wealthjourney-api",
 			"version": "2.0.0",
+			"path":    c.Request.URL.Path,
 		})
 	})
 
-	// API v1 group (no rate limiting for Vercel)
+	// API v1 routes
+	// Vercel routes /api/v1/* to this handler (v1.go)
 	v1 := app.Group("/api/v1")
 
 	if gatewayMux != nil {
 		// Use gRPC-Gateway for auto-generated endpoints
 		// Exclude OPTIONS method as it's handled above
+		log.Printf("Handler called to create routes with gatewayMux")
 		v1.GET("/*path", gin.WrapH(gatewayMux))
 		v1.POST("/*path", gin.WrapH(gatewayMux))
 		v1.PUT("/*path", gin.WrapH(gatewayMux))
@@ -195,9 +211,11 @@ func registerRoutes(app *gin.Engine) {
 		v1.DELETE("/*path", gin.WrapH(gatewayMux))
 	} else if h != nil {
 		// Fallback to manual handlers
-		handlers.RegisterRoutes(v1, h, nil)
+		log.Printf("Handler called to create routes with manual handlers")
+		apihandlers.RegisterRoutes(v1, h, nil)
 	} else {
 		// Fallback to old handlers if service initialization failed
+		log.Printf("Handler called to create routes with fallback")
 		registerFallbackRoutes(v1)
 	}
 
@@ -217,10 +235,10 @@ func registerFallbackRoutes(v1 *gin.RouterGroup) {
 	// Auth routes
 	auth := v1.Group("/auth")
 	{
-		auth.POST("/register", handlers.Register)
-		auth.POST("/login", handlers.Login)
-		auth.POST("/logout", handlers.Logout)
-		auth.GET("/verify", handlers.VerifyAuth)
+		auth.POST("/register", apihandlers.Register)
+		auth.POST("/login", apihandlers.Login)
+		auth.POST("/logout", apihandlers.Logout)
+		auth.GET("/verify", apihandlers.VerifyAuth)
 	}
 }
 

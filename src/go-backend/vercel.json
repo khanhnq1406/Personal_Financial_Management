@@ -1,8 +1,9 @@
 {
-  "builds": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
     {
-      "src": "vercel.go",
-      "use": "@vercel/go"
+      "source": "/api/v1/:path*",
+      "destination": "/api/v1"
     }
   ]
 }
