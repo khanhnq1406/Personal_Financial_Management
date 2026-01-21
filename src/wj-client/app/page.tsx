@@ -1,5 +1,22 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { store } from "@/redux/store";
+
 export default function Home() {
-  return <h1>This is homepage!!!!!</h1>;
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check auth state from store
+    const authState = store.getState().setAuthReducer.isAuthenticated;
+
+    if (authState) {
+      router.push("/dashboard/home");
+    } else {
+      router.push("/landing");
+    }
+  }, [router]);
+
+  return null;
 }
