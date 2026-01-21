@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { resources } from "@/app/constants";
+
+// Hoist regex outside component to avoid recreating on each render (js-hoist-regexp)
+const SPACE_REGEX = /\s+/g;
 
 export interface BaseModalProps {
   isOpen: boolean;
@@ -49,6 +52,9 @@ export function BaseModal({
     }
   }, [isOpen, onClose]);
 
+  // Memoize modal title ID to avoid recalculating (rendering-hoist-jsx)
+  const modalTitleId = useMemo(() => `modal-title-${title.replace(SPACE_REGEX, "-")}`, [title]);
+
   if (!isOpen) return null;
 
   return (
@@ -57,7 +63,7 @@ export function BaseModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={`modal-title-${title.replace(/\s+/g, "-")}`}
+      aria-labelledby={modalTitleId}
     >
       <div
         className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain"
@@ -65,7 +71,7 @@ export function BaseModal({
       >
         <div className="flex justify-between items-center mb-4">
           <h2
-            id={`modal-title-${title.replace(/\s+/g, "-")}`}
+            id={modalTitleId}
             className="font-bold text-lg"
           >
             {title}
@@ -80,7 +86,7 @@ export function BaseModal({
 
         {children}
 
-        {footer && <div className="mt-4">{footer}</div>}
+        {footer ? <div className="mt-4">{footer}</div> : null}
       </div>
     </div>
   );

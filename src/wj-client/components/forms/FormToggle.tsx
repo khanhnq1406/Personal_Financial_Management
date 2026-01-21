@@ -41,7 +41,7 @@ export const FormToggle = ({
               value === option.value
                 ? option.className || "bg-gray-800 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed",
             )}
             onClick={() => onChange(option.value)}
           >
@@ -49,7 +49,9 @@ export const FormToggle = ({
           </button>
         ))}
       </div>
-      {error && <div className="text-lred text-sm mt-1">{error.message}</div>}
+      {error ? (
+        <div className="text-lred text-sm mt-1">{error.message}</div>
+      ) : null}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
@@ -73,14 +73,17 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
     name: "transactionType",
   });
 
-  const filteredCategories =
-    categoriesData?.categories?.filter(
-      (cat) =>
-        cat.type ===
-        (transactionType === "income"
-          ? CategoryType.CATEGORY_TYPE_INCOME
-          : CategoryType.CATEGORY_TYPE_EXPENSE),
-    ) || [];
+  const filteredCategories = useMemo(
+    () =>
+      categoriesData?.categories?.filter(
+        (cat) =>
+          cat.type ===
+          (transactionType === "income"
+            ? CategoryType.CATEGORY_TYPE_INCOME
+            : CategoryType.CATEGORY_TYPE_EXPENSE),
+      ) || [],
+    [categoriesData?.categories, transactionType],
+  );
 
   const createCategoryMutation = useMutationCreateCategory({
     onSuccess: (data) => {
@@ -98,19 +101,26 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
     setValue("categoryId", "");
   }, [transactionType, setValue]);
 
-  const walletOptions: SelectOption[] =
-    (walletsData?.wallets || []).map((wallet) => ({
-      value: wallet.id,
-      label: `${wallet.walletName} (${(
-        wallet.balance?.amount || 0
-      ).toLocaleString()} VND)`,
-      balance: wallet.balance?.amount || 0,
-    })) || [];
+  const walletOptions: SelectOption[] = useMemo(
+    () =>
+      (walletsData?.wallets || []).map((wallet) => ({
+        value: wallet.id,
+        label: `${wallet.walletName} (${(
+          wallet.balance?.amount || 0
+        ).toLocaleString()} VND)`,
+        balance: wallet.balance?.amount || 0,
+      })),
+    [walletsData?.wallets],
+  );
 
-  const categoryOptions = filteredCategories.map((cat) => ({
-    value: String(cat.id),
-    label: cat.name,
-  }));
+  const categoryOptions = useMemo(
+    () =>
+      filteredCategories.map((cat) => ({
+        value: String(cat.id),
+        label: cat.name,
+      })),
+    [filteredCategories],
+  );
 
   const handleCreateCategory = async (categoryName: string) => {
     await createCategoryMutation.mutateAsync({

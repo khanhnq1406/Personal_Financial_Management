@@ -54,17 +54,17 @@ export default function Home() {
   const handleModalClose = () => setModalType(null);
 
   const handleModalSuccess = () => {
-    // Invalidate queries to refresh data
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
     queryClient.invalidateQueries({
-      queryKey: [EVENT_TransactionListTransactions],
-    });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_WalletGetBalanceHistory],
-    });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_WalletGetMonthlyDominance],
+      predicate: (query) => {
+        const key = query.queryKey[0] as string;
+        return [
+          EVENT_WalletListWallets,
+          EVENT_WalletGetTotalBalance,
+          EVENT_TransactionListTransactions,
+          EVENT_WalletGetBalanceHistory,
+          EVENT_WalletGetMonthlyDominance,
+        ].includes(key);
+      },
     });
     handleModalClose();
   };

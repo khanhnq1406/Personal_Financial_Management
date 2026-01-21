@@ -4,6 +4,7 @@ import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
 import { cn } from "@/lib/utils/cn";
+import { memo } from "react";
 
 export interface SelectOption {
   value: string | number;
@@ -25,7 +26,7 @@ interface FormSelectProps extends Omit<UseControllerProps, "control"> {
   formatOption?: (option: SelectOption) => string;
 }
 
-export const FormSelect = ({
+export const FormSelect = memo(function FormSelect({
   label,
   options = [],
   placeholder = "Select an option",
@@ -35,7 +36,7 @@ export const FormSelect = ({
   loading = false,
   formatOption,
   ...props
-}: FormSelectProps) => {
+}: FormSelectProps) {
   const {
     field,
     fieldState: { error },
@@ -57,7 +58,7 @@ export const FormSelect = ({
         {...field}
         className={cn(
           "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-2 border-lred"
+          error && "border-2 border-lred",
         )}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={error ? `${props.name}-error` : undefined}
@@ -80,4 +81,4 @@ export const FormSelect = ({
       )}
     </div>
   );
-};
+});

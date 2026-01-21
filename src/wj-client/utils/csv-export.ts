@@ -100,31 +100,32 @@ export const exportFinancialReportToCSV = (
       };
     });
 
-    // Income row
+    // Combine multiple iterations into one loop (js-combine-iterations optimization)
     const incomeRow = ["Income"];
+    const expenseRow = ["Expense"];
+    const balanceRow = ["Balance"];
     let walletTotalIncome = 0;
+    let walletTotalExpense = 0;
+
     monthlyDataWithBalance.forEach((data) => {
+      // Process income row
       incomeRow.push(data.income > 0 ? formatCurrency(data.income) : "-");
       walletTotalIncome += data.income;
+
+      // Process expense row
+      expenseRow.push(data.expense > 0 ? formatCurrency(data.expense) : "-");
+      walletTotalExpense += data.expense;
+
+      // Process balance row
+      balanceRow.push(formatCurrency(data.balance));
     });
+
     incomeRow.push(formatCurrency(walletTotalIncome));
     rows.push(incomeRow.join(","));
 
-    // Expense row
-    const expenseRow = ["Expense"];
-    let walletTotalExpense = 0;
-    monthlyDataWithBalance.forEach((data) => {
-      expenseRow.push(data.expense > 0 ? formatCurrency(data.expense) : "-");
-      walletTotalExpense += data.expense;
-    });
     expenseRow.push(formatCurrency(walletTotalExpense));
     rows.push(expenseRow.join(","));
 
-    // Balance row
-    const balanceRow = ["Balance"];
-    monthlyDataWithBalance.forEach((data) => {
-      balanceRow.push(formatCurrency(data.balance));
-    });
     balanceRow.push(formatCurrency(runningBalance));
     rows.push(balanceRow.join(","));
   });

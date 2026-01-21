@@ -140,7 +140,10 @@ export const TransactionList = ({
         onSearchChange={setSearchQuery}
       />
 
-      <div className="mt-4 space-y-4">
+      <div
+        className="mt-4 space-y-4"
+        style={{ contentVisibility: "auto" }} // rendering-content-visibility optimization for long lists
+      >
         {Object.entries(groupedTransactions).map(([date, transactions]) => (
           <TransactionGroup
             key={date}

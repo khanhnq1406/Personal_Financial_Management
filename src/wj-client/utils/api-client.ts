@@ -34,11 +34,43 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Get auth token from localStorage (client-side only)
+ * In-memory cache for auth token to avoid repeated localStorage reads
+ * localStorage access is synchronous and can be slow, so we cache the value
+ */
+let cachedToken: string | null = null;
+let tokenCacheExpired = false;
+
+/**
+ * Get auth token from localStorage (client-side only) with caching
+ * Uses in-memory cache to avoid repeated synchronous localStorage reads
  */
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+
+  // Return cached token if available and not expired
+  if (cachedToken !== null && !tokenCacheExpired) {
+    return cachedToken;
+  }
+
+  cachedToken = localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+  tokenCacheExpired = false;
+  return cachedToken;
+}
+
+/**
+ * Update the cached token (call when token changes)
+ * Call this after login/logout to update the cache without hitting localStorage again
+ */
+export function updateAuthTokenCache(token: string | null): void {
+  cachedToken = token;
+  tokenCacheExpired = false;
+}
+
+/**
+ * Invalidate the token cache (call when token might have changed externally)
+ */
+export function invalidateAuthTokenCache(): void {
+  tokenCacheExpired = true;
 }
 
 /**

@@ -16,9 +16,16 @@ export const Label = ({
   className = "",
 }: LabelProps) => {
   return (
-    <label htmlFor={htmlFor} className={cn("text-sm font-medium cursor-pointer", className)}>
+    <label
+      htmlFor={htmlFor}
+      className={cn("text-sm font-medium cursor-pointer", className)}
+    >
       {children}
-      {required && <span className="required" aria-label="required">*</span>}
+      {required ? (
+        <span className="required" aria-label="required">
+          *
+        </span>
+      ) : null}
     </label>
   );
 };

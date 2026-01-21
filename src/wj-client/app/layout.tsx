@@ -6,7 +6,9 @@ import { Providers } from "./providers";
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta-sans",
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600"], // Only load commonly used weights
+  preload: true, // Enable preloading for faster font rendering
+  adjustFontFallback: false, // Disable automatic fallback fonts to reduce bundle size
 });
 
 export const metadata: Metadata = {

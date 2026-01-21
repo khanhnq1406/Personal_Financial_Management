@@ -74,7 +74,7 @@ export const AccountBalance = memo(function AccountBalance({
       <ResponsiveContainer>
         <ComposedChart
           data={chartData}
-          margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+          margin={{ top: 10, right: 30, left: 15, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="label" />

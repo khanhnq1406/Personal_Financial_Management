@@ -2,7 +2,14 @@
 
 import { pieChartColors } from "@/app/constants";
 import { memo, useState } from "react";
-import { PieChart, ResponsiveContainer, Pie, Legend, Cell, Tooltip } from "recharts";
+import {
+  PieChart,
+  ResponsiveContainer,
+  Pie,
+  Legend,
+  Cell,
+  Tooltip,
+} from "recharts";
 import { useQueryListWallets } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 
@@ -20,7 +27,9 @@ interface DominanceProps {
   availableYears: number[];
 }
 
-export const Dominance = memo(function Dominance({ availableYears }: DominanceProps) {
+export const Dominance = memo(function Dominance({
+  availableYears,
+}: DominanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Fetch wallets for the dropdown
@@ -28,7 +37,7 @@ export const Dominance = memo(function Dominance({ availableYears }: DominancePr
     {
       pagination: { page: 1, pageSize: 100, orderBy: "", order: "" },
     },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   if (walletsLoading) {
@@ -40,7 +49,6 @@ export const Dominance = memo(function Dominance({ availableYears }: DominancePr
   }
 
   // Prepare chart data - use current wallet balances
-  // For a true yearly dominance, we would need the balance at the end of the selected year
   const data =
     walletsData?.wallets?.map((wallet) => ({
       name: wallet.walletName,
