@@ -6,16 +6,26 @@ import {
   useQueryListCategories,
   useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
-import { SortField, CategoryType, TransactionType } from "@/gen/protobuf/v1/transaction";
+import {
+  SortField,
+  CategoryType,
+  TransactionType,
+} from "@/gen/protobuf/v1/transaction";
 import { TransactionFilter } from "./TransactionFilter";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { TransactionGroup } from "./TransactionGroup";
 import { groupTransactionsByDate } from "@/lib/utils/transaction";
 import { useDebounce } from "@/hooks";
 
-export const TransactionList = () => {
+type TransactionListProps = {
+  onEditTransaction?: (transactionId: number) => void;
+};
+
+export const TransactionList = ({
+  onEditTransaction,
+}: TransactionListProps) => {
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
-    "all"
+    "all",
   );
   const [searchQuery, setSearchQuery] = useState("");
   // Debounce search query to reduce API calls (500ms delay)
@@ -42,7 +52,7 @@ export const TransactionList = () => {
     },
     {
       refetchOnMount: "always",
-    }
+    },
   );
 
   // Fetch categories for filtering (needed for TransactionGroup to display category names)
@@ -96,7 +106,10 @@ export const TransactionList = () => {
     );
   }
 
-  if (!transactionsData?.transactions || transactionsData.transactions.length === 0) {
+  if (
+    !transactionsData?.transactions ||
+    transactionsData.transactions.length === 0
+  ) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">
         <svg
@@ -135,6 +148,7 @@ export const TransactionList = () => {
             transactions={transactions}
             categoryTypeMap={categoryTypeMap}
             onDelete={deleteTransactionMutation.mutate}
+            onEdit={(transactionId) => onEditTransaction?.(transactionId)}
           />
         ))}
       </div>

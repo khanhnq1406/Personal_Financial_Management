@@ -1,73 +1,67 @@
 "use client";
 
+import { useState } from "react";
 import { BudgetItem } from "@/gen/protobuf/v1/budget";
 import { currencyFormatter } from "@/utils/currency-formatter";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
-import { ModalType, ButtonType, resources } from "@/app/constants";
+import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { Checkbox } from "@/components/Checkbox";
-import { useMutationUpdateBudgetItem } from "@/utils/generated/hooks";
+import {
+  useMutationUpdateBudgetItem,
+  useMutationDeleteBudgetItem,
+} from "@/utils/generated/hooks";
 import { EVENT_BudgetUpdateBudgetItem } from "@/utils/generated/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 interface BudgetItemCardProps {
   item: BudgetItem;
   budgetId: number;
   onRefresh: () => void;
+  onEditItem: (budgetId: number, item: BudgetItem) => void;
 }
 
 export function BudgetItemCard({
   item,
   budgetId,
   onRefresh,
+  onEditItem,
 }: BudgetItemCardProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const updateBudgetItemMutation = useMutationUpdateBudgetItem({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [EVENT_BudgetUpdateBudgetItem] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_BudgetUpdateBudgetItem],
+      });
       onRefresh();
     },
   });
 
-  const handleEditItem = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.EDIT_BUDGET_ITEM,
-        onSuccess: () => {
-          onRefresh();
-        },
-        data: { budgetId, item },
-      }),
-    );
-  };
+  const deleteBudgetItemMutation = useMutationDeleteBudgetItem({
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_BudgetUpdateBudgetItem],
+      });
+      onRefresh();
+    },
+  });
 
   const handleDeleteItem = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.CONFIRM,
-        onSuccess: () => {
-          onRefresh();
-        },
-        confirmConfig: {
-          title: "Delete Budget Item",
-          message: `Are you sure you want to delete "${item.name}"?`,
-          confirmText: "Delete",
-          cancelText: "Cancel",
-          variant: "danger",
-          action: {
-            type: "deleteBudgetItem",
-            payload: {
-              budgetId,
-              itemId: item.id,
-            },
-          },
-        },
-      }),
-    );
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteItem = () => {
+    deleteBudgetItemMutation.mutate({
+      budgetId,
+      itemId: item.id,
+    });
+    setShowDeleteDialog(false);
+  };
+
+  const cancelDeleteItem = () => {
+    setShowDeleteDialog(false);
   };
 
   const handleCheckedChange = (checked: boolean) => {
@@ -80,36 +74,58 @@ export function BudgetItemCard({
     });
   };
 
+  const isPending =
+    updateBudgetItemMutation.isPending || deleteBudgetItemMutation.isPending;
+
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
-      <div className="flex items-center gap-3 flex-1">
-        <Checkbox
-          checked={item.checked ?? false}
-          onChange={handleCheckedChange}
-          disabled={updateBudgetItemMutation.isPending}
-        />
-        <div className="flex flex-col">
-          <span className={`font-semibold text-sm ${item.checked ? "line-through text-gray-400" : ""}`}>
-            {item.name}
-          </span>
-          <span className="text-xs text-gray-500">
-            {currencyFormatter.format(item.total?.amount ?? 0)}
-          </span>
+    <>
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+        <div className="flex items-center gap-3 flex-1">
+          <Checkbox
+            checked={item.checked ?? false}
+            onChange={handleCheckedChange}
+            disabled={isPending}
+          />
+          <div className="flex flex-col">
+            <span
+              className={`font-semibold text-sm ${item.checked ? "line-through text-gray-400" : ""}`}
+            >
+              {item.name}
+            </span>
+            <span className="text-xs text-gray-500">
+              {currencyFormatter.format(item.total?.amount ?? 0)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type={ButtonType.IMG}
+            src={`${resources}/editing.png`}
+            onClick={() => onEditItem(budgetId, item)}
+            disabled={isPending}
+          />
+          <Button
+            type={ButtonType.IMG}
+            src={`${resources}/remove.png`}
+            onClick={handleDeleteItem}
+            disabled={isPending}
+          />
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          type={ButtonType.IMG}
-          src={`${resources}/editing.png`}
-          onClick={handleEditItem}
+      {showDeleteDialog && (
+        <ConfirmationDialog
+          title="Delete Budget Item"
+          message={`Are you sure you want to delete "${item.name}"?`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDeleteItem}
+          onCancel={cancelDeleteItem}
+          isLoading={deleteBudgetItemMutation.isPending}
+          variant="danger"
         />
-        <Button
-          type={ButtonType.IMG}
-          src={`${resources}/remove.png`}
-          onClick={handleDeleteItem}
-        />
-      </div>
-    </div>
+      )}
+    </>
   );
 }

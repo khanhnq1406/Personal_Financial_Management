@@ -1,25 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { Transaction, CategoryType } from "@/gen/protobuf/v1/transaction";
-import { resources, ButtonType, ModalType } from "@/app/constants";
+import { resources, ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
 import Image from "next/image";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
 import { formatDateTime } from "@/lib/utils/date";
 import { currencyFormatter } from "@/utils/currency-formatter";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 type TransactionItemProps = {
   transaction: Transaction;
   categoryTypeMap: Map<number, CategoryType>;
   onDelete: (request: { transactionId: number }) => void;
+  onEdit: (transactionId: number) => void;
 };
 
 export const TransactionItem = ({
   transaction,
   categoryTypeMap,
   onDelete,
+  onEdit,
 }: TransactionItemProps) => {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const amount = transaction.amount?.amount || 0;
 
   // Determine if this is income or expense based on category type
@@ -30,25 +33,24 @@ export const TransactionItem = ({
   const isIncome = categoryType === CategoryType.CATEGORY_TYPE_INCOME;
 
   const handleEdit = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.EDIT_TRANSACTION,
-        transactionId: transaction.id,
-        onSuccess: () => {
-          // This will be handled by the parent component's refetch
-        },
-      }),
-    );
+    onEdit(transaction.id);
   };
 
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this transaction?")) {
-      onDelete({ transactionId: transaction.id });
-    }
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTransaction = () => {
+    onDelete({ transactionId: transaction.id });
+    setShowDeleteDialog(false);
+  };
+
+  const cancelDeleteTransaction = () => {
+    setShowDeleteDialog(false);
   };
 
   return (
+    <>
     <div className="flex items-center justify-between px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors">
       {/* Left side - Icon and details */}
       <div className="flex items-center gap-3 flex-1">
@@ -114,5 +116,18 @@ export const TransactionItem = ({
         </div>
       </div>
     </div>
+
+    {showDeleteDialog && (
+      <ConfirmationDialog
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteTransaction}
+        onCancel={cancelDeleteTransaction}
+        variant="danger"
+      />
+    )}
+    </>
   );
 };

@@ -1,30 +1,22 @@
-import { ButtonType, ModalType } from "@/app/constants";
+import { ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
-import { openModal } from "@/redux/actions";
-import { store } from "@/redux/store";
 import { memo } from "react";
 
+type ModalTypeLocal = "add-transaction" | "transfer-money" | "create-wallet";
+
 type FunctionalButtonProps = {
-  onRefreshWallets?: () => void;
+  onOpenModal: (type: ModalTypeLocal) => void;
 };
 
 export const FunctionalButton = memo(function FunctionalButton({
-  onRefreshWallets,
+  onOpenModal,
 }: FunctionalButtonProps) {
   return (
     <div className="py-5">
       <div className="mb-5">
         <Button
           type={ButtonType.PRIMARY}
-          onClick={() => {
-            store.dispatch(
-              openModal({
-                isOpen: true,
-                type: ModalType.ADD_TRANSACTION,
-                onSuccess: onRefreshWallets,
-              })
-            );
-          }}
+          onClick={() => onOpenModal("add-transaction")}
         >
           Add Transaction
         </Button>
@@ -32,15 +24,7 @@ export const FunctionalButton = memo(function FunctionalButton({
       <div className="mb-5">
         <Button
           type={ButtonType.SECONDARY}
-          onClick={() => {
-            store.dispatch(
-              openModal({
-                isOpen: true,
-                type: ModalType.TRANSFER_MONEY,
-                onSuccess: onRefreshWallets,
-              })
-            );
-          }}
+          onClick={() => onOpenModal("transfer-money")}
         >
           Transfer Money
         </Button>
@@ -48,15 +32,7 @@ export const FunctionalButton = memo(function FunctionalButton({
       <div>
         <Button
           type={ButtonType.SECONDARY}
-          onClick={() => {
-            store.dispatch(
-              openModal({
-                isOpen: true,
-                type: ModalType.CREATE_WALLET,
-                onSuccess: onRefreshWallets,
-              })
-            );
-          }}
+          onClick={() => onOpenModal("create-wallet")}
         >
           Create New Wallet
         </Button>

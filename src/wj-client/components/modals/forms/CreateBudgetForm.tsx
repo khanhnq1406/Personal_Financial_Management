@@ -1,20 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutationCreateBudget } from "@/utils/generated/hooks";
 import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import {
   createBudgetSchema,
   CreateBudgetFormInput,
 } from "@/lib/validation/budget.schema";
 
 interface CreateBudgetFormProps {
-  onSubmit: (data: CreateBudgetFormInput) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const CreateBudgetForm = ({ onSubmit }: CreateBudgetFormProps) => {
+/**
+ * Self-contained form component for creating budgets.
+ * Owns its mutation logic, error handling, and loading state.
+ * After successful creation, calls onSuccess() callback (caller handles refetch + modal close).
+ */
+export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const createBudget = useMutationCreateBudget();
+
   const { control, handleSubmit } = useForm<CreateBudgetFormInput>({
     resolver: zodResolver(createBudgetSchema),
     defaultValues: {
@@ -24,8 +36,38 @@ export const CreateBudgetForm = ({ onSubmit }: CreateBudgetFormProps) => {
     mode: "onSubmit",
   });
 
+  const onSubmit = (data: CreateBudgetFormInput) => {
+    setErrorMessage("");
+    createBudget.mutate(
+      {
+        name: data.name,
+        total: {
+          amount: data.total,
+          currency: "VND",
+        },
+        items: [],
+      },
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          setErrorMessage(
+            error.message || "Failed to create budget. Please try again",
+          );
+        },
+      },
+    );
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} id="create-budget-form">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       <FormInput
         name="name"
         control={control}
@@ -44,6 +86,16 @@ export const CreateBudgetForm = ({ onSubmit }: CreateBudgetFormProps) => {
         min={1}
         step="1"
       />
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={createBudget.isPending}
+        >
+          Create
+        </Button>
+      </div>
     </form>
   );
-};
+}

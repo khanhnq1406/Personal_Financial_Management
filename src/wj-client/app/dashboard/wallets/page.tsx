@@ -1,57 +1,71 @@
 "use client";
 
+import { useState } from "react";
 import { useQueryListWallets } from "@/utils/generated/hooks";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { Button } from "@/components/Button";
 import Image from "next/image";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
-import { ModalType, ButtonType, resources } from "@/app/constants";
+import { ButtonType, resources } from "@/app/constants";
 import { WalletGrid } from "./WalletGrid";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
+import { BaseModal } from "@/components/modals/BaseModal";
+import { CreateWalletForm } from "@/components/modals/forms/CreateWalletForm";
+import { EditWalletForm } from "@/components/modals/forms/EditWalletForm";
+import { DeleteWalletModal } from "@/components/modals/DeleteWalletModal";
+import {
+  EVENT_WalletListWallets,
+  EVENT_WalletGetTotalBalance,
+} from "@/utils/generated/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+
+type ModalState =
+  | { type: "create-wallet" }
+  | { type: "edit-wallet"; wallet: Wallet }
+  | { type: "delete-wallet"; wallet: Wallet }
+  | null;
 
 export default function WalletsPage() {
+  const queryClient = useQueryClient();
+  const [modalState, setModalState] = useState<ModalState>(null);
+
   const getListWallets = useQueryListWallets(
     { pagination: { page: 1, pageSize: 10, orderBy: "", order: "" } },
     { refetchOnMount: "always" },
   );
 
   const handleCreateWallet = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.CREATE_WALLET,
-        onSuccess: () => {
-          getListWallets.refetch();
-        },
-      }),
-    );
+    setModalState({ type: "create-wallet" });
   };
 
   const handleEditWallet = (wallet: Wallet) => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.EDIT_WALLET,
-        data: { wallet },
-        onSuccess: () => {
-          getListWallets.refetch();
-        },
-      }),
-    );
+    setModalState({ type: "edit-wallet", wallet });
   };
 
   const handleDeleteWallet = (wallet: Wallet) => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.DELETE_WALLET,
-        data: { wallet },
-        onSuccess: () => {
-          getListWallets.refetch();
-        },
-      }),
-    );
+    setModalState({ type: "delete-wallet", wallet });
+  };
+
+  const handleCloseModal = () => {
+    setModalState(null);
+  };
+
+  const handleModalSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+    queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
+    handleCloseModal();
+  };
+
+  const getModalTitle = () => {
+    switch (modalState?.type) {
+      case "create-wallet":
+        return "Create Wallet";
+      case "edit-wallet":
+        return "Edit Wallet";
+      case "delete-wallet":
+        return "";
+      default:
+        return "";
+    }
   };
 
   if (getListWallets.isLoading) {
@@ -108,6 +122,44 @@ export default function WalletsPage() {
         onEdit={handleEditWallet}
         onDelete={handleDeleteWallet}
       />
+
+      {/* Create Wallet Modal */}
+      {modalState?.type === "create-wallet" && (
+        <BaseModal
+          isOpen={modalState.type === "create-wallet"}
+          onClose={handleCloseModal}
+          title={getModalTitle()}
+        >
+          <CreateWalletForm onSuccess={handleModalSuccess} />
+        </BaseModal>
+      )}
+
+      {/* Edit Wallet Modal */}
+      {modalState?.type === "edit-wallet" && (
+        <BaseModal
+          isOpen={modalState.type === "edit-wallet"}
+          onClose={handleCloseModal}
+          title={getModalTitle()}
+        >
+          <EditWalletForm
+            wallet={modalState.wallet}
+            onSuccess={handleModalSuccess}
+          />
+        </BaseModal>
+      )}
+
+      {/* Delete Wallet Modal */}
+      {modalState?.type === "delete-wallet" && (
+        <div className="fixed inset-0 bg-modal flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <DeleteWalletModal
+              wallet={modalState.wallet}
+              onSuccess={handleModalSuccess}
+              onCancel={handleCloseModal}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

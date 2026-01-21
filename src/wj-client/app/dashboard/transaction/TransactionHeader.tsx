@@ -2,23 +2,17 @@
 
 import { ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
-import { ModalType } from "@/app/constants";
 
 type TransactionHeaderProps = {
   onRefresh?: () => void;
+  onAddTransaction?: () => void;
 };
 
-export const TransactionHeader = ({ onRefresh }: TransactionHeaderProps) => {
+export const TransactionHeader = ({
+  onAddTransaction,
+}: TransactionHeaderProps) => {
   const handleAddTransaction = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.ADD_TRANSACTION,
-        onSuccess: onRefresh,
-      })
-    );
+    onAddTransaction?.();
   };
 
   return (

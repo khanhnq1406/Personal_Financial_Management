@@ -3,12 +3,11 @@ import ActiveLink from "@/components/ActiveLink";
 import { logout } from "../auth/utils/logout";
 import { routes, ButtonType, resources } from "../constants";
 import { AuthCheck } from "../auth/utils/AuthCheck";
-import { ButtonGroup } from "@/components/ButtonGroup";
-import { BaseModal } from "@/components/modals/BaseModal";
 import { store } from "@/redux/store";
 import { useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 
 export default function DashboardLayout({
   children,
@@ -16,12 +15,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const path = usePathname();
-  const [modal, setModal] = useState(store.getState().setModalReducer);
   const [user, setUser] = useState(store.getState().setAuthReducer);
   const menuRef = useRef<HTMLDivElement>(null);
 
   store.subscribe(() => {
-    setModal(store.getState().setModalReducer);
     if (!user.picture) {
       setUser(store.getState().setAuthReducer);
     }
@@ -126,8 +123,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </div>
-      <ButtonGroup />
-      {modal.isOpen && <BaseModal modal={modal} />}
+      <FloatingActionButton />
     </AuthCheck>
   );
 }

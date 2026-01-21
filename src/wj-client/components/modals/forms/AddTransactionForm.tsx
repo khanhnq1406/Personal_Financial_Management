@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
@@ -7,6 +8,7 @@ import {
   useQueryListWallets,
   useQueryListCategories,
   useMutationCreateCategory,
+  useMutationCreateTransaction,
   EVENT_CategoryListCategories,
 } from "@/utils/generated/hooks";
 import { CategoryType } from "@/gen/protobuf/v1/transaction";
@@ -16,21 +18,34 @@ import { FormSelect } from "@/components/forms/FormSelect";
 import { FormCreatableSelect } from "@/components/forms/FormCreatableSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import {
   createTransactionFormSchema,
   CreateTransactionFormInput,
 } from "@/lib/validation/transaction.schema";
 import { SelectOption } from "@/components/forms/FormSelect";
-import { getCurrentTimestamp, toDateTimeLocal } from "@/lib/utils/date";
+import {
+  getCurrentTimestamp,
+  toDateTimeLocal,
+  fromDateTimeLocal,
+} from "@/lib/utils/date";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface AddTransactionFormProps {
-  onSubmit: (data: any) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const AddTransactionForm = ({ onSubmit }: AddTransactionFormProps) => {
+/**
+ * Self-contained form component for adding transactions.
+ * Owns its mutation logic, error handling, and loading state.
+ * After successful creation, calls onSuccess() callback (caller handles refetch + modal close).
+ */
+export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
   const queryClient = useQueryClient();
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const createTransaction = useMutationCreateTransaction();
 
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
@@ -107,8 +122,44 @@ export const AddTransactionForm = ({ onSubmit }: AddTransactionFormProps) => {
     });
   };
 
+  const onSubmit = (data: CreateTransactionFormInput) => {
+    setErrorMessage("");
+    // Apply sign based on transaction type: income = positive, expense = negative
+    const signedAmount =
+      data.transactionType === "income" ? data.amount : -Math.abs(data.amount);
+
+    createTransaction.mutate(
+      {
+        walletId: Number(data.walletId),
+        categoryId: Number(data.categoryId),
+        amount: {
+          amount: signedAmount,
+          currency: "VND",
+        },
+        date: fromDateTimeLocal(data.date),
+        note: data.note,
+      },
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          setErrorMessage(
+            error.message || "Failed to add transaction. Please try again",
+          );
+        },
+      },
+    );
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} id="add-transaction-form">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       <FormToggle
         name="transactionType"
         control={control}
@@ -170,6 +221,16 @@ export const AddTransactionForm = ({ onSubmit }: AddTransactionFormProps) => {
         maxLength={500}
         showCharacterCount
       />
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={createTransaction.isPending}
+        >
+          Add Transaction
+        </Button>
+      </div>
     </form>
   );
-};
+}

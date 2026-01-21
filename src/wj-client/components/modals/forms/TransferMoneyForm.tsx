@@ -1,12 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryListWallets } from "@/utils/generated/hooks";
+import {
+  useQueryListWallets,
+  useMutationTransferFunds,
+} from "@/utils/generated/hooks";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import {
   transferMoneySchemaWithBalances,
   TransferMoneyFormInput,
@@ -15,11 +21,19 @@ import { SelectOption } from "@/components/forms/FormSelect";
 import { toDateTimeLocal, getCurrentTimestamp } from "@/lib/utils/date";
 
 interface TransferMoneyFormProps {
-  onSubmit: (data: any) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const TransferMoneyForm = ({ onSubmit }: TransferMoneyFormProps) => {
+/**
+ * Self-contained form component for transferring money between wallets.
+ * Owns its mutation logic, error handling, and loading state.
+ * After successful transfer, calls onSuccess() callback (caller handles refetch + modal close).
+ */
+export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const transferFunds = useMutationTransferFunds();
+
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
@@ -67,8 +81,38 @@ export const TransferMoneyForm = ({ onSubmit }: TransferMoneyFormProps) => {
     balance: wallet.balance?.amount || 0,
   }));
 
+  const onSubmit = (data: TransferMoneyFormInput) => {
+    setErrorMessage("");
+    transferFunds.mutate(
+      {
+        fromWalletId: Number(data.fromWalletId),
+        toWalletId: Number(data.toWalletId),
+        amount: {
+          amount: data.amount,
+          currency: "VND",
+        },
+      },
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          setErrorMessage(
+            error.message || "Failed to transfer funds. Please try again",
+          );
+        },
+      },
+    );
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} id="transfer-money-form">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       <FormNumberInput
         name="amount"
         control={control}
@@ -118,6 +162,16 @@ export const TransferMoneyForm = ({ onSubmit }: TransferMoneyFormProps) => {
         maxLength={500}
         showCharacterCount
       />
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={transferFunds.isPending}
+        >
+          Transfer
+        </Button>
+      </div>
     </form>
   );
-};
+}

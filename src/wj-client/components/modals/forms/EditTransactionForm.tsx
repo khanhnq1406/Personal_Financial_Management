@@ -1,36 +1,51 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   useQueryListWallets,
   useQueryListCategories,
   useQueryGetTransaction,
+  useMutationUpdateTransaction,
 } from "@/utils/generated/hooks";
-import { CategoryType, TransactionType as TransactionTypeEnum } from "@/gen/protobuf/v1/transaction";
+import {
+  CategoryType,
+  TransactionType as TransactionTypeEnum,
+} from "@/gen/protobuf/v1/transaction";
 import { FormToggle } from "@/components/forms/FormToggle";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { FormCreatableSelect } from "@/components/forms/FormCreatableSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import {
   updateTransactionFormSchema,
   UpdateTransactionFormInput,
 } from "@/lib/validation/transaction.schema";
-import { toDateTimeLocal } from "@/lib/utils/date";
+import { toDateTimeLocal, fromDateTimeLocal } from "@/lib/utils/date";
 
 interface EditTransactionFormProps {
   transactionId: number;
-  onSubmit: (data: any) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const EditTransactionForm = ({
+/**
+ * Self-contained form component for editing transactions.
+ * Owns its mutation logic, error handling, and loading state.
+ * After successful update, calls onSuccess() callback (caller handles refetch + modal close).
+ */
+export function EditTransactionForm({
   transactionId,
-  onSubmit,
-}: EditTransactionFormProps) => {
+  onSuccess,
+}: EditTransactionFormProps) {
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const updateTransaction = useMutationUpdateTransaction();
+
   // Fetch transaction details
   const { data: transactionData, isLoading: transactionLoading } =
     useQueryGetTransaction(
@@ -38,7 +53,7 @@ export const EditTransactionForm = ({
       {
         enabled: !!transactionId,
         refetchOnMount: "always",
-      }
+      },
     );
 
   const { data: walletsData } = useQueryListWallets({
@@ -50,21 +65,17 @@ export const EditTransactionForm = ({
       pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
     });
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    reset,
-  } = useForm<UpdateTransactionFormInput>({
-    resolver: zodResolver(updateTransactionFormSchema),
-    defaultValues: {
-      transactionType: "income",
-      walletId: "",
-      categoryId: "",
-      date: "",
-      note: "",
-    },
-  });
+  const { control, handleSubmit, setValue, reset } =
+    useForm<UpdateTransactionFormInput>({
+      resolver: zodResolver(updateTransactionFormSchema),
+      defaultValues: {
+        transactionType: "income",
+        walletId: "",
+        categoryId: "",
+        date: "",
+        note: "",
+      },
+    });
 
   const transactionType = useWatch({
     control,
@@ -78,9 +89,13 @@ export const EditTransactionForm = ({
 
       // Map backend TransactionType enum to form values
       // TransactionType enum: INCOME = 1, EXPENSE = 2
-      const getTransactionTypeValue = (type: number | undefined): "income" | "expense" => {
-        if (type === TransactionTypeEnum.TRANSACTION_TYPE_INCOME) return "income";
-        if (type === TransactionTypeEnum.TRANSACTION_TYPE_EXPENSE) return "expense";
+      const getTransactionTypeValue = (
+        type: number | undefined,
+      ): "income" | "expense" => {
+        if (type === TransactionTypeEnum.TRANSACTION_TYPE_INCOME)
+          return "income";
+        if (type === TransactionTypeEnum.TRANSACTION_TYPE_EXPENSE)
+          return "expense";
         return "expense"; // Default fallback
       };
 
@@ -105,7 +120,7 @@ export const EditTransactionForm = ({
         cat.type ===
         (transactionType === "income"
           ? CategoryType.CATEGORY_TYPE_INCOME
-          : CategoryType.CATEGORY_TYPE_EXPENSE)
+          : CategoryType.CATEGORY_TYPE_EXPENSE),
     ) || [];
 
   // Only reset category when transaction type changes by user (not on initial load)
@@ -131,21 +146,34 @@ export const EditTransactionForm = ({
       balance: wallet.balance?.amount || 0,
     })) || [];
 
-  const handleFormSubmit = (data: UpdateTransactionFormInput) => {
-    onSubmit({
-      transactionId,
-      walletId: Number(data.walletId),
-      categoryId: data.categoryId ? Number(data.categoryId) : undefined,
-      amount: {
-        amount:
-          data.transactionType === "income"
-            ? data.amount
-            : -Math.abs(data.amount),
-        currency: "VND",
+  const onSubmit = (data: UpdateTransactionFormInput) => {
+    setErrorMessage("");
+    updateTransaction.mutate(
+      {
+        transactionId,
+        walletId: Number(data.walletId),
+        categoryId: data.categoryId ? Number(data.categoryId) : undefined,
+        amount: {
+          amount:
+            data.transactionType === "income"
+              ? data.amount
+              : -Math.abs(data.amount),
+          currency: "VND",
+        },
+        date: fromDateTimeLocal(data.date),
+        note: data.note,
       },
-      date: data.date,
-      note: data.note,
-    });
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+        onError: (error: any) => {
+          setErrorMessage(
+            error.message || "Failed to update transaction. Please try again",
+          );
+        },
+      },
+    );
   };
 
   if (transactionLoading) {
@@ -157,7 +185,13 @@ export const EditTransactionForm = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} id="edit-transaction-form">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       <FormToggle
         name="transactionType"
         control={control}
@@ -218,6 +252,16 @@ export const EditTransactionForm = ({
         maxLength={500}
         showCharacterCount
       />
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={updateTransaction.isPending}
+        >
+          Save Changes
+        </Button>
+      </div>
     </form>
   );
-};
+}

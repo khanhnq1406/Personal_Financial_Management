@@ -9,6 +9,7 @@ type TransactionGroupProps = {
   transactions: Transaction[];
   categoryTypeMap: Map<number, CategoryType>;
   onDelete: (request: { transactionId: number }) => void;
+  onEdit: (transactionId: number) => void;
 };
 
 export const TransactionGroup = ({
@@ -16,12 +17,13 @@ export const TransactionGroup = ({
   transactions,
   categoryTypeMap,
   onDelete,
+  onEdit,
 }: TransactionGroupProps) => {
   // Calculate daily total using signed amounts
   // Amounts are signed: positive for income, negative for expense
   const dailyTotal = transactions.reduce((total, transaction) => {
     const amount = transaction.amount?.amount || 0;
-    return total + amount;  // Simply add the signed amount
+    return total + amount; // Simply add the signed amount
   }, 0);
 
   return (
@@ -49,6 +51,7 @@ export const TransactionGroup = ({
             transaction={transaction}
             categoryTypeMap={categoryTypeMap}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
       </div>

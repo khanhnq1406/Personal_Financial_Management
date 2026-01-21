@@ -1,32 +1,55 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
-import { useQueryListWallets } from "@/utils/generated/hooks";
+import { useEffect } from "react";
+import {
+  useQueryListWallets,
+  useMutationUpdateWallet,
+  useMutationAdjustBalance,
+} from "@/utils/generated/hooks";
 import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
+import { AdjustmentType } from "@/gen/protobuf/v1/wallet";
 import {
   updateWalletSchema,
   UpdateWalletFormOutput,
   adjustBalanceSchema,
-  AdjustBalanceFormOutput,
 } from "@/lib/validation/wallet.schema";
 
 interface EditWalletFormProps {
   wallet: Wallet;
-  onSubmit: (
-    data: UpdateWalletFormOutput,
-    adjustment?: AdjustBalanceFormOutput,
-  ) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const EditWalletForm = ({
-  wallet,
-  onSubmit,
-  isPending,
-}: EditWalletFormProps) => {
+/**
+ * Self-contained form component for editing wallets.
+ * Handles wallet name updates and balance adjustments.
+ * Owns its mutation logic, error handling, and loading state.
+ */
+export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [showAdjustment, setShowAdjustment] = useState(false);
+
+  const updateWalletMutation = useMutationUpdateWallet({
+    onError: (error: any) => {
+      setErrorMessage(
+        error.message || "Failed to update wallet. Please try again",
+      );
+    },
+  });
+
+  const adjustBalanceMutation = useMutationAdjustBalance({
+    onError: (error: any) => {
+      setErrorMessage(
+        error.message || "Failed to adjust balance. Please try again",
+      );
+    },
+  });
+
   const { data: walletsData } = useQueryListWallets({
     pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
   });
@@ -36,9 +59,6 @@ export const EditWalletForm = ({
     walletsData?.wallets
       ?.filter((w) => w.id !== wallet.id)
       .map((w) => w.walletName) || [];
-
-  // State for balance adjustment section
-  const [showAdjustment, setShowAdjustment] = useState(false);
 
   const { control, handleSubmit, reset, watch, setError } = useForm<{
     walletName: string;
@@ -68,7 +88,12 @@ export const EditWalletForm = ({
   const watchAdjustmentAmount = watch("adjustmentAmount");
   const watchAdjustmentType = watch("adjustmentType");
 
-  const onFormSubmit = (data: typeof control._defaultValues) => {
+  const isLoading =
+    updateWalletMutation.isPending || adjustBalanceMutation.isPending;
+
+  const onFormSubmit = async (data: typeof control._defaultValues) => {
+    setErrorMessage("");
+
     // Validate wallet name
     const walletResult = updateWalletSchema(
       existingWalletNames,
@@ -88,39 +113,71 @@ export const EditWalletForm = ({
 
     const walletData: UpdateWalletFormOutput = walletResult.data;
 
-    let adjustment: AdjustBalanceFormOutput | undefined;
-
-    if (
-      showAdjustment &&
-      data.adjustmentAmount &&
-      data.adjustmentAmount !== 0
-    ) {
-      // Validate adjustment amount and type
-      const result = adjustBalanceSchema.safeParse({
-        adjustmentAmount: data.adjustmentAmount,
-        adjustmentType: data.adjustmentType || "add",
-        reason: data.reason,
-      });
-
-      if (!result.success) {
-        result.error.issues.forEach((issue) => {
-          if (issue.path[0] === "adjustmentAmount") {
-            setError("adjustmentAmount" as const, { message: issue.message });
-          }
-          if (issue.path[0] === "adjustmentType") {
-            setError("adjustmentType" as const, { message: issue.message });
-          }
-          if (issue.path[0] === "reason") {
-            setError("reason" as const, { message: issue.message });
-          }
+    try {
+      // First, adjust balance if provided
+      let adjustmentMade = false;
+      if (
+        showAdjustment &&
+        data.adjustmentAmount &&
+        data.adjustmentAmount !== 0
+      ) {
+        // Validate adjustment amount and type
+        const result = adjustBalanceSchema.safeParse({
+          adjustmentAmount: data.adjustmentAmount,
+          adjustmentType: data.adjustmentType || "add",
+          reason: data.reason,
         });
-        return;
+
+        if (!result.success) {
+          result.error.issues.forEach((issue) => {
+            if (issue.path[0] === "adjustmentAmount") {
+              setError("adjustmentAmount" as const, { message: issue.message });
+            }
+            if (issue.path[0] === "adjustmentType") {
+              setError("adjustmentType" as const, { message: issue.message });
+            }
+            if (issue.path[0] === "reason") {
+              setError("reason" as const, { message: issue.message });
+            }
+          });
+          return;
+        }
+
+        const adjustment = result.data;
+        const adjustmentType =
+          adjustment.adjustmentType === "add"
+            ? AdjustmentType.ADJUSTMENT_TYPE_ADD
+            : AdjustmentType.ADJUSTMENT_TYPE_REMOVE;
+
+        await adjustBalanceMutation.mutateAsync({
+          walletId: wallet.id,
+          amount: {
+            amount: Math.round(adjustment.adjustmentAmount),
+            currency: wallet.balance?.currency || "VND",
+          },
+          reason: adjustment.reason || "Balance adjustment",
+          adjustmentType,
+        });
+        adjustmentMade = true;
       }
 
-      adjustment = result.data;
-    }
+      // Then update wallet name if changed
+      let nameChanged = false;
+      if (walletData.walletName !== wallet.walletName) {
+        await updateWalletMutation.mutateAsync({
+          walletId: wallet.id,
+          walletName: walletData.walletName,
+        });
+        nameChanged = true;
+      }
 
-    onSubmit(walletData, adjustment);
+      // Show success if any changes were made
+      if (nameChanged || adjustmentMade) {
+        onSuccess?.();
+      }
+    } catch {
+      // Error handling is done by mutation onError callbacks
+    }
   };
 
   // Calculate projected balance
@@ -132,11 +189,13 @@ export const EditWalletForm = ({
   const projectedBalance = currentBalance + delta;
 
   return (
-    <form
-      onSubmit={handleSubmit(onFormSubmit)}
-      id="edit-wallet-form"
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Wallet Name Section */}
       <div>
         <h3 className="text-lg font-medium mb-3">Wallet Information</h3>
@@ -146,7 +205,7 @@ export const EditWalletForm = ({
           label="Name"
           placeholder="Enter wallet's name"
           required
-          disabled={isPending}
+          disabled={isLoading}
         />
       </div>
 
@@ -158,6 +217,7 @@ export const EditWalletForm = ({
             type="button"
             onClick={() => setShowAdjustment(!showAdjustment)}
             className="text-sm text-gray-600 hover:text-gray-900"
+            disabled={isLoading}
           >
             {showAdjustment ? "Cancel" : "Adjust Balance"}
           </button>
@@ -181,7 +241,7 @@ export const EditWalletForm = ({
                     {...control.register("adjustmentType")}
                     value="add"
                     className="mr-2"
-                    disabled={isPending}
+                    disabled={isLoading}
                   />
                   <span className="text-sm">Add funds</span>
                 </label>
@@ -191,7 +251,7 @@ export const EditWalletForm = ({
                     {...control.register("adjustmentType")}
                     value="remove"
                     className="mr-2"
-                    disabled={isPending}
+                    disabled={isLoading}
                   />
                   <span className="text-sm">Remove funds</span>
                 </label>
@@ -205,7 +265,7 @@ export const EditWalletForm = ({
               placeholder="Enter amount"
               step="1"
               min={0}
-              disabled={isPending}
+              disabled={isLoading}
             />
             <div className="text-xs text-gray-500 ml-1 -mt-1">
               Enter the amount to add or remove from your wallet
@@ -227,7 +287,7 @@ export const EditWalletForm = ({
               control={control}
               label="Reason (Optional)"
               placeholder="Why are you adjusting this balance?"
-              disabled={isPending}
+              disabled={isLoading}
             />
 
             <div className="text-xs text-gray-500 mt-2">
@@ -236,6 +296,16 @@ export const EditWalletForm = ({
           </div>
         )}
       </div>
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={isLoading}
+        >
+          Save
+        </Button>
+      </div>
     </form>
   );
-};
+}

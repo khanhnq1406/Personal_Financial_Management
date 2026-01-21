@@ -6,6 +6,7 @@ import {
   useQueryListCategories,
   useQueryListWallets,
   useQueryGetTotalBalance,
+  useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
 import { SortField } from "@/gen/protobuf/v1/transaction";
 import { BaseCard } from "@/components/BaseCard";
@@ -13,13 +14,19 @@ import { SelectDropdown } from "@/components/select/SelectDropdown";
 import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
 import { TablePagination } from "@/components/table/TanStackTable";
 import { currencyFormatter } from "@/utils/currency-formatter";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
-import { ModalType, resources } from "@/app/constants";
+import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
+import { BaseModal } from "@/components/modals/BaseModal";
+import { EditTransactionForm } from "@/components/modals/forms/EditTransactionForm";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
+
+type ModalState =
+  | { type: "edit-transaction"; transactionId: number }
+  | { type: "delete-confirmation"; transactionId: number }
+  | null;
 
 export default function TransactionPage() {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
@@ -31,6 +38,7 @@ export default function TransactionPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isHideBalance, setHideBalance] = useState(false);
   const [displayImg, setDisplayImg] = useState(displayImgList[0]);
+  const [modalState, setModalState] = useState<ModalState>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Fetch data - use memoized filter to prevent re-renders on every keystroke
@@ -71,15 +79,28 @@ export default function TransactionPage() {
     { refetchOnMount: "always" },
   );
 
-  const { data: categoriesData } = useQueryListCategories({
-    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-  });
+  const { data: categoriesData, refetch: refetchListCategories } =
+    useQueryListCategories({
+      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+    });
 
-  const { data: walletsData } = useQueryListWallets({
-    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-  });
+  const { data: walletsData, refetch: refetchListWallets } =
+    useQueryListWallets({
+      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+    });
 
-  const { data: totalBalanceData } = useQueryGetTotalBalance({});
+  const { data: totalBalanceData, refetch: refetchTotalBalance } =
+    useQueryGetTotalBalance({});
+
+  const deleteTransactionMutation = useMutationDeleteTransaction({
+    onSuccess: () => {
+      refetchListWallets();
+      refetchListCategories();
+      refetchTotalBalance();
+      refetch();
+      setModalState(null);
+    },
+  });
 
   // Get category name by ID - memoized with proper dependency
   const getCategoryName = useMemo(() => {
@@ -112,39 +133,33 @@ export default function TransactionPage() {
   }, []);
 
   // Handle actions - memoized callbacks
-  const handleEditTransaction = useCallback(
-    (transactionId: number) => {
-      store.dispatch(
-        openModal({
-          isOpen: true,
-          type: ModalType.EDIT_TRANSACTION,
-          transactionId,
-          onSuccess: () => refetch(),
-        }),
-      );
-    },
-    [refetch],
-  );
+  const handleEditTransaction = useCallback((transactionId: number) => {
+    setModalState({ type: "edit-transaction", transactionId });
+  }, []);
 
   const handleDeleteTransaction = useCallback((transactionId: number) => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.CONFIRM,
-        confirmConfig: {
-          title: "Delete Transaction",
-          message: "Are you sure you want to delete this transaction?",
-          confirmText: "Delete",
-          cancelText: "Cancel",
-          variant: "danger",
-          action: {
-            type: "deleteTransaction",
-            payload: { transactionId },
-          },
-        },
-      }),
-    );
+    setModalState({ type: "delete-confirmation", transactionId });
   }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (modalState?.type === "delete-confirmation") {
+      deleteTransactionMutation.mutate({
+        transactionId: modalState.transactionId,
+      });
+    }
+  }, [modalState, deleteTransactionMutation]);
+
+  const handleCloseModal = useCallback(() => {
+    setModalState(null);
+  }, []);
+
+  const handleModalSuccess = useCallback(() => {
+    refetchListWallets();
+    refetchListCategories();
+    refetchTotalBalance();
+    refetch();
+    handleCloseModal();
+  }, [refetch, handleCloseModal]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -231,9 +246,7 @@ export default function TransactionPage() {
 
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold mb-1">
-                    Wallet
-                  </p>
+                  <p className="text-gray-900 text-sm font-bold mb-1">Wallet</p>
                   <p className="text-gray-900 text-sm font-light text-right">
                     {getWalletName(transaction.walletId)}
                   </p>
@@ -591,6 +604,34 @@ export default function TransactionPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Transaction Modal */}
+      {modalState?.type === "edit-transaction" && (
+        <BaseModal
+          isOpen={modalState.type === "edit-transaction"}
+          onClose={handleCloseModal}
+          title="Edit Transaction"
+        >
+          <EditTransactionForm
+            transactionId={modalState.transactionId}
+            onSuccess={handleModalSuccess}
+          />
+        </BaseModal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {modalState?.type === "delete-confirmation" && (
+        <ConfirmationDialog
+          title="Delete Transaction"
+          message="Are you sure you want to delete this transaction?"
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCloseModal}
+          isLoading={deleteTransactionMutation.isPending}
+          variant="danger"
+        />
+      )}
     </div>
   );
 }

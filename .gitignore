@@ -131,3 +131,6 @@ dist
 .vercel
 .env*.local
 .claude
+
+# Git worktrees
+.worktrees

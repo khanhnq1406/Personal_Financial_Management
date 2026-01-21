@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
+import { useMutationUpdateBudget } from "@/utils/generated/hooks";
 import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import { Budget } from "@/gen/protobuf/v1/budget";
 import {
   updateBudgetSchema,
@@ -13,11 +17,25 @@ import {
 
 interface EditBudgetFormProps {
   budget: Budget;
-  onSubmit: (data: UpdateBudgetFormInput) => void;
-  isPending?: boolean;
+  onSuccess?: () => void;
 }
 
-export const EditBudgetForm = ({ budget, onSubmit }: EditBudgetFormProps) => {
+/**
+ * Self-contained form component for editing budgets.
+ * Owns its mutation logic, error handling, and loading state.
+ * After successful update, calls onSuccess() callback (caller handles refetch + modal close).
+ */
+export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const updateBudget = useMutationUpdateBudget({
+    onError: (error: any) => {
+      setErrorMessage(
+        error.message || "Failed to update budget. Please try again",
+      );
+    },
+  });
+
   const { control, handleSubmit, reset } = useForm<UpdateBudgetFormInput>({
     resolver: zodResolver(updateBudgetSchema),
     defaultValues: {
@@ -35,14 +53,40 @@ export const EditBudgetForm = ({ budget, onSubmit }: EditBudgetFormProps) => {
     });
   }, [budget, reset]);
 
+  const onSubmit = (data: UpdateBudgetFormInput) => {
+    setErrorMessage("");
+    updateBudget.mutate(
+      {
+        budgetId: budget.id,
+        name: data.name,
+        total: {
+          amount: data.total,
+          currency: "VND",
+        },
+      },
+      {
+        onSuccess: () => {
+          onSuccess?.();
+        },
+      },
+    );
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} id="edit-budget-form">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {errorMessage && (
+        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+          {errorMessage}
+        </div>
+      )}
+
       <FormInput
         name="name"
         control={control}
         label="Budget Name"
         placeholder="e.g., Monthly Budget"
         required
+        disabled={updateBudget.isPending}
       />
 
       <FormNumberInput
@@ -54,7 +98,18 @@ export const EditBudgetForm = ({ budget, onSubmit }: EditBudgetFormProps) => {
         required
         min={1}
         step="1"
+        disabled={updateBudget.isPending}
       />
+
+      <div className="mt-4">
+        <Button
+          type={ButtonType.PRIMARY}
+          onClick={() => {}}
+          loading={updateBudget.isPending}
+        >
+          Save
+        </Button>
+      </div>
     </form>
   );
-};
+}

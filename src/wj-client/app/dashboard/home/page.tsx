@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { Wallets } from "./Walllets";
 import { Balance } from "./Balance";
@@ -12,9 +13,26 @@ import { FunctionalButton } from "./FunctionalButtons";
 import {
   useQueryListWallets,
   useQueryGetAvailableYears,
+  EVENT_WalletGetBalanceHistory,
+  EVENT_WalletGetMonthlyDominance,
+} from "@/utils/generated/hooks";
+import { BaseModal } from "@/components/modals/BaseModal";
+import { CreateWalletForm } from "@/components/modals/forms/CreateWalletForm";
+import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
+import { TransferMoneyForm } from "@/components/modals/forms/TransferMoneyForm";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  EVENT_WalletListWallets,
+  EVENT_WalletGetTotalBalance,
+  EVENT_TransactionListTransactions,
 } from "@/utils/generated/hooks";
 
+type ModalType = "add-transaction" | "transfer-money" | "create-wallet" | null;
+
 export default function Home() {
+  const queryClient = useQueryClient();
+  const [modalType, setModalType] = useState<ModalType>(null);
+
   const getListWallets = useQueryListWallets(
     {
       pagination: { page: 1, pageSize: 10, orderBy: "", order: "" },
@@ -32,6 +50,37 @@ export default function Home() {
   const availableYears = availableYearsData?.years?.length
     ? availableYearsData.years
     : [new Date().getFullYear()];
+
+  const handleModalClose = () => setModalType(null);
+
+  const handleModalSuccess = () => {
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+    queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_TransactionListTransactions],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_WalletGetBalanceHistory],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_WalletGetMonthlyDominance],
+    });
+    handleModalClose();
+  };
+
+  const getModalTitle = () => {
+    switch (modalType) {
+      case "add-transaction":
+        return "Add Transaction";
+      case "transfer-money":
+        return "Transfer Money";
+      case "create-wallet":
+        return "Create Wallet";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
@@ -70,9 +119,26 @@ export default function Home() {
         <div className="grid divide-y-2">
           <User />
           <TotalBalance />
-          <FunctionalButton onRefreshWallets={getListWallets.refetch} />
+          <FunctionalButton onOpenModal={(type) => setModalType(type)} />
         </div>
       </div>
+
+      {/* Modals */}
+      <BaseModal
+        isOpen={modalType !== null}
+        onClose={handleModalClose}
+        title={getModalTitle()}
+      >
+        {modalType === "add-transaction" && (
+          <AddTransactionForm onSuccess={handleModalSuccess} />
+        )}
+        {modalType === "transfer-money" && (
+          <TransferMoneyForm onSuccess={handleModalSuccess} />
+        )}
+        {modalType === "create-wallet" && (
+          <CreateWalletForm onSuccess={handleModalSuccess} />
+        )}
+      </BaseModal>
     </div>
   );
 }

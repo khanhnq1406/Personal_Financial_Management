@@ -1,26 +1,43 @@
 "use client";
 
+import { useState } from "react";
 import { BaseCard } from "@/components/BaseCard";
-import { Budget } from "@/gen/protobuf/v1/budget";
+import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
 import { currencyFormatter } from "@/utils/currency-formatter";
 import { CircularProgress } from "./CircularProgress";
 import { useQueryGetBudgetItems } from "@/utils/generated/hooks";
 import { BudgetItemCard } from "./BudgetItemCard";
-import { store } from "@/redux/store";
-import { openModal } from "@/redux/actions";
-import { ModalType, ButtonType, resources } from "@/app/constants";
+import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
+import { useMutationDeleteBudget } from "@/utils/generated/hooks";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 interface BudgetCardProps {
   budget: Budget;
   onRefresh: () => void;
+  onEditBudget: (budget: Budget) => void;
+  onAddBudgetItem: (budgetId: number) => void;
+  onEditBudgetItem: (budgetId: number, item: BudgetItem) => void;
+  onDeleteBudget: (budgetId: number) => void;
 }
 
-export function BudgetCard({ budget, onRefresh }: BudgetCardProps) {
+export function BudgetCard({
+  budget,
+  onRefresh,
+  onEditBudget,
+  onAddBudgetItem,
+  onEditBudgetItem,
+}: BudgetCardProps) {
   const getBudgetItems = useQueryGetBudgetItems(
     { budgetId: budget.id },
     { enabled: !!budget.id },
   );
+
+  const deleteBudgetMutation = useMutationDeleteBudget({
+    onSuccess: () => {
+      onRefresh();
+    },
+  });
 
   const budgetItems = getBudgetItems.data?.items ?? [];
 
@@ -33,125 +50,116 @@ export function BudgetCard({ budget, onRefresh }: BudgetCardProps) {
   const remaining = totalBudget - totalSpent;
   const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
-  const handleEditBudget = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.EDIT_BUDGET,
-        onSuccess: () => {
-          onRefresh();
-        },
-        data: { budget },
-      }),
-    );
-  };
-
-  const handleAddBudgetItem = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.ADD_BUDGET_ITEM,
-        onSuccess: () => {
-          getBudgetItems.refetch();
-          onRefresh();
-        },
-        data: { budgetId: budget.id },
-      }),
-    );
-  };
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleDeleteBudget = () => {
-    store.dispatch(
-      openModal({
-        isOpen: true,
-        type: ModalType.CONFIRM,
-        confirmConfig: {
-          title: "Delete Budget",
-          message: `Are you sure you want to delete "${budget.name}"? This action cannot be undone.`,
-          confirmText: "Delete",
-          cancelText: "Cancel",
-          action: {
-            type: "deleteBudget",
-            payload: { budgetId: budget.id },
-          },
-          variant: "danger",
-        },
-        onSuccess: () => {
-          onRefresh();
-        },
-      }),
-    );
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteBudget = () => {
+    deleteBudgetMutation.mutate({ budgetId: budget.id });
+    setShowDeleteDialog(false);
+  };
+
+  const cancelDeleteBudget = () => {
+    setShowDeleteDialog(false);
   };
 
   return (
-    <BaseCard className="p-4 flex flex-col gap-4">
-      {/* Header with Edit and Delete buttons */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold">{budget.name}</h3>
-        <div className="flex gap-2">
-          <Button
-            type={ButtonType.IMG}
-            src={`${resources}/editing.png`}
-            onClick={handleEditBudget}
-          />
-          <Button
-            type={ButtonType.IMG}
-            src={`${resources}/remove.png`}
-            onClick={handleDeleteBudget}
-          />
-        </div>
-      </div>
-
-      {/* Circular Progress Indicator */}
-      <div className="flex justify-center py-2">
-        <CircularProgress percentage={percentage} size={180} />
-      </div>
-
-      {/* Budget Summary */}
-      <div className="text-center space-y-1">
-        <div className="text-sm text-gray-500">Total Budget</div>
-        <div className="text-xl font-bold text-bg">
-          {currencyFormatter.format(totalBudget)}
-        </div>
-        <div className="text-sm text-gray-500">Amount you can spend</div>
-        <div className="text-xl font-bold text-gray-900">
-          {currencyFormatter.format(remaining)}
-        </div>
-      </div>
-
-      {/* Budget Items List */}
-      <div className="border-t pt-3">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="text-sm font-semibold text-gray-700">Budget Items</h4>
-          <Button
-            type={ButtonType.IMG}
-            src={`${resources}/plus.png`}
-            onClick={handleAddBudgetItem}
-          />
-        </div>
-
-        {getBudgetItems.isLoading ? (
-          <div className="text-center py-4 text-gray-500">Loading items...</div>
-        ) : budgetItems.length === 0 ? (
-          <div className="text-center py-4 text-gray-500 text-sm">
-            No budget items
+    <>
+      <BaseCard className="p-4 flex flex-col gap-4">
+        {/* Header with Edit and Delete buttons */}
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold">{budget.name}</h3>
+          <div className="flex gap-2">
+            <Button
+              type={ButtonType.IMG}
+              src={`${resources}/editing.png`}
+              onClick={() => onEditBudget(budget)}
+            />
+            <Button
+              type={ButtonType.IMG}
+              src={`${resources}/remove.png`}
+              onClick={handleDeleteBudget}
+              disabled={deleteBudgetMutation.isPending}
+            />
           </div>
-        ) : (
-          <div className="space-y-2">
-            {budgetItems.map((item) => (
-              <BudgetItemCard
-                key={item.id}
-                item={item}
-                budgetId={budget.id}
-                onRefresh={() => {
-                  getBudgetItems.refetch();
-                  onRefresh();
-                }}
-              />
-            ))}
+        </div>
+
+        {/* Circular Progress Indicator */}
+        <div className="flex justify-center py-2">
+          <CircularProgress percentage={percentage} size={180} />
+        </div>
+
+        {/* Budget Summary */}
+        <div className="text-center space-y-1">
+          <div className="text-sm text-gray-500">Total Budget</div>
+          <div className="text-xl font-bold text-bg">
+            {currencyFormatter.format(totalBudget)}
           </div>
-        )}
-      </div>
-    </BaseCard>
+          <div className="text-sm text-gray-500">Amount you can spend</div>
+          <div className="text-xl font-bold text-gray-900">
+            {currencyFormatter.format(remaining)}
+          </div>
+        </div>
+
+        {/* Budget Items List */}
+        <div className="border-t pt-3">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-semibold text-gray-700">
+              Budget Items
+            </h4>
+            <Button
+              type={ButtonType.IMG}
+              src={`${resources}/plus.png`}
+              onClick={() => onAddBudgetItem(budget.id)}
+            />
+          </div>
+
+          {getBudgetItems.isLoading ? (
+            <div className="text-center py-4 text-gray-500">
+              Loading items...
+            </div>
+          ) : budgetItems.length === 0 ? (
+            <div className="text-center py-4 text-gray-500 text-sm">
+              No budget items
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {budgetItems.map((item) => (
+                <BudgetItemCard
+                  key={item.id}
+                  item={item}
+                  budgetId={budget.id}
+                  onRefresh={() => {
+                    getBudgetItems.refetch();
+                    onRefresh();
+                  }}
+                  onEditItem={onEditBudgetItem}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </BaseCard>
+
+      {showDeleteDialog && (
+        <ConfirmationDialog
+          title="Delete Budget"
+          message={
+            <div className="flex flex-col gap-1">
+              <div>{`Are you sure you want to delete "${budget.name}"?`}</div>
+              <div>This action cannot be undone.</div>
+            </div>
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDeleteBudget}
+          onCancel={cancelDeleteBudget}
+          isLoading={deleteBudgetMutation.isPending}
+          variant="danger"
+        />
+      )}
+    </>
   );
 }

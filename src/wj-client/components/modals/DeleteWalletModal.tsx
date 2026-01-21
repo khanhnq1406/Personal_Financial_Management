@@ -6,13 +6,11 @@ import {
   useQueryListWallets,
 } from "@/utils/generated/hooks";
 import { Wallet, WalletDeletionOption } from "@/gen/protobuf/v1/wallet";
-import { store } from "@/redux/store";
-import { closeModal, openModal } from "@/redux/actions";
-import { ModalType } from "@/app/constants";
 
 interface DeleteWalletModalProps {
   wallet: Wallet;
   onSuccess?: () => void;
+  onCancel?: () => void;
   isPending?: boolean;
 }
 
@@ -21,6 +19,7 @@ type DeletionOption = "archive" | "transfer" | "delete_only";
 export function DeleteWalletModal({
   wallet,
   onSuccess,
+  onCancel,
   isPending = false,
 }: DeleteWalletModalProps) {
   const [option, setOption] = useState<DeletionOption>("archive");
@@ -34,18 +33,9 @@ export function DeleteWalletModal({
 
   const deleteWalletMutation = useMutationDeleteWallet({
     onSuccess: (data) => {
+      // Show success message with transaction count via alert
+      alert(data.message || "Wallet has been processed successfully");
       onSuccess?.();
-      store.dispatch(closeModal());
-      // Show success message with transaction count
-      store.dispatch(
-        openModal({
-          isOpen: true,
-          type: ModalType.SUCCESS,
-          data: {
-            message: data.message || "Wallet has been processed successfully",
-          },
-        }),
-      );
     },
     onError: (err: any) => {
       setError(err.message || "Failed to process wallet. Please try again");
@@ -190,7 +180,7 @@ export function DeleteWalletModal({
 
       <div className="flex justify-end space-x-3">
         <button
-          onClick={() => store.dispatch(closeModal())}
+          onClick={onCancel}
           className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
           disabled={isLoading}
         >
