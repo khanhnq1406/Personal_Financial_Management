@@ -14,7 +14,7 @@ type Investment struct {
 	WalletID             int32                        `gorm:"not null;index:idx_investment_wallet" json:"walletId"`
 	Symbol               string                       `gorm:"size:20;not null;index" json:"symbol"`
 	Name                 string                       `gorm:"size:100;not null" json:"name"`
-	Type                 v1.InvestmentType            `gorm:"type:int;not null;default:0" json:"type"`
+	Type                 v1.InvestmentType            `gorm:"type:int;not null;default:0;index" json:"type"`
 	Quantity             int64                        `gorm:"type:bigint;not null;default:0" json:"quantity"`
 	AverageCost          int64                        `gorm:"type:bigint;not null;default:0" json:"averageCost"`
 	TotalCost            int64                        `gorm:"type:bigint;not null;default:0" json:"totalCost"`
@@ -37,21 +37,33 @@ func (Investment) TableName() string {
 	return "investment"
 }
 
-// BeforeUpdate GORM hook to recalculate derived fields
+// BeforeCreate GORM hook to recalculate derived fields before creation
+func (i *Investment) BeforeCreate(tx *gorm.DB) error {
+	i.recalculate()
+	return nil
+}
+
+// BeforeUpdate GORM hook to recalculate derived fields before update
 func (i *Investment) BeforeUpdate(tx *gorm.DB) error {
 	i.recalculate()
 	return nil
 }
 
-// recalculate updates CurrentValue, UnrealizedPNL, UnrealizedPNLPercent
+// recalculate updates CurrentValue, UnrealizedPNL, UnrealizedPNLPercent based on investment type
 func (i *Investment) recalculate() {
 	if i.Quantity > 0 && i.CurrentPrice > 0 {
-		// CurrentValue = (Quantity * CurrentPrice) / decimals
-		// For crypto: satoshis (8 decimals) - divide by 100000000
-		// For stocks: 4 decimal places - divide by 10000
-		// We use 100000000 as the base divisor for consistency
-		i.CurrentValue = (i.Quantity * i.CurrentPrice) / 100000000
+		// Determine divisor based on investment type
+		var divisor int64 = 100 // Default: 2 decimals
+		switch i.Type {
+		case v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY:
+			divisor = 100000000 // 8 decimals for satoshis
+		case v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			v1.InvestmentType_INVESTMENT_TYPE_ETF,
+			v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND:
+			divisor = 10000 // 4 decimals for stocks
+		}
 
+		i.CurrentValue = (i.Quantity * i.CurrentPrice) / divisor
 		i.UnrealizedPNL = i.CurrentValue - i.TotalCost
 		if i.TotalCost > 0 {
 			i.UnrealizedPNLPercent = (float64(i.UnrealizedPNL) / float64(i.TotalCost)) * 100

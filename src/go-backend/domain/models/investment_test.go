@@ -197,3 +197,242 @@ func TestInvestment_CalculationLogic(t *testing.T) {
 		t.Errorf("Expected unrealized PNL percent 20.0, got %f", inv.UnrealizedPNLPercent)
 	}
 }
+
+func TestInvestment_TypeAwareRecalculation(t *testing.T) {
+	tests := []struct {
+		name              string
+		investmentType    v1.InvestmentType
+		quantity          int64
+		totalCost         int64
+		currentPrice      int64
+		expectedValue     int64
+		expectedPNL       int64
+		expectedPNLPct    float64
+	}{
+		{
+			name:           "Cryptocurrency - BTC",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			quantity:       100000000,    // 1 BTC in satoshis
+			totalCost:      50000000000,  // $50,000
+			currentPrice:   60000000000,  // $60,000
+			expectedValue:  60000000000,  // $60,000
+			expectedPNL:    10000000000,  // $10,000 profit
+			expectedPNLPct: 20.0,
+		},
+		{
+			name:           "Stock - AAPL",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       10000,        // 1 share in 4 decimals
+			totalCost:      1500000,      // $150.00
+			currentPrice:   1750000,      // $175.00
+			expectedValue:  1750000,      // $175.00
+			expectedPNL:    250000,       // $25.00 profit
+			expectedPNLPct: 16.666666666666668,
+		},
+		{
+			name:           "ETF - VOO",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_ETF,
+			quantity:       5000,         // 0.5 shares in 4 decimals
+			totalCost:      2000000,      // $200.00
+			currentPrice:   4200000,      // $420.00
+			expectedValue:  2100000,      // $210.00 (0.5 * 420)
+			expectedPNL:    100000,       // $10.00 profit
+			expectedPNLPct: 5.0,
+		},
+		{
+			name:           "Mutual Fund - VFIAX",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
+			quantity:       10000,        // 1 share in 4 decimals
+			totalCost:      4000000,      // $400.00
+			currentPrice:   4500000,      // $450.00
+			expectedValue:  4500000,      // $450.00
+			expectedPNL:    500000,       // $50.00 profit
+			expectedPNLPct: 12.5,
+		},
+		{
+			name:           "Other type - default divisor",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_OTHER,
+			quantity:       100,          // 1 unit in 2 decimals
+			totalCost:      10000,        // $100.00
+			currentPrice:   12000,        // $120.00
+			expectedValue:  12000,        // $120.00
+			expectedPNL:    2000,         // $20.00 profit
+			expectedPNLPct: 20.0,
+		},
+		{
+			name:           "Loss scenario - stock",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       10000,        // 1 share
+			totalCost:      2000000,      // $200.00
+			currentPrice:   1500000,      // $150.00
+			expectedValue:  1500000,      // $150.00
+			expectedPNL:    -500000,      // $50.00 loss
+			expectedPNLPct: -25.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := &models.Investment{
+				Type:         tt.investmentType,
+				Quantity:     tt.quantity,
+				TotalCost:    tt.totalCost,
+				CurrentPrice: tt.currentPrice,
+			}
+
+			// Trigger recalculation via BeforeUpdate (simulating GORM hook)
+			inv.BeforeUpdate(nil)
+
+			if inv.CurrentValue != tt.expectedValue {
+				t.Errorf("Expected current value %d, got %d", tt.expectedValue, inv.CurrentValue)
+			}
+
+			if inv.UnrealizedPNL != tt.expectedPNL {
+				t.Errorf("Expected unrealized PNL %d, got %d", tt.expectedPNL, inv.UnrealizedPNL)
+			}
+
+			// Allow small floating point differences
+			pnlPctDiff := inv.UnrealizedPNLPercent - tt.expectedPNLPct
+			if pnlPctDiff < -0.01 || pnlPctDiff > 0.01 {
+				t.Errorf("Expected unrealized PNL percent %.2f, got %.2f", tt.expectedPNLPct, inv.UnrealizedPNLPercent)
+			}
+		})
+	}
+}
+
+func TestInvestment_ZeroValueEdgeCases(t *testing.T) {
+	tests := []struct {
+		name              string
+		quantity          int64
+		totalCost         int64
+		currentPrice      int64
+		typeValue         v1.InvestmentType
+		expectedValue     int64
+		expectedPNL       int64
+		expectedPNLPct    float64
+	}{
+		{
+			name:           "Zero quantity with cost",
+			quantity:       0,
+			totalCost:      100000000,
+			currentPrice:   50000000,
+			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			expectedValue:  0,
+			expectedPNL:    -100000000,
+			expectedPNLPct: -100.0,
+		},
+		{
+			name:           "Zero price with cost",
+			quantity:       100000000,
+			totalCost:      50000000000,
+			currentPrice:   0,
+			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			expectedValue:  0,
+			expectedPNL:    -50000000000,
+			expectedPNLPct: -100.0,
+		},
+		{
+			name:           "Zero total cost",
+			quantity:       100000000,
+			totalCost:      0,
+			currentPrice:   60000000000,
+			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			expectedValue:  60000000000,
+			expectedPNL:    60000000000,
+			expectedPNLPct: 0, // Division by zero avoided in code
+		},
+		{
+			name:           "All zeros",
+			quantity:       0,
+			totalCost:      0,
+			currentPrice:   0,
+			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			expectedValue:  0,
+			expectedPNL:    0,
+			expectedPNLPct: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := &models.Investment{
+				Type:         tt.typeValue,
+				Quantity:     tt.quantity,
+				TotalCost:    tt.totalCost,
+				CurrentPrice: tt.currentPrice,
+			}
+
+			// Trigger recalculation
+			inv.BeforeUpdate(nil)
+
+			if inv.CurrentValue != tt.expectedValue {
+				t.Errorf("Expected current value %d, got %d", tt.expectedValue, inv.CurrentValue)
+			}
+
+			if inv.UnrealizedPNL != tt.expectedPNL {
+				t.Errorf("Expected unrealized PNL %d, got %d", tt.expectedPNL, inv.UnrealizedPNL)
+			}
+
+			if inv.UnrealizedPNLPercent != tt.expectedPNLPct {
+				t.Errorf("Expected unrealized PNL percent %.2f, got %.2f", tt.expectedPNLPct, inv.UnrealizedPNLPercent)
+			}
+		})
+	}
+}
+
+func TestInvestment_GORMHooks(t *testing.T) {
+	tests := []struct {
+		name           string
+		hook           func(*models.Investment) error
+		initialValue   int64
+		initialPrice   int64
+		expectedValue  int64
+	}{
+		{
+			name: "BeforeCreate hook triggers recalculation",
+			hook: func(inv *models.Investment) error {
+				return inv.BeforeCreate(nil)
+			},
+			initialValue:  0,
+			initialPrice:  60000000000,
+			expectedValue: 60000000000,
+		},
+		{
+			name: "BeforeUpdate hook triggers recalculation",
+			hook: func(inv *models.Investment) error {
+				return inv.BeforeUpdate(nil)
+			},
+			initialValue:  0,
+			initialPrice:  60000000000,
+			expectedValue: 60000000000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := &models.Investment{
+				Type:         v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+				Quantity:     100000000, // 1 BTC
+				TotalCost:    50000000000,
+				CurrentValue: tt.initialValue,
+				CurrentPrice: tt.initialPrice,
+			}
+
+			// Call the hook
+			err := tt.hook(inv)
+			if err != nil {
+				t.Errorf("Hook returned error: %v", err)
+			}
+
+			// Verify recalculation occurred
+			if inv.CurrentValue != tt.expectedValue {
+				t.Errorf("Expected current value %d after hook, got %d", tt.expectedValue, inv.CurrentValue)
+			}
+
+			if inv.UnrealizedPNL != 10000000000 {
+				t.Errorf("Expected unrealized PNL 10000000000 after hook, got %d", inv.UnrealizedPNL)
+			}
+		})
+	}
+}
+
