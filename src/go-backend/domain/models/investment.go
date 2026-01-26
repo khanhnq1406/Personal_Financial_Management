@@ -22,7 +22,7 @@ type Investment struct {
 	CurrentPrice         int64                        `gorm:"type:bigint;default:0" json:"currentPrice"`
 	CurrentValue         int64                        `gorm:"type:bigint;default:0" json:"currentValue"`
 	UnrealizedPNL        int64                        `gorm:"type:bigint;default:0" json:"unrealizedPnl"`
-	UnrealizedPNLPercent float64                      `gorm:"type:double;default:0" json:"unrealizedPnlPercent"`
+	UnrealizedPNLPercent float64                      `gorm:"type:double precision;default:0" json:"unrealizedPnlPercent"`
 	RealizedPNL          int64                        `gorm:"type:bigint;default:0" json:"realizedPnl"`
 	CreatedAt            time.Time                    `json:"createdAt"`
 	UpdatedAt            time.Time                    `json:"updatedAt"`

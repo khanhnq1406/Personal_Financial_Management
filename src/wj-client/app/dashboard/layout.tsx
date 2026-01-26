@@ -57,7 +57,7 @@ export default function DashboardLayout({
           <div>Wallets</div>
         </ActiveLink>
         <ActiveLink href={routes.portfolio}>
-          <img className="w-[20px] h-[20px]" src="/wallet-white.png" />
+          <img className="w-[20px] h-[20px]" src="/portfolio.png" />
           <div>Portfolio</div>
         </ActiveLink>
         <button

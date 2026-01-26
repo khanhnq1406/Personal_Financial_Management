@@ -167,7 +167,8 @@ func TestInvestmentRepository_GetByID_NotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, investment)
-	assert.Equal(t, apperrors.NotFoundError(""), err.(*apperrors.AppError).Type)
+	var notFoundErr apperrors.NotFoundError
+	assert.ErrorAs(t, err, &notFoundErr)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -335,7 +336,8 @@ func TestInvestmentRepository_Delete_NotFound(t *testing.T) {
 	err := repo.Delete(ctx, 999)
 
 	assert.Error(t, err)
-	assert.Equal(t, apperrors.NotFoundError(""), err.(*apperrors.AppError).Type)
+	var notFoundErr apperrors.NotFoundError
+	assert.ErrorAs(t, err, &notFoundErr)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

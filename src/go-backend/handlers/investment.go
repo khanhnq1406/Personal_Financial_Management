@@ -127,7 +127,7 @@ func (h *InvestmentHandlers) GetInvestment(c *gin.Context) {
 // @Summary List investments for a wallet
 // @Tags investments
 // @Produce json
-// @Param walletId path int true "Wallet ID"
+// @Param id path int true "Wallet ID"
 // @Param page query int false "Page number (default: 1)"
 // @Param page_size query int false "Page size (default: 20, max: 100)"
 // @Param order_by query string false "Order by field (default: created_at)"
@@ -137,7 +137,7 @@ func (h *InvestmentHandlers) GetInvestment(c *gin.Context) {
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
-// @Router /api/v1/wallets/{walletId}/investments [get]
+// @Router /api/v1/wallets/{id}/investments [get]
 func (h *InvestmentHandlers) ListInvestments(c *gin.Context) {
 	// Get user ID from context
 	userID, ok := handler.GetUserID(c)
@@ -147,7 +147,7 @@ func (h *InvestmentHandlers) ListInvestments(c *gin.Context) {
 	}
 
 	// Parse wallet ID
-	walletID, err := parseIDParam(c, "walletId")
+	walletID, err := parseIDParam(c, "id")
 	if err != nil {
 		handler.BadRequest(c, err)
 		return
@@ -283,14 +283,14 @@ func (h *InvestmentHandlers) DeleteInvestment(c *gin.Context) {
 // @Tags investments
 // @Accept json
 // @Produce json
-// @Param investmentId path int true "Investment ID"
+// @Param id path int true "Investment ID"
 // @Param request body investmentv1.AddTransactionRequest true "Transaction request"
 // @Success 201 {object} types.APIResponse{data=investmentv1.AddTransactionResponse}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 404 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
-// @Router /api/v1/investments/{investmentId}/transactions [post]
+// @Router /api/v1/investments/{id}/transactions [post]
 func (h *InvestmentHandlers) AddTransaction(c *gin.Context) {
 	// Get user ID from context
 	userID, ok := handler.GetUserID(c)
@@ -300,7 +300,7 @@ func (h *InvestmentHandlers) AddTransaction(c *gin.Context) {
 	}
 
 	// Parse investment ID
-	investmentID, err := parseIDParam(c, "investmentId")
+	investmentID, err := parseIDParam(c, "id")
 	if err != nil {
 		handler.BadRequest(c, err)
 		return
@@ -359,7 +359,7 @@ func (h *InvestmentHandlers) AddTransaction(c *gin.Context) {
 // @Summary List transactions for an investment
 // @Tags investments
 // @Produce json
-// @Param investmentId path int true "Investment ID"
+// @Param id path int true "Investment ID"
 // @Param page query int false "Page number (default: 1)"
 // @Param page_size query int false "Page size (default: 20, max: 100)"
 // @Param order_by query string false "Order by field (default: created_at)"
@@ -369,7 +369,7 @@ func (h *InvestmentHandlers) AddTransaction(c *gin.Context) {
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
-// @Router /api/v1/investments/{investmentId}/transactions [get]
+// @Router /api/v1/investments/{id}/transactions [get]
 func (h *InvestmentHandlers) ListTransactions(c *gin.Context) {
 	// Get user ID from context
 	userID, ok := handler.GetUserID(c)
@@ -379,7 +379,7 @@ func (h *InvestmentHandlers) ListTransactions(c *gin.Context) {
 	}
 
 	// Parse investment ID
-	investmentID, err := parseIDParam(c, "investmentId")
+	investmentID, err := parseIDParam(c, "id")
 	if err != nil {
 		handler.BadRequest(c, err)
 		return
@@ -531,13 +531,13 @@ func (h *InvestmentHandlers) DeleteTransaction(c *gin.Context) {
 // @Summary Get portfolio summary for a wallet
 // @Tags investments
 // @Produce json
-// @Param walletId path int true "Wallet ID"
+// @Param id path int true "Wallet ID"
 // @Success 200 {object} types.APIResponse{data=investmentv1.PortfolioSummary}
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 404 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
-// @Router /api/v1/wallets/{walletId}/portfolio-summary [get]
+// @Router /api/v1/wallets/{id}/portfolio-summary [get]
 func (h *InvestmentHandlers) GetPortfolioSummary(c *gin.Context) {
 	// Get user ID from context
 	userID, ok := handler.GetUserID(c)
@@ -547,7 +547,7 @@ func (h *InvestmentHandlers) GetPortfolioSummary(c *gin.Context) {
 	}
 
 	// Parse wallet ID
-	walletID, err := parseIDParam(c, "walletId")
+	walletID, err := parseIDParam(c, "id")
 	if err != nil {
 		handler.BadRequest(c, err)
 		return

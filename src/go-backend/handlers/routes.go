@@ -65,6 +65,9 @@ func RegisterRoutes(
 		wallets.GET("/balance-history", h.Wallet.GetBalanceHistory)
 		wallets.GET("/monthly-dominance", h.Wallet.GetMonthlyDominance)
 		wallets.POST("/transfer", h.Wallet.TransferFunds)
+		// Wallet investment routes (must come before :id parameterized route)
+		wallets.GET("/:id/investments", h.Investment.ListInvestments)
+		wallets.GET("/:id/portfolio-summary", h.Investment.GetPortfolioSummary)
 		// Parameterized routes
 		wallets.GET("/:id", h.Wallet.GetWallet)
 		wallets.PUT("/:id", h.Wallet.UpdateWallet)
@@ -134,13 +137,14 @@ func RegisterRoutes(
 		// Investment management routes
 		investments.POST("", h.Investment.CreateInvestment)
 		investments.GET("/update-prices", h.Investment.UpdatePrices)
+		// Specific routes must come before :id parameterized route
+		// Investment transaction routes (use :id to be consistent with other routes)
+		investments.GET("/:id/transactions", h.Investment.ListTransactions)
+		investments.POST("/:id/transactions", h.Investment.AddTransaction)
 		// Parameterized investment routes
 		investments.GET("/:id", h.Investment.GetInvestment)
 		investments.PUT("/:id", h.Investment.UpdateInvestment)
 		investments.DELETE("/:id", h.Investment.DeleteInvestment)
-		// Investment transaction routes
-		investments.GET("/:investmentId/transactions", h.Investment.ListTransactions)
-		investments.POST("/:investmentId/transactions", h.Investment.AddTransaction)
 	}
 
 	// Investment transaction routes (protected)
@@ -152,19 +156,5 @@ func RegisterRoutes(
 	{
 		investmentTransactions.PUT("/:id", h.Investment.EditTransaction)
 		investmentTransactions.DELETE("/:id", h.Investment.DeleteTransaction)
-	}
-
-	// Wallet investment routes (protected)
-	// These are nested under wallets to keep RESTful structure
-	walletInvestments := v1.Group("/wallets")
-	if rateLimiter != nil {
-		walletInvestments.Use(appmiddleware.RateLimitByUser(rateLimiter))
-	}
-	walletInvestments.Use(AuthMiddleware())
-	{
-		// List investments for a wallet
-		walletInvestments.GET("/:walletId/investments", h.Investment.ListInvestments)
-		// Get portfolio summary for a wallet
-		walletInvestments.GET("/:walletId/portfolio-summary", h.Investment.GetPortfolioSummary)
 	}
 }

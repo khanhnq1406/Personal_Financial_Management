@@ -13,7 +13,7 @@ type MarketData struct {
 	Symbol    string         `gorm:"size:20;not null;uniqueIndex:idx_symbol_currency" json:"symbol"`
 	Currency  string         `gorm:"size:3;not null;uniqueIndex:idx_symbol_currency" json:"currency"`
 	Price     int64          `gorm:"type:bigint;not null" json:"price"`
-	Change24h float64        `gorm:"type:double" json:"change24h"`
+	Change24h float64        `gorm:"type:double precision" json:"change24h"`
 	Volume24h int64          `gorm:"type:bigint" json:"volume24h"`
 	Timestamp time.Time      `gorm:"not null;index" json:"timestamp"`
 	CreatedAt time.Time      `json:"createdAt"`

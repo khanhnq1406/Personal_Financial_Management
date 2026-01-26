@@ -23,6 +23,7 @@ import { useMemo } from "react";
 
 interface CreateWalletFormProps {
   onSuccess?: () => void;
+  defaultType?: WalletType;
 }
 
 /**
@@ -30,7 +31,7 @@ interface CreateWalletFormProps {
  * Owns its mutation logic, error handling, and loading state.
  * After successful creation, calls onSuccess() callback (caller handles refetch + modal close).
  */
-export function CreateWalletForm({ onSuccess }: CreateWalletFormProps) {
+export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormProps) {
   const createWallet = useMutationCreateWallet();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
@@ -50,7 +51,7 @@ export function CreateWalletForm({ onSuccess }: CreateWalletFormProps) {
     defaultValues: {
       walletName: "",
       initialBalance: 0,
-      type: WalletType.BASIC,
+      type: defaultType ?? WalletType.BASIC,
     },
     mode: "onSubmit",
   });

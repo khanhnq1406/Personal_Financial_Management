@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { Button, ButtonType } from "@/components/Button";
+import { Button } from "@/components/Button";
+import { ButtonType } from "@/app/constants";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import {
   useQueryGetInvestment,
@@ -79,7 +80,7 @@ export function InvestmentDetailModal({
 
   // Fetch investment transactions
   const getListInvestmentTransactions = useQueryListInvestmentTransactions(
-    { investmentId: investmentId },
+    { investmentId: investmentId, pagination: { page: 1, pageSize: 100, orderBy: "", order: "" }, typeFilter: 0 },
     {
       enabled: isOpen && !!investmentId && activeTab === "transactions",
       refetchOnMount: "always",
