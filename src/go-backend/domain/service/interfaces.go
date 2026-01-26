@@ -6,6 +6,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/types"
 	budgetv1 "wealthjourney/protobuf/v1"
+	investmentv1 "wealthjourney/protobuf/v1"
 	transactionv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
 )
@@ -153,4 +154,40 @@ type BudgetService interface {
 
 	// DeleteBudgetItem deletes a budget item.
 	DeleteBudgetItem(ctx context.Context, budgetID int32, itemID int32, userID int32) (*budgetv1.DeleteBudgetItemResponse, error)
+}
+
+// InvestmentService defines the interface for investment business logic.
+type InvestmentService interface {
+	// CreateInvestment creates a new investment holding.
+	CreateInvestment(ctx context.Context, userID int32, req *investmentv1.CreateInvestmentRequest) (*investmentv1.CreateInvestmentResponse, error)
+
+	// GetInvestment retrieves an investment by ID, ensuring it belongs to the user.
+	GetInvestment(ctx context.Context, investmentID int32, requestingUserID int32) (*investmentv1.GetInvestmentResponse, error)
+
+	// ListInvestments retrieves all investments for a wallet with pagination and filtering.
+	ListInvestments(ctx context.Context, userID int32, req *investmentv1.ListInvestmentsRequest) (*investmentv1.ListInvestmentsResponse, error)
+
+	// UpdateInvestment updates an investment's details.
+	UpdateInvestment(ctx context.Context, investmentID int32, userID int32, req *investmentv1.UpdateInvestmentRequest) (*investmentv1.UpdateInvestmentResponse, error)
+
+	// DeleteInvestment deletes an investment.
+	DeleteInvestment(ctx context.Context, investmentID int32, userID int32) (*investmentv1.DeleteInvestmentResponse, error)
+
+	// AddTransaction adds a buy/sell transaction to an investment.
+	AddTransaction(ctx context.Context, userID int32, req *investmentv1.AddTransactionRequest) (*investmentv1.AddTransactionResponse, error)
+
+	// ListTransactions retrieves transactions for an investment.
+	ListTransactions(ctx context.Context, userID int32, req *investmentv1.ListInvestmentTransactionsRequest) (*investmentv1.ListInvestmentTransactionsResponse, error)
+
+	// EditTransaction edits an existing transaction.
+	EditTransaction(ctx context.Context, transactionID int32, userID int32, req *investmentv1.EditInvestmentTransactionRequest) (*investmentv1.EditInvestmentTransactionResponse, error)
+
+	// DeleteTransaction deletes a transaction.
+	DeleteTransaction(ctx context.Context, transactionID int32, userID int32) (*investmentv1.DeleteInvestmentTransactionResponse, error)
+
+	// GetPortfolioSummary retrieves portfolio summary for a wallet.
+	GetPortfolioSummary(ctx context.Context, walletID int32, userID int32) (*investmentv1.GetPortfolioSummaryResponse, error)
+
+	// UpdatePrices updates current prices for investments.
+	UpdatePrices(ctx context.Context, userID int32, req *investmentv1.UpdatePricesRequest) (*investmentv1.UpdatePricesResponse, error)
 }
