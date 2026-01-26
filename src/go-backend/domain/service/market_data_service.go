@@ -9,8 +9,6 @@ import (
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/validator"
-
-	"gorm.io/gorm"
 )
 
 // MarketDataService handles market data operations including price fetching and caching.
@@ -134,7 +132,7 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 		Symbol:    symbol,
 		Currency:  currency,
 		Price:     mockPrice,
-		Change24h: 2.5,  // Mock 2.5% change
+		Change24h: 2.5, // Mock 2.5% change
 		Volume24h: 1000000,
 		Timestamp: time.Now(),
 	}, nil

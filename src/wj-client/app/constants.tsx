@@ -82,6 +82,7 @@ export const routes = {
   report: `/dashboard/report`,
   budget: `/dashboard/budget`,
   wallets: `/dashboard/wallets`,
+  portfolio: `/dashboard/portfolio`,
 };
 
 export const resources =
@@ -132,4 +133,6 @@ export const ModalType = {
   EDIT_BUDGET: "Edit Budget",
   ADD_BUDGET_ITEM: "Add Budget Item",
   EDIT_BUDGET_ITEM: "Edit Budget Item",
+  ADD_INVESTMENT: "Add Investment",
+  INVESTMENT_DETAIL: "Investment Details",
 };

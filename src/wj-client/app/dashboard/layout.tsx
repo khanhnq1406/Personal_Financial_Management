@@ -56,6 +56,10 @@ export default function DashboardLayout({
           <img className="w-[20px] h-[20px]" src="/wallet-white.png" />
           <div>Wallets</div>
         </ActiveLink>
+        <ActiveLink href={routes.portfolio}>
+          <img className="w-[20px] h-[20px]" src="/wallet-white.png" />
+          <div>Portfolio</div>
+        </ActiveLink>
         <button
           className="text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)]"
           onClick={logout}

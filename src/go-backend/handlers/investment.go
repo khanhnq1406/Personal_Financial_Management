@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -341,7 +342,7 @@ func (h *InvestmentHandlers) AddTransaction(c *gin.Context) {
 
 	// Set default transaction date if not provided
 	if req.TransactionDate == 0 {
-		req.TransactionDate = types.Now().Unix()
+		req.TransactionDate = time.Now().Unix()
 	}
 
 	// Call service
@@ -476,7 +477,7 @@ func (h *InvestmentHandlers) EditTransaction(c *gin.Context) {
 
 	// Set default transaction date if not provided
 	if req.TransactionDate == 0 {
-		req.TransactionDate = types.Now().Unix()
+		req.TransactionDate = time.Now().Unix()
 	}
 
 	// Call service
