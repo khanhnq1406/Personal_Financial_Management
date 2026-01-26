@@ -126,7 +126,7 @@ export default function PortfolioPage() {
   // Loading state
   if (getListWallets.isLoading || getListWallets.isPending) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-full">
         <LoadingSpinner text="Loading portfolio..." />
       </div>
     );

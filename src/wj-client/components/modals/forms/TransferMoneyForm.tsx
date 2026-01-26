@@ -63,7 +63,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
   });
 
   const availableToWallets = fromWalletId
-    ? wallets.filter((w) => String(w.id) !== fromWalletId)
+    ? wallets.filter((w) => w.id !== fromWalletId)
     : wallets;
 
   const formatWalletOption = (wallet: SelectOption): string => {

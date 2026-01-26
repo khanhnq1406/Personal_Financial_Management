@@ -6,13 +6,15 @@ import { amountSchema, optionalNoteSchema } from "./common";
  */
 
 export const transferMoneySchemaWithBalances = (
-  wallets: Array<{ id: number; balance: number }>
+  wallets: Array<{ id: number; balance: number }>,
 ) =>
   z
     .object({
       amount: amountSchema,
-      fromWalletId: z.string().min(1, "Source wallet is required"),
-      toWalletId: z.string().min(1, "Destination wallet is required"),
+      fromWalletId: z
+        .number()
+        .or(z.string().min(1, "Source wallet is required")),
+      toWalletId: z.number().or(z.string().min(1, "Source wallet is required")),
       datetime: z.string().optional(),
       note: optionalNoteSchema,
     })
@@ -23,7 +25,7 @@ export const transferMoneySchemaWithBalances = (
     .refine(
       (data) => {
         const fromWallet = wallets.find(
-          (w) => w.id === Number(data.fromWalletId)
+          (w) => w.id === Number(data.fromWalletId),
         );
         if (!fromWallet) return false;
         return fromWallet.balance >= data.amount;
@@ -31,7 +33,7 @@ export const transferMoneySchemaWithBalances = (
       {
         message: "Insufficient balance in source wallet",
         path: ["amount"],
-      }
+      },
     );
 
 export type TransferMoneyFormInput = z.infer<

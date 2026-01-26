@@ -47,6 +47,16 @@ export const FormSelect = memo(function FormSelect({
     return option.label;
   };
 
+  // Check if any option has a number value
+  const hasNumberValues = options.some((opt) => typeof opt.value === "number");
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    // Convert to number if options contain number values
+    const parsedValue = hasNumberValues && value !== "" ? Number(value) : value;
+    field.onChange(parsedValue);
+  };
+
   return (
     <div className={cn("mb-2", className)}>
       <Label htmlFor={props.name} required={required}>
@@ -55,7 +65,11 @@ export const FormSelect = memo(function FormSelect({
       <select
         id={props.name}
         disabled={disabled || loading}
-        {...field}
+        value={field.value ?? ""}
+        onChange={handleChange}
+        onBlur={field.onBlur}
+        name={field.name}
+        ref={field.ref}
         className={cn(
           "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed",
           error && "border-2 border-lred",

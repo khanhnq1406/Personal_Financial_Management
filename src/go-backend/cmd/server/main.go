@@ -51,12 +51,15 @@ func main() {
 
 	// Initialize repositories
 	repos := &service.Repositories{
-		User:        repository.NewUserRepository(db),
-		Wallet:      repository.NewWalletRepository(db),
-		Transaction: repository.NewTransactionRepository(db),
-		Category:    repository.NewCategoryRepository(db),
-		Budget:      repository.NewBudgetRepository(db),
-		BudgetItem:  repository.NewBudgetItemRepository(db),
+		User:                  repository.NewUserRepository(db),
+		Wallet:                repository.NewWalletRepository(db),
+		Transaction:           repository.NewTransactionRepository(db),
+		Category:              repository.NewCategoryRepository(db),
+		Budget:                repository.NewBudgetRepository(db),
+		BudgetItem:            repository.NewBudgetItemRepository(db),
+		Investment:            repository.NewInvestmentRepository(db),
+		InvestmentTransaction: repository.NewInvestmentTransactionRepository(db),
+		MarketData:            repository.NewMarketDataRepository(db),
 	}
 
 	// Initialize services

@@ -14,7 +14,7 @@ const transactionTypeEnum = z.enum(["income", "expense"]);
 export const createTransactionFormSchema = z.object({
   transactionType: transactionTypeEnum,
   amount: amountSchema,
-  walletId: z.string().min(1, "Wallet is required"),
+  walletId: z.number().or(z.string().min(1, "Wallet is required")),
   categoryId: z.string().min(1, "Category is required"),
   date: z.string().min(1, "Date is required"),
   note: optionalNoteSchema,
@@ -31,7 +31,7 @@ export type CreateTransactionFormInput = z.infer<
 export const updateTransactionFormSchema = z.object({
   transactionType: transactionTypeEnum,
   amount: amountSchema,
-  walletId: z.string().min(1, "Wallet is required"),
+  walletId: z.number().or(z.string().min(1, "Wallet is required")),
   categoryId: z.string().min(1, "Category is required"),
   date: z.string().min(1, "Date is required"),
   note: optionalNoteSchema,
