@@ -123,4 +123,48 @@ func RegisterRoutes(
 		budgets.PUT("/:id/items/:itemId", h.Budget.UpdateBudgetItem)
 		budgets.DELETE("/:id/items/:itemId", h.Budget.DeleteBudgetItem)
 	}
+
+	// Investment routes (protected)
+	investments := v1.Group("/investments")
+	if rateLimiter != nil {
+		investments.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	investments.Use(AuthMiddleware())
+	{
+		// Investment management routes
+		investments.POST("", h.Investment.CreateInvestment)
+		investments.GET("/update-prices", h.Investment.UpdatePrices)
+		// Parameterized investment routes
+		investments.GET("/:id", h.Investment.GetInvestment)
+		investments.PUT("/:id", h.Investment.UpdateInvestment)
+		investments.DELETE("/:id", h.Investment.DeleteInvestment)
+		// Investment transaction routes
+		investments.GET("/:investmentId/transactions", h.Investment.ListTransactions)
+		investments.POST("/:investmentId/transactions", h.Investment.AddTransaction)
+	}
+
+	// Investment transaction routes (protected)
+	investmentTransactions := v1.Group("/investment-transactions")
+	if rateLimiter != nil {
+		investmentTransactions.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	investmentTransactions.Use(AuthMiddleware())
+	{
+		investmentTransactions.PUT("/:id", h.Investment.EditTransaction)
+		investmentTransactions.DELETE("/:id", h.Investment.DeleteTransaction)
+	}
+
+	// Wallet investment routes (protected)
+	// These are nested under wallets to keep RESTful structure
+	walletInvestments := v1.Group("/wallets")
+	if rateLimiter != nil {
+		walletInvestments.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	walletInvestments.Use(AuthMiddleware())
+	{
+		// List investments for a wallet
+		walletInvestments.GET("/:walletId/investments", h.Investment.ListInvestments)
+		// Get portfolio summary for a wallet
+		walletInvestments.GET("/:walletId/portfolio-summary", h.Investment.GetPortfolioSummary)
+	}
 }
