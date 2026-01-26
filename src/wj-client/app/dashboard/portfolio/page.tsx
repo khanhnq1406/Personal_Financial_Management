@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+/**
+ * Optimized Portfolio Page
+ *
+ * Implements Vercel React Best Practices:
+ * - bundle-dynamic-imports: Heavy modal loaded dynamically
+ * - bundle-preload: Modal preloaded on row hover for perceived speed
+ * - rerender-memo: Components memoized to prevent unnecessary re-renders
+ * - rerender-functional-setState: Use functional setState for stable callbacks
+ * - rendering-hoist-jsx: Static JSX extracted outside component
+ */
+
+import React, { useState, useMemo, useCallback, startTransition, memo } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
-import { BaseModal } from "@/components/modals/BaseModal";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
-import { AddInvestmentForm } from "@/components/modals/forms/AddInvestmentForm";
-import { CreateWalletForm } from "@/components/modals/forms/CreateWalletForm";
-import { InvestmentDetailModal } from "@/components/modals/InvestmentDetailModal";
 import {
   useQueryListWallets,
   useQueryGetPortfolioSummary,
@@ -21,6 +28,15 @@ import {
   formatQuantity,
   getInvestmentTypeLabel,
 } from "./helpers";
+import {
+  CreateWalletForm,
+  AddInvestmentForm,
+  InvestmentDetailModal,
+  preloadInvestmentDetailModal,
+  TanStackTable,
+} from "@/components/lazy/OptimizedComponents";
+import { BaseModal } from "@/components/modals/BaseModal";
+import type { ColumnDef } from "@tanstack/react-table";
 
 const ModalType = {
   CREATE_WALLET: "CREATE_WALLET",
@@ -28,14 +44,203 @@ const ModalType = {
   INVESTMENT_DETAIL: "INVESTMENT_DETAIL",
 } as const;
 
+// Hoist static empty state outside component (rendering-hoist-jsx)
+const EmptyInvestmentWalletsState = memo(({ onOpenModal }: { onOpenModal: () => void }) => (
+  <div className="flex flex-col items-center justify-center h-full gap-4">
+    <div className="text-center">
+      <p className="text-lg font-semibold text-gray-700">
+        No Investment Wallets
+      </p>
+      <p className="text-sm text-gray-500 mt-2">
+        Create an investment wallet to start tracking your portfolio
+      </p>
+    </div>
+    <Button
+      type={ButtonType.PRIMARY}
+      onClick={onOpenModal}
+      className="w-fit px-4"
+    >
+      Create Investment Wallet
+    </Button>
+  </div>
+));
+EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
+
+// Memoized portfolio summary cards to prevent re-renders
+const PortfolioSummaryCards = memo(({
+  portfolioSummary,
+}: {
+  portfolioSummary: any;
+}) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <BaseCard className="p-4">
+      <div className="text-sm text-gray-600">Total Value</div>
+      <div className="text-2xl font-bold text-gray-900 mt-1">
+        {formatCurrency(portfolioSummary.totalValue || 0)}
+      </div>
+    </BaseCard>
+
+    <BaseCard className="p-4">
+      <div className="text-sm text-gray-600">Total Cost</div>
+      <div className="text-2xl font-bold text-gray-900 mt-1">
+        {formatCurrency(portfolioSummary.totalCost || 0)}
+      </div>
+    </BaseCard>
+
+    <BaseCard className="p-4">
+      <div className="text-sm text-gray-600">Total PNL</div>
+      <div
+        className={`text-2xl font-bold mt-1 ${
+          (portfolioSummary.totalPnl || 0) >= 0
+            ? "text-green-600"
+            : "text-red-600"
+        }`}
+      >
+        {formatCurrency(portfolioSummary.totalPnl || 0)}
+      </div>
+    </BaseCard>
+
+    <BaseCard className="p-4">
+      <div className="text-sm text-gray-600">Holdings</div>
+      <div className="text-2xl font-bold text-gray-900 mt-1">
+        {portfolioSummary.totalInvestments || 0}
+      </div>
+    </BaseCard>
+  </div>
+));
+PortfolioSummaryCards.displayName = "PortfolioSummaryCards";
+
+// Investment data type for TanStackTable
+type InvestmentData = {
+  id: number;
+  symbol: string;
+  name: string;
+  type: number;
+  quantity: number;
+  averageCost?: number;
+  currentPrice?: number;
+  currentValue?: number;
+  unrealizedPnl?: number;
+  unrealizedPnlPercent?: number;
+};
+
+// Column definitions for TanStackTable (memoized to prevent recreation)
+const useInvestmentColumns = (
+  onRowClick: (investmentId: number) => void,
+  onRowHover?: () => void
+): ColumnDef<InvestmentData>[] => {
+  return useMemo(
+    () => [
+      {
+        accessorKey: "symbol",
+        header: "Symbol",
+        cell: (info) => (
+          <span className="font-medium">{info.getValue<string>()}</span>
+        ),
+      },
+      {
+        accessorKey: "name",
+        header: "Name",
+      },
+      {
+        accessorKey: "type",
+        header: "Type",
+        cell: (info) => getInvestmentTypeLabel(info.getValue<number>() as any),
+      },
+      {
+        accessorKey: "quantity",
+        header: "Quantity",
+        cell: (info) => {
+          const row = info.row.original;
+          return formatQuantity(row.quantity, row.type as any);
+        },
+      },
+      {
+        accessorKey: "averageCost",
+        header: "Avg Cost",
+        cell: (info) => formatCurrency((info.getValue() as number | undefined) || 0),
+      },
+      {
+        accessorKey: "currentPrice",
+        header: "Current Price",
+        cell: (info) => formatCurrency((info.getValue() as number | undefined) || 0),
+      },
+      {
+        accessorKey: "currentValue",
+        header: "Current Value",
+        cell: (info) => (
+          <span className="font-medium">
+            {formatCurrency((info.getValue() as number | undefined) || 0)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "unrealizedPnl",
+        header: "PNL",
+        cell: (info) => (
+          <span
+            className={`font-medium ${
+              ((info.getValue() as number | undefined) || 0) >= 0
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
+            {formatCurrency((info.getValue() as number | undefined) || 0)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "unrealizedPnlPercent",
+        header: "PNL %",
+        cell: (info) => (
+          <span
+            className={`font-medium ${
+              ((info.getValue() as number | undefined) || 0) >= 0
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
+            {formatPercent((info.getValue() as number | undefined) || 0)}
+          </span>
+        ),
+      },
+    ],
+    [onRowClick, onRowHover]
+  );
+};
+
+// Memoized holdings table wrapper with TanStackTable
+const HoldingsTable = memo(({
+  investments,
+  onRowClick,
+  onRowHover,
+}: {
+  investments: InvestmentData[];
+  onRowClick: (investmentId: number) => void;
+  onRowHover?: () => void;
+}) => {
+  const columns = useInvestmentColumns(onRowClick, onRowHover);
+
+  return (
+    <div
+      className="overflow-x-auto"
+      onMouseEnter={onRowHover}
+    >
+      {/* Cast TanStackTable to any to bypass generic type constraint */}
+      <TanStackTable
+        data={investments}
+        columns={columns as any}
+        emptyMessage="No investments yet. Add your first investment to get started."
+      />
+    </div>
+  );
+});
+HoldingsTable.displayName = "HoldingsTable";
+
 export default function PortfolioPage() {
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
-    null,
-  );
-  const [selectedInvestmentId, setSelectedInvestmentId] = useState<
-    number | null
-  >(null);
+  const [modalType, setModalType] = useState<keyof typeof ModalType | null>(null);
+  const [selectedInvestmentId, setSelectedInvestmentId] = useState<number | null>(null);
 
   // Fetch user's wallets
   const getListWallets = useQueryListWallets(
@@ -47,23 +252,26 @@ export default function PortfolioPage() {
         order: "desc",
       },
     },
-    { refetchOnMount: "always" },
+    { refetchOnMount: "always" }
   );
 
-  // Filter for investment wallets
+  // Filter for investment wallets (memoized)
   const investmentWallets = useMemo(() => {
     if (!getListWallets.data?.wallets) return [];
     return getListWallets.data.wallets.filter(
-      (wallet) => wallet.type === WalletType.INVESTMENT,
+      (wallet) => wallet.type === WalletType.INVESTMENT
     );
   }, [getListWallets.data]);
 
-  // Set default wallet if none selected
+  // Set default wallet if none selected (use functional setState)
   React.useEffect(() => {
-    if (!selectedWalletId && investmentWallets.length > 0) {
-      setSelectedWalletId(investmentWallets[0].id);
-    }
-  }, [selectedWalletId, investmentWallets]);
+    setSelectedWalletId((prevId) => {
+      if (!prevId && investmentWallets.length > 0) {
+        return investmentWallets[0].id;
+      }
+      return prevId;
+    });
+  }, [investmentWallets]);
 
   // Fetch portfolio summary for selected wallet
   const getPortfolioSummary = useQueryGetPortfolioSummary(
@@ -71,7 +279,7 @@ export default function PortfolioPage() {
     {
       enabled: !!selectedWalletId,
       refetchOnMount: "always",
-    },
+    }
   );
 
   // Fetch investments for selected wallet
@@ -84,33 +292,11 @@ export default function PortfolioPage() {
     {
       enabled: !!selectedWalletId,
       refetchOnMount: "always",
-    },
+    }
   );
 
-  const handleOpenModal = (
-    type: keyof typeof ModalType,
-    investmentId?: number,
-  ) => {
-    if (investmentId) {
-      setSelectedInvestmentId(investmentId);
-    }
-    setModalType(type);
-  };
-
-  const handleCloseModal = () => {
-    setModalType(null);
-    setSelectedInvestmentId(null);
-  };
-
-  const handleModalSuccess = () => {
-    // Refetch all data
-    getListWallets.refetch();
-    getPortfolioSummary.refetch();
-    getListInvestments.refetch();
-    handleCloseModal();
-  };
-
-  const getModalTitle = () => {
+  // Memoize modal title
+  const modalTitle = useMemo(() => {
     switch (modalType) {
       case ModalType.CREATE_WALLET:
         return "Create Investment Wallet";
@@ -121,7 +307,39 @@ export default function PortfolioPage() {
       default:
         return "";
     }
-  };
+  }, [modalType]);
+
+  // Use startTransition for non-urgent state updates (rerender-transitions)
+  const handleOpenModal = useCallback(
+    (type: keyof typeof ModalType, investmentId?: number) => {
+      startTransition(() => {
+        if (investmentId) {
+          setSelectedInvestmentId(investmentId);
+        }
+        setModalType(type);
+      });
+    },
+    []
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setModalType(null);
+    setSelectedInvestmentId(null);
+  }, []);
+
+  const handleModalSuccess = useCallback(() => {
+    startTransition(() => {
+      getListWallets.refetch();
+      getPortfolioSummary.refetch();
+      getListInvestments.refetch();
+      handleCloseModal();
+    });
+  }, [getListWallets, getPortfolioSummary, getListInvestments, handleCloseModal]);
+
+  // Preload modal on hover for perceived speed (bundle-preload)
+  const handleRowHover = useCallback(() => {
+    preloadInvestmentDetailModal();
+  }, []);
 
   // Loading state
   if (getListWallets.isLoading || getListWallets.isPending) {
@@ -145,35 +363,19 @@ export default function PortfolioPage() {
   }
 
   const portfolioSummary = getPortfolioSummary.data;
-  const investments = getListInvestments.data?.data || [];
+  const investments = (getListInvestments.data?.data || []) as InvestmentData[];
 
   // No investment wallets - render empty state with modal
   if (investmentWallets.length === 0) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-          <div className="text-center">
-            <p className="text-lg font-semibold text-gray-700">
-              No Investment Wallets
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Create an investment wallet to start tracking your portfolio
-            </p>
-          </div>
-          <Button
-            type={ButtonType.PRIMARY}
-            onClick={() => handleOpenModal(ModalType.CREATE_WALLET)}
-            className="w-fit px-4"
-          >
-            Create Investment Wallet
-          </Button>
-        </div>
-
-        {/* Modal */}
+        <EmptyInvestmentWalletsState
+          onOpenModal={() => handleOpenModal(ModalType.CREATE_WALLET)}
+        />
         <BaseModal
           isOpen={modalType !== null}
           onClose={handleCloseModal}
-          title={getModalTitle()}
+          title={modalTitle}
         >
           {modalType === ModalType.CREATE_WALLET && (
             <CreateWalletForm
@@ -198,7 +400,11 @@ export default function PortfolioPage() {
             {investmentWallets.length > 1 && (
               <select
                 value={selectedWalletId || ""}
-                onChange={(e) => setSelectedWalletId(Number(e.target.value))}
+                onChange={(e) =>
+                  startTransition(() => {
+                    setSelectedWalletId(Number(e.target.value));
+                  })
+                }
                 className="px-4 py-2 border-2 border-hgreen rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
               >
                 {investmentWallets.map((wallet) => (
@@ -216,41 +422,7 @@ export default function PortfolioPage() {
               <LoadingSpinner text="Loading summary..." />
             </div>
           ) : portfolioSummary?.data ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <BaseCard className="p-4">
-                <div className="text-sm text-gray-600">Total Value</div>
-                <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(portfolioSummary.data.totalValue || 0)}
-                </div>
-              </BaseCard>
-
-              <BaseCard className="p-4">
-                <div className="text-sm text-gray-600">Total Cost</div>
-                <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(portfolioSummary.data.totalCost || 0)}
-                </div>
-              </BaseCard>
-
-              <BaseCard className="p-4">
-                <div className="text-sm text-gray-600">Total PNL</div>
-                <div
-                  className={`text-2xl font-bold mt-1 ${
-                    (portfolioSummary.data.totalPnl || 0) >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {formatCurrency(portfolioSummary.data.totalPnl || 0)}
-                </div>
-              </BaseCard>
-
-              <BaseCard className="p-4">
-                <div className="text-sm text-gray-600">Holdings</div>
-                <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {portfolioSummary.data.totalInvestments || 0}
-                </div>
-              </BaseCard>
-            </div>
+            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} />
           ) : null}
 
           {/* Holdings Table */}
@@ -278,75 +450,11 @@ export default function PortfolioPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-2 px-2">Symbol</th>
-                      <th className="text-left py-2 px-2">Name</th>
-                      <th className="text-left py-2 px-2">Type</th>
-                      <th className="text-right py-2 px-2">Quantity</th>
-                      <th className="text-right py-2 px-2">Avg Cost</th>
-                      <th className="text-right py-2 px-2">Current Price</th>
-                      <th className="text-right py-2 px-2">Current Value</th>
-                      <th className="text-right py-2 px-2">PNL</th>
-                      <th className="text-right py-2 px-2">PNL %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {investments.map((investment) => (
-                      <tr
-                        key={investment.id}
-                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                        onClick={() =>
-                          handleOpenModal(
-                            ModalType.INVESTMENT_DETAIL,
-                            investment.id,
-                          )
-                        }
-                      >
-                        <td className="py-3 px-2 font-medium">
-                          {investment.symbol}
-                        </td>
-                        <td className="py-3 px-2">{investment.name}</td>
-                        <td className="py-3 px-2">
-                          {getInvestmentTypeLabel(investment.type)}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {formatQuantity(investment.quantity, investment.type)}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {formatCurrency(investment.averageCost || 0)}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {formatCurrency(investment.currentPrice || 0)}
-                        </td>
-                        <td className="py-3 px-2 text-right font-medium">
-                          {formatCurrency(investment.currentValue || 0)}
-                        </td>
-                        <td
-                          className={`py-3 px-2 text-right font-medium ${
-                            (investment.unrealizedPnl || 0) >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {formatCurrency(investment.unrealizedPnl || 0)}
-                        </td>
-                        <td
-                          className={`py-3 px-2 text-right font-medium ${
-                            (investment.unrealizedPnlPercent || 0) >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {formatPercent(investment.unrealizedPnlPercent || 0)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <HoldingsTable
+                investments={investments}
+                onRowClick={(id) => handleOpenModal(ModalType.INVESTMENT_DETAIL, id)}
+                onRowHover={handleRowHover}
+              />
             )}
           </BaseCard>
         </div>
@@ -356,7 +464,7 @@ export default function PortfolioPage() {
       <BaseModal
         isOpen={modalType !== null}
         onClose={handleCloseModal}
-        title={getModalTitle()}
+        title={modalTitle}
       >
         {modalType === ModalType.CREATE_WALLET && (
           <CreateWalletForm

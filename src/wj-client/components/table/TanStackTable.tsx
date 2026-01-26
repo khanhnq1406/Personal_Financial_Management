@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,7 +9,7 @@ import {
   ColumnDef,
   SortingState,
 } from "@tanstack/react-table";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import Image from "next/image";
 import { resources } from "@/app/constants";
 import { cn } from "@/lib/utils/cn";
@@ -34,9 +35,9 @@ export interface TablePaginationProps {
 }
 
 /**
- * Pagination component for tables
+ * Pagination component for tables (memoized to prevent unnecessary re-renders)
  */
-export const TablePagination = ({
+export const TablePagination = memo(({
   currentPage,
   pageSize,
   totalCount,
@@ -140,13 +141,15 @@ export const TablePagination = ({
       </div>
     </div>
   );
-};
+});
+
+TablePagination.displayName = "TablePagination";
 
 /**
- * Generic TanStack Table component with built-in sorting
+ * Generic TanStack Table component with built-in sorting (memoized to prevent unnecessary re-renders)
  * @template T - The shape of the row data
  */
-export function TanStackTable<T>({
+export const TanStackTable = memo(function TanStackTable<T>({
   data,
   columns,
   className = "",
@@ -291,4 +294,4 @@ export function TanStackTable<T>({
       </table>
     </div>
   );
-}
+}) as <T>(props: TanStackTableProps<T>) => React.ReactElement;

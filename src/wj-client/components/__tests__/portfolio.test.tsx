@@ -2,8 +2,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import PortfolioPage from "../../app/dashboard/portfolio/page";
-import { useQueryListInvestments, useQueryGetPortfolioSummary } from "@/utils/generated/hooks";
+import PortfolioPage from "../../app/dashboard/portfolio/page.old";
+import {
+  useQueryListInvestments,
+  useQueryGetPortfolioSummary,
+} from "@/utils/generated/hooks";
 
 // Mock the generated hooks
 jest.mock("@/utils/generated/hooks", () => ({
@@ -16,9 +19,10 @@ jest.mock("@/utils/generated/hooks", () => ({
 const mockedListInvestments = useQueryListInvestments as jest.MockedFunction<
   typeof useQueryListInvestments
 >;
-const mockedGetPortfolioSummary = useQueryGetPortfolioSummary as jest.MockedFunction<
-  typeof useQueryGetPortfolioSummary
->;
+const mockedGetPortfolioSummary =
+  useQueryGetPortfolioSummary as jest.MockedFunction<
+    typeof useQueryGetPortfolioSummary
+  >;
 
 // Mock Redux store
 const createMockStore = () =>
@@ -69,7 +73,7 @@ describe("Portfolio Page", () => {
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     // Should show loading spinner
@@ -141,7 +145,7 @@ describe("Portfolio Page", () => {
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     // Wait for data to load
@@ -177,11 +181,13 @@ describe("Portfolio Page", () => {
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to fetch investments/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to fetch investments/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -193,7 +199,12 @@ describe("Portfolio Page", () => {
         success: true,
         message: "Investments retrieved successfully",
         investments: [],
-        pagination: { currentPage: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
+        pagination: {
+          currentPage: 1,
+          pageSize: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
         timestamp: new Date().toISOString(),
       },
       refetch: jest.fn(),
@@ -221,12 +232,14 @@ describe("Portfolio Page", () => {
     } as any);
 
     const mockDispatch = jest.fn();
-    jest.spyOn(require("@/redux/store"), "useAppDispatch").mockReturnValue(mockDispatch);
+    jest
+      .spyOn(require("@/redux/store"), "useAppDispatch")
+      .mockReturnValue(mockDispatch);
 
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -244,7 +257,7 @@ describe("Portfolio Page", () => {
             isOpen: true,
             type: "CREATE_INVESTMENT",
           }),
-        })
+        }),
       );
     });
   });
@@ -257,7 +270,12 @@ describe("Portfolio Page", () => {
         success: true,
         message: "Investments retrieved successfully",
         investments: [],
-        pagination: { currentPage: 1, pageSize: 10, totalItems: 0, totalPages: 0 },
+        pagination: {
+          currentPage: 1,
+          pageSize: 10,
+          totalItems: 0,
+          totalPages: 0,
+        },
         timestamp: new Date().toISOString(),
       },
       refetch: jest.fn(),
@@ -287,12 +305,14 @@ describe("Portfolio Page", () => {
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
       expect(screen.getByText(/No investments yet/i)).toBeInTheDocument();
-      expect(screen.getByText(/Get started by adding your first investment/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Get started by adding your first investment/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -359,7 +379,7 @@ describe("Portfolio Page", () => {
     render(
       <TestWrapper>
         <PortfolioPage />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {

@@ -15,7 +15,7 @@ import {
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import type { AddTransactionRequest } from "@/gen/protobuf/v1/investment";
 
-interface InvestmentDetailModalProps {
+export interface InvestmentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   investmentId: number;
