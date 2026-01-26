@@ -43,7 +43,7 @@ message InvestmentTransaction {
   int32 id = 1 [json_name = "id"];
   int32 investmentId = 2 [json_name = "investmentId"];
   int32 walletId = 3 [json_name = "walletId"];
-  TransactionType type = 4 [json_name = "type"];
+  InvestmentTransactionType type = 4 [json_name = "type"];
   int64 quantity = 5 [json_name = "quantity"];  // Quantity transacted
   int64 price = 6 [json_name = "price"];  // Price per unit
   int64 cost = 7 [json_name = "cost"];  // Total cost (quantity * price + fees)
@@ -57,12 +57,12 @@ message InvestmentTransaction {
   int32 remainingQuantity = 14 [json_name = "remainingQuantity"];  // For buy lots: how much is left to sell
 }
 
-enum TransactionType {
-  TRANSACTION_TYPE_UNSPECIFIED = 0;
-  TRANSACTION_TYPE_BUY = 1;
-  TRANSACTION_TYPE_SELL = 2;
-  TRANSACTION_TYPE_DIVIDEND = 3;
-  TRANSACTION_TYPE_SPLIT = 4;
+enum InvestmentTransactionType {
+  INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED = 0;
+  INVESTMENT_TRANSACTION_TYPE_BUY = 1;
+  INVESTMENT_TRANSACTION_TYPE_SELL = 2;
+  INVESTMENT_TRANSACTION_TYPE_DIVIDEND = 3;
+  INVESTMENT_TRANSACTION_TYPE_SPLIT = 4;
 }
 
 // Portfolio summary for dashboard
@@ -123,7 +123,7 @@ service InvestmentService {
   }
 
   // Add a buy/sell transaction
-  rpc AddTransaction(AddTransactionRequest) returns (AddTransactionResponse) {
+  rpc AddInvestmentTransaction(AddTransactionRequest) returns (AddTransactionResponse) {
     option (google.api.http) = {
       post: "/api/v1/investments/{investmentId}/transactions"
       body: "*"
@@ -131,14 +131,14 @@ service InvestmentService {
   }
 
   // List transactions for an investment
-  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse) {
+  rpc ListInvestmentTransactions(ListInvestmentTransactionsRequest) returns (ListInvestmentTransactionsResponse) {
     option (google.api.http) = {
       get: "/api/v1/investments/{investmentId}/transactions"
     };
   }
 
   // Edit a transaction
-  rpc EditTransaction(EditTransactionRequest) returns (EditTransactionResponse) {
+  rpc EditInvestmentTransaction(EditInvestmentTransactionRequest) returns (EditInvestmentTransactionResponse) {
     option (google.api.http) = {
       put: "/api/v1/investment-transactions/{id}"
       body: "*"
@@ -146,7 +146,7 @@ service InvestmentService {
   }
 
   // Delete a transaction
-  rpc DeleteTransaction(DeleteTransactionRequest) returns (DeleteTransactionResponse) {
+  rpc DeleteInvestmentTransaction(DeleteInvestmentTransactionRequest) returns (DeleteInvestmentTransactionResponse) {
     option (google.api.http) = {
       delete: "/api/v1/investment-transactions/{id}"
     };
@@ -236,7 +236,7 @@ message DeleteInvestmentResponse {
 
 message AddTransactionRequest {
   int32 investmentId = 1 [json_name = "investmentId"];
-  TransactionType type = 2 [json_name = "type"];
+  InvestmentTransactionType type = 2 [json_name = "type"];
   int64 quantity = 3 [json_name = "quantity"];
   int64 price = 4 [json_name = "price"];
   int64 fees = 5 [json_name = "fees"];
@@ -252,13 +252,13 @@ message AddTransactionResponse {
   string timestamp = 5 [json_name = "timestamp"];
 }
 
-message ListTransactionsRequest {
+message ListInvestmentTransactionsRequest {
   int32 investmentId = 1 [json_name = "investmentId"];
   wealthjourney.common.v1.PaginationParams pagination = 2 [json_name = "pagination"];
-  TransactionType typeFilter = 3 [json_name = "typeFilter"];
+  InvestmentTransactionType typeFilter = 3 [json_name = "typeFilter"];
 }
 
-message ListTransactionsResponse {
+message ListInvestmentTransactionsResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   repeated InvestmentTransaction data = 3 [json_name = "data"];
@@ -266,7 +266,7 @@ message ListTransactionsResponse {
   wealthjourney.common.v1.PaginationResult pagination = 5 [json_name = "pagination"];
 }
 
-message EditTransactionRequest {
+message EditInvestmentTransactionRequest {
   int32 id = 1 [json_name = "id"];
   int64 quantity = 2 [json_name = "quantity"];
   int64 price = 3 [json_name = "price"];
@@ -275,18 +275,18 @@ message EditTransactionRequest {
   string notes = 6 [json_name = "notes"];
 }
 
-message EditTransactionResponse {
+message EditInvestmentTransactionResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   InvestmentTransaction data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
 }
 
-message DeleteTransactionRequest {
+message DeleteInvestmentTransactionRequest {
   int32 id = 1 [json_name = "id"];
 }
 
-message DeleteTransactionResponse {
+message DeleteInvestmentTransactionResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];

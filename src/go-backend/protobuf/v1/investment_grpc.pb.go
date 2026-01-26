@@ -19,17 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	InvestmentService_ListInvestments_FullMethodName     = "/wealthjourney.investment.v1.InvestmentService/ListInvestments"
-	InvestmentService_GetInvestment_FullMethodName       = "/wealthjourney.investment.v1.InvestmentService/GetInvestment"
-	InvestmentService_CreateInvestment_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/CreateInvestment"
-	InvestmentService_UpdateInvestment_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/UpdateInvestment"
-	InvestmentService_DeleteInvestment_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestment"
-	InvestmentService_AddTransaction_FullMethodName      = "/wealthjourney.investment.v1.InvestmentService/AddTransaction"
-	InvestmentService_ListTransactions_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/ListTransactions"
-	InvestmentService_EditTransaction_FullMethodName     = "/wealthjourney.investment.v1.InvestmentService/EditTransaction"
-	InvestmentService_DeleteTransaction_FullMethodName   = "/wealthjourney.investment.v1.InvestmentService/DeleteTransaction"
-	InvestmentService_GetPortfolioSummary_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/GetPortfolioSummary"
-	InvestmentService_UpdatePrices_FullMethodName        = "/wealthjourney.investment.v1.InvestmentService/UpdatePrices"
+	InvestmentService_ListInvestments_FullMethodName             = "/wealthjourney.investment.v1.InvestmentService/ListInvestments"
+	InvestmentService_GetInvestment_FullMethodName               = "/wealthjourney.investment.v1.InvestmentService/GetInvestment"
+	InvestmentService_CreateInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/CreateInvestment"
+	InvestmentService_UpdateInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/UpdateInvestment"
+	InvestmentService_DeleteInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestment"
+	InvestmentService_AddInvestmentTransaction_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/AddInvestmentTransaction"
+	InvestmentService_ListInvestmentTransactions_FullMethodName  = "/wealthjourney.investment.v1.InvestmentService/ListInvestmentTransactions"
+	InvestmentService_EditInvestmentTransaction_FullMethodName   = "/wealthjourney.investment.v1.InvestmentService/EditInvestmentTransaction"
+	InvestmentService_DeleteInvestmentTransaction_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction"
+	InvestmentService_GetPortfolioSummary_FullMethodName         = "/wealthjourney.investment.v1.InvestmentService/GetPortfolioSummary"
+	InvestmentService_UpdatePrices_FullMethodName                = "/wealthjourney.investment.v1.InvestmentService/UpdatePrices"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -47,13 +47,13 @@ type InvestmentServiceClient interface {
 	// Delete an investment
 	DeleteInvestment(ctx context.Context, in *DeleteInvestmentRequest, opts ...grpc.CallOption) (*DeleteInvestmentResponse, error)
 	// Add a buy/sell transaction
-	AddTransaction(ctx context.Context, in *AddTransactionRequest, opts ...grpc.CallOption) (*AddTransactionResponse, error)
+	AddInvestmentTransaction(ctx context.Context, in *AddTransactionRequest, opts ...grpc.CallOption) (*AddTransactionResponse, error)
 	// List transactions for an investment
-	ListTransactions(ctx context.Context, in *ListTransactionsRequest, opts ...grpc.CallOption) (*ListTransactionsResponse, error)
+	ListInvestmentTransactions(ctx context.Context, in *ListInvestmentTransactionsRequest, opts ...grpc.CallOption) (*ListInvestmentTransactionsResponse, error)
 	// Edit a transaction
-	EditTransaction(ctx context.Context, in *EditTransactionRequest, opts ...grpc.CallOption) (*EditTransactionResponse, error)
+	EditInvestmentTransaction(ctx context.Context, in *EditInvestmentTransactionRequest, opts ...grpc.CallOption) (*EditInvestmentTransactionResponse, error)
 	// Delete a transaction
-	DeleteTransaction(ctx context.Context, in *DeleteTransactionRequest, opts ...grpc.CallOption) (*DeleteTransactionResponse, error)
+	DeleteInvestmentTransaction(ctx context.Context, in *DeleteInvestmentTransactionRequest, opts ...grpc.CallOption) (*DeleteInvestmentTransactionResponse, error)
 	// Get portfolio summary
 	GetPortfolioSummary(ctx context.Context, in *GetPortfolioSummaryRequest, opts ...grpc.CallOption) (*GetPortfolioSummaryResponse, error)
 	// Update current prices (manual or automatic)
@@ -113,36 +113,36 @@ func (c *investmentServiceClient) DeleteInvestment(ctx context.Context, in *Dele
 	return out, nil
 }
 
-func (c *investmentServiceClient) AddTransaction(ctx context.Context, in *AddTransactionRequest, opts ...grpc.CallOption) (*AddTransactionResponse, error) {
+func (c *investmentServiceClient) AddInvestmentTransaction(ctx context.Context, in *AddTransactionRequest, opts ...grpc.CallOption) (*AddTransactionResponse, error) {
 	out := new(AddTransactionResponse)
-	err := c.cc.Invoke(ctx, InvestmentService_AddTransaction_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, InvestmentService_AddInvestmentTransaction_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *investmentServiceClient) ListTransactions(ctx context.Context, in *ListTransactionsRequest, opts ...grpc.CallOption) (*ListTransactionsResponse, error) {
-	out := new(ListTransactionsResponse)
-	err := c.cc.Invoke(ctx, InvestmentService_ListTransactions_FullMethodName, in, out, opts...)
+func (c *investmentServiceClient) ListInvestmentTransactions(ctx context.Context, in *ListInvestmentTransactionsRequest, opts ...grpc.CallOption) (*ListInvestmentTransactionsResponse, error) {
+	out := new(ListInvestmentTransactionsResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_ListInvestmentTransactions_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *investmentServiceClient) EditTransaction(ctx context.Context, in *EditTransactionRequest, opts ...grpc.CallOption) (*EditTransactionResponse, error) {
-	out := new(EditTransactionResponse)
-	err := c.cc.Invoke(ctx, InvestmentService_EditTransaction_FullMethodName, in, out, opts...)
+func (c *investmentServiceClient) EditInvestmentTransaction(ctx context.Context, in *EditInvestmentTransactionRequest, opts ...grpc.CallOption) (*EditInvestmentTransactionResponse, error) {
+	out := new(EditInvestmentTransactionResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_EditInvestmentTransaction_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *investmentServiceClient) DeleteTransaction(ctx context.Context, in *DeleteTransactionRequest, opts ...grpc.CallOption) (*DeleteTransactionResponse, error) {
-	out := new(DeleteTransactionResponse)
-	err := c.cc.Invoke(ctx, InvestmentService_DeleteTransaction_FullMethodName, in, out, opts...)
+func (c *investmentServiceClient) DeleteInvestmentTransaction(ctx context.Context, in *DeleteInvestmentTransactionRequest, opts ...grpc.CallOption) (*DeleteInvestmentTransactionResponse, error) {
+	out := new(DeleteInvestmentTransactionResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_DeleteInvestmentTransaction_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -182,13 +182,13 @@ type InvestmentServiceServer interface {
 	// Delete an investment
 	DeleteInvestment(context.Context, *DeleteInvestmentRequest) (*DeleteInvestmentResponse, error)
 	// Add a buy/sell transaction
-	AddTransaction(context.Context, *AddTransactionRequest) (*AddTransactionResponse, error)
+	AddInvestmentTransaction(context.Context, *AddTransactionRequest) (*AddTransactionResponse, error)
 	// List transactions for an investment
-	ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error)
+	ListInvestmentTransactions(context.Context, *ListInvestmentTransactionsRequest) (*ListInvestmentTransactionsResponse, error)
 	// Edit a transaction
-	EditTransaction(context.Context, *EditTransactionRequest) (*EditTransactionResponse, error)
+	EditInvestmentTransaction(context.Context, *EditInvestmentTransactionRequest) (*EditInvestmentTransactionResponse, error)
 	// Delete a transaction
-	DeleteTransaction(context.Context, *DeleteTransactionRequest) (*DeleteTransactionResponse, error)
+	DeleteInvestmentTransaction(context.Context, *DeleteInvestmentTransactionRequest) (*DeleteInvestmentTransactionResponse, error)
 	// Get portfolio summary
 	GetPortfolioSummary(context.Context, *GetPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error)
 	// Update current prices (manual or automatic)
@@ -215,17 +215,17 @@ func (UnimplementedInvestmentServiceServer) UpdateInvestment(context.Context, *U
 func (UnimplementedInvestmentServiceServer) DeleteInvestment(context.Context, *DeleteInvestmentRequest) (*DeleteInvestmentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInvestment not implemented")
 }
-func (UnimplementedInvestmentServiceServer) AddTransaction(context.Context, *AddTransactionRequest) (*AddTransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddTransaction not implemented")
+func (UnimplementedInvestmentServiceServer) AddInvestmentTransaction(context.Context, *AddTransactionRequest) (*AddTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddInvestmentTransaction not implemented")
 }
-func (UnimplementedInvestmentServiceServer) ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListTransactions not implemented")
+func (UnimplementedInvestmentServiceServer) ListInvestmentTransactions(context.Context, *ListInvestmentTransactionsRequest) (*ListInvestmentTransactionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListInvestmentTransactions not implemented")
 }
-func (UnimplementedInvestmentServiceServer) EditTransaction(context.Context, *EditTransactionRequest) (*EditTransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EditTransaction not implemented")
+func (UnimplementedInvestmentServiceServer) EditInvestmentTransaction(context.Context, *EditInvestmentTransactionRequest) (*EditInvestmentTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditInvestmentTransaction not implemented")
 }
-func (UnimplementedInvestmentServiceServer) DeleteTransaction(context.Context, *DeleteTransactionRequest) (*DeleteTransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteTransaction not implemented")
+func (UnimplementedInvestmentServiceServer) DeleteInvestmentTransaction(context.Context, *DeleteInvestmentTransactionRequest) (*DeleteInvestmentTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteInvestmentTransaction not implemented")
 }
 func (UnimplementedInvestmentServiceServer) GetPortfolioSummary(context.Context, *GetPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPortfolioSummary not implemented")
@@ -336,74 +336,74 @@ func _InvestmentService_DeleteInvestment_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InvestmentService_AddTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _InvestmentService_AddInvestmentTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddTransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InvestmentServiceServer).AddTransaction(ctx, in)
+		return srv.(InvestmentServiceServer).AddInvestmentTransaction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: InvestmentService_AddTransaction_FullMethodName,
+		FullMethod: InvestmentService_AddInvestmentTransaction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InvestmentServiceServer).AddTransaction(ctx, req.(*AddTransactionRequest))
+		return srv.(InvestmentServiceServer).AddInvestmentTransaction(ctx, req.(*AddTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InvestmentService_ListTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListTransactionsRequest)
+func _InvestmentService_ListInvestmentTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListInvestmentTransactionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InvestmentServiceServer).ListTransactions(ctx, in)
+		return srv.(InvestmentServiceServer).ListInvestmentTransactions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: InvestmentService_ListTransactions_FullMethodName,
+		FullMethod: InvestmentService_ListInvestmentTransactions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InvestmentServiceServer).ListTransactions(ctx, req.(*ListTransactionsRequest))
+		return srv.(InvestmentServiceServer).ListInvestmentTransactions(ctx, req.(*ListInvestmentTransactionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InvestmentService_EditTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EditTransactionRequest)
+func _InvestmentService_EditInvestmentTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditInvestmentTransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InvestmentServiceServer).EditTransaction(ctx, in)
+		return srv.(InvestmentServiceServer).EditInvestmentTransaction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: InvestmentService_EditTransaction_FullMethodName,
+		FullMethod: InvestmentService_EditInvestmentTransaction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InvestmentServiceServer).EditTransaction(ctx, req.(*EditTransactionRequest))
+		return srv.(InvestmentServiceServer).EditInvestmentTransaction(ctx, req.(*EditInvestmentTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InvestmentService_DeleteTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteTransactionRequest)
+func _InvestmentService_DeleteInvestmentTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteInvestmentTransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InvestmentServiceServer).DeleteTransaction(ctx, in)
+		return srv.(InvestmentServiceServer).DeleteInvestmentTransaction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: InvestmentService_DeleteTransaction_FullMethodName,
+		FullMethod: InvestmentService_DeleteInvestmentTransaction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InvestmentServiceServer).DeleteTransaction(ctx, req.(*DeleteTransactionRequest))
+		return srv.(InvestmentServiceServer).DeleteInvestmentTransaction(ctx, req.(*DeleteInvestmentTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -472,20 +472,20 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _InvestmentService_DeleteInvestment_Handler,
 		},
 		{
-			MethodName: "AddTransaction",
-			Handler:    _InvestmentService_AddTransaction_Handler,
+			MethodName: "AddInvestmentTransaction",
+			Handler:    _InvestmentService_AddInvestmentTransaction_Handler,
 		},
 		{
-			MethodName: "ListTransactions",
-			Handler:    _InvestmentService_ListTransactions_Handler,
+			MethodName: "ListInvestmentTransactions",
+			Handler:    _InvestmentService_ListInvestmentTransactions_Handler,
 		},
 		{
-			MethodName: "EditTransaction",
-			Handler:    _InvestmentService_EditTransaction_Handler,
+			MethodName: "EditInvestmentTransaction",
+			Handler:    _InvestmentService_EditInvestmentTransaction_Handler,
 		},
 		{
-			MethodName: "DeleteTransaction",
-			Handler:    _InvestmentService_DeleteTransaction_Handler,
+			MethodName: "DeleteInvestmentTransaction",
+			Handler:    _InvestmentService_DeleteInvestmentTransaction_Handler,
 		},
 		{
 			MethodName: "GetPortfolioSummary",

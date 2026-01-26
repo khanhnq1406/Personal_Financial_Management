@@ -93,63 +93,65 @@ export function investmentTypeToJSON(object: InvestmentType): string {
   }
 }
 
-export const TransactionType = {
-  TRANSACTION_TYPE_UNSPECIFIED: 0,
-  TRANSACTION_TYPE_BUY: 1,
-  TRANSACTION_TYPE_SELL: 2,
-  TRANSACTION_TYPE_DIVIDEND: 3,
-  TRANSACTION_TYPE_SPLIT: 4,
+export const InvestmentTransactionType = {
+  INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED: 0,
+  INVESTMENT_TRANSACTION_TYPE_BUY: 1,
+  INVESTMENT_TRANSACTION_TYPE_SELL: 2,
+  INVESTMENT_TRANSACTION_TYPE_DIVIDEND: 3,
+  INVESTMENT_TRANSACTION_TYPE_SPLIT: 4,
   UNRECOGNIZED: -1,
 } as const;
 
-export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
+export type InvestmentTransactionType = typeof InvestmentTransactionType[keyof typeof InvestmentTransactionType];
 
-export namespace TransactionType {
-  export type TRANSACTION_TYPE_UNSPECIFIED = typeof TransactionType.TRANSACTION_TYPE_UNSPECIFIED;
-  export type TRANSACTION_TYPE_BUY = typeof TransactionType.TRANSACTION_TYPE_BUY;
-  export type TRANSACTION_TYPE_SELL = typeof TransactionType.TRANSACTION_TYPE_SELL;
-  export type TRANSACTION_TYPE_DIVIDEND = typeof TransactionType.TRANSACTION_TYPE_DIVIDEND;
-  export type TRANSACTION_TYPE_SPLIT = typeof TransactionType.TRANSACTION_TYPE_SPLIT;
-  export type UNRECOGNIZED = typeof TransactionType.UNRECOGNIZED;
+export namespace InvestmentTransactionType {
+  export type INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED =
+    typeof InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED;
+  export type INVESTMENT_TRANSACTION_TYPE_BUY = typeof InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY;
+  export type INVESTMENT_TRANSACTION_TYPE_SELL = typeof InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL;
+  export type INVESTMENT_TRANSACTION_TYPE_DIVIDEND =
+    typeof InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND;
+  export type INVESTMENT_TRANSACTION_TYPE_SPLIT = typeof InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SPLIT;
+  export type UNRECOGNIZED = typeof InvestmentTransactionType.UNRECOGNIZED;
 }
 
-export function transactionTypeFromJSON(object: any): TransactionType {
+export function investmentTransactionTypeFromJSON(object: any): InvestmentTransactionType {
   switch (object) {
     case 0:
-    case "TRANSACTION_TYPE_UNSPECIFIED":
-      return TransactionType.TRANSACTION_TYPE_UNSPECIFIED;
+    case "INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED":
+      return InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED;
     case 1:
-    case "TRANSACTION_TYPE_BUY":
-      return TransactionType.TRANSACTION_TYPE_BUY;
+    case "INVESTMENT_TRANSACTION_TYPE_BUY":
+      return InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY;
     case 2:
-    case "TRANSACTION_TYPE_SELL":
-      return TransactionType.TRANSACTION_TYPE_SELL;
+    case "INVESTMENT_TRANSACTION_TYPE_SELL":
+      return InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL;
     case 3:
-    case "TRANSACTION_TYPE_DIVIDEND":
-      return TransactionType.TRANSACTION_TYPE_DIVIDEND;
+    case "INVESTMENT_TRANSACTION_TYPE_DIVIDEND":
+      return InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND;
     case 4:
-    case "TRANSACTION_TYPE_SPLIT":
-      return TransactionType.TRANSACTION_TYPE_SPLIT;
+    case "INVESTMENT_TRANSACTION_TYPE_SPLIT":
+      return InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SPLIT;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return TransactionType.UNRECOGNIZED;
+      return InvestmentTransactionType.UNRECOGNIZED;
   }
 }
 
-export function transactionTypeToJSON(object: TransactionType): string {
+export function investmentTransactionTypeToJSON(object: InvestmentTransactionType): string {
   switch (object) {
-    case TransactionType.TRANSACTION_TYPE_UNSPECIFIED:
-      return "TRANSACTION_TYPE_UNSPECIFIED";
-    case TransactionType.TRANSACTION_TYPE_BUY:
-      return "TRANSACTION_TYPE_BUY";
-    case TransactionType.TRANSACTION_TYPE_SELL:
-      return "TRANSACTION_TYPE_SELL";
-    case TransactionType.TRANSACTION_TYPE_DIVIDEND:
-      return "TRANSACTION_TYPE_DIVIDEND";
-    case TransactionType.TRANSACTION_TYPE_SPLIT:
-      return "TRANSACTION_TYPE_SPLIT";
-    case TransactionType.UNRECOGNIZED:
+    case InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED:
+      return "INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED";
+    case InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY:
+      return "INVESTMENT_TRANSACTION_TYPE_BUY";
+    case InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL:
+      return "INVESTMENT_TRANSACTION_TYPE_SELL";
+    case InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND:
+      return "INVESTMENT_TRANSACTION_TYPE_DIVIDEND";
+    case InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SPLIT:
+      return "INVESTMENT_TRANSACTION_TYPE_SPLIT";
+    case InvestmentTransactionType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -191,7 +193,7 @@ export interface InvestmentTransaction {
   id: number;
   investmentId: number;
   walletId: number;
-  type: TransactionType;
+  type: InvestmentTransactionType;
   /** Quantity transacted */
   quantity: number;
   /** Price per unit */
@@ -301,7 +303,7 @@ export interface DeleteInvestmentResponse {
 
 export interface AddTransactionRequest {
   investmentId: number;
-  type: TransactionType;
+  type: InvestmentTransactionType;
   quantity: number;
   price: number;
   fees: number;
@@ -320,13 +322,13 @@ export interface AddTransactionResponse {
   timestamp: string;
 }
 
-export interface ListTransactionsRequest {
+export interface ListInvestmentTransactionsRequest {
   investmentId: number;
   pagination: PaginationParams | undefined;
-  typeFilter: TransactionType;
+  typeFilter: InvestmentTransactionType;
 }
 
-export interface ListTransactionsResponse {
+export interface ListInvestmentTransactionsResponse {
   success: boolean;
   message: string;
   data: InvestmentTransaction[];
@@ -334,7 +336,7 @@ export interface ListTransactionsResponse {
   pagination: PaginationResult | undefined;
 }
 
-export interface EditTransactionRequest {
+export interface EditInvestmentTransactionRequest {
   id: number;
   quantity: number;
   price: number;
@@ -343,18 +345,18 @@ export interface EditTransactionRequest {
   notes: string;
 }
 
-export interface EditTransactionResponse {
+export interface EditInvestmentTransactionResponse {
   success: boolean;
   message: string;
   data: InvestmentTransaction | undefined;
   timestamp: string;
 }
 
-export interface DeleteTransactionRequest {
+export interface DeleteInvestmentTransactionRequest {
   id: number;
 }
 
-export interface DeleteTransactionResponse {
+export interface DeleteInvestmentTransactionResponse {
   success: boolean;
   message: string;
   timestamp: string;
@@ -901,7 +903,7 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
       id: isSet(object.id) ? globalThis.Number(object.id) : 0,
       investmentId: isSet(object.investmentId) ? globalThis.Number(object.investmentId) : 0,
       walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
-      type: isSet(object.type) ? transactionTypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? investmentTransactionTypeFromJSON(object.type) : 0,
       quantity: isSet(object.quantity) ? globalThis.Number(object.quantity) : 0,
       price: isSet(object.price) ? globalThis.Number(object.price) : 0,
       cost: isSet(object.cost) ? globalThis.Number(object.cost) : 0,
@@ -927,7 +929,7 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
       obj.walletId = Math.round(message.walletId);
     }
     if (message.type !== 0) {
-      obj.type = transactionTypeToJSON(message.type);
+      obj.type = investmentTransactionTypeToJSON(message.type);
     }
     if (message.quantity !== 0) {
       obj.quantity = Math.round(message.quantity);
@@ -2371,7 +2373,7 @@ export const AddTransactionRequest: MessageFns<AddTransactionRequest> = {
   fromJSON(object: any): AddTransactionRequest {
     return {
       investmentId: isSet(object.investmentId) ? globalThis.Number(object.investmentId) : 0,
-      type: isSet(object.type) ? transactionTypeFromJSON(object.type) : 0,
+      type: isSet(object.type) ? investmentTransactionTypeFromJSON(object.type) : 0,
       quantity: isSet(object.quantity) ? globalThis.Number(object.quantity) : 0,
       price: isSet(object.price) ? globalThis.Number(object.price) : 0,
       fees: isSet(object.fees) ? globalThis.Number(object.fees) : 0,
@@ -2386,7 +2388,7 @@ export const AddTransactionRequest: MessageFns<AddTransactionRequest> = {
       obj.investmentId = Math.round(message.investmentId);
     }
     if (message.type !== 0) {
-      obj.type = transactionTypeToJSON(message.type);
+      obj.type = investmentTransactionTypeToJSON(message.type);
     }
     if (message.quantity !== 0) {
       obj.quantity = Math.round(message.quantity);
@@ -2550,12 +2552,12 @@ export const AddTransactionResponse: MessageFns<AddTransactionResponse> = {
   },
 };
 
-function createBaseListTransactionsRequest(): ListTransactionsRequest {
+function createBaseListInvestmentTransactionsRequest(): ListInvestmentTransactionsRequest {
   return { investmentId: 0, pagination: undefined, typeFilter: 0 };
 }
 
-export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
-  encode(message: ListTransactionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ListInvestmentTransactionsRequest: MessageFns<ListInvestmentTransactionsRequest> = {
+  encode(message: ListInvestmentTransactionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.investmentId !== 0) {
       writer.uint32(8).int32(message.investmentId);
     }
@@ -2568,10 +2570,10 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ListTransactionsRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): ListInvestmentTransactionsRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListTransactionsRequest();
+    const message = createBaseListInvestmentTransactionsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2608,15 +2610,15 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
     return message;
   },
 
-  fromJSON(object: any): ListTransactionsRequest {
+  fromJSON(object: any): ListInvestmentTransactionsRequest {
     return {
       investmentId: isSet(object.investmentId) ? globalThis.Number(object.investmentId) : 0,
       pagination: isSet(object.pagination) ? PaginationParams.fromJSON(object.pagination) : undefined,
-      typeFilter: isSet(object.typeFilter) ? transactionTypeFromJSON(object.typeFilter) : 0,
+      typeFilter: isSet(object.typeFilter) ? investmentTransactionTypeFromJSON(object.typeFilter) : 0,
     };
   },
 
-  toJSON(message: ListTransactionsRequest): unknown {
+  toJSON(message: ListInvestmentTransactionsRequest): unknown {
     const obj: any = {};
     if (message.investmentId !== 0) {
       obj.investmentId = Math.round(message.investmentId);
@@ -2625,16 +2627,16 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
       obj.pagination = PaginationParams.toJSON(message.pagination);
     }
     if (message.typeFilter !== 0) {
-      obj.typeFilter = transactionTypeToJSON(message.typeFilter);
+      obj.typeFilter = investmentTransactionTypeToJSON(message.typeFilter);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<ListTransactionsRequest>): ListTransactionsRequest {
-    return ListTransactionsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListInvestmentTransactionsRequest>): ListInvestmentTransactionsRequest {
+    return ListInvestmentTransactionsRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListTransactionsRequest>): ListTransactionsRequest {
-    const message = createBaseListTransactionsRequest();
+  fromPartial(object: DeepPartial<ListInvestmentTransactionsRequest>): ListInvestmentTransactionsRequest {
+    const message = createBaseListInvestmentTransactionsRequest();
     message.investmentId = object.investmentId ?? 0;
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? PaginationParams.fromPartial(object.pagination)
@@ -2644,12 +2646,12 @@ export const ListTransactionsRequest: MessageFns<ListTransactionsRequest> = {
   },
 };
 
-function createBaseListTransactionsResponse(): ListTransactionsResponse {
+function createBaseListInvestmentTransactionsResponse(): ListInvestmentTransactionsResponse {
   return { success: false, message: "", data: [], timestamp: "", pagination: undefined };
 }
 
-export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
-  encode(message: ListTransactionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const ListInvestmentTransactionsResponse: MessageFns<ListInvestmentTransactionsResponse> = {
+  encode(message: ListInvestmentTransactionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
@@ -2668,10 +2670,10 @@ export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ListTransactionsResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): ListInvestmentTransactionsResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListTransactionsResponse();
+    const message = createBaseListInvestmentTransactionsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2724,7 +2726,7 @@ export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
     return message;
   },
 
-  fromJSON(object: any): ListTransactionsResponse {
+  fromJSON(object: any): ListInvestmentTransactionsResponse {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
@@ -2736,7 +2738,7 @@ export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
     };
   },
 
-  toJSON(message: ListTransactionsResponse): unknown {
+  toJSON(message: ListInvestmentTransactionsResponse): unknown {
     const obj: any = {};
     if (message.success !== false) {
       obj.success = message.success;
@@ -2756,11 +2758,11 @@ export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListTransactionsResponse>): ListTransactionsResponse {
-    return ListTransactionsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListInvestmentTransactionsResponse>): ListInvestmentTransactionsResponse {
+    return ListInvestmentTransactionsResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListTransactionsResponse>): ListTransactionsResponse {
-    const message = createBaseListTransactionsResponse();
+  fromPartial(object: DeepPartial<ListInvestmentTransactionsResponse>): ListInvestmentTransactionsResponse {
+    const message = createBaseListInvestmentTransactionsResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.data = object.data?.map((e) => InvestmentTransaction.fromPartial(e)) || [];
@@ -2772,12 +2774,12 @@ export const ListTransactionsResponse: MessageFns<ListTransactionsResponse> = {
   },
 };
 
-function createBaseEditTransactionRequest(): EditTransactionRequest {
+function createBaseEditInvestmentTransactionRequest(): EditInvestmentTransactionRequest {
   return { id: 0, quantity: 0, price: 0, fees: 0, transactionDate: 0, notes: "" };
 }
 
-export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
-  encode(message: EditTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EditInvestmentTransactionRequest: MessageFns<EditInvestmentTransactionRequest> = {
+  encode(message: EditInvestmentTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== 0) {
       writer.uint32(8).int32(message.id);
     }
@@ -2799,10 +2801,10 @@ export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EditTransactionRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): EditInvestmentTransactionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEditTransactionRequest();
+    const message = createBaseEditInvestmentTransactionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2863,7 +2865,7 @@ export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
     return message;
   },
 
-  fromJSON(object: any): EditTransactionRequest {
+  fromJSON(object: any): EditInvestmentTransactionRequest {
     return {
       id: isSet(object.id) ? globalThis.Number(object.id) : 0,
       quantity: isSet(object.quantity) ? globalThis.Number(object.quantity) : 0,
@@ -2874,7 +2876,7 @@ export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
     };
   },
 
-  toJSON(message: EditTransactionRequest): unknown {
+  toJSON(message: EditInvestmentTransactionRequest): unknown {
     const obj: any = {};
     if (message.id !== 0) {
       obj.id = Math.round(message.id);
@@ -2897,11 +2899,11 @@ export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
     return obj;
   },
 
-  create(base?: DeepPartial<EditTransactionRequest>): EditTransactionRequest {
-    return EditTransactionRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<EditInvestmentTransactionRequest>): EditInvestmentTransactionRequest {
+    return EditInvestmentTransactionRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<EditTransactionRequest>): EditTransactionRequest {
-    const message = createBaseEditTransactionRequest();
+  fromPartial(object: DeepPartial<EditInvestmentTransactionRequest>): EditInvestmentTransactionRequest {
+    const message = createBaseEditInvestmentTransactionRequest();
     message.id = object.id ?? 0;
     message.quantity = object.quantity ?? 0;
     message.price = object.price ?? 0;
@@ -2912,12 +2914,12 @@ export const EditTransactionRequest: MessageFns<EditTransactionRequest> = {
   },
 };
 
-function createBaseEditTransactionResponse(): EditTransactionResponse {
+function createBaseEditInvestmentTransactionResponse(): EditInvestmentTransactionResponse {
   return { success: false, message: "", data: undefined, timestamp: "" };
 }
 
-export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
-  encode(message: EditTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EditInvestmentTransactionResponse: MessageFns<EditInvestmentTransactionResponse> = {
+  encode(message: EditInvestmentTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
@@ -2933,10 +2935,10 @@ export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EditTransactionResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): EditInvestmentTransactionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEditTransactionResponse();
+    const message = createBaseEditInvestmentTransactionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2981,7 +2983,7 @@ export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
     return message;
   },
 
-  fromJSON(object: any): EditTransactionResponse {
+  fromJSON(object: any): EditInvestmentTransactionResponse {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
@@ -2990,7 +2992,7 @@ export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
     };
   },
 
-  toJSON(message: EditTransactionResponse): unknown {
+  toJSON(message: EditInvestmentTransactionResponse): unknown {
     const obj: any = {};
     if (message.success !== false) {
       obj.success = message.success;
@@ -3007,11 +3009,11 @@ export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
     return obj;
   },
 
-  create(base?: DeepPartial<EditTransactionResponse>): EditTransactionResponse {
-    return EditTransactionResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<EditInvestmentTransactionResponse>): EditInvestmentTransactionResponse {
+    return EditInvestmentTransactionResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<EditTransactionResponse>): EditTransactionResponse {
-    const message = createBaseEditTransactionResponse();
+  fromPartial(object: DeepPartial<EditInvestmentTransactionResponse>): EditInvestmentTransactionResponse {
+    const message = createBaseEditInvestmentTransactionResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.data = (object.data !== undefined && object.data !== null)
@@ -3022,22 +3024,22 @@ export const EditTransactionResponse: MessageFns<EditTransactionResponse> = {
   },
 };
 
-function createBaseDeleteTransactionRequest(): DeleteTransactionRequest {
+function createBaseDeleteInvestmentTransactionRequest(): DeleteInvestmentTransactionRequest {
   return { id: 0 };
 }
 
-export const DeleteTransactionRequest: MessageFns<DeleteTransactionRequest> = {
-  encode(message: DeleteTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DeleteInvestmentTransactionRequest: MessageFns<DeleteInvestmentTransactionRequest> = {
+  encode(message: DeleteInvestmentTransactionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== 0) {
       writer.uint32(8).int32(message.id);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteTransactionRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteInvestmentTransactionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteTransactionRequest();
+    const message = createBaseDeleteInvestmentTransactionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3058,11 +3060,11 @@ export const DeleteTransactionRequest: MessageFns<DeleteTransactionRequest> = {
     return message;
   },
 
-  fromJSON(object: any): DeleteTransactionRequest {
+  fromJSON(object: any): DeleteInvestmentTransactionRequest {
     return { id: isSet(object.id) ? globalThis.Number(object.id) : 0 };
   },
 
-  toJSON(message: DeleteTransactionRequest): unknown {
+  toJSON(message: DeleteInvestmentTransactionRequest): unknown {
     const obj: any = {};
     if (message.id !== 0) {
       obj.id = Math.round(message.id);
@@ -3070,22 +3072,22 @@ export const DeleteTransactionRequest: MessageFns<DeleteTransactionRequest> = {
     return obj;
   },
 
-  create(base?: DeepPartial<DeleteTransactionRequest>): DeleteTransactionRequest {
-    return DeleteTransactionRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<DeleteInvestmentTransactionRequest>): DeleteInvestmentTransactionRequest {
+    return DeleteInvestmentTransactionRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DeleteTransactionRequest>): DeleteTransactionRequest {
-    const message = createBaseDeleteTransactionRequest();
+  fromPartial(object: DeepPartial<DeleteInvestmentTransactionRequest>): DeleteInvestmentTransactionRequest {
+    const message = createBaseDeleteInvestmentTransactionRequest();
     message.id = object.id ?? 0;
     return message;
   },
 };
 
-function createBaseDeleteTransactionResponse(): DeleteTransactionResponse {
+function createBaseDeleteInvestmentTransactionResponse(): DeleteInvestmentTransactionResponse {
   return { success: false, message: "", timestamp: "" };
 }
 
-export const DeleteTransactionResponse: MessageFns<DeleteTransactionResponse> = {
-  encode(message: DeleteTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DeleteInvestmentTransactionResponse: MessageFns<DeleteInvestmentTransactionResponse> = {
+  encode(message: DeleteInvestmentTransactionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.success !== false) {
       writer.uint32(8).bool(message.success);
     }
@@ -3098,10 +3100,10 @@ export const DeleteTransactionResponse: MessageFns<DeleteTransactionResponse> = 
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteTransactionResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteInvestmentTransactionResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteTransactionResponse();
+    const message = createBaseDeleteInvestmentTransactionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3138,7 +3140,7 @@ export const DeleteTransactionResponse: MessageFns<DeleteTransactionResponse> = 
     return message;
   },
 
-  fromJSON(object: any): DeleteTransactionResponse {
+  fromJSON(object: any): DeleteInvestmentTransactionResponse {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
@@ -3146,7 +3148,7 @@ export const DeleteTransactionResponse: MessageFns<DeleteTransactionResponse> = 
     };
   },
 
-  toJSON(message: DeleteTransactionResponse): unknown {
+  toJSON(message: DeleteInvestmentTransactionResponse): unknown {
     const obj: any = {};
     if (message.success !== false) {
       obj.success = message.success;
@@ -3160,11 +3162,11 @@ export const DeleteTransactionResponse: MessageFns<DeleteTransactionResponse> = 
     return obj;
   },
 
-  create(base?: DeepPartial<DeleteTransactionResponse>): DeleteTransactionResponse {
-    return DeleteTransactionResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<DeleteInvestmentTransactionResponse>): DeleteInvestmentTransactionResponse {
+    return DeleteInvestmentTransactionResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DeleteTransactionResponse>): DeleteTransactionResponse {
-    const message = createBaseDeleteTransactionResponse();
+  fromPartial(object: DeepPartial<DeleteInvestmentTransactionResponse>): DeleteInvestmentTransactionResponse {
+    const message = createBaseDeleteInvestmentTransactionResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
     message.timestamp = object.timestamp ?? "";

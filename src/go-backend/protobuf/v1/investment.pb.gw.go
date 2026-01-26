@@ -238,7 +238,7 @@ func local_request_InvestmentService_DeleteInvestment_0(ctx context.Context, mar
 	return msg, metadata, err
 }
 
-func request_InvestmentService_AddTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_InvestmentService_AddInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq AddTransactionRequest
 		metadata runtime.ServerMetadata
@@ -258,11 +258,11 @@ func request_InvestmentService_AddTransaction_0(ctx context.Context, marshaler r
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "investmentId", err)
 	}
-	msg, err := client.AddTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.AddInvestmentTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_InvestmentService_AddTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_InvestmentService_AddInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq AddTransactionRequest
 		metadata runtime.ServerMetadata
@@ -279,15 +279,15 @@ func local_request_InvestmentService_AddTransaction_0(ctx context.Context, marsh
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "investmentId", err)
 	}
-	msg, err := server.AddTransaction(ctx, &protoReq)
+	msg, err := server.AddInvestmentTransaction(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-var filter_InvestmentService_ListTransactions_0 = &utilities.DoubleArray{Encoding: map[string]int{"investmentId": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+var filter_InvestmentService_ListInvestmentTransactions_0 = &utilities.DoubleArray{Encoding: map[string]int{"investmentId": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
-func request_InvestmentService_ListTransactions_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_InvestmentService_ListInvestmentTransactions_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq ListTransactionsRequest
+		protoReq ListInvestmentTransactionsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -305,16 +305,16 @@ func request_InvestmentService_ListTransactions_0(ctx context.Context, marshaler
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InvestmentService_ListTransactions_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InvestmentService_ListInvestmentTransactions_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := client.ListTransactions(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListInvestmentTransactions(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_InvestmentService_ListTransactions_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_InvestmentService_ListInvestmentTransactions_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq ListTransactionsRequest
+		protoReq ListInvestmentTransactionsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -329,16 +329,16 @@ func local_request_InvestmentService_ListTransactions_0(ctx context.Context, mar
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InvestmentService_ListTransactions_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_InvestmentService_ListInvestmentTransactions_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := server.ListTransactions(ctx, &protoReq)
+	msg, err := server.ListInvestmentTransactions(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_InvestmentService_EditTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_InvestmentService_EditInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq EditTransactionRequest
+		protoReq EditInvestmentTransactionRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -356,13 +356,13 @@ func request_InvestmentService_EditTransaction_0(ctx context.Context, marshaler 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := client.EditTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.EditInvestmentTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_InvestmentService_EditTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_InvestmentService_EditInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq EditTransactionRequest
+		protoReq EditInvestmentTransactionRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -377,13 +377,13 @@ func local_request_InvestmentService_EditTransaction_0(ctx context.Context, mars
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.EditTransaction(ctx, &protoReq)
+	msg, err := server.EditInvestmentTransaction(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_InvestmentService_DeleteTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_InvestmentService_DeleteInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, client InvestmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq DeleteTransactionRequest
+		protoReq DeleteInvestmentTransactionRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -398,13 +398,13 @@ func request_InvestmentService_DeleteTransaction_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := client.DeleteTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteInvestmentTransaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_InvestmentService_DeleteTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_InvestmentService_DeleteInvestmentTransaction_0(ctx context.Context, marshaler runtime.Marshaler, server InvestmentServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq DeleteTransactionRequest
+		protoReq DeleteInvestmentTransactionRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -416,7 +416,7 @@ func local_request_InvestmentService_DeleteTransaction_0(ctx context.Context, ma
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.DeleteTransaction(ctx, &protoReq)
+	msg, err := server.DeleteInvestmentTransaction(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -592,85 +592,85 @@ func RegisterInvestmentServiceHandlerServer(ctx context.Context, mux *runtime.Se
 		}
 		forward_InvestmentService_DeleteInvestment_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_InvestmentService_AddTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_InvestmentService_AddInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/AddTransaction", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/AddInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InvestmentService_AddTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InvestmentService_AddInvestmentTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_AddTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_AddInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_InvestmentService_ListTransactions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_InvestmentService_ListInvestmentTransactions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/ListTransactions", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/ListInvestmentTransactions", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InvestmentService_ListTransactions_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InvestmentService_ListInvestmentTransactions_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_ListTransactions_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_ListInvestmentTransactions_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_InvestmentService_EditTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_InvestmentService_EditInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/EditTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/EditInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InvestmentService_EditTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InvestmentService_EditInvestmentTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_EditTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_EditInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_InvestmentService_DeleteTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_InvestmentService_DeleteInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/DeleteTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_InvestmentService_DeleteTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_InvestmentService_DeleteInvestmentTransaction_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_DeleteTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_DeleteInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_InvestmentService_GetPortfolioSummary_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -837,73 +837,73 @@ func RegisterInvestmentServiceHandlerClient(ctx context.Context, mux *runtime.Se
 		}
 		forward_InvestmentService_DeleteInvestment_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_InvestmentService_AddTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_InvestmentService_AddInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/AddTransaction", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/AddInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InvestmentService_AddTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InvestmentService_AddInvestmentTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_AddTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_AddInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_InvestmentService_ListTransactions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_InvestmentService_ListInvestmentTransactions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/ListTransactions", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/ListInvestmentTransactions", runtime.WithHTTPPathPattern("/api/v1/investments/{investmentId}/transactions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InvestmentService_ListTransactions_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InvestmentService_ListInvestmentTransactions_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_ListTransactions_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_ListInvestmentTransactions_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_InvestmentService_EditTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_InvestmentService_EditInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/EditTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/EditInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InvestmentService_EditTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InvestmentService_EditInvestmentTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_EditTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_EditInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_InvestmentService_DeleteTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_InvestmentService_DeleteInvestmentTransaction_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/DeleteTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction", runtime.WithHTTPPathPattern("/api/v1/investment-transactions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_InvestmentService_DeleteTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_InvestmentService_DeleteInvestmentTransaction_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_InvestmentService_DeleteTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_InvestmentService_DeleteInvestmentTransaction_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_InvestmentService_GetPortfolioSummary_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -943,29 +943,29 @@ func RegisterInvestmentServiceHandlerClient(ctx context.Context, mux *runtime.Se
 }
 
 var (
-	pattern_InvestmentService_ListInvestments_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "investments"}, ""))
-	pattern_InvestmentService_GetInvestment_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
-	pattern_InvestmentService_CreateInvestment_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "investments"}, ""))
-	pattern_InvestmentService_UpdateInvestment_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
-	pattern_InvestmentService_DeleteInvestment_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
-	pattern_InvestmentService_AddTransaction_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "investments", "investmentId", "transactions"}, ""))
-	pattern_InvestmentService_ListTransactions_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "investments", "investmentId", "transactions"}, ""))
-	pattern_InvestmentService_EditTransaction_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investment-transactions", "id"}, ""))
-	pattern_InvestmentService_DeleteTransaction_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investment-transactions", "id"}, ""))
-	pattern_InvestmentService_GetPortfolioSummary_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "portfolio-summary"}, ""))
-	pattern_InvestmentService_UpdatePrices_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "investments", "update-prices"}, ""))
+	pattern_InvestmentService_ListInvestments_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "investments"}, ""))
+	pattern_InvestmentService_GetInvestment_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
+	pattern_InvestmentService_CreateInvestment_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "investments"}, ""))
+	pattern_InvestmentService_UpdateInvestment_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
+	pattern_InvestmentService_DeleteInvestment_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investments", "id"}, ""))
+	pattern_InvestmentService_AddInvestmentTransaction_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "investments", "investmentId", "transactions"}, ""))
+	pattern_InvestmentService_ListInvestmentTransactions_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "investments", "investmentId", "transactions"}, ""))
+	pattern_InvestmentService_EditInvestmentTransaction_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investment-transactions", "id"}, ""))
+	pattern_InvestmentService_DeleteInvestmentTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "investment-transactions", "id"}, ""))
+	pattern_InvestmentService_GetPortfolioSummary_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "wallets", "walletId", "portfolio-summary"}, ""))
+	pattern_InvestmentService_UpdatePrices_0                = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "investments", "update-prices"}, ""))
 )
 
 var (
-	forward_InvestmentService_ListInvestments_0     = runtime.ForwardResponseMessage
-	forward_InvestmentService_GetInvestment_0       = runtime.ForwardResponseMessage
-	forward_InvestmentService_CreateInvestment_0    = runtime.ForwardResponseMessage
-	forward_InvestmentService_UpdateInvestment_0    = runtime.ForwardResponseMessage
-	forward_InvestmentService_DeleteInvestment_0    = runtime.ForwardResponseMessage
-	forward_InvestmentService_AddTransaction_0      = runtime.ForwardResponseMessage
-	forward_InvestmentService_ListTransactions_0    = runtime.ForwardResponseMessage
-	forward_InvestmentService_EditTransaction_0     = runtime.ForwardResponseMessage
-	forward_InvestmentService_DeleteTransaction_0   = runtime.ForwardResponseMessage
-	forward_InvestmentService_GetPortfolioSummary_0 = runtime.ForwardResponseMessage
-	forward_InvestmentService_UpdatePrices_0        = runtime.ForwardResponseMessage
+	forward_InvestmentService_ListInvestments_0             = runtime.ForwardResponseMessage
+	forward_InvestmentService_GetInvestment_0               = runtime.ForwardResponseMessage
+	forward_InvestmentService_CreateInvestment_0            = runtime.ForwardResponseMessage
+	forward_InvestmentService_UpdateInvestment_0            = runtime.ForwardResponseMessage
+	forward_InvestmentService_DeleteInvestment_0            = runtime.ForwardResponseMessage
+	forward_InvestmentService_AddInvestmentTransaction_0    = runtime.ForwardResponseMessage
+	forward_InvestmentService_ListInvestmentTransactions_0  = runtime.ForwardResponseMessage
+	forward_InvestmentService_EditInvestmentTransaction_0   = runtime.ForwardResponseMessage
+	forward_InvestmentService_DeleteInvestmentTransaction_0 = runtime.ForwardResponseMessage
+	forward_InvestmentService_GetPortfolioSummary_0         = runtime.ForwardResponseMessage
+	forward_InvestmentService_UpdatePrices_0                = runtime.ForwardResponseMessage
 )
