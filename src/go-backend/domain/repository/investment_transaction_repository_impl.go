@@ -6,8 +6,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
 	apperrors "wealthjourney/pkg/errors"
-
-	"gorm.io/gorm"
+	investmentv1 "wealthjourney/protobuf/v1"
 )
 
 // investmentTransactionRepository implements InvestmentTransactionRepository using GORM.
@@ -56,7 +55,7 @@ func (r *investmentTransactionRepository) GetByIDForUser(ctx context.Context, tx
 }
 
 // ListByInvestmentID retrieves all transactions for an investment with pagination.
-func (r *investmentTransactionRepository) ListByInvestmentID(ctx context.Context, investmentID int32, typeFilter *models.InvestmentTransactionType, opts ListOptions) ([]*models.InvestmentTransaction, int, error) {
+func (r *investmentTransactionRepository) ListByInvestmentID(ctx context.Context, investmentID int32, typeFilter *investmentv1.InvestmentTransactionType, opts ListOptions) ([]*models.InvestmentTransaction, int, error) {
 	var transactions []*models.InvestmentTransaction
 	var total int64
 

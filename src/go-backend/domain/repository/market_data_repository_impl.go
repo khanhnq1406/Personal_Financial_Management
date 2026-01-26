@@ -7,8 +7,6 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
 	apperrors "wealthjourney/pkg/errors"
-
-	"gorm.io/gorm"
 )
 
 // marketDataRepository implements MarketDataRepository using GORM.

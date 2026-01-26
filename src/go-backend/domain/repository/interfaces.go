@@ -224,3 +224,21 @@ type BudgetItemRepository interface {
 	// CountByBudgetID returns the number of budget items for a budget.
 	CountByBudgetID(ctx context.Context, budgetID int32) (int, error)
 }
+
+// MarketDataRepository defines the interface for market data operations.
+type MarketDataRepository interface {
+	// GetBySymbolAndCurrency retrieves the latest market data for a symbol.
+	GetBySymbolAndCurrency(ctx context.Context, symbol, currency string) (*models.MarketData, error)
+
+	// Create creates a new market data entry.
+	Create(ctx context.Context, data *models.MarketData) error
+
+	// Update updates an existing market data entry.
+	Update(ctx context.Context, data *models.MarketData) error
+
+	// Delete soft deletes a market data entry by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// List retrieves market data with pagination.
+	List(ctx context.Context, opts ListOptions) ([]*models.MarketData, int, error)
+}

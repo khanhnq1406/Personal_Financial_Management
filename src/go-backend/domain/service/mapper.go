@@ -4,6 +4,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/types"
 	protobufv1 "wealthjourney/protobuf/v1"
+	investmentv1 "wealthjourney/protobuf/v1"
 )
 
 // WalletMapper handles conversion between domain models and proto types.
@@ -182,6 +183,105 @@ func (m *BudgetMapper) ModelSliceToProtoItems(items []*models.BudgetItem) []*pro
 // PaginationResultToProto converts service PaginationResult to proto.
 func (m *BudgetMapper) PaginationResultToProto(result types.PaginationResult) *protobufv1.PaginationResult {
 	return &protobufv1.PaginationResult{
+		Page:       int32(result.Page),
+		PageSize:   int32(result.PageSize),
+		TotalCount: int32(result.TotalCount),
+		TotalPages: int32(result.TotalPages),
+	}
+}
+
+// InvestmentMapper handles conversion between investment domain models and proto types.
+type InvestmentMapper struct{}
+
+// NewInvestmentMapper creates a new InvestmentMapper.
+func NewInvestmentMapper() *InvestmentMapper {
+	return &InvestmentMapper{}
+}
+
+// ModelToProto converts an Investment domain model to proto Investment type.
+func (m *InvestmentMapper) ModelToProto(investment *models.Investment) *investmentv1.Investment {
+	if investment == nil {
+		return nil
+	}
+
+	return &investmentv1.Investment{
+		Id:                   investment.ID,
+		WalletId:             investment.WalletID,
+		Symbol:               investment.Symbol,
+		Name:                 investment.Name,
+		Type:                 investment.Type,
+		Quantity:             investment.Quantity,
+		AverageCost:          investment.AverageCost,
+		TotalCost:            investment.TotalCost,
+		Currency:             investment.Currency,
+		CurrentPrice:         investment.CurrentPrice,
+		CurrentValue:         investment.CurrentValue,
+		UnrealizedPnl:        investment.UnrealizedPNL,
+		UnrealizedPnlPercent: investment.UnrealizedPNLPercent,
+		RealizedPnl:          investment.RealizedPNL,
+		CreatedAt:            investment.CreatedAt.Unix(),
+		UpdatedAt:            investment.UpdatedAt.Unix(),
+	}
+}
+
+// ModelSliceToProto converts a slice of Investment models to proto Investments.
+func (m *InvestmentMapper) ModelSliceToProto(investments []*models.Investment) []*investmentv1.Investment {
+	if investments == nil {
+		return nil
+	}
+
+	result := make([]*investmentv1.Investment, len(investments))
+	for i, inv := range investments {
+		result[i] = m.ModelToProto(inv)
+	}
+	return result
+}
+
+// TransactionToProto converts an InvestmentTransaction domain model to proto type.
+func (m *InvestmentMapper) TransactionToProto(tx *models.InvestmentTransaction) *investmentv1.InvestmentTransaction {
+	if tx == nil {
+		return nil
+	}
+
+	var lotID int32
+	if tx.LotID != nil {
+		lotID = *tx.LotID
+	}
+
+	return &investmentv1.InvestmentTransaction{
+		Id:                tx.ID,
+		InvestmentId:      tx.InvestmentID,
+		WalletId:          tx.WalletID,
+		Type:              tx.Type,
+		Quantity:          tx.Quantity,
+		Price:             tx.Price,
+		Cost:              tx.Cost,
+		Fees:              tx.Fees,
+		TransactionDate:   tx.TransactionDate.Unix(),
+		Notes:             tx.Notes,
+		LotId:             lotID,
+		RemainingQuantity: int32(tx.RemainingQuantity),
+		CreatedAt:         tx.CreatedAt.Unix(),
+		UpdatedAt:         tx.UpdatedAt.Unix(),
+	}
+}
+
+// TransactionSliceToProto converts a slice of InvestmentTransaction models to proto.
+func (m *InvestmentMapper) TransactionSliceToProto(transactions []*models.InvestmentTransaction) []*investmentv1.InvestmentTransaction {
+	if transactions == nil {
+		return nil
+	}
+
+	result := make([]*investmentv1.InvestmentTransaction, len(transactions))
+	for i, tx := range transactions {
+		result[i] = m.TransactionToProto(tx)
+	}
+	return result
+}
+
+// PaginationResultToProto converts service PaginationResult to proto.
+func (m *InvestmentMapper) PaginationResultToProto(result types.PaginationResult) *investmentv1.PaginationResult {
+	return &investmentv1.PaginationResult{
 		Page:       int32(result.Page),
 		PageSize:   int32(result.PageSize),
 		TotalCount: int32(result.TotalCount),
