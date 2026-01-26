@@ -1,0 +1,316 @@
+syntax = "proto3";
+
+package wealthjourney.investment.v1;
+
+import "protobuf/v1/common.proto";
+import "google/api/annotations.proto";
+
+option go_package = "protobuf/v1";
+
+// Investment represents an individual holding within an investment wallet
+message Investment {
+  int32 id = 1 [json_name = "id"];
+  int32 walletId = 2 [json_name = "walletId"];
+  string symbol = 3 [json_name = "symbol"];  // e.g., "BTC", "AAPL", "VFINX"
+  string name = 4 [json_name = "name"];  // e.g., "Bitcoin", "Apple Inc.", "Vanguard 500 Index"
+  InvestmentType type = 5 [json_name = "type"];
+  int64 quantity = 6 [json_name = "quantity"];  // in smallest units (satoshis for crypto, shares for stocks * 10000)
+  int64 averageCost = 7 [json_name = "averageCost"];  // Average cost per unit in currency's smallest unit
+  int64 totalCost = 8 [json_name = "totalCost"];  // Total cost basis (quantity * average_cost)
+  string currency = 9 [json_name = "currency"];  // ISO 4217 code
+  int64 currentPrice = 10 [json_name = "currentPrice"];  // Latest market price (0 if not available)
+  int64 currentValue = 11 [json_name = "currentValue"];  // quantity * current_price
+  int64 unrealizedPnl = 12 [json_name = "unrealizedPnl"];  // current_value - total_cost
+  double unrealizedPnlPercent = 13 [json_name = "unrealizedPnlPercent"];  // ((current_value - total_cost) / total_cost) * 100
+  int64 realizedPnl = 14 [json_name = "realizedPnl"];  // From sold positions
+  int64 createdAt = 15 [json_name = "createdAt"];
+  int64 updatedAt = 16 [json_name = "updatedAt"];
+}
+
+enum InvestmentType {
+  INVESTMENT_TYPE_UNSPECIFIED = 0;
+  INVESTMENT_TYPE_CRYPTOCURRENCY = 1;
+  INVESTMENT_TYPE_STOCK = 2;
+  INVESTMENT_TYPE_ETF = 3;
+  INVESTMENT_TYPE_MUTUAL_FUND = 4;
+  INVESTMENT_TYPE_BOND = 5;
+  INVESTMENT_TYPE_COMMODITY = 6;
+  INVESTMENT_TYPE_OTHER = 7;
+}
+
+// InvestmentTransaction represents a buy or sell transaction
+message InvestmentTransaction {
+  int32 id = 1 [json_name = "id"];
+  int32 investmentId = 2 [json_name = "investmentId"];
+  int32 walletId = 3 [json_name = "walletId"];
+  TransactionType type = 4 [json_name = "type"];
+  int64 quantity = 5 [json_name = "quantity"];  // Quantity transacted
+  int64 price = 6 [json_name = "price"];  // Price per unit
+  int64 cost = 7 [json_name = "cost"];  // Total cost (quantity * price + fees)
+  int64 fees = 8 [json_name = "fees"];  // Transaction fees
+  int64 transactionDate = 9 [json_name = "transactionDate"];  // Unix timestamp
+  string notes = 10 [json_name = "notes"];
+  int64 createdAt = 11 [json_name = "createdAt"];
+  int64 updatedAt = 12 [json_name = "updatedAt"];
+  // Lot tracking for FIFO
+  int32 lotId = 13 [json_name = "lotId"];  // ID of the lot this transaction affects
+  int32 remainingQuantity = 14 [json_name = "remainingQuantity"];  // For buy lots: how much is left to sell
+}
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  TRANSACTION_TYPE_BUY = 1;
+  TRANSACTION_TYPE_SELL = 2;
+  TRANSACTION_TYPE_DIVIDEND = 3;
+  TRANSACTION_TYPE_SPLIT = 4;
+}
+
+// Portfolio summary for dashboard
+message PortfolioSummary {
+  int64 totalValue = 1 [json_name = "totalValue"];
+  int64 totalCost = 2 [json_name = "totalCost"];
+  int64 totalPnl = 3 [json_name = "totalPnl"];
+  double totalPnlPercent = 4 [json_name = "totalPnlPercent"];
+  int64 realizedPnl = 5 [json_name = "realizedPnl"];
+  int64 unrealizedPnl = 6 [json_name = "unrealizedPnl"];
+  int32 totalInvestments = 7 [json_name = "totalInvestments"];
+  repeated InvestmentByType investmentsByType = 8 [json_name = "investmentsByType"];
+}
+
+message InvestmentByType {
+  InvestmentType type = 1 [json_name = "type"];
+  int64 totalValue = 2 [json_name = "totalValue"];
+  int32 count = 3 [json_name = "count"];
+}
+
+// Service definition
+service InvestmentService {
+  // List all investments in a wallet
+  rpc ListInvestments(ListInvestmentsRequest) returns (ListInvestmentsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/{walletId}/investments"
+    };
+  }
+
+  // Get a specific investment
+  rpc GetInvestment(GetInvestmentRequest) returns (GetInvestmentResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/{id}"
+    };
+  }
+
+  // Create a new investment holding
+  rpc CreateInvestment(CreateInvestmentRequest) returns (CreateInvestmentResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/investments"
+      body: "*"
+    };
+  }
+
+  // Update investment details
+  rpc UpdateInvestment(UpdateInvestmentRequest) returns (UpdateInvestmentResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/investments/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete an investment
+  rpc DeleteInvestment(DeleteInvestmentRequest) returns (DeleteInvestmentResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/investments/{id}"
+    };
+  }
+
+  // Add a buy/sell transaction
+  rpc AddTransaction(AddTransactionRequest) returns (AddTransactionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/investments/{investmentId}/transactions"
+      body: "*"
+    };
+  }
+
+  // List transactions for an investment
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/{investmentId}/transactions"
+    };
+  }
+
+  // Edit a transaction
+  rpc EditTransaction(EditTransactionRequest) returns (EditTransactionResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/investment-transactions/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete a transaction
+  rpc DeleteTransaction(DeleteTransactionRequest) returns (DeleteTransactionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/investment-transactions/{id}"
+    };
+  }
+
+  // Get portfolio summary
+  rpc GetPortfolioSummary(GetPortfolioSummaryRequest) returns (GetPortfolioSummaryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/wallets/{walletId}/portfolio-summary"
+    };
+  }
+
+  // Update current prices (manual or automatic)
+  rpc UpdatePrices(UpdatePricesRequest) returns (UpdatePricesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/investments/update-prices"
+      body: "*"
+    };
+  }
+}
+
+// Request/Response messages
+message ListInvestmentsRequest {
+  int32 walletId = 1 [json_name = "walletId"];
+  wealthjourney.common.v1.PaginationParams pagination = 2 [json_name = "pagination"];
+  InvestmentType typeFilter = 3 [json_name = "typeFilter"];  // Optional filter by type
+}
+
+message ListInvestmentsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Investment data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+  wealthjourney.common.v1.PaginationResult pagination = 5 [json_name = "pagination"];
+}
+
+message GetInvestmentRequest {
+  int32 id = 1 [json_name = "id"];
+}
+
+message GetInvestmentResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Investment data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message CreateInvestmentRequest {
+  int32 walletId = 1 [json_name = "walletId"];
+  string symbol = 2 [json_name = "symbol"];
+  string name = 3 [json_name = "name"];
+  InvestmentType type = 4 [json_name = "type"];
+  int64 initialQuantity = 5 [json_name = "initialQuantity"];
+  int64 initialCost = 6 [json_name = "initialCost"];
+  string currency = 7 [json_name = "currency"];
+}
+
+message CreateInvestmentResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Investment data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdateInvestmentRequest {
+  int32 id = 1 [json_name = "id"];
+  string name = 2 [json_name = "name"];
+  int64 currentPrice = 3 [json_name = "currentPrice"];  // Manual price override
+}
+
+message UpdateInvestmentResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  Investment data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteInvestmentRequest {
+  int32 id = 1 [json_name = "id"];
+}
+
+message DeleteInvestmentResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message AddTransactionRequest {
+  int32 investmentId = 1 [json_name = "investmentId"];
+  TransactionType type = 2 [json_name = "type"];
+  int64 quantity = 3 [json_name = "quantity"];
+  int64 price = 4 [json_name = "price"];
+  int64 fees = 5 [json_name = "fees"];
+  int64 transactionDate = 6 [json_name = "transactionDate"];
+  string notes = 7 [json_name = "notes"];
+}
+
+message AddTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  InvestmentTransaction data = 3 [json_name = "data"];
+  Investment updatedInvestment = 4 [json_name = "updatedInvestment"];  // Investment with updated quantities
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ListTransactionsRequest {
+  int32 investmentId = 1 [json_name = "investmentId"];
+  wealthjourney.common.v1.PaginationParams pagination = 2 [json_name = "pagination"];
+  TransactionType typeFilter = 3 [json_name = "typeFilter"];
+}
+
+message ListTransactionsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated InvestmentTransaction data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+  wealthjourney.common.v1.PaginationResult pagination = 5 [json_name = "pagination"];
+}
+
+message EditTransactionRequest {
+  int32 id = 1 [json_name = "id"];
+  int64 quantity = 2 [json_name = "quantity"];
+  int64 price = 3 [json_name = "price"];
+  int64 fees = 4 [json_name = "fees"];
+  int64 transactionDate = 5 [json_name = "transactionDate"];
+  string notes = 6 [json_name = "notes"];
+}
+
+message EditTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  InvestmentTransaction data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteTransactionRequest {
+  int32 id = 1 [json_name = "id"];
+}
+
+message DeleteTransactionResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message GetPortfolioSummaryRequest {
+  int32 walletId = 1 [json_name = "walletId"];
+}
+
+message GetPortfolioSummaryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  PortfolioSummary data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdatePricesRequest {
+  repeated int32 investmentIds = 1 [json_name = "investmentIds"];  // Empty = update all
+  bool forceRefresh = 2 [json_name = "forceRefresh"];  // Force API call even if recently updated
+}
+
+message UpdatePricesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Investment updatedInvestments = 3 [json_name = "updatedInvestments"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
