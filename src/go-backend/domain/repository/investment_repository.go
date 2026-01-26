@@ -1,0 +1,67 @@
+package repository
+
+import (
+	"context"
+
+	"wealthjourney/src/go-backend/domain/models"
+	investmentv1 "wealthjourney/src/go-backend/protobuf/v1/investment/v1"
+	"wealthjourney/src/go-backend/pkg/types"
+)
+
+// InvestmentRepository defines the interface for investment data operations.
+type InvestmentRepository interface {
+	// Create creates a new investment.
+	Create(ctx context.Context, investment *models.Investment) error
+
+	// GetByID retrieves an investment by ID.
+	GetByID(ctx context.Context, id int32) (*models.Investment, error)
+
+	// GetByIDForUser retrieves an investment by ID, ensuring it belongs to the user's wallet.
+	GetByIDForUser(ctx context.Context, investmentID, userID int32) (*models.Investment, error)
+
+	// GetByWalletAndSymbol retrieves an investment by wallet and symbol.
+	GetByWalletAndSymbol(ctx context.Context, walletID int32, symbol string) (*models.Investment, error)
+
+	// ListByUserID retrieves all investments for a user (via their wallets).
+	ListByUserID(ctx context.Context, userID int32, pagination *types.Pagination) ([]*models.Investment, error)
+
+	// ListByWalletID retrieves all investments in a wallet.
+	ListByWalletID(ctx context.Context, walletID int32, pagination *types.Pagination, typeFilter investmentv1.InvestmentType) ([]*models.Investment, error)
+
+	// Update updates an investment.
+	Update(ctx context.Context, investment *models.Investment) error
+
+	// Delete soft deletes an investment by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// UpdatePrices updates current prices for multiple investments.
+	UpdatePrices(ctx context.Context, updates []PriceUpdate) error
+
+	// GetPortfolioSummary calculates summary stats for a wallet.
+	GetPortfolioSummary(ctx context.Context, walletID int32) (*PortfolioSummary, error)
+}
+
+// PriceUpdate represents a price update for an investment.
+type PriceUpdate struct {
+	InvestmentID int32
+	Price        int64
+	Timestamp    int64
+}
+
+// PortfolioSummary represents aggregated portfolio statistics.
+type PortfolioSummary struct {
+	TotalValue            int64
+	TotalCost             int64
+	TotalPNL              int64
+	TotalPNLPercent       float64
+	RealizedPNL           int64
+	UnrealizedPNL         int64
+	TotalInvestments      int32
+	InvestmentsByType     map[investmentv1.InvestmentType]*TypeSummary
+}
+
+// TypeSummary represents summary statistics for a specific investment type.
+type TypeSummary struct {
+	TotalValue int64
+	Count      int32
+}
