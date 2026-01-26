@@ -63,7 +63,9 @@ func (i *Investment) recalculate() {
 			divisor = 10000 // 4 decimals for stocks
 		}
 
-		i.CurrentValue = (i.Quantity * i.CurrentPrice) / divisor
+		// Current Value = (Quantity * Price) / divisor / 100
+		// The divisor handles quantity decimals, the /100 converts price from cents to dollars
+		i.CurrentValue = (i.Quantity * i.CurrentPrice) / divisor / 100
 		i.UnrealizedPNL = i.CurrentValue - i.TotalCost
 		if i.TotalCost > 0 {
 			i.UnrealizedPNLPercent = (float64(i.UnrealizedPNL) / float64(i.TotalCost)) * 100
@@ -72,6 +74,11 @@ func (i *Investment) recalculate() {
 		// If quantity or price is zero, unrealized PNL is -100%
 		i.UnrealizedPNL = -i.TotalCost
 		i.UnrealizedPNLPercent = -100.0
+	} else {
+		// No cost, no value, no PNL
+		i.CurrentValue = 0
+		i.UnrealizedPNL = 0
+		i.UnrealizedPNLPercent = 0
 	}
 }
 

@@ -33,6 +33,26 @@ export const formatPercent = (value: number): string => {
   return `${sign}${value.toFixed(2)}%`;
 };
 
+// Format prices with appropriate decimals based on investment type
+export const formatPrice = (price: number, type: InvestmentType): string => {
+  let decimals = 2;
+
+  // price is stored as int64 in cents (1/100 of currency unit)
+  // For display with more than 2 decimals, we need to handle it specially
+  if (decimals <= 2) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price / 100);
+  } else {
+    // For crypto with more decimals, convert to decimal amount first
+    const decimalPrice = price / 100; // Convert to dollars
+    return `$${decimalPrice.toFixed(decimals)}`;
+  }
+};
+
 export const getInvestmentTypeLabel = (type: InvestmentType): string => {
   switch (type) {
     case InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY:

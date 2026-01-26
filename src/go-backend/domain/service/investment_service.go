@@ -577,13 +577,21 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 	investment.Quantity -= req.Quantity
 	investment.RealizedPNL += realizedPNL
 
-	// Recalculate total cost and average cost
-	if investment.Quantity > 0 {
-		investment.TotalCost = investment.AverageCost * investment.Quantity
-	} else {
-		investment.TotalCost = 0
-		investment.AverageCost = 0
-	}
+	// CRITICAL: DO NOT recalculate TotalCost or AverageCost on sell
+	// In FIFO cost basis accounting:
+	// - TotalCost represents the cumulative cost of all purchases (cost basis)
+	// - AverageCost is the weighted average of all buy transactions
+	// - When selling, only Quantity decreases and RealizedPNL increases
+	// - TotalCost and AverageCost MUST remain unchanged to maintain proper cost basis
+	//
+	// Example:
+	//   Buy 100 shares @ $150: Quantity=100, TotalCost=$15,000, AvgCost=$150
+	//   Sell 30 shares @ $170: Quantity=70, TotalCost=$15,000 (UNCHANGED), AvgCost=$150 (UNCHANGED)
+	//   Realized PNL: 30 * ($170 - $150) = $600
+	//
+	// Edge case: If quantity reaches zero, we still preserve TotalCost and AverageCost
+	// for historical tracking. They won't be used for PNL calculations when Quantity=0,
+	// but they maintain accurate cost basis if more shares are purchased later.
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)

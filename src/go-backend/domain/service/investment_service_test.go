@@ -292,6 +292,9 @@ func TestInvestmentService_CreateInvestment_Success(t *testing.T) {
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByWalletAndSymbol", ctx, walletID, "AAPL").Return(nil, nil)
 	mockInvestmentRepo.On("Create", ctx, mock.AnythingOfType("*models.Investment")).Return(nil)
+	mockTxRepo.On("Create", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
+	mockTxRepo.On("CreateLot", ctx, mock.AnythingOfType("*models.InvestmentLot")).Return(nil)
+	mockTxRepo.On("Update", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
 
 	// Execute
 	response, err := service.CreateInvestment(ctx, userID, req)
@@ -338,7 +341,7 @@ func TestInvestmentService_CreateInvestment_WalletNotFound(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	assert.IsType(t, (*apperrors.NotFoundError)(nil), err)
+	assert.IsType(t, apperrors.NotFoundError{}, err)
 
 	mockWalletRepo.AssertExpectations(t)
 }
@@ -375,7 +378,7 @@ func TestInvestmentService_CreateInvestment_WrongWalletType(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	assert.IsType(t, (*apperrors.ValidationError)(nil), err)
+	assert.IsType(t, apperrors.ValidationError{}, err)
 	assert.Contains(t, err.Error(), "investment wallet")
 
 	mockWalletRepo.AssertExpectations(t)
@@ -415,7 +418,7 @@ func TestInvestmentService_CreateInvestment_DuplicateSymbol(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	assert.IsType(t, (*apperrors.ConflictError)(nil), err)
+	assert.IsType(t, apperrors.ConflictError{}, err)
 
 	mockWalletRepo.AssertExpectations(t)
 	mockInvestmentRepo.AssertExpectations(t)
@@ -453,6 +456,7 @@ func TestInvestmentService_AddTransaction_BuyCreatesLot(t *testing.T) {
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{}, nil)
 	mockTxRepo.On("CreateLot", ctx, mock.AnythingOfType("*models.InvestmentLot")).Return(nil)
 	mockTxRepo.On("Create", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
+	mockTxRepo.On("ListByInvestmentID", ctx, investmentID, (*investmentv1.InvestmentTransactionType)(nil), mock.Anything).Return([]*models.InvestmentTransaction{}, 0, nil)
 	mockInvestmentRepo.On("Update", ctx, mock.AnythingOfType("*models.Investment")).Return(nil)
 
 	// Execute
@@ -522,6 +526,7 @@ func TestInvestmentService_AddTransaction_SellConsumesOldestLot(t *testing.T) {
 		return lot.ID == 1 && lot.RemainingQuantity == 3000 // 10000 - 7000
 	})).Return(nil)
 	mockTxRepo.On("Create", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
+	mockTxRepo.On("ListByInvestmentID", ctx, investmentID, (*investmentv1.InvestmentTransactionType)(nil), mock.Anything).Return([]*models.InvestmentTransaction{}, 0, nil)
 	mockInvestmentRepo.On("Update", ctx, mock.MatchedBy(func(inv *models.Investment) bool {
 		return inv.Quantity == 13000 && // 20000 - 7000
 		 inv.RealizedPNL > 0 // Should have realized PNL
@@ -593,6 +598,7 @@ func TestInvestmentService_AddTransaction_SellConsumesMultipleLots(t *testing.T)
 	// Both lots should be updated
 	mockTxRepo.On("UpdateLot", ctx, mock.AnythingOfType("*models.InvestmentLot")).Return(nil).Times(2)
 	mockTxRepo.On("Create", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
+	mockTxRepo.On("ListByInvestmentID", ctx, investmentID, (*investmentv1.InvestmentTransactionType)(nil), mock.Anything).Return([]*models.InvestmentTransaction{}, 0, nil)
 	mockInvestmentRepo.On("Update", ctx, mock.AnythingOfType("*models.Investment")).Return(nil)
 
 	// Execute
@@ -644,7 +650,7 @@ func TestInvestmentService_AddTransaction_SellExceedsQuantity(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, response)
-	assert.IsType(t, (*apperrors.ValidationError)(nil), err)
+	assert.IsType(t, apperrors.ValidationError{}, err)
 	assert.Contains(t, err.Error(), "quantity")
 
 	mockWalletRepo.AssertExpectations(t)
@@ -725,8 +731,10 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 		ForceRefresh:   false,
 	}
 
-	mockInvestmentRepo.On("GetByIDForUser", ctx, int32(1), userID).Return(investment1, nil)
-	mockInvestmentRepo.On("GetByIDForUser", ctx, int32(2), userID).Return(investment2, nil)
+	mockWalletRepo.On("ListByUserID", ctx, userID, mock.Anything).Return([]*models.Wallet{
+		{ID: 1, UserID: userID, Type: walletv1.WalletType_INVESTMENT},
+	}, 1, nil)
+	mockInvestmentRepo.On("ListByWalletID", ctx, int32(1), mock.Anything, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED).Return([]*models.Investment{investment1, investment2}, 2, nil)
 	mockMarketDataService.On("UpdatePricesForInvestments", ctx, mock.Anything, false).Return(map[int32]int64{
 		1: 1600000, // AAPL @ $160
 		2: 51000000000, // BTC @ $51,000

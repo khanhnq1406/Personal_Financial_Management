@@ -27,6 +27,7 @@ import {
   formatPercent,
   formatQuantity,
   getInvestmentTypeLabel,
+  formatPrice,
 } from "./helpers";
 import {
   CreateWalletForm,
@@ -158,12 +159,18 @@ const useInvestmentColumns = (
       {
         accessorKey: "averageCost",
         header: "Avg Cost",
-        cell: (info) => formatCurrency((info.getValue() as number | undefined) || 0),
+        cell: (info) => {
+          const row = info.row.original;
+          return formatPrice((info.getValue() as number | undefined) || 0, row.type as any);
+        },
       },
       {
         accessorKey: "currentPrice",
         header: "Current Price",
-        cell: (info) => formatCurrency((info.getValue() as number | undefined) || 0),
+        cell: (info) => {
+          const row = info.row.original;
+          return formatPrice((info.getValue() as number | undefined) || 0, row.type as any);
+        },
       },
       {
         accessorKey: "currentValue",

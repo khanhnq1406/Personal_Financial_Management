@@ -24,12 +24,12 @@ func TestInvestment_Fields(t *testing.T) {
 		Name:                 "Bitcoin",
 		Type:                 v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 		Quantity:             100000000,  // 1 BTC in satoshis
-		AverageCost:          50000000000, // $50,000 in cents
-		TotalCost:            50000000000,
+		AverageCost:          50000,      // $50.00 in cents (per unit average cost)
+		TotalCost:            5000000,    // $50,000 in cents (total cost basis)
 		Currency:             "USD",
-		CurrentPrice:         60000000000, // $60,000
-		CurrentValue:         60000000000,
-		UnrealizedPNL:        10000000000, // $10,000 profit
+		CurrentPrice:         600000000,  // $60,000 in tenths of cents (4 decimals)
+		CurrentValue:         6000000,    // $60,000 in cents
+		UnrealizedPNL:        1000000,    // $10,000 profit in cents
 		UnrealizedPNLPercent: 20.0,
 		RealizedPNL:          0,
 		CreatedAt:            now,
@@ -52,28 +52,28 @@ func TestInvestment_Fields(t *testing.T) {
 		t.Errorf("Expected quantity 100000000, got '%d'", inv.Quantity)
 	}
 
-	if inv.AverageCost != 50000000000 {
-		t.Errorf("Expected average cost 50000000000, got '%d'", inv.AverageCost)
+	if inv.AverageCost != 50000 {
+		t.Errorf("Expected average cost 50000, got '%d'", inv.AverageCost)
 	}
 
-	if inv.TotalCost != 50000000000 {
-		t.Errorf("Expected total cost 50000000000, got '%d'", inv.TotalCost)
+	if inv.TotalCost != 5000000 {
+		t.Errorf("Expected total cost 5000000, got '%d'", inv.TotalCost)
 	}
 
 	if inv.Currency != "USD" {
 		t.Errorf("Expected currency 'USD', got '%s'", inv.Currency)
 	}
 
-	if inv.CurrentPrice != 60000000000 {
-		t.Errorf("Expected current price 60000000000, got '%d'", inv.CurrentPrice)
+	if inv.CurrentPrice != 600000000 {
+		t.Errorf("Expected current price 600000000, got '%d'", inv.CurrentPrice)
 	}
 
-	if inv.CurrentValue != 60000000000 {
-		t.Errorf("Expected current value 60000000000, got '%d'", inv.CurrentValue)
+	if inv.CurrentValue != 6000000 {
+		t.Errorf("Expected current value 6000000, got '%d'", inv.CurrentValue)
 	}
 
-	if inv.UnrealizedPNL != 10000000000 {
-		t.Errorf("Expected unrealized PNL 10000000000, got '%d'", inv.UnrealizedPNL)
+	if inv.UnrealizedPNL != 1000000 {
+		t.Errorf("Expected unrealized PNL 1000000, got '%d'", inv.UnrealizedPNL)
 	}
 
 	if inv.UnrealizedPNLPercent != 20.0 {
@@ -94,12 +94,12 @@ func TestInvestment_ToProto(t *testing.T) {
 		Name:                 "Apple Inc.",
 		Type:                 v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 		Quantity:             10000, // 1 share in 4 decimal places
-		AverageCost:          150000, // $150.00 in cents
-		TotalCost:            150000,
+		AverageCost:          15000, // $150.00 in cents (per unit average cost)
+		TotalCost:            15000, // $150.00 in cents (total cost basis)
 		Currency:             "USD",
-		CurrentPrice:         175000, // $175.00
-		CurrentValue:         175000,
-		UnrealizedPNL:        25000,  // $25.00 profit
+		CurrentPrice:         1750000, // $175.00 in 4 decimal places ($0.0001 units)
+		CurrentValue:         17500,  // $175.00 in cents
+		UnrealizedPNL:        2500,   // $25.00 profit in cents
 		UnrealizedPNLPercent: 16.67,
 		RealizedPNL:          0,
 		CreatedAt:            now,
@@ -132,28 +132,28 @@ func TestInvestment_ToProto(t *testing.T) {
 		t.Errorf("Expected quantity 10000, got '%d'", proto.Quantity)
 	}
 
-	if proto.AverageCost != int64(150000) {
-		t.Errorf("Expected average cost 150000, got '%d'", proto.AverageCost)
+	if proto.AverageCost != int64(15000) {
+		t.Errorf("Expected average cost 15000, got '%d'", proto.AverageCost)
 	}
 
-	if proto.TotalCost != int64(150000) {
-		t.Errorf("Expected total cost 150000, got '%d'", proto.TotalCost)
+	if proto.TotalCost != int64(15000) {
+		t.Errorf("Expected total cost 15000, got '%d'", proto.TotalCost)
 	}
 
 	if proto.Currency != "USD" {
 		t.Errorf("Expected currency 'USD', got '%s'", proto.Currency)
 	}
 
-	if proto.CurrentPrice != int64(175000) {
-		t.Errorf("Expected current price 175000, got '%d'", proto.CurrentPrice)
+	if proto.CurrentPrice != int64(1750000) {
+		t.Errorf("Expected current price 1750000, got '%d'", proto.CurrentPrice)
 	}
 
-	if proto.CurrentValue != int64(175000) {
-		t.Errorf("Expected current value 175000, got '%d'", proto.CurrentValue)
+	if proto.CurrentValue != int64(17500) {
+		t.Errorf("Expected current value 17500, got '%d'", proto.CurrentValue)
 	}
 
-	if proto.UnrealizedPnl != int64(25000) {
-		t.Errorf("Expected unrealized PNL 25000, got '%d'", proto.UnrealizedPnl)
+	if proto.UnrealizedPnl != int64(2500) {
+		t.Errorf("Expected unrealized PNL 2500, got '%d'", proto.UnrealizedPnl)
 	}
 
 	if proto.UnrealizedPnlPercent != 16.67 {
@@ -177,20 +177,20 @@ func TestInvestment_CalculationLogic(t *testing.T) {
 	// Test that the model properly holds and returns calculated values
 	inv := &models.Investment{
 		Quantity:             100000000, // 1 BTC in satoshis
-		TotalCost:            50000000000, // $50,000
-		CurrentPrice:         60000000000, // $60,000
-		CurrentValue:         60000000000, // $60,000 (calculated)
-		UnrealizedPNL:        10000000000, // $10,000 profit
+		TotalCost:            5000000,   // $50,000 in cents
+		CurrentPrice:         6000000000, // $60,000 in 4 decimal places ($0.0001 units)
+		CurrentValue:         6000000,   // $60,000 in cents (calculated)
+		UnrealizedPNL:        1000000,   // $10,000 profit in cents
 		UnrealizedPNLPercent: 20.0,
 	}
 
 	// Verify the values are stored correctly
-	if inv.CurrentValue != 60000000000 {
-		t.Errorf("Expected current value 60000000000, got %d", inv.CurrentValue)
+	if inv.CurrentValue != 6000000 {
+		t.Errorf("Expected current value 6000000, got %d", inv.CurrentValue)
 	}
 
-	if inv.UnrealizedPNL != 10000000000 {
-		t.Errorf("Expected unrealized PNL 10000000000, got %d", inv.UnrealizedPNL)
+	if inv.UnrealizedPNL != 1000000 {
+		t.Errorf("Expected unrealized PNL 1000000, got %d", inv.UnrealizedPNL)
 	}
 
 	if inv.UnrealizedPNLPercent != 20.0 {
@@ -213,49 +213,49 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			name:           "Cryptocurrency - BTC",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 			quantity:       100000000,    // 1 BTC in satoshis
-			totalCost:      50000000000,  // $50,000
-			currentPrice:   60000000000,  // $60,000
-			expectedValue:  60000000000,  // $60,000
-			expectedPNL:    10000000000,  // $10,000 profit
+			totalCost:      5000000,      // $50,000 in cents
+			currentPrice:   600000000,    // $60,000 in tenths of cents (4 decimals)
+			expectedValue:  6000000,      // $60,000 in cents
+			expectedPNL:    1000000,      // $10,000 profit
 			expectedPNLPct: 20.0,
 		},
 		{
 			name:           "Stock - AAPL",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       10000,        // 1 share in 4 decimals
-			totalCost:      1500000,      // $150.00
-			currentPrice:   1750000,      // $175.00
-			expectedValue:  1750000,      // $175.00
-			expectedPNL:    250000,       // $25.00 profit
+			totalCost:      15000,        // $150.00 in cents
+			currentPrice:   1750000,      // $175.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  17500,        // $175.00 in cents
+			expectedPNL:    2500,         // $25.00 profit
 			expectedPNLPct: 16.666666666666668,
 		},
 		{
 			name:           "ETF - VOO",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_ETF,
 			quantity:       5000,         // 0.5 shares in 4 decimals
-			totalCost:      2000000,      // $200.00
-			currentPrice:   4200000,      // $420.00
-			expectedValue:  2100000,      // $210.00 (0.5 * 420)
-			expectedPNL:    100000,       // $10.00 profit
+			totalCost:      20000,        // $200.00 in cents
+			currentPrice:   4200000,      // $420.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  21000,        // $210.00 in cents (0.5 * 420)
+			expectedPNL:    1000,         // $10.00 profit
 			expectedPNLPct: 5.0,
 		},
 		{
 			name:           "Mutual Fund - VFIAX",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
 			quantity:       10000,        // 1 share in 4 decimals
-			totalCost:      4000000,      // $400.00
-			currentPrice:   4500000,      // $450.00
-			expectedValue:  4500000,      // $450.00
-			expectedPNL:    500000,       // $50.00 profit
+			totalCost:      40000,        // $400.00 in cents
+			currentPrice:   4500000,      // $450.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  45000,        // $450.00 in cents
+			expectedPNL:    5000,         // $50.00 profit
 			expectedPNLPct: 12.5,
 		},
 		{
 			name:           "Other type - default divisor",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_OTHER,
 			quantity:       100,          // 1 unit in 2 decimals
-			totalCost:      10000,        // $100.00
-			currentPrice:   12000,        // $120.00
-			expectedValue:  12000,        // $120.00
+			totalCost:      10000,        // $100.00 in cents
+			currentPrice:   1200000,      // $120.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  12000,        // $120.00 in cents
 			expectedPNL:    2000,         // $20.00 profit
 			expectedPNLPct: 20.0,
 		},
@@ -263,10 +263,10 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			name:           "Loss scenario - stock",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       10000,        // 1 share
-			totalCost:      2000000,      // $200.00
-			currentPrice:   1500000,      // $150.00
-			expectedValue:  1500000,      // $150.00
-			expectedPNL:    -500000,      // $50.00 loss
+			totalCost:      20000,        // $200.00 in cents
+			currentPrice:   1500000,      // $150.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  15000,        // $150.00 in cents
+			expectedPNL:    -5000,        // $50.00 loss
 			expectedPNLPct: -25.0,
 		},
 	}
@@ -314,31 +314,31 @@ func TestInvestment_ZeroValueEdgeCases(t *testing.T) {
 		{
 			name:           "Zero quantity with cost",
 			quantity:       0,
-			totalCost:      100000000,
-			currentPrice:   50000000,
+			totalCost:      10000,        // $100.00 in cents
+			currentPrice:   500000,      // $500.00 in 4 decimal places ($0.0001 units)
 			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			expectedValue:  0,
-			expectedPNL:    -100000000,
+			expectedPNL:    -10000,
 			expectedPNLPct: -100.0,
 		},
 		{
 			name:           "Zero price with cost",
-			quantity:       100000000,
-			totalCost:      50000000000,
+			quantity:       100000000,    // 1 BTC
+			totalCost:      5000000,      // $50,000 in cents
 			currentPrice:   0,
 			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 			expectedValue:  0,
-			expectedPNL:    -50000000000,
+			expectedPNL:    -5000000,
 			expectedPNLPct: -100.0,
 		},
 		{
 			name:           "Zero total cost",
-			quantity:       100000000,
+			quantity:       100000000,    // 1 BTC
 			totalCost:      0,
-			currentPrice:   60000000000,
+			currentPrice:   600000000,   // $600,000 in 4 decimal places ($0.0001 units)
 			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
-			expectedValue:  60000000000,
-			expectedPNL:    60000000000,
+			expectedValue:  6000000,      // $60,000 in cents
+			expectedPNL:    6000000,
 			expectedPNLPct: 0, // Division by zero avoided in code
 		},
 		{
@@ -394,8 +394,8 @@ func TestInvestment_GORMHooks(t *testing.T) {
 				return inv.BeforeCreate(nil)
 			},
 			initialValue:  0,
-			initialPrice:  60000000000,
-			expectedValue: 60000000000,
+			initialPrice:  600000000, // $60,000 in 4 decimal places ($0.0001 units)
+			expectedValue: 6000000,   // $60,000 in cents
 		},
 		{
 			name: "BeforeUpdate hook triggers recalculation",
@@ -403,8 +403,8 @@ func TestInvestment_GORMHooks(t *testing.T) {
 				return inv.BeforeUpdate(nil)
 			},
 			initialValue:  0,
-			initialPrice:  60000000000,
-			expectedValue: 60000000000,
+			initialPrice:  600000000, // $60,000 in 4 decimal places ($0.0001 units)
+			expectedValue: 6000000,   // $60,000 in cents
 		},
 	}
 
@@ -413,7 +413,7 @@ func TestInvestment_GORMHooks(t *testing.T) {
 			inv := &models.Investment{
 				Type:         v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 				Quantity:     100000000, // 1 BTC
-				TotalCost:    50000000000,
+				TotalCost:    5000000,   // $50,000 in cents
 				CurrentValue: tt.initialValue,
 				CurrentPrice: tt.initialPrice,
 			}
@@ -429,8 +429,206 @@ func TestInvestment_GORMHooks(t *testing.T) {
 				t.Errorf("Expected current value %d after hook, got %d", tt.expectedValue, inv.CurrentValue)
 			}
 
-			if inv.UnrealizedPNL != 10000000000 {
-				t.Errorf("Expected unrealized PNL 10000000000 after hook, got %d", inv.UnrealizedPNL)
+			if inv.UnrealizedPNL != 1000000 { // $10,000 profit
+				t.Errorf("Expected unrealized PNL 1000000 after hook, got %d", inv.UnrealizedPNL)
+			}
+		})
+	}
+}
+
+// TestInvestmentRecalculate_CorrectedTests tests the FIXED recalculation logic
+// These tests verify that CurrentValue is correctly calculated by dividing by 100
+// to convert from price stored in 4 decimal places ($0.0001 units) to cents (2 decimals)
+func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
+	tests := []struct {
+		name              string
+		investmentType    v1.InvestmentType
+		quantity          int64
+		totalCost         int64
+		currentPrice      int64
+		expectedValue     int64
+		expectedPNL       int64
+		expectedPNLPct    float64
+	}{
+		{
+			name:           "Cryptocurrency - 1 BTC at $50,000",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			quantity:       100000000, // 1 BTC in satoshis (8 decimals)
+			totalCost:      4500000,   // $45,000 in cents
+			currentPrice:   500000000, // $50,000 in 4 decimal places ($0.0001 units)
+			// Calculation: (100000000 * 5000000000) / 100000000 / 100 = 5000000 cents = $50,000
+			expectedValue:  5000000, // $50,000 in cents
+			expectedPNL:    500000,  // $50,000 - $45,000 = $5,000 profit
+			expectedPNLPct: 11.1111, // (5000 / 45000) * 100 ≈ 11.11%
+		},
+		{
+			name:           "Stock - 10 shares at $100",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       10000,  // 10.0000 shares (4 decimals)
+			totalCost:      90000,  // $900.00 in cents
+			currentPrice:   1000000, // $100.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (10000 * 10000000) / 10000 / 100 = 10000 cents = $100
+			expectedValue:  10000, // $100 in cents
+			expectedPNL:    -80000, // $100 - $900 = -$800
+			expectedPNLPct: -88.8889, // (-800 / 900) * 100 ≈ -88.89%
+		},
+		{
+			name:           "Stock - Profit scenario",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       5000,  // 5 shares (4 decimals)
+			totalCost:      50000, // $500.00 in cents
+			currentPrice:   2000000, // $200.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (5000 * 20000000) / 10000 / 100 = 10000 cents = $100
+			expectedValue:  10000, // $100 in cents
+			expectedPNL:    -40000, // $100 - $500 = -$400
+			expectedPNLPct: -80.0, // (-400 / 500) * 100 = -80%
+		},
+		{
+			name:           "ETF - 0.5 shares at $420",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_ETF,
+			quantity:       5000,  // 0.5 shares (4 decimals)
+			totalCost:      20000, // $200.00 in cents
+			currentPrice:   4200000, // $420.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (5000 * 42000000) / 10000 / 100 = 21000 cents = $210
+			expectedValue:  21000, // $210 in cents
+			expectedPNL:    1000,  // $210 - $200 = $10 profit
+			expectedPNLPct: 5.0,   // (10 / 200) * 100 = 5%
+		},
+		{
+			name:           "Mutual Fund - 1 share at $450",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
+			quantity:       10000, // 1 share (4 decimals)
+			totalCost:      40000, // $400.00 in cents
+			currentPrice:   4500000, // $450.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (10000 * 45000000) / 10000 / 100 = 45000 cents = $450
+			expectedValue:  45000, // $450 in cents
+			expectedPNL:    5000,  // $450 - $400 = $50 profit
+			expectedPNLPct: 12.5,  // (50 / 400) * 100 = 12.5%
+		},
+		{
+			name:           "Other type - default divisor (2 decimals)",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_OTHER,
+			quantity:       100,   // 1 unit (2 decimals)
+			totalCost:      10000, // $100.00 in cents
+			currentPrice:   1200000, // $120.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (100 * 12000000) / 100 / 100 = 12000 cents = $120
+			expectedValue:  12000, // $120 in cents
+			expectedPNL:    2000,  // $120 - $100 = $20 profit
+			expectedPNLPct: 20.0,  // (20 / 100) * 100 = 20%
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := &models.Investment{
+				Type:         tt.investmentType,
+				Quantity:     tt.quantity,
+				TotalCost:    tt.totalCost,
+				CurrentPrice: tt.currentPrice,
+			}
+
+			// Trigger recalculation via BeforeCreate (simulating GORM hook)
+			inv.BeforeCreate(nil)
+
+			if inv.CurrentValue != tt.expectedValue {
+				t.Errorf("Expected current value %d (%.2f), got %d (%.2f)",
+					tt.expectedValue, float64(tt.expectedValue)/100,
+					inv.CurrentValue, float64(inv.CurrentValue)/100)
+			}
+
+			if inv.UnrealizedPNL != tt.expectedPNL {
+				t.Errorf("Expected unrealized PNL %d (%.2f), got %d (%.2f)",
+					tt.expectedPNL, float64(tt.expectedPNL)/100,
+					inv.UnrealizedPNL, float64(inv.UnrealizedPNL)/100)
+			}
+
+			// Allow small floating point differences
+			pnlPctDiff := inv.UnrealizedPNLPercent - tt.expectedPNLPct
+			if pnlPctDiff < -0.01 || pnlPctDiff > 0.01 {
+				t.Errorf("Expected unrealized PNL percent %.2f%%, got %.2f%%",
+					tt.expectedPNLPct, inv.UnrealizedPNLPercent)
+			}
+		})
+	}
+}
+
+func TestInvestmentRecalculate_CorrectedEdgeCases(t *testing.T) {
+	tests := []struct {
+		name              string
+		investmentType    v1.InvestmentType
+		quantity          int64
+		totalCost         int64
+		currentPrice      int64
+		expectedValue     int64
+		expectedPNL       int64
+		expectedPNLPct    float64
+	}{
+		{
+			name:           "Zero quantity with cost - total loss",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       0,
+			totalCost:      50000, // $500.00 in cents
+			currentPrice:   1000000, // $100.00 in 4 decimal places ($0.0001 units)
+			expectedValue:  0,
+			expectedPNL:    -50000,     // -$500.00
+			expectedPNLPct: -100.0,
+		},
+		{
+			name:           "Zero price with cost - total loss",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			quantity:       100000000, // 1 BTC
+			totalCost:      4500000,   // $45,000 in cents
+			currentPrice:   0,
+			expectedValue:  0,
+			expectedPNL:    -4500000,  // -$45,000
+			expectedPNLPct: -100.0,
+		},
+		{
+			name:           "Zero total cost",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       10000, // 1 share
+			totalCost:      0,
+			currentPrice:   1500000, // $150.00 in 4 decimal places ($0.0001 units)
+			// Calculation: (10000 * 15000000) / 10000 / 100 = 15000 cents = $150
+			expectedValue:  15000, // $150
+			expectedPNL:    15000, // $150 - $0 = $150
+			expectedPNLPct: 0,     // Division by zero avoided
+		},
+		{
+			name:           "All zeros",
+			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			quantity:       0,
+			totalCost:      0,
+			currentPrice:   0,
+			expectedValue:  0,
+			expectedPNL:    0,
+			expectedPNLPct: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := &models.Investment{
+				Type:         tt.investmentType,
+				Quantity:     tt.quantity,
+				TotalCost:    tt.totalCost,
+				CurrentPrice: tt.currentPrice,
+			}
+
+			// Trigger recalculation
+			inv.BeforeUpdate(nil)
+
+			if inv.CurrentValue != tt.expectedValue {
+				t.Errorf("Expected current value %d, got %d", tt.expectedValue, inv.CurrentValue)
+			}
+
+			if inv.UnrealizedPNL != tt.expectedPNL {
+				t.Errorf("Expected unrealized PNL %d, got %d", tt.expectedPNL, inv.UnrealizedPNL)
+			}
+
+			if inv.UnrealizedPNLPercent != tt.expectedPNLPct {
+				t.Errorf("Expected unrealized PNL percent %.2f, got %.2f",
+					tt.expectedPNLPct, inv.UnrealizedPNLPercent)
 			}
 		})
 	}
