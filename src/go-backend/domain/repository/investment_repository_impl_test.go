@@ -1,0 +1,507 @@
+package repository
+
+import (
+	"context"
+	"regexp"
+	"testing"
+	"time"
+
+	"wealthjourney/domain/models"
+	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/database"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+// Helper function to create a mock database
+func setupMockDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock, *database.Database) {
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+
+	dialector := mysql.New(mysql.Config{
+		Conn:                      sqlDB,
+		SkipInitializeWithVersion: true,
+	})
+
+	db, err := gorm.Open(dialector, &gorm.Config{})
+	require.NoError(t, err)
+
+	database := &database.Database{DB: db}
+
+	return db, mock, database
+}
+
+func TestNewInvestmentRepository(t *testing.T) {
+	db, _, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+
+	assert.NotNil(t, repo)
+	assert.IsType(t, &investmentRepository{}, repo)
+}
+
+func TestInvestmentRepository_Create(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	investment := &models.Investment{
+		WalletID:    1,
+		Symbol:      "AAPL",
+		Name:        "Apple Inc.",
+		Type:        0, // STOCK
+		Quantity:    10000,
+		AverageCost: 150000,
+		TotalCost:   150000,
+		Currency:    "USD",
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `investment`")).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.Create(ctx, investment)
+
+	assert.NoError(t, err)
+	assert.Equal(t, int32(1), investment.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_Create_Error(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	investment := &models.Investment{
+		WalletID:    1,
+		Symbol:      "AAPL",
+		Name:        "Apple Inc.",
+		Type:        0,
+		Quantity:    10000,
+		AverageCost: 150000,
+		TotalCost:   150000,
+		Currency:    "USD",
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `investment`")).
+		WillReturnError(gorm.ErrInvalidDB)
+	mock.ExpectRollback()
+
+	err := repo.Create(ctx, investment)
+
+	assert.Error(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetByID(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	}).AddRow(
+		1, 1, "AAPL", "Apple Inc.", 0, 10000,
+		150000, 150000, "USD", 175000,
+		175000, 25000, 16.67,
+		0, time.Now(), time.Now(),
+	)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE `investment`.`id` = ? ORDER BY `investment`.`id` LIMIT ?")).
+		WithArgs(1, 1).
+		WillReturnRows(rows)
+
+	investment, err := repo.GetByID(ctx, 1)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, investment)
+	assert.Equal(t, int32(1), investment.ID)
+	assert.Equal(t, "AAPL", investment.Symbol)
+	assert.Equal(t, "Apple Inc.", investment.Name)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetByID_NotFound(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE `investment`.`id` = ? ORDER BY `investment`.`id` LIMIT ?")).
+		WithArgs(999, 1).
+		WillReturnError(gorm.ErrRecordNotFound)
+
+	investment, err := repo.GetByID(ctx, 999)
+
+	assert.Error(t, err)
+	assert.Nil(t, investment)
+	assert.Equal(t, apperrors.NotFoundError(""), err.(*apperrors.AppError).Type)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetByWalletAndSymbol(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	}).AddRow(
+		1, 5, "BTC", "Bitcoin", 1, 100000000,
+		50000000000, 50000000000, "USD", 60000000000,
+		60000000000, 10000000000, 20.0,
+		0, time.Now(), time.Now(),
+	)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id = ? AND symbol = ? AND `investment`.`deleted_at` IS NULL ORDER BY `investment`.`id` LIMIT ?")).
+		WithArgs(5, "BTC", 1).
+		WillReturnRows(rows)
+
+	investment, err := repo.GetByWalletAndSymbol(ctx, 5, "BTC")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, investment)
+	assert.Equal(t, int32(5), investment.WalletID)
+	assert.Equal(t, "BTC", investment.Symbol)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetByWalletAndSymbol_NotFound(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id = ? AND symbol = ? AND `investment`.`deleted_at` IS NULL ORDER BY `investment`.`id` LIMIT ?")).
+		WithArgs(5, "ETH").
+		WillReturnError(gorm.ErrRecordNotFound)
+
+	investment, err := repo.GetByWalletAndSymbol(ctx, 5, "ETH")
+
+	assert.NoError(t, err) // Returns nil, not error
+	assert.Nil(t, investment)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_ListByWalletID(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	}).
+		AddRow(1, 5, "AAPL", "Apple", 0, 10000, 150000, 150000, "USD", 175000, 175000, 25000, 16.67, 0, time.Now(), time.Now()).
+		AddRow(2, 5, "MSFT", "Microsoft", 0, 5000, 250000, 250000, "USD", 300000, 300000, 50000, 20.0, 0, time.Now(), time.Now())
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id = ? AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(5).
+		WillReturnRows(rows)
+
+	investments, total, err := repo.ListByWalletID(ctx, 5, ListOptions{}, 0)
+
+	assert.NoError(t, err)
+	assert.Len(t, investments, 2)
+	assert.Equal(t, 2, total)
+	assert.Equal(t, "AAPL", investments[0].Symbol)
+	assert.Equal(t, "MSFT", investments[1].Symbol)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_Update(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	investment := &models.Investment{
+		ID:           1,
+		WalletID:     1,
+		Symbol:       "AAPL",
+		Name:         "Apple Inc.",
+		Type:         0,
+		Quantity:     10000,
+		AverageCost:  150000,
+		TotalCost:    150000,
+		Currency:     "USD",
+		CurrentPrice: 180000, // Updated price
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `investment`")).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.Update(ctx, investment)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_Delete(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `investment` SET `deleted_at`=? WHERE `investment`.`id` = ? AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(sqlmock.AnyArg(), 1).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := repo.Delete(ctx, 1)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_Delete_NotFound(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `investment` SET `deleted_at`=? WHERE `investment`.`id` = ? AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(sqlmock.AnyArg(), 999).
+		WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
+	mock.ExpectCommit()
+
+	err := repo.Delete(ctx, 999)
+
+	assert.Error(t, err)
+	assert.Equal(t, apperrors.NotFoundError(""), err.(*apperrors.AppError).Type)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_UpdatePrices(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	updates := []PriceUpdate{
+		{InvestmentID: 1, Price: 180000, Timestamp: time.Now().Unix()},
+		{InvestmentID: 2, Price: 310000, Timestamp: time.Now().Unix()},
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `investment`")).
+		WithArgs(180000, 1).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `investment`")).
+		WithArgs(310000, 2).
+		WillReturnResult(sqlmock.NewResult(2, 1))
+	mock.ExpectCommit()
+
+	err := repo.UpdatePrices(ctx, updates)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetPortfolioSummary(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	// Mock listing investments
+	rows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	}).
+		AddRow(1, 5, "AAPL", "Apple", 0, 10000, 150000, 150000, "USD", 175000, 175000, 25000, 16.67, 0, time.Now(), time.Now()).
+		AddRow(2, 5, "BTC", "Bitcoin", 1, 100000000, 50000000000, 50000000000, "USD", 60000000000, 60000000000, 10000000000, 20.0, 0, time.Now(), time.Now())
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id = ? AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(5).
+		WillReturnRows(rows)
+
+	summary, err := repo.GetPortfolioSummary(ctx, 5)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, summary)
+	assert.Equal(t, int32(2), summary.TotalInvestments)
+	assert.True(t, summary.TotalValue > 0)
+	assert.True(t, summary.TotalCost > 0)
+	assert.Equal(t, int64(2), len(summary.InvestmentsByType))
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_GetPortfolioSummary_Empty(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	// Mock empty result
+	rows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	})
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id = ? AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(5).
+		WillReturnRows(rows)
+
+	summary, err := repo.GetPortfolioSummary(ctx, 5)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, summary)
+	assert.Equal(t, int32(0), summary.TotalInvestments)
+	assert.Equal(t, int64(0), summary.TotalValue)
+	assert.Equal(t, int64(0), summary.TotalCost)
+	assert.Equal(t, int64(0), summary.TotalPNL)
+	assert.Equal(t, int64(0), summary.RealizedPNL)
+	assert.Equal(t, int64(0), summary.UnrealizedPNL)
+	assert.Equal(t, 0, len(summary.InvestmentsByType))
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_ListByUserID(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	// Mock wallet query
+	walletRows := sqlmock.NewRows([]string{"id"}).
+		AddRow(1).
+		AddRow(2)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id FROM `wallet` WHERE user_id = ? AND status = 1 AND `wallet`.`deleted_at` IS NULL")).
+		WithArgs(10).
+		WillReturnRows(walletRows)
+
+	// Mock investment query
+	investmentRows := sqlmock.NewRows([]string{
+		"id", "wallet_id", "symbol", "name", "type", "quantity",
+		"average_cost", "total_cost", "currency", "current_price",
+		"current_value", "unrealized_pnl", "unrealized_pnl_percent",
+		"realized_pnl", "created_at", "updated_at",
+	}).
+		AddRow(1, 1, "AAPL", "Apple", 0, 10000, 150000, 150000, "USD", 175000, 175000, 25000, 16.67, 0, time.Now(), time.Now()).
+		AddRow(2, 2, "BTC", "Bitcoin", 1, 100000000, 50000000000, 50000000000, "USD", 60000000000, 60000000000, 10000000000, 20.0, 0, time.Now(), time.Now())
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `investment` WHERE wallet_id IN (?,?) AND `investment`.`deleted_at` IS NULL")).
+		WithArgs(1, 2).
+		WillReturnRows(investmentRows)
+
+	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{})
+
+	assert.NoError(t, err)
+	assert.Len(t, investments, 2)
+	assert.Equal(t, 2, total)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestInvestmentRepository_ListByUserID_NoWallets(t *testing.T) {
+	db, mock, database := setupMockDB(t)
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewInvestmentRepository(database)
+	ctx := context.Background()
+
+	// Mock empty wallet result
+	walletRows := sqlmock.NewRows([]string{"id"})
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id FROM `wallet` WHERE user_id = ? AND status = 1 AND `wallet`.`deleted_at` IS NULL")).
+		WithArgs(10).
+		WillReturnRows(walletRows)
+
+	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{})
+
+	assert.NoError(t, err)
+	assert.Len(t, investments, 0)
+	assert.Equal(t, 0, total)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}

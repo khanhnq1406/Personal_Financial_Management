@@ -3,9 +3,8 @@ package repository
 import (
 	"context"
 
-	"wealthjourney/src/go-backend/domain/models"
-	investmentv1 "wealthjourney/src/go-backend/protobuf/v1/investment/v1"
-	"wealthjourney/src/go-backend/pkg/types"
+	v1 "wealthjourney/protobuf/v1"
+	"wealthjourney/domain/models"
 )
 
 // InvestmentRepository defines the interface for investment data operations.
@@ -23,10 +22,10 @@ type InvestmentRepository interface {
 	GetByWalletAndSymbol(ctx context.Context, walletID int32, symbol string) (*models.Investment, error)
 
 	// ListByUserID retrieves all investments for a user (via their wallets).
-	ListByUserID(ctx context.Context, userID int32, pagination *types.Pagination) ([]*models.Investment, error)
+	ListByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.Investment, int, error)
 
 	// ListByWalletID retrieves all investments in a wallet.
-	ListByWalletID(ctx context.Context, walletID int32, pagination *types.Pagination, typeFilter investmentv1.InvestmentType) ([]*models.Investment, error)
+	ListByWalletID(ctx context.Context, walletID int32, opts ListOptions, typeFilter v1.InvestmentType) ([]*models.Investment, int, error)
 
 	// Update updates an investment.
 	Update(ctx context.Context, investment *models.Investment) error
@@ -57,7 +56,7 @@ type PortfolioSummary struct {
 	RealizedPNL           int64
 	UnrealizedPNL         int64
 	TotalInvestments      int32
-	InvestmentsByType     map[investmentv1.InvestmentType]*TypeSummary
+	InvestmentsByType     map[v1.InvestmentType]*TypeSummary
 }
 
 // TypeSummary represents summary statistics for a specific investment type.
