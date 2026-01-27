@@ -11,12 +11,13 @@ import (
 )
 
 type Config struct {
-	Server    Server
-	Database  Database
-	Redis     Redis
-	JWT       JWT
-	Google    Google
-	RateLimit RateLimit
+	Server       Server
+	Database     Database
+	Redis        Redis
+	JWT          JWT
+	Google       Google
+	RateLimit    RateLimit
+	YahooFinance YahooFinance
 }
 
 type Server struct {
@@ -57,6 +58,16 @@ type RateLimit struct {
 	RequestsPerMinute int
 }
 
+type YahooFinance struct {
+	Enabled          bool
+	Timeout          time.Duration
+	MaxRetries       int
+	RetryDelay       time.Duration
+	CacheMaxAge      time.Duration
+	FallbackToStale  bool
+	RequestsPerMin   int
+}
+
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	// Load .env file if exists
@@ -80,6 +91,15 @@ func Load() (*Config, error) {
 
 	// Rate limit settings
 	requestsPerMinute, _ := strconv.Atoi(getEnv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))
+
+	// Yahoo Finance settings
+	yahooTimeout, _ := time.ParseDuration(getEnv("YAHOO_FINANCE_TIMEOUT", "10s"))
+	yahooRetryDelay, _ := time.ParseDuration(getEnv("YAHOO_FINANCE_RETRY_DELAY", "1s"))
+	yahooCacheMaxAge, _ := time.ParseDuration(getEnv("YAHOO_FINANCE_CACHE_MAX_AGE", "15m"))
+	yahooMaxRetries, _ := strconv.Atoi(getEnv("YAHOO_FINANCE_MAX_RETRIES", "3"))
+	yahooRequestsPerMin, _ := strconv.Atoi(getEnv("YAHOO_FINANCE_REQUESTS_PER_MIN", "120"))
+	yahooEnabled, _ := strconv.ParseBool(getEnv("YAHOO_FINANCE_ENABLED", "true"))
+	yahooFallbackToStale, _ := strconv.ParseBool(getEnv("YAHOO_FINANCE_FALLBACK_STALE", "true"))
 
 	cfg := &Config{
 		Server: Server{
@@ -113,6 +133,15 @@ func Load() (*Config, error) {
 		},
 		RateLimit: RateLimit{
 			RequestsPerMinute: requestsPerMinute,
+		},
+		YahooFinance: YahooFinance{
+			Enabled:         yahooEnabled,
+			Timeout:         yahooTimeout,
+			MaxRetries:      yahooMaxRetries,
+			RetryDelay:      yahooRetryDelay,
+			CacheMaxAge:     yahooCacheMaxAge,
+			FallbackToStale: yahooFallbackToStale,
+			RequestsPerMin:  yahooRequestsPerMin,
 		},
 	}
 

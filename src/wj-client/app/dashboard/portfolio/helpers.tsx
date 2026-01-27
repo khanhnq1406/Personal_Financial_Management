@@ -73,3 +73,41 @@ export const getInvestmentTypeLabel = (type: InvestmentType): string => {
       return "Unknown";
   }
 };
+
+// Format timestamp as relative time with freshness indicator
+export const formatTimeAgo = (timestamp: number): { text: string; colorClass: string } => {
+  if (!timestamp) {
+    return { text: "Never", colorClass: "text-gray-400" };
+  }
+
+  const date = new Date(timestamp * 1000); // Convert Unix timestamp (seconds to ms)
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+
+  let text: string;
+  let colorClass: string;
+
+  if (diffMins < 1) {
+    text = "Just now";
+    colorClass = "text-green-600";
+  } else if (diffMins < 5) {
+    text = `${diffMins}m ago`;
+    colorClass = "text-green-600";
+  } else if (diffMins < 15) {
+    text = `${diffMins}m ago`;
+    colorClass = "text-green-600";
+  } else if (diffMins < 60) {
+    text = `${diffMins}m ago`;
+    colorClass = "text-yellow-600";
+  } else if (diffMins < 1440) {
+    // Less than 24 hours
+    text = `${Math.floor(diffMins / 60)}h ago`;
+    colorClass = "text-orange-600";
+  } else {
+    text = date.toLocaleDateString();
+    colorClass = "text-red-600";
+  }
+
+  return { text, colorClass };
+};

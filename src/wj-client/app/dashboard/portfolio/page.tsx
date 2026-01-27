@@ -26,7 +26,11 @@ import {
   useQueryListWallets,
   useQueryGetPortfolioSummary,
   useQueryListInvestments,
+  useMutationUpdatePrices,
+  EVENT_InvestmentListInvestments,
+  EVENT_InvestmentGetPortfolioSummary,
 } from "@/utils/generated/hooks";
+import { useQueryClient } from "@tanstack/react-query";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 import {
   formatCurrency,
@@ -34,6 +38,7 @@ import {
   formatQuantity,
   getInvestmentTypeLabel,
   formatPrice,
+  formatTimeAgo,
 } from "./helpers";
 import {
   CreateWalletForm,
@@ -130,6 +135,7 @@ type InvestmentData = {
   currentValue?: number;
   unrealizedPnl?: number;
   unrealizedPnlPercent?: number;
+  updatedAt?: number;
 };
 
 // Column definitions for TanStackTable (memoized to prevent recreation)
@@ -224,6 +230,15 @@ const useInvestmentColumns = (
         ),
       },
       {
+        accessorKey: "updatedAt",
+        header: "Last Updated",
+        cell: (info) => {
+          const timestamp = info.getValue<number>();
+          const { text, colorClass } = formatTimeAgo(timestamp || 0);
+          return <span className={`text-xs ${colorClass}`}>{text}</span>;
+        },
+      },
+      {
         id: "actions",
         header: "",
         cell: (info) => {
@@ -301,6 +316,14 @@ const useMobileInvestmentColumns = (
         header: "PNL %",
         accessorFn: (row: InvestmentData) =>
           formatPercent(row.unrealizedPnlPercent || 0),
+      },
+      {
+        id: "updatedAt",
+        header: "Last Updated",
+        accessorFn: (row: InvestmentData) => {
+          const { text, colorClass } = formatTimeAgo(row.updatedAt || 0);
+          return <span className={`text-xs ${colorClass}`}>{text}</span>;
+        },
       },
     ],
     [],
@@ -421,6 +444,24 @@ export default function PortfolioPage() {
       refetchOnMount: "always",
     },
   );
+
+  // Query client for invalidating queries
+  const queryClient = useQueryClient();
+
+  // Update prices mutation
+  const updatePricesMutation = useMutationUpdatePrices({
+    onSuccess: (data) => {
+      // Invalidate queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+
+      // Show success message
+      console.log(`Updated prices for ${data.updatedInvestments?.length || 0} investments`);
+    },
+    onError: (error: any) => {
+      console.error(`Failed to update prices: ${error.message}`);
+    },
+  });
 
   // Memoize modal title
   const modalTitle = useMemo(() => {
@@ -561,14 +602,31 @@ export default function PortfolioPage() {
           <BaseCard className="p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Holdings</h2>
-              <Button
-                type={ButtonType.PRIMARY}
-                onClick={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
-                disabled={!selectedWalletId}
-                className="w-auto px-4"
-              >
-                Add Investment
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type={ButtonType.SECONDARY}
+                  onClick={() => updatePricesMutation.mutate({
+                    investmentIds: [], // Empty = update all investments
+                    forceRefresh: true, // Bypass cache for fresh data
+                  })}
+                  loading={updatePricesMutation.isPending}
+                  disabled={updatePricesMutation.isPending || !selectedWalletId}
+                  className="w-auto px-4"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh Prices
+                </Button>
+                <Button
+                  type={ButtonType.PRIMARY}
+                  onClick={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
+                  disabled={!selectedWalletId}
+                  className="w-auto px-4"
+                >
+                  Add Investment
+                </Button>
+              </div>
             </div>
 
             {getListInvestments.isLoading || getListInvestments.isPending ? (

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useQueryClient } from "@tanstack/react-query";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
@@ -12,6 +13,8 @@ import type { MobileColumnDef } from "@/components/table/MobileTable";
 import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
+  useMutationUpdatePrices,
+  EVENT_InvestmentGetInvestment,
 } from "@/utils/generated/hooks";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
@@ -66,6 +69,7 @@ export function InvestmentDetailModal({
   onSuccess,
 }: InvestmentDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const queryClient = useQueryClient();
 
   // Fetch investment details
   const getInvestment = useQueryGetInvestment(
@@ -75,6 +79,22 @@ export function InvestmentDetailModal({
       refetchOnMount: "always",
     },
   );
+
+  // Mutation for updating investment prices
+  const updatePricesMutation = useMutationUpdatePrices({
+    onSuccess: () => {
+      // Invalidate queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetInvestment] });
+
+      // Call the onSuccess callback to refresh modal data
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: (error: any) => {
+      console.error(`Failed to update price: ${error.message}`);
+    },
+  });
 
   // Fetch investment transactions
   const getListInvestmentTransactions = useQueryListInvestmentTransactions(
@@ -290,8 +310,72 @@ export function InvestmentDetailModal({
                 <span>{formatCurrency(investment.averageCost || 0)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Current Price</span>
-                <span>{formatCurrency(investment.currentPrice || 0)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">Current Price</span>
+                  <button
+                    onClick={() => updatePricesMutation.mutate({
+                      investmentIds: [investment.id],
+                      forceRefresh: true,
+                    })}
+                    disabled={updatePricesMutation.isPending}
+                    className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 transition-colors"
+                    title="Refresh price"
+                  >
+                    <svg
+                      className={`w-4 h-4 text-gray-500 ${updatePricesMutation.isPending ? 'animate-spin' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-right">
+                  <span>{formatCurrency(investment.currentPrice || 0)}</span>
+                  <div className="mt-1">
+                    {(() => {
+                      const date = new Date(investment.updatedAt * 1000);
+                      const now = new Date();
+                      const diffMs = now.getTime() - date.getTime();
+                      const diffMins = Math.floor(diffMs / 60000);
+
+                      let text: string;
+                      let colorClass: string;
+
+                      if (diffMins < 1) {
+                        text = "Just now";
+                        colorClass = "text-green-600";
+                      } else if (diffMins < 5) {
+                        text = `${diffMins}m ago`;
+                        colorClass = "text-green-600";
+                      } else if (diffMins < 15) {
+                        text = `${diffMins}m ago`;
+                        colorClass = "text-green-600";
+                      } else if (diffMins < 60) {
+                        text = `${diffMins}m ago`;
+                        colorClass = "text-yellow-600";
+                      } else if (diffMins < 1440) {
+                        text = `${Math.floor(diffMins / 60)}h ago`;
+                        colorClass = "text-orange-600";
+                      } else {
+                        text = date.toLocaleDateString();
+                        colorClass = "text-red-600";
+                      }
+
+                      return (
+                        <span className={`text-xs ${colorClass}`}>
+                          Updated {text}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Cost</span>

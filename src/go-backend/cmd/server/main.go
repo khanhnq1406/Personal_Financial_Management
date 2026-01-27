@@ -23,6 +23,8 @@ import (
 	"wealthjourney/pkg/database"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
+	"wealthjourney/pkg/types"
+	investmentv1 "wealthjourney/protobuf/v1"
 )
 
 func main() {
@@ -67,6 +69,86 @@ func main() {
 
 	// Initialize handlers
 	h := handlers.NewHandlers(services)
+
+	// Create context for background jobs cancellation
+	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())
+	defer backgroundCancel()
+
+	// Initialize background price update job
+	// This runs every 15 minutes to update investment prices from Yahoo Finance
+	// The cache duration is also 15 minutes, so this ensures fresh data
+	go func() {
+		ticker := time.NewTicker(15 * time.Minute)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(5 * time.Second)
+
+		log.Println("Background price update job started (runs every 15 minutes)")
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("Running scheduled price update...")
+
+				ctx := context.Background()
+
+				// Get all users from the system
+				// We use a large page size to get all users in one request
+				usersResp, err := services.User.ListUsers(ctx, types.PaginationParams{
+					Page:     1,
+					PageSize: 1000, // Adjust based on expected user count
+					OrderBy:  "",
+					Order:    "",
+				})
+
+				if err != nil {
+					log.Printf("Error fetching users for price update: %v", err)
+					continue
+				}
+
+				if !usersResp.Success || len(usersResp.Users) == 0 {
+					log.Println("No users found for price update")
+					continue
+				}
+
+				log.Printf("Updating prices for %d users...", len(usersResp.Users))
+
+				successCount := 0
+				errorCount := 0
+
+				// Update prices for each user
+				for _, user := range usersResp.Users {
+					// Call UpdatePrices for this user
+					// We don't specify investment IDs to update all investments
+					// ForceRefresh=false to use cached data when available
+					updateResp, err := services.Investment.UpdatePrices(ctx, user.Id, &investmentv1.UpdatePricesRequest{
+						InvestmentIds: []int32{}, // Empty means update all
+						ForceRefresh:  false,     // Use cache if available
+					})
+
+					if err != nil {
+						log.Printf("Failed to update prices for user %d (%s): %v", user.Id, user.Email, err)
+						errorCount++
+						continue
+					}
+
+					if updateResp.Success {
+						successCount++
+						log.Printf("Updated prices for user %d (%s): %s", user.Id, user.Email, updateResp.Message)
+					} else {
+						log.Printf("No investments to update for user %d (%s)", user.Id, user.Email)
+					}
+				}
+
+				log.Printf("Scheduled price update completed: %d users updated successfully, %d errors", successCount, errorCount)
+
+			case <-backgroundCtx.Done():
+				log.Println("Background price update job stopped (shutting down)")
+				return
+			}
+		}
+	}()
 
 	// Initialize redis
 	rdb, err := redis.New(cfg)
@@ -193,6 +275,9 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down servers...")
+
+	// Stop background jobs
+	backgroundCancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()

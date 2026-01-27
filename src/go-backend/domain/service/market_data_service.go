@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/validator"
+	"wealthjourney/pkg/yahoo"
 )
 
 // MarketDataService handles market data operations including price fetching and caching.
@@ -54,7 +56,8 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 	priceData, err := s.fetchPriceFromAPI(ctx, symbol, currency)
 	if err != nil {
 		// If we have expired cached data, return it as fallback
-		if err == nil && cached != nil {
+		if cached != nil {
+			log.Printf("Warning: API fetch failed for %s, using stale cache: %v", symbol, err)
 			return cached, nil
 		}
 		return nil, err
@@ -66,12 +69,12 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 		priceData.ID = cached.ID
 		if err := s.marketDataRepo.Update(ctx, priceData); err != nil {
 			// Log error but don't fail the request
-			fmt.Printf("Warning: failed to update cached market data: %v\n", err)
+			log.Printf("Warning: failed to update cached market data: %v\n", err)
 		}
 	} else {
 		if err := s.marketDataRepo.Create(ctx, priceData); err != nil {
 			// Log error but don't fail the request
-			fmt.Printf("Warning: failed to cache market data: %v\n", err)
+			log.Printf("Warning: failed to cache market data: %v\n", err)
 		}
 	}
 
@@ -92,7 +95,7 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 		priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, maxAge)
 		if err != nil {
 			// Log error but continue with other investments
-			fmt.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
+			log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
 			continue
 		}
 
@@ -102,38 +105,31 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 	return updates, nil
 }
 
-// fetchPriceFromAPI fetches price data from an external API.
-// This is a mock implementation that should be replaced with actual API calls.
+// fetchPriceFromAPI fetches price data from Yahoo Finance API.
+// It uses the Yahoo Finance client which includes built-in rate limiting.
 func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, currency string) (*models.MarketData, error) {
-	// TODO: Implement actual API integration
-	// For now, return a mock response
+	// Create Yahoo Finance client
+	client := yahoo.NewClient(symbol)
 
-	// Mock implementation - in production, integrate with real APIs like:
-	// - Alpha Vantage (stocks)
-	// - CoinGecko (crypto)
-	// - IEX Cloud
-	// - Yahoo Finance
-
-	// Simulate API delay
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case <-time.After(100 * time.Millisecond):
+	// Fetch quote with timeout
+	// The client's GetQuote method respects the global rate limiter
+	quote, err := client.GetQuote(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch quote for %s: %w", symbol, err)
 	}
 
-	// Return mock data
-	// In production, make actual HTTP request to external API
-	mockPrice := int64(50000 * 100) // $50,000 in cents
-	if currency == "VND" {
-		mockPrice = int64(50000 * 100000) // 50,000 VND
+	// Validate currency matches (if specified)
+	if currency != "" && quote.Currency != currency {
+		return nil, fmt.Errorf("currency mismatch for %s: expected %s, got %s", symbol, currency, quote.Currency)
 	}
 
+	// Convert to MarketData model
 	return &models.MarketData{
-		Symbol:    symbol,
-		Currency:  currency,
-		Price:     mockPrice,
-		Change24h: 2.5, // Mock 2.5% change
-		Volume24h: 1000000,
+		Symbol:    quote.Symbol,
+		Currency:  quote.Currency,
+		Price:     quote.Price,     // Already in cents
+		Change24h: quote.Change24h, // Percentage
+		Volume24h: quote.Volume24h, // Raw volume
 		Timestamp: time.Now(),
 	}, nil
 }

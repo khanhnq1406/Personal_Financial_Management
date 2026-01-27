@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"wealthjourney/domain/models"
@@ -467,7 +468,7 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		Price:             req.Price,
 		Cost:              cost,
 		Fees:              req.Fees,
-			TransactionDate:   time.Unix(req.TransactionDate, 0),
+		TransactionDate:   time.Unix(req.TransactionDate, 0),
 		Notes:             req.Notes,
 		LotID:             &lot.ID,
 		RemainingQuantity: lot.RemainingQuantity,
@@ -746,6 +747,44 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 		return nil, err
 	}
 	_ = wallet // Used for ownership verification
+
+	// Get investments for wallet to check if prices need refresh
+	investments, _, err := s.investmentRepo.ListByWalletID(ctx, walletID, repository.ListOptions{
+		Limit: 1000,
+	}, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if prices need refresh (any investment updated > 15 min ago)
+	needsRefresh := false
+	for _, inv := range investments {
+		if time.Since(inv.UpdatedAt) > 15*time.Minute {
+			needsRefresh = true
+			break
+		}
+	}
+
+	// Auto-refresh if stale
+	if needsRefresh {
+		log.Printf("Auto-refreshing prices for wallet %d", walletID)
+		_, err = s.UpdatePrices(ctx, userID, &investmentv1.UpdatePricesRequest{
+			InvestmentIds: []int32{}, // Empty = update all
+			ForceRefresh:  false,     // Use cache if fresh
+		})
+		if err != nil {
+			log.Printf("Warning: failed to auto-refresh prices: %v", err)
+			// Don't fail - continue with stale prices
+		} else {
+			// Re-fetch investments with updated prices
+			investments, _, err = s.investmentRepo.ListByWalletID(ctx, walletID, repository.ListOptions{
+				Limit: 1000,
+			}, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
+			if err != nil {
+				log.Printf("Warning: failed to re-fetch investments: %v", err)
+			}
+		}
+	}
 
 	// Get portfolio summary from repository
 	summary, err := s.investmentRepo.GetPortfolioSummary(ctx, walletID)
