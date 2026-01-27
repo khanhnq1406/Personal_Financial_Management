@@ -17,6 +17,7 @@ import { InvestmentTransactionType, InvestmentType } from "@/gen/protobuf/v1/inv
 import type { AddTransactionRequest } from "@/gen/protobuf/v1/investment";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { quantityToStorage, dollarsToCents, getQuantityInputConfig } from "@/lib/utils/units";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
@@ -81,10 +82,8 @@ export function AddInvestmentTransactionForm({
     },
   });
 
-  // Determine decimal precision based on investment type
-  const decimals = investmentType === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY ? 8 : 4;
-  const quantityStep = investmentType === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY ? "0.00000001" : "0.0001";
-  const quantityPlaceholder = investmentType === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY ? "0.00000000" : "0.0000";
+  // Get quantity input configuration from utilities
+  const quantityConfig = getQuantityInputConfig(investmentType);
 
   const {
     control,
@@ -104,13 +103,13 @@ export function AddInvestmentTransactionForm({
   const onSubmit = (data: AddTransactionFormInput) => {
     setErrorMessage(undefined);
 
-    // Convert to API format (cents for currency, smallest unit for quantity)
+    // Convert to API format using utility functions
     const request: AddTransactionRequest = {
       investmentId: investmentId,
       type: data.type,
-      quantity: Math.round(data.quantity * Math.pow(10, decimals)),
-      price: Math.round(data.price * 100), // Convert to cents
-      fees: Math.round(data.fees * 100), // Convert to cents
+      quantity: quantityToStorage(data.quantity, investmentType),
+      price: dollarsToCents(data.price),
+      fees: dollarsToCents(data.fees),
       transactionDate: Math.floor(new Date(data.transactionDate).getTime() / 1000),
       notes: "",
     };
@@ -158,11 +157,11 @@ export function AddInvestmentTransactionForm({
         name="quantity"
         control={control}
         label="Quantity"
-        placeholder={quantityPlaceholder}
+        placeholder={quantityConfig.placeholder}
         required
         disabled={isSubmitting}
         min={0}
-        step={quantityStep}
+        step={quantityConfig.step}
       />
 
       {/* Price */}

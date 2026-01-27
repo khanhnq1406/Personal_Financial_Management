@@ -9,6 +9,7 @@ import (
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
+	"wealthjourney/pkg/units"
 	"wealthjourney/pkg/validator"
 	investmentv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
@@ -81,16 +82,11 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		return nil, apperrors.NewConflictError(fmt.Sprintf("investment with symbol %s already exists in this wallet", req.Symbol))
 	}
 
-	// 5. Calculate initial values from initialQuantity and initialCost
-	// initialCost is the total cost (in cents), so we need to account for decimal precision
-	// Average cost = initialCost / (initialQuantity / decimals_multiplier)
-	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
-	if req.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
-		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
-	}
+	// 5. Calculate initial average cost using utility function
+	// Average cost is stored as "cents per whole unit" (e.g., cents per BTC, cents per share)
 	var averageCost int64 = 0
 	if req.InitialQuantity > 0 {
-		averageCost = req.InitialCost * decimalsMultiplier / req.InitialQuantity
+		averageCost = units.CalculateAverageCost(req.InitialCost, req.InitialQuantity, req.Type)
 	}
 
 	// 6. Create investment model
@@ -362,15 +358,8 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 		return nil, apperrors.NewValidationError("transactions can only be added to investments in investment wallets")
 	}
 
-	// 4. Calculate transaction cost
-	// Quantity is stored in smallest units (satoshis for crypto, 1/10000 for stocks)
-	// We need to convert to user-facing units before calculating cost
-	// Cost = (quantity / decimals_multiplier) * price
-	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
-	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
-		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
-	}
-	cost := (req.Quantity / decimalsMultiplier) * req.Price
+	// 4. Calculate transaction cost using utility function
+	cost := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
 	totalCost := cost + req.Fees
 
 	// 5. Handle transaction type
@@ -438,12 +427,6 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		}
 	}
 
-	// Determine decimal multiplier for this investment type
-	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
-	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
-		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
-	}
-
 	// Create new lot if no recent lot found
 	if lot == nil {
 		lot = &models.InvestmentLot{
@@ -452,16 +435,15 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 			TotalCost:    totalCost,
 			PurchasedAt:  time.Unix(req.TransactionDate, 0),
 		}
-		// Calculate average cost as: totalCost / (quantity / decimalsMultiplier)
-		// This gives us "cents per whole unit" (e.g., cents per BTC, cents per share)
-		lot.AverageCost = totalCost * decimalsMultiplier / req.Quantity
+		// Calculate average cost using utility function
+		lot.AverageCost = units.CalculateAverageCost(totalCost, req.Quantity, investment.Type)
 		lot.RemainingQuantity = req.Quantity
 	} else {
 		// Update existing lot
 		lot.Quantity += req.Quantity
 		lot.TotalCost += totalCost
-		// Recalculate average cost as: totalCost / (quantity / decimalsMultiplier)
-		lot.AverageCost = lot.TotalCost * decimalsMultiplier / lot.Quantity
+		// Recalculate average cost using utility function
+		lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investment.Type)
 		lot.RemainingQuantity = lot.Quantity
 	}
 
@@ -498,9 +480,8 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	// Update investment
 	investment.Quantity += req.Quantity
 	investment.TotalCost += totalCost
-	// Calculate average cost as: totalCost / (quantity / decimalsMultiplier)
-	// This gives us "cents per whole unit" (e.g., cents per BTC, cents per share)
-	investment.AverageCost = investment.TotalCost * decimalsMultiplier / investment.Quantity
+	// Calculate average cost using utility function
+	investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investment.Type)
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
@@ -536,12 +517,6 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		return nil, apperrors.NewValidationError(fmt.Sprintf("insufficient quantity in lots: available %d, trying to sell %d", totalAvailable, req.Quantity))
 	}
 
-	// Determine decimal multiplier for this investment type
-	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
-	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
-		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
-	}
-
 	// FIFO: Consume from oldest lots first
 	quantityToSell := req.Quantity
 	realizedPNL := int64(0)
@@ -562,14 +537,13 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 			consumeFromLot = lot.RemainingQuantity
 		}
 
-		// Calculate realized PNL for this lot
-		// PNL = (sell_price - lot_avg_cost) * sold_quantity_in_whole_units
-		// Both sellPrice and lot.AverageCost are in cents per whole unit
-		// consumeFromLot is in smallest units, so we need to convert
-		consumeFromLotWholeUnits := consumeFromLot / decimalsMultiplier
+		// Calculate realized PNL for this lot using utility function
+		// Convert consumeFromLot from smallest units to whole units
+		precision := units.GetPrecisionForInvestmentType(investment.Type)
+		consumeFromLotWholeUnits := consumeFromLot / int64(precision)
 		lotCostBasis := lot.AverageCost * consumeFromLotWholeUnits
 		lotSellValue := sellPrice * consumeFromLotWholeUnits
-		lotPNL := lotSellValue - lotCostBasis
+		lotPNL := units.CalculateRealizedPNL(lotCostBasis, lotSellValue)
 		realizedPNL += lotPNL
 
 		// Update lot
@@ -586,7 +560,7 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 
 	// Calculate total proceeds (sale value) for the transaction record
 	// Cost for a sell transaction represents the total sale proceeds
-	totalProceeds := (req.Quantity / decimalsMultiplier) * req.Price
+	totalProceeds := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
 
 	// Create transaction record
 	tx := &models.InvestmentTransaction{

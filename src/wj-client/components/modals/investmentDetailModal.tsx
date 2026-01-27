@@ -9,8 +9,9 @@ import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
 } from "@/utils/generated/hooks";
-import { InvestmentTransactionType, InvestmentType } from "@/gen/protobuf/v1/investment";
+import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
+import { formatCurrency, formatQuantity } from "@/lib/utils/units";
 
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
@@ -18,20 +19,6 @@ export interface InvestmentDetailModalProps {
   investmentId: number;
   onSuccess?: () => void;
 }
-
-// Formatting helpers
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount / 100); // Convert from cents to dollars
-};
-
-const formatQuantity = (quantity: number, decimals: number = 4): string => {
-  return (quantity / Math.pow(10, decimals)).toFixed(decimals);
-};
 
 const formatDate = (timestamp: number): string => {
   return new Date(timestamp * 1000).toLocaleDateString("en-US", {
@@ -152,7 +139,7 @@ export function InvestmentDetailModal({
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Quantity</span>
                 <span className="font-medium">
-                  {formatQuantity(investment.quantity, 4)}
+                  {formatQuantity(investment.quantity, investment.type)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -257,7 +244,7 @@ export function InvestmentDetailModal({
                             {getTransactionTypeLabel(tx.type)}
                           </td>
                           <td className="py-2 text-right">
-                            {formatQuantity(tx.quantity, 4)}
+                            {formatQuantity(tx.quantity, investment.type)}
                           </td>
                           <td className="py-2 text-right">
                             {formatCurrency(tx.price || 0)}
