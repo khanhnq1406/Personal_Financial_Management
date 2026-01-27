@@ -10,14 +10,23 @@ import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { FormInput } from "@/components/forms/FormInput";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
+import { useMutationAddInvestmentTransaction } from "@/utils/generated/hooks";
 import {
-  useMutationAddInvestmentTransaction,
-} from "@/utils/generated/hooks";
-import { InvestmentTransactionType, InvestmentType } from "@/gen/protobuf/v1/investment";
+  InvestmentTransactionType,
+  InvestmentType,
+} from "@/gen/protobuf/v1/investment";
 import type { AddTransactionRequest } from "@/gen/protobuf/v1/investment";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { quantityToStorage, dollarsToCents, getQuantityInputConfig } from "@/lib/utils/units";
+import {
+  quantityToStorage,
+  dollarsToCents,
+  getQuantityInputConfig,
+} from "@/lib/utils/units";
+import {
+  AddTransactionFormInput,
+  addTransactionSchema,
+} from "@/lib/validation/investment.schema";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
@@ -26,23 +35,19 @@ interface AddInvestmentTransactionFormProps {
 }
 
 const transactionTypeOptions: SelectOption[] = [
-  { value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY, label: "Buy" },
-  { value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL, label: "Sell" },
-  { value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND, label: "Dividend" },
+  {
+    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
+    label: "Buy",
+  },
+  {
+    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL,
+    label: "Sell",
+  },
+  {
+    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+    label: "Dividend",
+  },
 ];
-
-// Dynamic validation schema based on investment type (crypto vs others)
-const createAddTransactionSchema = () => {
-  return z.object({
-    type: z.nativeEnum(InvestmentTransactionType),
-    quantity: z.number().min(0.00000001, "Quantity must be greater than 0"),
-    price: z.number().min(0, "Price must be non-negative"),
-    fees: z.number().min(0, "Fees must be non-negative"),
-    transactionDate: z.string().min(1, "Transaction date is required"),
-  });
-};
-
-type AddTransactionFormInput = z.infer<ReturnType<typeof createAddTransactionSchema>>;
 
 /**
  * Self-contained form component for adding investment transactions.
@@ -68,10 +73,7 @@ export function AddInvestmentTransactionForm({
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey[0] as string;
-          return [
-            "Investment",
-            "investments",
-          ].some(k => key.includes(k));
+          return ["Investment", "investments"].some((k) => key.includes(k));
         },
       });
     },
@@ -90,7 +92,7 @@ export function AddInvestmentTransactionForm({
     handleSubmit,
     formState: { isSubmitting },
   } = useForm<AddTransactionFormInput>({
-    resolver: zodResolver(createAddTransactionSchema()),
+    resolver: zodResolver(addTransactionSchema),
     defaultValues: {
       type: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
       quantity: 0,
@@ -110,7 +112,9 @@ export function AddInvestmentTransactionForm({
       quantity: quantityToStorage(data.quantity, investmentType),
       price: dollarsToCents(data.price),
       fees: dollarsToCents(data.fees),
-      transactionDate: Math.floor(new Date(data.transactionDate).getTime() / 1000),
+      transactionDate: Math.floor(
+        new Date(data.transactionDate).getTime() / 1000,
+      ),
       notes: "",
     };
 
@@ -124,10 +128,7 @@ export function AddInvestmentTransactionForm({
         <div className="text-hgreen text-6xl mb-4">✓</div>
         <h3 className="text-lg font-semibold mb-2">Transaction Added!</h3>
         <p className="text-gray-600 mb-6">{successMessage}</p>
-        <Button
-          type={ButtonType.PRIMARY}
-          onClick={onSuccess}
-        >
+        <Button type={ButtonType.PRIMARY} onClick={onSuccess}>
           Done
         </Button>
       </div>
@@ -137,9 +138,7 @@ export function AddInvestmentTransactionForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Error message */}
-      {errorMessage && (
-        <ErrorMessage>{errorMessage}</ErrorMessage>
-      )}
+      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
 
       {/* Transaction Type */}
       <FormSelect
@@ -189,7 +188,10 @@ export function AddInvestmentTransactionForm({
 
       {/* Transaction Date */}
       <div className="mb-2">
-        <label htmlFor="transactionDate" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="transactionDate"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Transaction Date <span className="text-lred">*</span>
         </label>
         <input
@@ -197,7 +199,9 @@ export function AddInvestmentTransactionForm({
           type="date"
           disabled={isSubmitting}
           className="p-2 drop-shadow-round rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed"
-          {...control.register("transactionDate", { required: "Transaction date is required" })}
+          {...control.register("transactionDate", {
+            required: "Transaction date is required",
+          })}
         />
       </div>
 

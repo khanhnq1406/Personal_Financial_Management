@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { InvestmentType } from "@/gen/protobuf/v1/investment";
+import {
+  InvestmentTransactionType,
+  InvestmentType,
+} from "@/gen/protobuf/v1/investment";
 
 /**
  * Zod schema for investment creation
@@ -18,7 +21,7 @@ export const createInvestmentSchema = z
       .min(1, "Name is required")
       .max(100, "Name must be 100 characters or less"),
     type: investmentTypeEnum,
-    initialQuantity: z.number().min(0, "Quantity must be positive"),
+    initialQuantity: z.number().min(0.00000001, "Quantity must be positive"),
     initialCost: z.number().min(0, "Initial cost must be 0 or greater"),
   })
   .refine(
@@ -28,4 +31,14 @@ export const createInvestmentSchema = z
     { message: "Quantity must be greater than 0", path: ["initialQuantity"] },
   );
 
+// Dynamic validation schema based on investment type (crypto vs others)
+export const addTransactionSchema = z.object({
+  type: z.nativeEnum(InvestmentTransactionType),
+  quantity: z.number().min(0.00000001, "Quantity must be greater than 0"),
+  price: z.number().min(0, "Price must be non-negative"),
+  fees: z.number().min(0, "Fees must be non-negative"),
+  transactionDate: z.string().min(1, "Transaction date is required"),
+});
+
 export type CreateInvestmentFormInput = z.infer<typeof createInvestmentSchema>;
+export type AddTransactionFormInput = z.infer<typeof addTransactionSchema>;

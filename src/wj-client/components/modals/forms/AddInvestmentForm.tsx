@@ -9,7 +9,6 @@ import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { Success } from "@/components/modals/Success";
 import {
   useMutationCreateInvestment,
@@ -24,6 +23,7 @@ import {
   createInvestmentSchema,
   CreateInvestmentFormInput,
 } from "@/lib/validation/investment.schema";
+import { quantityToStorage, dollarsToCents, getQuantityInputConfig } from "@/lib/utils/units";
 
 interface AddInvestmentFormProps {
   walletId: number;
@@ -83,7 +83,7 @@ export function AddInvestmentForm({
     control,
     handleSubmit,
     formState: { isSubmitting },
-    getValues,
+    watch,
   } = useForm<CreateInvestmentFormInput>({
     resolver: zodResolver(createInvestmentSchema),
     defaultValues: {
@@ -94,39 +94,22 @@ export function AddInvestmentForm({
       initialCost: 0,
     },
   });
-  console.log(getValues());
+
+  // Watch investment type to update quantity input config dynamically
+  const investmentType = watch("type");
+  const quantityConfig = getQuantityInputConfig(investmentType);
+
   const onSubmit = (data: CreateInvestmentFormInput) => {
     setErrorMessage(undefined);
 
-    // Convert quantity and cost to appropriate units
-    // For stocks/ETFs: multiply by 10000 (4 decimal places)
-    // For crypto: multiply by 100000000 (8 decimal places)
-    // For others: multiply by 100 (2 decimal places)
-    let quantityMultiplier = 10000;
-    const costMultiplier = 100; // Cost is in cents
-
-    if (data.type === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY) {
-      quantityMultiplier = 100000000;
-    } else if (
-      data.type === InvestmentType.INVESTMENT_TYPE_BOND ||
-      data.type === InvestmentType.INVESTMENT_TYPE_COMMODITY ||
-      data.type === InvestmentType.INVESTMENT_TYPE_OTHER
-    ) {
-      quantityMultiplier = 100;
-    }
-
-    const initialQuantity = Math.round(
-      data.initialQuantity * quantityMultiplier,
-    );
-    const initialCost = Math.round(data.initialCost * costMultiplier);
-
+    // Convert to API format using utility functions
     createInvestmentMutation.mutate({
       walletId,
       symbol: data.symbol.toUpperCase(),
       name: data.name,
       type: data.type,
-      initialQuantity,
-      initialCost,
+      initialQuantity: quantityToStorage(data.initialQuantity, data.type),
+      initialCost: dollarsToCents(data.initialCost),
       currency: "USD",
     });
   };
@@ -178,11 +161,11 @@ export function AddInvestmentForm({
           name="initialQuantity"
           control={control}
           label="Initial Quantity"
-          placeholder="100"
+          placeholder={quantityConfig.placeholder}
           required
           disabled={isSubmitting}
           min={0}
-          step="any"
+          step={quantityConfig.step}
         />
         <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
           Number of shares, coins, or units you hold
