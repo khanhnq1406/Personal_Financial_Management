@@ -13,6 +13,7 @@ import { BaseCard } from "@/components/BaseCard";
 import { SelectDropdown } from "@/components/select/SelectDropdown";
 import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
 import { TablePagination } from "@/components/table/TanStackTable";
+import { MobileTable } from "@/components/table/MobileTable";
 import { currencyFormatter } from "@/utils/currency-formatter";
 import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
@@ -220,151 +221,39 @@ export default function TransactionPage() {
     [],
   );
 
-  // Memoized transaction item for mobile view
-  const MobileTransactionItem = useMemo(
-    () =>
-      function MobileTransactionItem({
-        transaction,
-      }: {
-        transaction: (typeof transactions)[number];
-      }) {
-        return (
-          <BaseCard>
-            <div className="p-3 space-y-2">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold mb-1">
-                    Category
-                  </p>
-                  <p className="text-gray-900 text-sm font-light  text-right">
-                    {getCategoryName(transaction.categoryId)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold mb-1">Wallet</p>
-                  <p className="text-gray-900 text-sm font-light text-right">
-                    {getWalletName(transaction.walletId)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold  mb-1">
-                    Amount
-                  </p>
-                  <p className="text-gray-900 text-sm font-light  text-right">
-                    {currencyFormatter.format(transaction.amount?.amount || 0)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold  mb-1">
-                    Date & Time
-                  </p>
-                  <p className="text-gray-900 text-sm font-light  text-right">
-                    {formatDate(transaction.date)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-900 text-sm font-bold  mb-1">Note</p>
-                  <p className="text-gray-900 text-sm font-light  text-right">
-                    {transaction.note || "-"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              <div className="flex justify-between items-center">
-                <p className="text-gray-900 text-sm font-bold ">Actions</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
-                    aria-label="Edit transaction"
-                  >
-                    <Image
-                      src={`${resources}/editing.png`}
-                      width={20}
-                      height={20}
-                      alt="Edit transaction"
-                      className="w-full h-full object-contain"
-                    />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
-                    aria-label="Delete transaction"
-                  >
-                    <Image
-                      src={`${resources}/remove.png`}
-                      width={20}
-                      height={20}
-                      alt="Delete transaction"
-                      className="w-full h-full object-contain"
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </BaseCard>
-        );
+  // Memoize mobile table columns to avoid recreating on every render
+  const mobileColumns = useMemo(
+    () => [
+      {
+        id: "category",
+        header: "Category",
+        accessorFn: (row: (typeof transactions)[number]) =>
+          getCategoryName(row.categoryId),
       },
-    [
-      getCategoryName,
-      getWalletName,
-      formatDate,
-      handleEditTransaction,
-      handleDeleteTransaction,
+      {
+        id: "wallet",
+        header: "Wallet",
+        accessorFn: (row: (typeof transactions)[number]) =>
+          getWalletName(row.walletId),
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        accessorFn: (row: (typeof transactions)[number]) =>
+          currencyFormatter.format(row.amount?.amount || 0),
+      },
+      {
+        id: "date",
+        header: "Date & Time",
+        accessorFn: (row: (typeof transactions)[number]) => formatDate(row.date),
+      },
+      {
+        id: "note",
+        header: "Note",
+        accessorFn: (row: (typeof transactions)[number]) => row.note || "-",
+      },
     ],
-  );
-
-  // Memoize empty state
-  const emptyState = useMemo(
-    () => (
-      <BaseCard>
-        <div className="flex flex-col items-center justify-center py-12">
-          <svg
-            className="w-16 h-16 mb-4 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <p className="text-lg font-medium text-gray-900">
-            No transactions found
-          </p>
-          <p className="text-sm text-gray-400">
-            Add your first transaction to get started
-          </p>
-        </div>
-      </BaseCard>
-    ),
-    [],
+    [getCategoryName, getWalletName, formatDate],
   );
 
   return (
@@ -550,18 +439,46 @@ export default function TransactionPage() {
         {/* Mobile Transaction List */}
         <div className="sm:hidden flex flex-col h-full">
           <div className="flex-1 overflow-auto p-1">
-            {transactions.length > 0 ? (
-              <div className="space-y-3">
-                {transactions.map((transaction) => (
-                  <MobileTransactionItem
-                    key={transaction.id}
-                    transaction={transaction}
-                  />
-                ))}
-              </div>
-            ) : !isLoading ? (
-              emptyState
-            ) : null}
+            <MobileTable
+              data={transactions}
+              columns={mobileColumns}
+              getKey={(transaction) => transaction.id}
+              renderActions={(transaction) => (
+                <>
+                  <button
+                    onClick={() => handleEditTransaction(transaction.id)}
+                    className="w-5 h-5 hover:opacity-70 transition-opacity"
+                    aria-label="Edit transaction"
+                  >
+                    <Image
+                      src={`${resources}/editing.png`}
+                      width={20}
+                      height={20}
+                      alt="Edit transaction"
+                      className="w-full h-full object-contain"
+                    />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTransaction(transaction.id)}
+                    className="w-5 h-5 hover:opacity-70 transition-opacity"
+                    aria-label="Delete transaction"
+                  >
+                    <Image
+                      src={`${resources}/remove.png`}
+                      width={20}
+                      height={20}
+                      alt="Delete transaction"
+                      className="w-full h-full object-contain"
+                    />
+                  </button>
+                </>
+              )}
+              emptyMessage="No transactions found"
+              emptyDescription="Add your first transaction to get started"
+              isLoading={isLoading}
+              maxHeight="calc(100vh - 400px)"
+              showScrollIndicator={transactions.length > 5}
+            />
           </div>
 
           {/* Mobile Pagination */}
