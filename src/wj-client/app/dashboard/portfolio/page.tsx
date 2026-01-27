@@ -504,9 +504,19 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal - InvestmentDetailModal handles its own BaseModal */}
+      {modalType === ModalType.INVESTMENT_DETAIL && selectedInvestmentId && (
+        <InvestmentDetailModal
+          isOpen={modalType === ModalType.INVESTMENT_DETAIL}
+          onClose={handleCloseModal}
+          investmentId={selectedInvestmentId}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {/* BaseModal for other modals */}
       <BaseModal
-        isOpen={modalType !== null}
+        isOpen={modalType !== null && modalType !== ModalType.INVESTMENT_DETAIL}
         onClose={handleCloseModal}
         title={modalTitle}
       >
@@ -519,14 +529,6 @@ export default function PortfolioPage() {
         {modalType === ModalType.ADD_INVESTMENT && selectedWalletId && (
           <AddInvestmentForm
             walletId={selectedWalletId}
-            onSuccess={handleModalSuccess}
-          />
-        )}
-        {modalType === ModalType.INVESTMENT_DETAIL && selectedInvestmentId && (
-          <InvestmentDetailModal
-            isOpen={modalType === ModalType.INVESTMENT_DETAIL}
-            onClose={handleCloseModal}
-            investmentId={selectedInvestmentId}
             onSuccess={handleModalSuccess}
           />
         )}

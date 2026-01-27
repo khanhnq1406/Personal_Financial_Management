@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { TanStackTable } from "@/components/table/TanStackTable";
 import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
@@ -45,6 +47,16 @@ const getTransactionTypeLabel = (type: InvestmentTransactionType): string => {
 
 type TabType = "overview" | "transactions" | "add-transaction";
 
+type Transaction = {
+  id: number;
+  type: InvestmentTransactionType;
+  quantity: number;
+  price: number;
+  fees: number;
+  cost: number;
+  transactionDate: number;
+};
+
 export function InvestmentDetailModal({
   isOpen,
   onClose,
@@ -64,7 +76,11 @@ export function InvestmentDetailModal({
 
   // Fetch investment transactions
   const getListInvestmentTransactions = useQueryListInvestmentTransactions(
-    { investmentId: investmentId, pagination: { page: 1, pageSize: 100, orderBy: "", order: "" }, typeFilter: 0 },
+    {
+      investmentId: investmentId,
+      pagination: { page: 1, pageSize: 100, orderBy: "", order: "" },
+      typeFilter: 0,
+    },
     {
       enabled: isOpen && !!investmentId && activeTab === "transactions",
       refetchOnMount: "always",
@@ -73,6 +89,71 @@ export function InvestmentDetailModal({
 
   const investment = getInvestment.data?.data;
   const transactions = getListInvestmentTransactions.data?.data || [];
+
+  // Define table columns using ColumnDef
+  const columns: ColumnDef<Transaction>[] = useMemo(
+    () => [
+      {
+        id: "type",
+        accessorKey: "type",
+        header: "Type",
+        cell: ({ row }) => {
+          const type = row.original.type;
+          return (
+            <span
+              className={`font-medium ${
+                type ===
+                InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
+                  ? "text-green-600"
+                  : type ===
+                      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL
+                    ? "text-red-600"
+                    : "text-blue-600"
+              }`}
+            >
+              {getTransactionTypeLabel(type)}
+            </span>
+          );
+        },
+      },
+      {
+        id: "quantity",
+        accessorKey: "quantity",
+        header: "Quantity",
+        cell: ({ row }) =>
+          formatQuantity(row.original.quantity, investment?.type || 0),
+      },
+      {
+        id: "price",
+        accessorKey: "price",
+        header: "Price",
+        cell: ({ row }) => formatCurrency(row.original.price || 0),
+      },
+      {
+        id: "fees",
+        accessorKey: "fees",
+        header: "Fees",
+        cell: ({ row }) => formatCurrency(row.original.fees || 0),
+      },
+      {
+        id: "cost",
+        accessorKey: "cost",
+        header: "Total",
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {formatCurrency(row.original.cost || 0)}
+          </span>
+        ),
+      },
+      {
+        id: "transactionDate",
+        accessorKey: "transactionDate",
+        header: "Date",
+        cell: ({ row }) => formatDate(row.original.transactionDate || 0),
+      },
+    ],
+    [investment?.type],
+  );
 
   // Handle successful transaction addition
   const handleTransactionSuccess = () => {
@@ -84,9 +165,14 @@ export function InvestmentDetailModal({
   };
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title="Investment Details">
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Investment Details"
+      maxWidth="max-w-[50vw]"
+    >
       {getInvestment.isLoading || getInvestment.isPending ? (
-        <div className="flex items-center justify-center h-48">
+        <div className="flex items-center justify-center h-48 ">
           <LoadingSpinner text="Loading investment details..." />
         </div>
       ) : investment ? (
@@ -204,66 +290,18 @@ export function InvestmentDetailModal({
 
           {/* Transactions Tab */}
           {activeTab === "transactions" && (
-            <div className="space-y-3">
-              {getListInvestmentTransactions.isLoading ||
-              getListInvestmentTransactions.isPending ? (
-                <div className="flex items-center justify-center h-48">
-                  <LoadingSpinner text="Loading transactions..." />
-                </div>
-              ) : transactions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No transactions yet.</p>
-                </div>
-              ) : (
-                <div className="max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="border-b-2 border-gray-200">
-                        <th className="text-left py-2">Type</th>
-                        <th className="text-right py-2">Quantity</th>
-                        <th className="text-right py-2">Price</th>
-                        <th className="text-right py-2">Fees</th>
-                        <th className="text-right py-2">Total</th>
-                        <th className="text-left py-2">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((tx) => (
-                        <tr key={tx.id} className="border-b border-gray-100">
-                          <td
-                            className={`py-2 font-medium ${
-                              tx.type ===
-                              InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
-                                ? "text-green-600"
-                                : tx.type ===
-                                  InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL
-                                ? "text-red-600"
-                                : "text-blue-600"
-                            }`}
-                          >
-                            {getTransactionTypeLabel(tx.type)}
-                          </td>
-                          <td className="py-2 text-right">
-                            {formatQuantity(tx.quantity, investment.type)}
-                          </td>
-                          <td className="py-2 text-right">
-                            {formatCurrency(tx.price || 0)}
-                          </td>
-                          <td className="py-2 text-right">
-                            {formatCurrency(tx.fees || 0)}
-                          </td>
-                          <td className="py-2 text-right font-medium">
-                            {formatCurrency(tx.cost || 0)}
-                          </td>
-                          <td className="py-2">
-                            {formatDate(tx.transactionDate || 0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+            <div className="overflow-y-auto">
+              <TanStackTable
+                data={transactions}
+                columns={columns}
+                isLoading={
+                  getListInvestmentTransactions.isLoading ||
+                  getListInvestmentTransactions.isPending
+                }
+                emptyMessage="No transactions yet."
+                emptyDescription=""
+                className="text-sm"
+              />
             </div>
           )}
 

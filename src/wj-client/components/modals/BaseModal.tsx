@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { resources } from "@/app/constants";
+import { cn } from "@/lib/utils/cn";
 
 // Hoist regex outside component to avoid recreating on each render (js-hoist-regexp)
 const SPACE_REGEX = /\s+/g;
@@ -14,6 +15,8 @@ export interface BaseModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode; // Optional custom footer (e.g., for confirmation dialogs)
+  maxWidth?: string; // Optional max-width for the modal (e.g., "max-w-2xl", "max-w-3xl")
+  maxHeight?: string; // Optional max-height for the modal (e.g., "max-h-2xl", "max-h-3xl")
 }
 
 /**
@@ -27,6 +30,8 @@ export function BaseModal({
   title,
   children,
   footer,
+  maxWidth,
+  maxHeight,
 }: BaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -122,7 +127,11 @@ export function BaseModal({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain outline-none"
+        className={cn(
+          `bg-fg p-5 rounded-lg drop-shadow-round w-full overscroll-contain outline-none`,
+          maxWidth || "max-w-md",
+          maxHeight || "max-h-md",
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
