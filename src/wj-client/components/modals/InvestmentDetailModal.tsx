@@ -7,6 +7,8 @@ import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { TanStackTable } from "@/components/table/TanStackTable";
+import { MobileTable } from "@/components/table/MobileTable";
+import type { MobileColumnDef } from "@/components/table/MobileTable";
 import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
@@ -155,6 +157,61 @@ export function InvestmentDetailModal({
     [investment?.type],
   );
 
+  // Define mobile table columns
+  const mobileColumns: MobileColumnDef<Transaction>[] = useMemo(
+    () => [
+      {
+        id: "type",
+        header: "Type",
+        accessorFn: (row) => {
+          const type = row.type;
+          return (
+            <span
+              className={`font-medium ${
+                type ===
+                InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
+                  ? "text-green-600"
+                  : type ===
+                      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL
+                    ? "text-red-600"
+                    : "text-blue-600"
+              }`}
+            >
+              {getTransactionTypeLabel(type)}
+            </span>
+          );
+        },
+      },
+      {
+        id: "quantity",
+        header: "Quantity",
+        accessorFn: (row) =>
+          formatQuantity(row.quantity, investment?.type || 0),
+      },
+      {
+        id: "price",
+        header: "Price",
+        accessorFn: (row) => formatCurrency(row.price || 0),
+      },
+      {
+        id: "fees",
+        header: "Fees",
+        accessorFn: (row) => formatCurrency(row.fees || 0),
+      },
+      {
+        id: "cost",
+        header: "Total",
+        accessorFn: (row) => formatCurrency(row.cost || 0),
+      },
+      {
+        id: "transactionDate",
+        header: "Date",
+        accessorFn: (row) => formatDate(row.transactionDate || 0),
+      },
+    ],
+    [investment?.type],
+  );
+
   // Handle successful transaction addition
   const handleTransactionSuccess = () => {
     onSuccess?.();
@@ -168,20 +225,20 @@ export function InvestmentDetailModal({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Investment Details"
-      maxWidth="max-w-[50vw]"
+      title={investment?.name || "Investment Details"}
+      maxWidth="max-w-[80vw]"
     >
       {getInvestment.isLoading || getInvestment.isPending ? (
-        <div className="flex items-center justify-center h-48 ">
+        <div className="flex items-center justify-center h-48">
           <LoadingSpinner text="Loading investment details..." />
         </div>
       ) : investment ? (
         <div className="space-y-4">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`px-4 py-2 font-medium ${
+              className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "overview"
                   ? "border-b-2 border-hgreen text-hgreen"
                   : "text-gray-600 hover:text-gray-900"
@@ -191,7 +248,7 @@ export function InvestmentDetailModal({
             </button>
             <button
               onClick={() => setActiveTab("transactions")}
-              className={`px-4 py-2 font-medium ${
+              className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "transactions"
                   ? "border-b-2 border-hgreen text-hgreen"
                   : "text-gray-600 hover:text-gray-900"
@@ -201,7 +258,7 @@ export function InvestmentDetailModal({
             </button>
             <button
               onClick={() => setActiveTab("add-transaction")}
-              className={`px-4 py-2 font-medium ${
+              className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "add-transaction"
                   ? "border-b-2 border-hgreen text-hgreen"
                   : "text-gray-600 hover:text-gray-900"
@@ -290,18 +347,39 @@ export function InvestmentDetailModal({
 
           {/* Transactions Tab */}
           {activeTab === "transactions" && (
-            <div className="overflow-y-auto">
-              <TanStackTable
-                data={transactions}
-                columns={columns}
-                isLoading={
-                  getListInvestmentTransactions.isLoading ||
-                  getListInvestmentTransactions.isPending
-                }
-                emptyMessage="No transactions yet."
-                emptyDescription=""
-                className="text-sm"
-              />
+            <div className="overflow-y-auto max-h-[50vh]">
+              {/* Desktop Table */}
+              <div className="hidden sm:block">
+                <TanStackTable
+                  data={transactions}
+                  columns={columns}
+                  isLoading={
+                    getListInvestmentTransactions.isLoading ||
+                    getListInvestmentTransactions.isPending
+                  }
+                  emptyMessage="No transactions yet."
+                  emptyDescription=""
+                  className="text-sm"
+                />
+              </div>
+
+              {/* Mobile Table */}
+              <div className="sm:hidden">
+                <MobileTable
+                  data={transactions}
+                  columns={mobileColumns}
+                  getKey={(transaction) => transaction.id}
+                  isLoading={
+                    getListInvestmentTransactions.isLoading ||
+                    getListInvestmentTransactions.isPending
+                  }
+                  emptyMessage="No transactions yet."
+                  emptyDescription=""
+                  maxHeight="45vh"
+                  showScrollIndicator={transactions.length > 1}
+                  className="m-1"
+                />
+              </div>
             </div>
           )}
 

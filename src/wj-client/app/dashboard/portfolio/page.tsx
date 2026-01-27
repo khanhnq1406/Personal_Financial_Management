@@ -43,6 +43,7 @@ import {
   TanStackTable,
 } from "@/components/lazy/OptimizedComponents";
 import { BaseModal } from "@/components/modals/BaseModal";
+import { MobileTable } from "@/components/table/MobileTable";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const ModalType = {
@@ -243,7 +244,70 @@ const useInvestmentColumns = (
   );
 };
 
-// Memoized holdings table wrapper with TanStackTable
+// Mobile columns for MobileTable
+const useMobileInvestmentColumns = (
+  onRowClick: (investmentId: number) => void,
+) => {
+  return useMemo(
+    () => [
+      {
+        id: "symbol",
+        header: "Symbol",
+        accessorFn: (row: InvestmentData) => row.symbol,
+      },
+      {
+        id: "name",
+        header: "Name",
+        accessorFn: (row: InvestmentData) => row.name,
+      },
+      {
+        id: "type",
+        header: "Type",
+        accessorFn: (row: InvestmentData) =>
+          getInvestmentTypeLabel(row.type as any),
+      },
+      {
+        id: "quantity",
+        header: "Quantity",
+        accessorFn: (row: InvestmentData) =>
+          formatQuantity(row.quantity, row.type as any),
+      },
+      {
+        id: "averageCost",
+        header: "Avg Cost",
+        accessorFn: (row: InvestmentData) =>
+          formatPrice(row.averageCost || 0, row.type as any),
+      },
+      {
+        id: "currentPrice",
+        header: "Current Price",
+        accessorFn: (row: InvestmentData) =>
+          formatPrice(row.currentPrice || 0, row.type as any),
+      },
+      {
+        id: "currentValue",
+        header: "Current Value",
+        accessorFn: (row: InvestmentData) =>
+          formatCurrency(row.currentValue || 0),
+      },
+      {
+        id: "unrealizedPnl",
+        header: "PNL",
+        accessorFn: (row: InvestmentData) =>
+          formatCurrency(row.unrealizedPnl || 0),
+      },
+      {
+        id: "unrealizedPnlPercent",
+        header: "PNL %",
+        accessorFn: (row: InvestmentData) =>
+          formatPercent(row.unrealizedPnlPercent || 0),
+      },
+    ],
+    [],
+  );
+};
+
+// Memoized holdings table wrapper with TanStackTable and MobileTable
 const HoldingsTable = memo(
   ({
     investments,
@@ -255,16 +319,42 @@ const HoldingsTable = memo(
     onRowHover?: () => void;
   }) => {
     const columns = useInvestmentColumns(onRowClick);
+    const mobileColumns = useMobileInvestmentColumns(onRowClick);
 
     return (
-      <div className="overflow-x-auto" onMouseEnter={onRowHover}>
-        {/* Cast TanStackTable to any to bypass generic type constraint */}
-        <TanStackTable
-          data={investments}
-          columns={columns as any}
-          emptyMessage="No investments yet. Add your first investment to get started."
-        />
-      </div>
+      <>
+        {/* Desktop Table */}
+        <div
+          className="hidden sm:block overflow-x-auto"
+          onMouseEnter={onRowHover}
+        >
+          {/* Cast TanStackTable to any to bypass generic type constraint */}
+          <TanStackTable
+            data={investments}
+            columns={columns as any}
+            emptyMessage="No investments yet. Add your first investment to get started."
+          />
+        </div>
+
+        {/* Mobile Table */}
+        <div className="sm:hidden">
+          <MobileTable
+            data={investments}
+            columns={mobileColumns}
+            getKey={(investment) => investment.id}
+            renderActions={(investment) => (
+              <button
+                onClick={() => onRowClick(investment.id)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                aria-label="View investment details"
+              >
+                View Details
+              </button>
+            )}
+            emptyMessage="No investments yet. Add your first investment to get started."
+          />
+        </div>
+      </>
     );
   },
 );
@@ -432,11 +522,11 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <div className="flex justify-center py-2">
-        <div className="w-[80%] space-y-4">
+      <div className="flex justify-center py-4 px-6">
+        <div className="w-full space-y-4">
           {/* Header */}
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Investment Portfolio</h1>
+            <h1 className="text-xl font-bold">Investment Portfolio</h1>
 
             {/* Wallet Selector */}
             {investmentWallets.length > 1 && (

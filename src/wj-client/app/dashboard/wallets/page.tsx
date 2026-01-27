@@ -94,7 +94,7 @@ export default function WalletsPage() {
   const wallets = getListWallets.data?.wallets ?? [];
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 px-6 py-4">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">My Wallets</h1>

@@ -112,7 +112,7 @@ export default function BudgetPage() {
   const budgets = getListBudgets.data?.budgets ?? [];
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 px-6 py-4">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">Budget</h1>
