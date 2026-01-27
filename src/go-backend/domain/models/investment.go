@@ -72,8 +72,9 @@ func (i *Investment) recalculate() {
 		}
 	} else if i.TotalCost > 0 {
 		// If quantity or price is zero, unrealized PNL is -100%
-		i.UnrealizedPNL = -i.TotalCost
-		i.UnrealizedPNLPercent = -100.0
+		// If quantity is zero (fully sold), there's no unrealized PNL
+		i.UnrealizedPNL = 0
+		i.UnrealizedPNLPercent = 0
 	} else {
 		// No cost, no value, no PNL
 		i.CurrentValue = 0

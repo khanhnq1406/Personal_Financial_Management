@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
@@ -8,12 +8,9 @@ import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
-  useMutationAddInvestmentTransaction,
-  EVENT_InvestmentGetInvestment,
-  EVENT_InvestmentListInvestmentTransactions,
 } from "@/utils/generated/hooks";
-import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
-import type { AddTransactionRequest } from "@/gen/protobuf/v1/investment";
+import { InvestmentTransactionType, InvestmentType } from "@/gen/protobuf/v1/investment";
+import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
 
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
@@ -87,105 +84,17 @@ export function InvestmentDetailModal({
     },
   );
 
-  // Add transaction mutation
-  const addTransactionMutation = useMutationAddInvestmentTransaction({
-    onSuccess: () => {
-      onSuccess?.();
-      getInvestment.refetch();
-      setActiveTab("overview");
-      onClose();
-    },
-    onError: (error: any) => {
-      setFormError(error.message || "Failed to add transaction");
-    },
-  });
-
-  // Form state
-  const [transactionType, setTransactionType] =
-    useState<InvestmentTransactionType>(
-      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
-    );
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [fees, setFees] = useState("0");
-  const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [formError, setFormError] = useState("");
-
-  // Reset form when tab changes
-  useEffect(() => {
-    if (activeTab === "add-transaction") {
-      setTransactionType(
-        InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
-      );
-      setQuantity("");
-      setPrice("0");
-      setFees("0");
-      setTransactionDate(new Date().toISOString().split("T")[0]);
-      setFormError("");
-    }
-  }, [activeTab]);
-
-  const handleAddTransaction = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError("");
-
-    // Validation
-    const qtyNum = parseFloat(quantity);
-    const priceNum = parseFloat(price);
-    const feesNum = parseFloat(fees);
-
-    if (isNaN(qtyNum) || qtyNum <= 0) {
-      setFormError("Please enter a valid quantity");
-      return;
-    }
-
-    if (isNaN(priceNum) || priceNum < 0) {
-      setFormError("Please enter a valid price");
-      return;
-    }
-
-    if (isNaN(feesNum) || feesNum < 0) {
-      setFormError("Please enter valid fees");
-      return;
-    }
-
-    if (!transactionDate) {
-      setFormError("Please select a transaction date");
-      return;
-    }
-
-    // Convert to API format (cents for currency, smallest unit for quantity)
-    const investment = getInvestment.data?.data;
-    if (!investment) return;
-
-    // Determine decimals based on investment type
-    let decimals = 4;
-    if (
-      investment.type ===
-      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
-    ) {
-      decimals = 8;
-    }
-
-    const request: AddTransactionRequest = {
-      investmentId: investmentId,
-      type: transactionType,
-      quantity: Math.round(qtyNum * Math.pow(10, decimals)),
-      price: Math.round(priceNum * 100), // Convert to cents
-      fees: Math.round(feesNum * 100), // Convert to cents
-      transactionDate: Math.floor(
-        new Date(transactionDate).getTime() / 1000,
-      ),
-      notes: "",
-    };
-
-    addTransactionMutation.mutate(request);
-  };
-
   const investment = getInvestment.data?.data;
   const transactions = getListInvestmentTransactions.data?.data || [];
+
+  // Handle successful transaction addition
+  const handleTransactionSuccess = () => {
+    onSuccess?.();
+    getInvestment.refetch();
+    getListInvestmentTransactions.refetch();
+    setActiveTab("overview");
+    onClose();
+  };
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Investment Details">
@@ -372,118 +281,12 @@ export function InvestmentDetailModal({
           )}
 
           {/* Add Transaction Tab */}
-          {activeTab === "add-transaction" && (
-            <form onSubmit={handleAddTransaction} className="space-y-4">
-              {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-                  {formError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Transaction Type
-                </label>
-                <select
-                  value={transactionType}
-                  onChange={(e) =>
-                    setTransactionType(
-                      Number(e.target.value) as InvestmentTransactionType,
-                    )
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-                  required
-                >
-                  <option value={InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY}>
-                    Buy
-                  </option>
-                  <option value={InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL}>
-                    Sell
-                  </option>
-                  <option value={InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND}>
-                    Dividend
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  step="0.00000001"
-                  min="0"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-                  placeholder="0.00000000"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price per Unit (USD)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fees (USD)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={fees}
-                  onChange={(e) => setFees(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Transaction Date
-                </label>
-                <input
-                  type="date"
-                  value={transactionDate}
-                  onChange={(e) => setTransactionDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  type={ButtonType.SECONDARY}
-                  onClick={onClose}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type={ButtonType.PRIMARY}
-                  onClick={handleAddTransaction}
-                  loading={addTransactionMutation.isPending}
-                  className="flex-1"
-                >
-                  Add Transaction
-                </Button>
-              </div>
-            </form>
+          {activeTab === "add-transaction" && investment && (
+            <AddInvestmentTransactionForm
+              investmentId={investmentId}
+              investmentType={investment.type}
+              onSuccess={handleTransactionSuccess}
+            />
           )}
 
           {/* Close button for overview and transactions tabs */}

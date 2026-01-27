@@ -11,7 +11,13 @@
  * - rendering-hoist-jsx: Static JSX extracted outside component
  */
 
-import React, { useState, useMemo, useCallback, startTransition, memo } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  startTransition,
+  memo,
+} from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
@@ -46,69 +52,69 @@ const ModalType = {
 } as const;
 
 // Hoist static empty state outside component (rendering-hoist-jsx)
-const EmptyInvestmentWalletsState = memo(({ onOpenModal }: { onOpenModal: () => void }) => (
-  <div className="flex flex-col items-center justify-center h-full gap-4">
-    <div className="text-center">
-      <p className="text-lg font-semibold text-gray-700">
-        No Investment Wallets
-      </p>
-      <p className="text-sm text-gray-500 mt-2">
-        Create an investment wallet to start tracking your portfolio
-      </p>
+const EmptyInvestmentWalletsState = memo(
+  ({ onOpenModal }: { onOpenModal: () => void }) => (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-gray-700">
+          No Investment Wallets
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Create an investment wallet to start tracking your portfolio
+        </p>
+      </div>
+      <Button
+        type={ButtonType.PRIMARY}
+        onClick={onOpenModal}
+        className="w-fit px-4"
+      >
+        Create Investment Wallet
+      </Button>
     </div>
-    <Button
-      type={ButtonType.PRIMARY}
-      onClick={onOpenModal}
-      className="w-fit px-4"
-    >
-      Create Investment Wallet
-    </Button>
-  </div>
-));
+  ),
+);
 EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
 
 // Memoized portfolio summary cards to prevent re-renders
-const PortfolioSummaryCards = memo(({
-  portfolioSummary,
-}: {
-  portfolioSummary: any;
-}) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <BaseCard className="p-4">
-      <div className="text-sm text-gray-600">Total Value</div>
-      <div className="text-2xl font-bold text-gray-900 mt-1">
-        {formatCurrency(portfolioSummary.totalValue || 0)}
-      </div>
-    </BaseCard>
+const PortfolioSummaryCards = memo(
+  ({ portfolioSummary }: { portfolioSummary: any }) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <BaseCard className="p-4">
+        <div className="text-sm text-gray-600">Total Value</div>
+        <div className="text-2xl font-bold text-gray-900 mt-1">
+          {formatCurrency(portfolioSummary.totalValue || 0)}
+        </div>
+      </BaseCard>
 
-    <BaseCard className="p-4">
-      <div className="text-sm text-gray-600">Total Cost</div>
-      <div className="text-2xl font-bold text-gray-900 mt-1">
-        {formatCurrency(portfolioSummary.totalCost || 0)}
-      </div>
-    </BaseCard>
+      <BaseCard className="p-4">
+        <div className="text-sm text-gray-600">Total Cost</div>
+        <div className="text-2xl font-bold text-gray-900 mt-1">
+          {formatCurrency(portfolioSummary.totalCost || 0)}
+        </div>
+      </BaseCard>
 
-    <BaseCard className="p-4">
-      <div className="text-sm text-gray-600">Total PNL</div>
-      <div
-        className={`text-2xl font-bold mt-1 ${
-          (portfolioSummary.totalPnl || 0) >= 0
-            ? "text-green-600"
-            : "text-red-600"
-        }`}
-      >
-        {formatCurrency(portfolioSummary.totalPnl || 0)}
-      </div>
-    </BaseCard>
+      <BaseCard className="p-4">
+        <div className="text-sm text-gray-600">Total PNL</div>
+        <div
+          className={`text-2xl font-bold mt-1 ${
+            (portfolioSummary.totalPnl || 0) >= 0
+              ? "text-green-600"
+              : "text-red-600"
+          }`}
+        >
+          {formatCurrency(portfolioSummary.totalPnl || 0)}
+        </div>
+      </BaseCard>
 
-    <BaseCard className="p-4">
-      <div className="text-sm text-gray-600">Holdings</div>
-      <div className="text-2xl font-bold text-gray-900 mt-1">
-        {portfolioSummary.totalInvestments || 0}
-      </div>
-    </BaseCard>
-  </div>
-));
+      <BaseCard className="p-4">
+        <div className="text-sm text-gray-600">Holdings</div>
+        <div className="text-2xl font-bold text-gray-900 mt-1">
+          {portfolioSummary.totalInvestments || 0}
+        </div>
+      </BaseCard>
+    </div>
+  ),
+);
 PortfolioSummaryCards.displayName = "PortfolioSummaryCards";
 
 // Investment data type for TanStackTable
@@ -128,7 +134,6 @@ type InvestmentData = {
 // Column definitions for TanStackTable (memoized to prevent recreation)
 const useInvestmentColumns = (
   onRowClick: (investmentId: number) => void,
-  onRowHover?: () => void
 ): ColumnDef<InvestmentData>[] => {
   return useMemo(
     () => [
@@ -161,7 +166,10 @@ const useInvestmentColumns = (
         header: "Avg Cost",
         cell: (info) => {
           const row = info.row.original;
-          return formatPrice((info.getValue() as number | undefined) || 0, row.type as any);
+          return formatPrice(
+            (info.getValue() as number | undefined) || 0,
+            row.type as any,
+          );
         },
       },
       {
@@ -169,7 +177,10 @@ const useInvestmentColumns = (
         header: "Current Price",
         cell: (info) => {
           const row = info.row.original;
-          return formatPrice((info.getValue() as number | undefined) || 0, row.type as any);
+          return formatPrice(
+            (info.getValue() as number | undefined) || 0,
+            row.type as any,
+          );
         },
       },
       {
@@ -211,43 +222,62 @@ const useInvestmentColumns = (
           </span>
         ),
       },
+      {
+        id: "actions",
+        header: "",
+        cell: (info) => {
+          const investmentId = info.row.original.id;
+          return (
+            <button
+              onClick={() => onRowClick(investmentId)}
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+              aria-label="View investment details"
+            >
+              View Details
+            </button>
+          );
+        },
+      },
     ],
-    [onRowClick, onRowHover]
+    [onRowClick],
   );
 };
 
 // Memoized holdings table wrapper with TanStackTable
-const HoldingsTable = memo(({
-  investments,
-  onRowClick,
-  onRowHover,
-}: {
-  investments: InvestmentData[];
-  onRowClick: (investmentId: number) => void;
-  onRowHover?: () => void;
-}) => {
-  const columns = useInvestmentColumns(onRowClick, onRowHover);
+const HoldingsTable = memo(
+  ({
+    investments,
+    onRowClick,
+    onRowHover,
+  }: {
+    investments: InvestmentData[];
+    onRowClick: (investmentId: number) => void;
+    onRowHover?: () => void;
+  }) => {
+    const columns = useInvestmentColumns(onRowClick);
 
-  return (
-    <div
-      className="overflow-x-auto"
-      onMouseEnter={onRowHover}
-    >
-      {/* Cast TanStackTable to any to bypass generic type constraint */}
-      <TanStackTable
-        data={investments}
-        columns={columns as any}
-        emptyMessage="No investments yet. Add your first investment to get started."
-      />
-    </div>
-  );
-});
+    return (
+      <div className="overflow-x-auto" onMouseEnter={onRowHover}>
+        {/* Cast TanStackTable to any to bypass generic type constraint */}
+        <TanStackTable
+          data={investments}
+          columns={columns as any}
+          emptyMessage="No investments yet. Add your first investment to get started."
+        />
+      </div>
+    );
+  },
+);
 HoldingsTable.displayName = "HoldingsTable";
 
 export default function PortfolioPage() {
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [modalType, setModalType] = useState<keyof typeof ModalType | null>(null);
-  const [selectedInvestmentId, setSelectedInvestmentId] = useState<number | null>(null);
+  const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
+    null,
+  );
+  const [selectedInvestmentId, setSelectedInvestmentId] = useState<
+    number | null
+  >(null);
 
   // Fetch user's wallets
   const getListWallets = useQueryListWallets(
@@ -259,14 +289,14 @@ export default function PortfolioPage() {
         order: "desc",
       },
     },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   // Filter for investment wallets (memoized)
   const investmentWallets = useMemo(() => {
     if (!getListWallets.data?.wallets) return [];
     return getListWallets.data.wallets.filter(
-      (wallet) => wallet.type === WalletType.INVESTMENT
+      (wallet) => wallet.type === WalletType.INVESTMENT,
     );
   }, [getListWallets.data]);
 
@@ -286,7 +316,7 @@ export default function PortfolioPage() {
     {
       enabled: !!selectedWalletId,
       refetchOnMount: "always",
-    }
+    },
   );
 
   // Fetch investments for selected wallet
@@ -299,7 +329,7 @@ export default function PortfolioPage() {
     {
       enabled: !!selectedWalletId,
       refetchOnMount: "always",
-    }
+    },
   );
 
   // Memoize modal title
@@ -326,7 +356,7 @@ export default function PortfolioPage() {
         setModalType(type);
       });
     },
-    []
+    [],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -341,7 +371,12 @@ export default function PortfolioPage() {
       getListInvestments.refetch();
       handleCloseModal();
     });
-  }, [getListWallets, getPortfolioSummary, getListInvestments, handleCloseModal]);
+  }, [
+    getListWallets,
+    getPortfolioSummary,
+    getListInvestments,
+    handleCloseModal,
+  ]);
 
   // Preload modal on hover for perceived speed (bundle-preload)
   const handleRowHover = useCallback(() => {
@@ -360,7 +395,7 @@ export default function PortfolioPage() {
   // Error state
   if (getListWallets.error) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-full">
         <div className="text-lred text-center">
           <p className="text-lg font-semibold">Error loading portfolio</p>
           <p className="text-sm">{getListWallets.error.message}</p>
@@ -459,7 +494,9 @@ export default function PortfolioPage() {
             ) : (
               <HoldingsTable
                 investments={investments}
-                onRowClick={(id) => handleOpenModal(ModalType.INVESTMENT_DETAIL, id)}
+                onRowClick={(id) =>
+                  handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
+                }
                 onRowHover={handleRowHover}
               />
             )}

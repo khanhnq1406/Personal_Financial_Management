@@ -82,10 +82,15 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	}
 
 	// 5. Calculate initial values from initialQuantity and initialCost
-	// initialCost is the total cost, so average cost = initialCost / initialQuantity
+	// initialCost is the total cost (in cents), so we need to account for decimal precision
+	// Average cost = initialCost / (initialQuantity / decimals_multiplier)
+	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
+	if req.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
+		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
+	}
 	var averageCost int64 = 0
 	if req.InitialQuantity > 0 {
-		averageCost = req.InitialCost / req.InitialQuantity
+		averageCost = req.InitialCost * decimalsMultiplier / req.InitialQuantity
 	}
 
 	// 6. Create investment model
@@ -233,9 +238,9 @@ func (s *investmentService) ListInvestments(ctx context.Context, userID int32, r
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &investmentv1.ListInvestmentsResponse{
-		Success:   true,
-		Message:   "Investments retrieved successfully",
-		Data:      protoInvestments,
+		Success:    true,
+		Message:    "Investments retrieved successfully",
+		Data:       protoInvestments,
 		Pagination: s.mapper.PaginationResultToProto(paginationResult),
 		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
@@ -334,6 +339,11 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 	if req.Type == investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_UNSPECIFIED {
 		return nil, apperrors.NewValidationError("transaction type must be specified")
 	}
+	// Validate transaction date is not in the future
+	transactionTime := time.Unix(req.TransactionDate, 0)
+	if transactionTime.After(time.Now()) {
+		return nil, apperrors.NewValidationError("transaction date cannot be in the future")
+	}
 
 	// 2. Get investment and verify ownership
 	investment, err := s.investmentRepo.GetByIDForUser(ctx, req.InvestmentId, userID)
@@ -353,7 +363,14 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 	}
 
 	// 4. Calculate transaction cost
-	cost := req.Quantity * req.Price
+	// Quantity is stored in smallest units (satoshis for crypto, 1/10000 for stocks)
+	// We need to convert to user-facing units before calculating cost
+	// Cost = (quantity / decimals_multiplier) * price
+	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
+	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
+		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
+	}
+	cost := (req.Quantity / decimalsMultiplier) * req.Price
 	totalCost := cost + req.Fees
 
 	// 5. Handle transaction type
@@ -421,27 +438,31 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		}
 	}
 
+	// Determine decimal multiplier for this investment type
+	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
+	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
+		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
+	}
+
 	// Create new lot if no recent lot found
 	if lot == nil {
 		lot = &models.InvestmentLot{
 			InvestmentID: investment.ID,
 			Quantity:     req.Quantity,
 			TotalCost:    totalCost,
-			PurchasedAt:  time.Unix(req.TransactionDate, time.Now().Unix()%int64(time.Second)),
+			PurchasedAt:  time.Unix(req.TransactionDate, 0),
 		}
+		// Calculate average cost as: totalCost / (quantity / decimalsMultiplier)
+		// This gives us "cents per whole unit" (e.g., cents per BTC, cents per share)
+		lot.AverageCost = totalCost * decimalsMultiplier / req.Quantity
+		lot.RemainingQuantity = req.Quantity
 	} else {
 		// Update existing lot
 		lot.Quantity += req.Quantity
 		lot.TotalCost += totalCost
-		// Recalculate average cost
-		lot.AverageCost = lot.TotalCost / lot.Quantity
+		// Recalculate average cost as: totalCost / (quantity / decimalsMultiplier)
+		lot.AverageCost = lot.TotalCost * decimalsMultiplier / lot.Quantity
 		lot.RemainingQuantity = lot.Quantity
-	}
-
-	// If creating new lot, calculate average cost
-	if !updateExistingLot {
-		lot.AverageCost = totalCost / req.Quantity
-		lot.RemainingQuantity = req.Quantity
 	}
 
 	// Persist lot
@@ -464,7 +485,7 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		Price:             req.Price,
 		Cost:              cost,
 		Fees:              req.Fees,
-		TransactionDate:   time.Unix(req.TransactionDate, time.Now().Unix()%int64(time.Second)),
+			TransactionDate:   time.Unix(req.TransactionDate, 0),
 		Notes:             req.Notes,
 		LotID:             &lot.ID,
 		RemainingQuantity: lot.RemainingQuantity,
@@ -477,7 +498,9 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	// Update investment
 	investment.Quantity += req.Quantity
 	investment.TotalCost += totalCost
-	investment.AverageCost = investment.TotalCost / investment.Quantity
+	// Calculate average cost as: totalCost / (quantity / decimalsMultiplier)
+	// This gives us "cents per whole unit" (e.g., cents per BTC, cents per share)
+	investment.AverageCost = investment.TotalCost * decimalsMultiplier / investment.Quantity
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
@@ -513,6 +536,12 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		return nil, apperrors.NewValidationError(fmt.Sprintf("insufficient quantity in lots: available %d, trying to sell %d", totalAvailable, req.Quantity))
 	}
 
+	// Determine decimal multiplier for this investment type
+	var decimalsMultiplier int64 = 10000 // Default for stocks (4 decimals)
+	if investment.Type == investmentv1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
+		decimalsMultiplier = 100000000 // 8 decimals for crypto (satoshis)
+	}
+
 	// FIFO: Consume from oldest lots first
 	quantityToSell := req.Quantity
 	realizedPNL := int64(0)
@@ -534,9 +563,12 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		}
 
 		// Calculate realized PNL for this lot
-		// PNL = (sell_price - lot_avg_cost) * sold_quantity
-		lotCostBasis := lot.AverageCost * consumeFromLot
-		lotSellValue := sellPrice * consumeFromLot
+		// PNL = (sell_price - lot_avg_cost) * sold_quantity_in_whole_units
+		// Both sellPrice and lot.AverageCost are in cents per whole unit
+		// consumeFromLot is in smallest units, so we need to convert
+		consumeFromLotWholeUnits := consumeFromLot / decimalsMultiplier
+		lotCostBasis := lot.AverageCost * consumeFromLotWholeUnits
+		lotSellValue := sellPrice * consumeFromLotWholeUnits
 		lotPNL := lotSellValue - lotCostBasis
 		realizedPNL += lotPNL
 
@@ -552,6 +584,10 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 	// Subtract fees from realized PNL
 	realizedPNL -= req.Fees
 
+	// Calculate total proceeds (sale value) for the transaction record
+	// Cost for a sell transaction represents the total sale proceeds
+	totalProceeds := (req.Quantity / decimalsMultiplier) * req.Price
+
 	// Create transaction record
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
@@ -559,7 +595,7 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL,
 		Quantity:        req.Quantity,
 		Price:           req.Price,
-		Cost:            req.Quantity * req.Price,
+		Cost:            totalProceeds,
 		Fees:            req.Fees,
 		TransactionDate: time.Unix(req.TransactionDate, time.Now().Unix()%int64(time.Second)),
 		Notes:           req.Notes,
@@ -648,11 +684,11 @@ func (s *investmentService) ListTransactions(ctx context.Context, userID int32, 
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &investmentv1.ListInvestmentTransactionsResponse{
-		Success:   true,
-		Message:   "Transactions retrieved successfully",
-		Data:      protoTransactions,
+		Success:    true,
+		Message:    "Transactions retrieved successfully",
+		Data:       protoTransactions,
 		Pagination: s.mapper.PaginationResultToProto(paginationResult),
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp:  time.Now().Format(time.RFC3339),
 	}, nil
 }
 
@@ -747,15 +783,15 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 	investmentsByType := make([]*investmentv1.InvestmentByType, 0, len(summary.InvestmentsByType))
 	for invType, typeSummary := range summary.InvestmentsByType {
 		investmentsByType = append(investmentsByType, &investmentv1.InvestmentByType{
-			Type:      invType,
+			Type:       invType,
 			TotalValue: typeSummary.TotalValue,
 			Count:      typeSummary.Count,
 		})
 	}
 
 	return &investmentv1.GetPortfolioSummaryResponse{
-		Success:   true,
-		Message:   "Portfolio summary retrieved successfully",
+		Success: true,
+		Message: "Portfolio summary retrieved successfully",
 		Data: &investmentv1.PortfolioSummary{
 			TotalValue:        summary.TotalValue,
 			TotalCost:         summary.TotalCost,
@@ -815,10 +851,10 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 
 	if len(investmentsToUpdate) == 0 {
 		return &investmentv1.UpdatePricesResponse{
-			Success:           true,
-			Message:           "No investments to update",
+			Success:            true,
+			Message:            "No investments to update",
 			UpdatedInvestments: []*investmentv1.Investment{},
-			Timestamp:         time.Now().Format(time.RFC3339),
+			Timestamp:          time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
@@ -856,9 +892,9 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 	}
 
 	return &investmentv1.UpdatePricesResponse{
-		Success:           true,
-		Message:           fmt.Sprintf("Updated prices for %d investments", len(priceUpdates)),
+		Success:            true,
+		Message:            fmt.Sprintf("Updated prices for %d investments", len(priceUpdates)),
 		UpdatedInvestments: updatedInvestments,
-		Timestamp:         time.Now().Format(time.RFC3339),
+		Timestamp:          time.Now().Format(time.RFC3339),
 	}, nil
 }
