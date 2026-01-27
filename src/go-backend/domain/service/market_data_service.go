@@ -60,7 +60,8 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 			log.Printf("Warning: API fetch failed for %s, using stale cache: %v", symbol, err)
 			return cached, nil
 		}
-		return nil, err
+		// Return a more user-friendly error for API failures
+		return nil, fmt.Errorf("unable to fetch current price for %s. Please try again later. Error: %w", symbol, err)
 	}
 
 	// Store in cache
@@ -91,15 +92,24 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 	}
 
 	for _, investment := range investments {
-		// Get price for this investment
-		priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, maxAge)
-		if err != nil {
-			// Log error but continue with other investments
-			log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
-			continue
-		}
+		// Add defensive programming to handle individual investment failures
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Warning: panic while getting price for %s: %v\n", investment.Symbol, r)
+				}
+			}()
 
-		updates[investment.ID] = priceData.Price
+			// Get price for this investment
+			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, maxAge)
+			if err != nil {
+				// Log error but continue with other investments
+				log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
+				return
+			}
+
+			updates[investment.ID] = priceData.Price
+		}()
 	}
 
 	return updates, nil
@@ -110,6 +120,11 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, currency string) (*models.MarketData, error) {
 	// Create Yahoo Finance client
 	client := yahoo.NewClient(symbol)
+
+	// Add defensive programming to handle client initialization issues
+	if client == nil {
+		return nil, fmt.Errorf("failed to initialize Yahoo Finance client for %s", symbol)
+	}
 
 	// Fetch quote with timeout
 	// The client's GetQuote method respects the global rate limiter

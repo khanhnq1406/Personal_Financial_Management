@@ -45,6 +45,19 @@ func (c *Client) GetQuote(ctx context.Context) (*QuoteData, error) {
 		return nil, fmt.Errorf("rate limit wait failed: %w", err)
 	}
 
+	// Validate ticker
+	if c.ticker == nil {
+		return nil, fmt.Errorf("ticker is not initialized")
+	}
+
+	// Wrap entire API call in panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic but don't crash the server
+			fmt.Printf("Recovered from Yahoo Finance API panic: %v\n", r)
+		}
+	}()
+
 	// Create a history query for the last day
 	// Use the 1d range which gives us intraday and current data
 	query := yahoofinance.HistoryQuery{}

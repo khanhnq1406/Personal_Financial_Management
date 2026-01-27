@@ -136,7 +136,7 @@ func RegisterRoutes(
 	{
 		// Investment management routes
 		investments.POST("", h.Investment.CreateInvestment)
-		investments.GET("/update-prices", h.Investment.UpdatePrices)
+		investments.POST("/update-prices", h.Investment.UpdatePrices)
 		// Specific routes must come before :id parameterized route
 		// Investment transaction routes (use :id to be consistent with other routes)
 		investments.GET("/:id/transactions", h.Investment.ListTransactions)
