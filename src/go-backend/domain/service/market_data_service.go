@@ -133,17 +133,14 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 		return nil, fmt.Errorf("failed to fetch quote for %s: %w", symbol, err)
 	}
 
-	// Validate currency matches (if specified)
-	if currency != "" && quote.Currency != currency {
-		return nil, fmt.Errorf("currency mismatch for %s: expected %s, got %s", symbol, currency, quote.Currency)
-	}
-
 	// Convert to MarketData model
+	// Note: Quote() method doesn't return currency, so we use the investment's currency
+	// It also doesn't provide 24h change or previous close, so we set them to 0
 	return &models.MarketData{
 		Symbol:    quote.Symbol,
-		Currency:  quote.Currency,
+		Currency:  currency, // Use investment's currency since API doesn't provide it
 		Price:     quote.Price,     // Already in cents
-		Change24h: quote.Change24h, // Percentage
+		Change24h: 0,              // Not available from Quote() method
 		Volume24h: quote.Volume24h, // Raw volume
 		Timestamp: time.Now(),
 	}, nil

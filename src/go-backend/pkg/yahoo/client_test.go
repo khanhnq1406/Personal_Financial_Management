@@ -229,12 +229,9 @@ func TestGetGlobalThrottler(t *testing.T) {
 // TestQuoteDataFields verifies QuoteData struct field types
 func TestQuoteDataFields(t *testing.T) {
 	quote := &QuoteData{
-		Symbol:        "AAPL",
-		Price:         150000, // $1500.00 in cents
-		Change24h:     2.5,
-		Volume24h:     1000000,
-		Currency:      "USD",
-		PreviousClose: 145000, // $1450.00 in cents
+		Symbol:    "AAPL",
+		Price:     150000, // $1500.00 in cents
+		Volume24h: 1000000,
 	}
 
 	// Verify symbol is a string
@@ -250,27 +247,12 @@ func TestQuoteDataFields(t *testing.T) {
 		t.Error("Price should be positive")
 	}
 
-	// Verify change is float64
-	if quote.Change24h != 2.5 {
-		t.Errorf("Change24h = %f, want 2.5", quote.Change24h)
-	}
-
 	// Verify volume is int64 and positive
 	if quote.Volume24h != 1000000 {
 		t.Errorf("Volume24h = %d, want 1000000", quote.Volume24h)
 	}
 	if quote.Volume24h <= 0 {
 		t.Error("Volume24h should be positive")
-	}
-
-	// Verify currency is a string
-	if quote.Currency != "USD" {
-		t.Errorf("Currency = %s, want USD", quote.Currency)
-	}
-
-	// Verify previous close is int64
-	if quote.PreviousClose != 145000 {
-		t.Errorf("PreviousClose = %d, want 145000", quote.PreviousClose)
 	}
 }
 
@@ -290,11 +272,6 @@ func TestErrorVariables(t *testing.T) {
 			name: "ErrInvalidResponse",
 			err:  ErrInvalidResponse,
 			want: "invalid API response",
-		},
-		{
-			name: "ErrRateLimitExceeded",
-			err:  ErrRateLimitExceeded,
-			want: "rate limit exceeded",
 		},
 	}
 
@@ -500,48 +477,36 @@ func TestQuoteDataValidation(t *testing.T) {
 		{
 			name: "Valid quote",
 			quote: &QuoteData{
-				Symbol:        "AAPL",
-				Price:         150000,
-				Change24h:     2.5,
-				Volume24h:     1000000,
-				Currency:      "USD",
-				PreviousClose: 145000,
+				Symbol:    "AAPL",
+				Price:     150000,
+				Volume24h: 1000000,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Empty symbol",
 			quote: &QuoteData{
-				Symbol:        "",
-				Price:         150000,
-				Change24h:     2.5,
-				Volume24h:     1000000,
-				Currency:      "USD",
-				PreviousClose: 145000,
+				Symbol:    "",
+				Price:     150000,
+				Volume24h: 1000000,
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative price",
 			quote: &QuoteData{
-				Symbol:        "AAPL",
-				Price:         -100,
-				Change24h:     2.5,
-				Volume24h:     1000000,
-				Currency:      "USD",
-				PreviousClose: 145000,
+				Symbol:    "AAPL",
+				Price:     -100,
+				Volume24h: 1000000,
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative volume",
 			quote: &QuoteData{
-				Symbol:        "AAPL",
-				Price:         150000,
-				Change24h:     2.5,
-				Volume24h:     -100,
-				Currency:      "USD",
-				PreviousClose: 145000,
+				Symbol:    "AAPL",
+				Price:     150000,
+				Volume24h: -100,
 			},
 			wantErr: true,
 		},
