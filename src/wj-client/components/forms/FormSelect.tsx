@@ -4,7 +4,8 @@ import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
 import { cn } from "@/lib/utils/cn";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { Select } from "@/components/select/Select";
 
 export interface SelectOption {
   value: string | number;
@@ -42,17 +43,26 @@ export const FormSelect = memo(function FormSelect({
     fieldState: { error },
   } = useController(props);
 
-  const formatLabel = (option: SelectOption): string => {
-    if (formatOption) return formatOption(option);
-    return option.label;
-  };
+  // Convert options to string-based Select options
+  const selectOptions = useMemo(() => {
+    return options.map((option) => ({
+      value: String(option.value),
+      label: formatOption ? formatOption(option) : option.label,
+      disabled: option.disabled,
+    }));
+  }, [options, formatOption]);
 
-  // Check if any option has a number value
-  const hasNumberValues = options.some((opt) => typeof opt.value === "number");
+  // Convert the current value to string for Select component
+  const selectValue =
+    field.value !== undefined && field.value !== ""
+      ? String(field.value)
+      : undefined;
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    // Convert to number if options contain number values
+  const handleChange = (value: string) => {
+    // Convert back to number if original options had number values
+    const hasNumberValues = options.some(
+      (opt) => typeof opt.value === "number",
+    );
     const parsedValue = hasNumberValues && value !== "" ? Number(value) : value;
     field.onChange(parsedValue);
   };
@@ -62,34 +72,18 @@ export const FormSelect = memo(function FormSelect({
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
-      <select
-        id={props.name}
-        disabled={disabled || loading}
-        value={field.value ?? ""}
+      <Select
+        options={selectOptions}
+        value={selectValue}
         onChange={handleChange}
-        onBlur={field.onBlur}
-        name={field.name}
-        ref={field.ref}
+        placeholder={placeholder}
+        disabled={disabled || loading}
+        isLoading={loading}
         className={cn(
-          "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-2 border-lred",
+          "mt-1",
+          error && "[&_input]:border-2 [&_input]:border-lred",
         )}
-        aria-invalid={error ? "true" : "false"}
-        aria-describedby={error ? `${props.name}-error` : undefined}
-      >
-        <option value="" disabled>
-          {loading ? "Loading…" : placeholder}
-        </option>
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
-            {formatLabel(option)}
-          </option>
-        ))}
-      </select>
+      />
       {error && (
         <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>
       )}
