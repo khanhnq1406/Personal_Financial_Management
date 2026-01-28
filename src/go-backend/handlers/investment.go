@@ -598,3 +598,49 @@ func (h *InvestmentHandlers) UpdatePrices(c *gin.Context) {
 
 	handler.Success(c, result)
 }
+
+// SearchSymbols searches for investment symbols by query.
+// @Summary Search for investment symbols
+// @Tags investments
+// @Produce json
+// @Param query query string true "Search query"
+// @Param limit query int false "Max results (default: 10, max: 20)"
+// @Success 200 {object} types.APIResponse{data=investmentv1.SearchSymbolsResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/investments/symbols/search [get]
+func (h *InvestmentHandlers) SearchSymbols(c *gin.Context) {
+	// Get user ID from context
+	_, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get query parameter
+	query := c.Query("query")
+	if query == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("query parameter is required"))
+		return
+	}
+
+	// Get limit parameter
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+	if limit > 20 {
+		limit = 20
+	}
+
+	// Call service
+	result, err := h.investmentService.SearchSymbols(c.Request.Context(), query, limit)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
