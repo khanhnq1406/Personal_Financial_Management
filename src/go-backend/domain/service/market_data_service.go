@@ -23,6 +23,9 @@ type MarketDataService interface {
 
 	// SearchSymbols searches for investment symbols by query.
 	SearchSymbols(ctx context.Context, query string, limit int) ([]yahoo.SearchResult, error)
+
+	// GetPriceBatch fetches prices for multiple symbols in a single API call.
+	GetPriceBatch(ctx context.Context, symbols []string) (map[string]*models.MarketData, error)
 }
 
 // marketDataService implements MarketDataService.
@@ -119,32 +122,31 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 }
 
 // fetchPriceFromAPI fetches price data from Yahoo Finance API.
-// It uses the Yahoo Finance client which includes built-in rate limiting.
+// Uses the new v7 quote API which provides comprehensive market data.
 func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, currency string) (*models.MarketData, error) {
-	// Create Yahoo Finance client
-	client := yahoo.NewClient(symbol)
-
-	// Add defensive programming to handle client initialization issues
-	if client == nil {
-		return nil, fmt.Errorf("failed to initialize Yahoo Finance client for %s", symbol)
-	}
-
-	// Fetch quote with timeout
-	// The client's GetQuote method respects the global rate limiter
-	quote, err := client.GetQuote(ctx)
+	// Use new GetQuote function for comprehensive data
+	quote, err := yahoo.GetQuote(ctx, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch quote for %s: %w", symbol, err)
 	}
 
-	// Convert to MarketData model
-	// Note: Quote() method doesn't return currency, so we use the investment's currency
-	// It also doesn't provide 24h change or previous close, so we set them to 0
+	// Convert price from float to int64 (smallest currency unit)
+	// For VND: 69600.00 -> 6960000 (multiply by 100 for 2 decimal places)
+	// For USD: 150.25 -> 15025
+	priceInSmallestUnit := yahoo.ToSmallestCurrencyUnit(quote.RegularMarketPrice, quote.PriceHint)
+
+	// Use quote's currency if available, otherwise fall back to investment's currency
+	fetchedCurrency := quote.Currency
+	if fetchedCurrency == "" {
+		fetchedCurrency = currency
+	}
+
 	return &models.MarketData{
 		Symbol:    quote.Symbol,
-		Currency:  currency, // Use investment's currency since API doesn't provide it
-		Price:     quote.Price,     // Already in cents
-		Change24h: 0,              // Not available from Quote() method
-		Volume24h: quote.Volume24h, // Raw volume
+		Currency:  fetchedCurrency,
+		Price:     priceInSmallestUnit,
+		Change24h: quote.RegularMarketChangePercent,
+		Volume24h: 0, // Not provided by v7 quote API in current field set
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -152,4 +154,34 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 // SearchSymbols searches for investment symbols by query.
 func (s *marketDataService) SearchSymbols(ctx context.Context, query string, limit int) ([]yahoo.SearchResult, error) {
 	return yahoo.SearchSymbols(ctx, query, limit)
+}
+
+// GetPriceBatch fetches prices for multiple symbols in a single API call.
+// Returns a map of symbol to MarketData.
+func (s *marketDataService) GetPriceBatch(ctx context.Context, symbols []string) (map[string]*models.MarketData, error) {
+	if len(symbols) == 0 {
+		return nil, apperrors.NewValidationError("symbols list cannot be empty")
+	}
+
+	// Use batch quote API
+	quotes, err := yahoo.GetQuoteBatch(ctx, symbols)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch batch quotes: %w", err)
+	}
+
+	// Convert to MarketData
+	results := make(map[string]*models.MarketData)
+	for _, quote := range quotes {
+		priceInSmallestUnit := yahoo.ToSmallestCurrencyUnit(quote.RegularMarketPrice, quote.PriceHint)
+		results[quote.Symbol] = &models.MarketData{
+			Symbol:    quote.Symbol,
+			Currency:  quote.Currency,
+			Price:     priceInSmallestUnit,
+			Change24h: quote.RegularMarketChangePercent,
+			Volume24h: 0,
+			Timestamp: time.Now(),
+		}
+	}
+
+	return results, nil
 }

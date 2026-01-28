@@ -16,9 +16,9 @@ var (
 
 // QuoteData holds parsed quote data from Yahoo Finance
 type QuoteData struct {
-	Symbol    string  // Ticker symbol
-	Price     int64   // Current price in cents (multiply by 100)
-	Volume24h int64   // 24h volume
+	Symbol    string // Ticker symbol
+	Price     int64  // Current price in cents (multiply by 100)
+	Volume24h int64  // 24h volume
 }
 
 // Client wraps a Yahoo Finance Ticker

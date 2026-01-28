@@ -10,7 +10,7 @@ import (
 // It uses a sliding window approach to ensure a minimum time interval between requests.
 type Throttler struct {
 	mu           sync.Mutex
-	lastCallTime time.Time   // Timestamp of the last allowed request
+	lastCallTime time.Time     // Timestamp of the last allowed request
 	minInterval  time.Duration // Minimum duration that must elapse between requests
 }
 

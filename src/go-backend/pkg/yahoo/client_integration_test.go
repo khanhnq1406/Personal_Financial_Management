@@ -125,9 +125,9 @@ func TestGetQuoteInvalidSymbol(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		symbol         string
-		expectedErr    error
+		name        string
+		symbol      string
+		expectedErr error
 	}{
 		{
 			name:        "Invalid ticker with numbers",
@@ -246,18 +246,18 @@ func TestCurrencyValidation(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		symbol         string
+		name             string
+		symbol           string
 		expectedCurrency string
 	}{
 		{
-			name:            "US Stock (AAPL)",
-			symbol:          "AAPL",
+			name:             "US Stock (AAPL)",
+			symbol:           "AAPL",
 			expectedCurrency: "USD",
 		},
 		{
-			name:            "Bitcoin (BTC-USD)",
-			symbol:          "BTC-USD",
+			name:             "Bitcoin (BTC-USD)",
+			symbol:           "BTC-USD",
 			expectedCurrency: "USD",
 		},
 	}

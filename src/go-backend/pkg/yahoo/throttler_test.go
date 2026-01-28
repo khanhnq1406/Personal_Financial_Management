@@ -11,8 +11,8 @@ import (
 func TestNewThrottler(t *testing.T) {
 	// Test creating throttler with different rates
 	tests := []struct {
-		name         string
-		requests     int
+		name        string
+		requests    int
 		expectedMin time.Duration
 	}{
 		{"single request per second", 60, time.Second},
@@ -211,7 +211,6 @@ func TestThrottlerWait_ImmediateAfterWait(t *testing.T) {
 	}
 }
 
-
 func TestThrottlerWait_ConcurrentAccess(t *testing.T) {
 	// Test with high rate to avoid long test duration
 	throttler := NewThrottler(1000) // 1000 requests/minute
@@ -287,7 +286,6 @@ func TestThrottlerWait_ConcurrentAccess(t *testing.T) {
 		t.Logf("total elapsed: %v, expected: ~%v", totalElapsed, expectedTotal)
 	}
 }
-
 
 func TestThrottlerWait_MixedUsage(t *testing.T) {
 	// Test a realistic scenario with different usage patterns
