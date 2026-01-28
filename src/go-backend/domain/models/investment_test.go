@@ -214,7 +214,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 			quantity:       100000000,    // 1 BTC in satoshis
 			totalCost:      5000000,      // $50,000 in cents
-			currentPrice:   600000000,    // $60,000 in tenths of cents (4 decimals)
+			currentPrice:   6000000,      // $60,000 in cents
 			expectedValue:  6000000,      // $60,000 in cents
 			expectedPNL:    1000000,      // $10,000 profit
 			expectedPNLPct: 20.0,
@@ -224,7 +224,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       10000,        // 1 share in 4 decimals
 			totalCost:      15000,        // $150.00 in cents
-			currentPrice:   1750000,      // $175.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   17500,        // $175.00 in cents
 			expectedValue:  17500,        // $175.00 in cents
 			expectedPNL:    2500,         // $25.00 profit
 			expectedPNLPct: 16.666666666666668,
@@ -234,7 +234,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_ETF,
 			quantity:       5000,         // 0.5 shares in 4 decimals
 			totalCost:      20000,        // $200.00 in cents
-			currentPrice:   4200000,      // $420.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   42000,        // $420.00 in cents
 			expectedValue:  21000,        // $210.00 in cents (0.5 * 420)
 			expectedPNL:    1000,         // $10.00 profit
 			expectedPNLPct: 5.0,
@@ -244,7 +244,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
 			quantity:       10000,        // 1 share in 4 decimals
 			totalCost:      40000,        // $400.00 in cents
-			currentPrice:   4500000,      // $450.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   45000,        // $450.00 in cents
 			expectedValue:  45000,        // $450.00 in cents
 			expectedPNL:    5000,         // $50.00 profit
 			expectedPNLPct: 12.5,
@@ -254,7 +254,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_OTHER,
 			quantity:       100,          // 1 unit in 2 decimals
 			totalCost:      10000,        // $100.00 in cents
-			currentPrice:   1200000,      // $120.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   12000,        // $120.00 in cents
 			expectedValue:  12000,        // $120.00 in cents
 			expectedPNL:    2000,         // $20.00 profit
 			expectedPNLPct: 20.0,
@@ -264,7 +264,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       10000,        // 1 share
 			totalCost:      20000,        // $200.00 in cents
-			currentPrice:   1500000,      // $150.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   15000,        // $150.00 in cents
 			expectedValue:  15000,        // $150.00 in cents
 			expectedPNL:    -5000,        // $50.00 loss
 			expectedPNLPct: -25.0,
@@ -315,7 +315,7 @@ func TestInvestment_ZeroValueEdgeCases(t *testing.T) {
 			name:           "Zero quantity with cost",
 			quantity:       0,
 			totalCost:      10000,        // $100.00 in cents
-			currentPrice:   500000,      // $500.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   50000,        // $500.00 in cents
 			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			expectedValue:  0,
 			expectedPNL:    -10000,
@@ -335,7 +335,7 @@ func TestInvestment_ZeroValueEdgeCases(t *testing.T) {
 			name:           "Zero total cost",
 			quantity:       100000000,    // 1 BTC
 			totalCost:      0,
-			currentPrice:   600000000,   // $600,000 in 4 decimal places ($0.0001 units)
+			currentPrice:   6000000,      // $60,000 in cents
 			typeValue:      v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 			expectedValue:  6000000,      // $60,000 in cents
 			expectedPNL:    6000000,
@@ -394,8 +394,8 @@ func TestInvestment_GORMHooks(t *testing.T) {
 				return inv.BeforeCreate(nil)
 			},
 			initialValue:  0,
-			initialPrice:  600000000, // $60,000 in 4 decimal places ($0.0001 units)
-			expectedValue: 6000000,   // $60,000 in cents
+			initialPrice:  6000000, // $60,000 in cents
+			expectedValue: 6000000, // $60,000 in cents
 		},
 		{
 			name: "BeforeUpdate hook triggers recalculation",
@@ -403,8 +403,8 @@ func TestInvestment_GORMHooks(t *testing.T) {
 				return inv.BeforeUpdate(nil)
 			},
 			initialValue:  0,
-			initialPrice:  600000000, // $60,000 in 4 decimal places ($0.0001 units)
-			expectedValue: 6000000,   // $60,000 in cents
+			initialPrice:  6000000, // $60,000 in cents
+			expectedValue: 6000000, // $60,000 in cents
 		},
 	}
 
@@ -455,8 +455,8 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
 			quantity:       100000000, // 1 BTC in satoshis (8 decimals)
 			totalCost:      4500000,   // $45,000 in cents
-			currentPrice:   500000000, // $50,000 in 4 decimal places ($0.0001 units)
-			// Calculation: (100000000 * 5000000000) / 100000000 / 100 = 5000000 cents = $50,000
+			currentPrice:   5000000,   // $50,000 in cents
+			// Calculation: (100000000 / 100000000) * 5000000 = 5000000 cents = $50,000
 			expectedValue:  5000000, // $50,000 in cents
 			expectedPNL:    500000,  // $50,000 - $45,000 = $5,000 profit
 			expectedPNLPct: 11.1111, // (5000 / 45000) * 100 ≈ 11.11%
@@ -464,10 +464,10 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 		{
 			name:           "Stock - 10 shares at $100",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
-			quantity:       10000,  // 10.0000 shares (4 decimals)
-			totalCost:      90000,  // $900.00 in cents
-			currentPrice:   1000000, // $100.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (10000 * 10000000) / 10000 / 100 = 10000 cents = $100
+			quantity:       10000,  // 1.0000 shares (4 decimals) - corrected comment
+			totalCost:      90000,  // $900.00 in cents (bought at $900 per share)
+			currentPrice:   10000,  // $100.00 in cents
+			// Calculation: (10000 / 10000) * 10000 = 10000 cents = $100
 			expectedValue:  10000, // $100 in cents
 			expectedPNL:    -80000, // $100 - $900 = -$800
 			expectedPNLPct: -88.8889, // (-800 / 900) * 100 ≈ -88.89%
@@ -475,10 +475,10 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 		{
 			name:           "Stock - Profit scenario",
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
-			quantity:       5000,  // 5 shares (4 decimals)
-			totalCost:      50000, // $500.00 in cents
-			currentPrice:   2000000, // $200.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (5000 * 20000000) / 10000 / 100 = 10000 cents = $100
+			quantity:       5000,  // 0.5 shares (4 decimals)
+			totalCost:      50000, // $500.00 in cents (bought 0.5 shares at $1000)
+			currentPrice:   20000, // $200.00 in cents
+			// Calculation: (5000 / 10000) * 20000 = 10000 cents = $100
 			expectedValue:  10000, // $100 in cents
 			expectedPNL:    -40000, // $100 - $500 = -$400
 			expectedPNLPct: -80.0, // (-400 / 500) * 100 = -80%
@@ -488,8 +488,8 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_ETF,
 			quantity:       5000,  // 0.5 shares (4 decimals)
 			totalCost:      20000, // $200.00 in cents
-			currentPrice:   4200000, // $420.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (5000 * 42000000) / 10000 / 100 = 21000 cents = $210
+			currentPrice:   42000, // $420.00 in cents
+			// Calculation: (5000 / 10000) * 42000 = 21000 cents = $210
 			expectedValue:  21000, // $210 in cents
 			expectedPNL:    1000,  // $210 - $200 = $10 profit
 			expectedPNLPct: 5.0,   // (10 / 200) * 100 = 5%
@@ -499,8 +499,8 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
 			quantity:       10000, // 1 share (4 decimals)
 			totalCost:      40000, // $400.00 in cents
-			currentPrice:   4500000, // $450.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (10000 * 45000000) / 10000 / 100 = 45000 cents = $450
+			currentPrice:   45000, // $450.00 in cents
+			// Calculation: (10000 / 10000) * 45000 = 45000 cents = $450
 			expectedValue:  45000, // $450 in cents
 			expectedPNL:    5000,  // $450 - $400 = $50 profit
 			expectedPNLPct: 12.5,  // (50 / 400) * 100 = 12.5%
@@ -510,8 +510,8 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_OTHER,
 			quantity:       100,   // 1 unit (2 decimals)
 			totalCost:      10000, // $100.00 in cents
-			currentPrice:   1200000, // $120.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (100 * 12000000) / 100 / 100 = 12000 cents = $120
+			currentPrice:   12000, // $120.00 in cents
+			// Calculation: (100 / 100) * 12000 = 12000 cents = $120
 			expectedValue:  12000, // $120 in cents
 			expectedPNL:    2000,  // $120 - $100 = $20 profit
 			expectedPNLPct: 20.0,  // (20 / 100) * 100 = 20%
@@ -568,7 +568,7 @@ func TestInvestmentRecalculate_CorrectedEdgeCases(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       0,
 			totalCost:      50000, // $500.00 in cents
-			currentPrice:   1000000, // $100.00 in 4 decimal places ($0.0001 units)
+			currentPrice:   10000, // $100.00 in cents
 			expectedValue:  0,
 			expectedPNL:    -50000,     // -$500.00
 			expectedPNLPct: -100.0,
@@ -588,8 +588,8 @@ func TestInvestmentRecalculate_CorrectedEdgeCases(t *testing.T) {
 			investmentType: v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			quantity:       10000, // 1 share
 			totalCost:      0,
-			currentPrice:   1500000, // $150.00 in 4 decimal places ($0.0001 units)
-			// Calculation: (10000 * 15000000) / 10000 / 100 = 15000 cents = $150
+			currentPrice:   15000, // $150.00 in cents
+			// Calculation: (10000 / 10000) * 15000 = 15000 cents = $150
 			expectedValue:  15000, // $150
 			expectedPNL:    15000, // $150 - $0 = $150
 			expectedPNLPct: 0,     // Division by zero avoided

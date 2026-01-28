@@ -103,10 +103,14 @@ func TestSellTransaction_CostBasisPreserved(t *testing.T) {
 
 	// Expected values after sell
 	expectedQuantity := int64(7000)  // 10000 - 3000 = 0.7 shares
-	expectedRealizedPNL := int64(3000*1700000 - 3000*1500000 - 100) // (sell - cost - fees)
-	// Expected: 3000 * 1700000 = 5,100,000,000
-	//           3000 * 1500000 = 4,500,000,000
-	//           PNL = 600,000,000 - 100 = 599,999,900
+	// Calculate expected realized PNL using the same formula as the service
+	// For stocks: precision = 10000 (4 decimals)
+	// quantityWholeUnits = 3000 / 10000 = 0.3 shares
+	// lotCostBasis = 1500000 * 0.3 = 450000 (cents) = $4,500
+	// lotSellValue = 1700000 * 0.3 = 510000 (cents) = $5,100
+	// lotPNL = 510000 - 450000 = 60000 (cents) = $600
+	// realizedPNL = 60000 - 100 (fees) = 59900 (cents) = $599.99
+	expectedRealizedPNL := int64(59900)
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)

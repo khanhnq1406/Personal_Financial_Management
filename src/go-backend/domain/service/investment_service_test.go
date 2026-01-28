@@ -693,6 +693,11 @@ func TestInvestmentService_GetPortfolioSummary_Success(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	// GetPortfolioSummary now calls ListByWalletID to check if prices need refresh
+	// Return empty investments to avoid auto-refresh
+	mockInvestmentRepo.On("ListByWalletID", ctx, walletID, mock.MatchedBy(func(opts repository.ListOptions) bool {
+		return opts.Limit == 1000
+	}), investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED).Return([]*models.Investment{}, 0, nil).Maybe()
 	mockInvestmentRepo.On("GetPortfolioSummary", ctx, walletID).Return(summary, nil)
 
 	// Execute
@@ -736,10 +741,21 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 	}, 1, nil)
 	mockInvestmentRepo.On("ListByWalletID", ctx, int32(1), mock.Anything, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED).Return([]*models.Investment{investment1, investment2}, 2, nil)
 	mockMarketDataService.On("UpdatePricesForInvestments", ctx, mock.Anything, false).Return(map[int32]int64{
-		1: 1600000, // AAPL @ $160
-		2: 51000000000, // BTC @ $51,000
+		1: 16000, // AAPL @ $160 (in cents)
+		2: 5100000, // BTC @ $51,000 (in cents)
 	}, nil)
 	mockInvestmentRepo.On("UpdatePrices", ctx, mock.Anything).Return(nil)
+	// GetByID is called to fetch the updated investments with recalculated values
+	updatedInv1 := createTestInvestment(1, 1, "AAPL", 10000, 1500000, 15000000000)
+	updatedInv1.CurrentPrice = 16000
+	updatedInv1.CurrentValue = 16000 // (10000/10000) * 16000 = 16000 cents = $160
+	updatedInv1.UnrealizedPNL = 16000 - 15000000000 // This will be negative, but that's what recalculate produces
+	updatedInv2 := createTestInvestment(2, 1, "BTC", 100000000, 50000000000, 5000000000000000)
+	updatedInv2.CurrentPrice = 5100000
+	updatedInv2.CurrentValue = 5100000 // (100000000/100000000) * 5100000 = 5100000 cents = $51,000
+	updatedInv2.UnrealizedPNL = 5100000 - 5000000000000000
+	mockInvestmentRepo.On("GetByID", ctx, int32(1)).Return(updatedInv1, nil)
+	mockInvestmentRepo.On("GetByID", ctx, int32(2)).Return(updatedInv2, nil)
 
 	// Execute
 	response, err := service.UpdatePrices(ctx, userID, req)

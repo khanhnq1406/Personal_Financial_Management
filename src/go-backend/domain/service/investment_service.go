@@ -541,10 +541,10 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		// Calculate realized PNL for this lot using utility function
 		// Convert consumeFromLot from smallest units to whole units
 		precision := units.GetPrecisionForInvestmentType(investment.Type)
-		consumeFromLotWholeUnits := consumeFromLot / int64(precision)
-		lotCostBasis := lot.AverageCost * consumeFromLotWholeUnits
-		lotSellValue := sellPrice * consumeFromLotWholeUnits
-		lotPNL := units.CalculateRealizedPNL(lotCostBasis, lotSellValue)
+		consumeFromLotWholeUnits := float64(consumeFromLot) / float64(precision)
+		lotCostBasis := float64(lot.AverageCost) * consumeFromLotWholeUnits
+		lotSellValue := float64(sellPrice) * consumeFromLotWholeUnits
+		lotPNL := units.CalculateRealizedPNL(int64(lotCostBasis), int64(lotSellValue))
 		realizedPNL += lotPNL
 
 		// Update lot
@@ -892,16 +892,16 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 		return nil, apperrors.NewInternalErrorWithCause("failed to save price updates", err)
 	}
 
-	// Get updated investments for response
+	// Get updated investments for response - fetch from database to get recalculated values
 	var updatedInvestments []*investmentv1.Investment
 	for investmentID := range priceUpdates {
-		for _, inv := range investmentsToUpdate {
-			if inv.ID == investmentID {
-				inv.CurrentPrice = priceUpdates[investmentID]
-				updatedInvestments = append(updatedInvestments, s.mapper.ModelToProto(inv))
-				break
-			}
+		// Fetch the updated investment from database to get recalculated current_value and PNL
+		updatedInv, err := s.investmentRepo.GetByID(ctx, investmentID)
+		if err != nil {
+			log.Printf("Warning: failed to fetch updated investment %d: %v", investmentID, err)
+			continue
 		}
+		updatedInvestments = append(updatedInvestments, s.mapper.ModelToProto(updatedInv))
 	}
 
 	return &investmentv1.UpdatePricesResponse{

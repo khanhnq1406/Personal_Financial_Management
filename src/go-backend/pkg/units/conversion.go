@@ -60,9 +60,18 @@ func CalculateTransactionCost(quantity int64, priceCents int64, investmentType v
 	return int64(quantityWholeUnits * float64(priceCents))
 }
 
-// CalculateCurrentValue calculates the current value in cents
+// CalculateCurrentValue calculates the current value in cents.
+//
 // Formula: (quantity / decimalMultiplier) * priceCents
-// Uses float64 to avoid integer division truncation with fractional quantities
+//
+// Where:
+//   - quantity is stored in the smallest unit for the investment type (e.g., satoshis for crypto)
+//   - decimalMultiplier converts quantity to whole units (e.g., 100000000 for BTC)
+//   - priceCents is the price in cents (currency's smallest unit)
+//   - Returns current value in cents
+//
+// Uses float64 for intermediate calculation to avoid integer division truncation
+// with fractional quantities and prevent integer overflow with large quantities.
 func CalculateCurrentValue(quantity int64, priceCents int64, investmentType v1.InvestmentType) int64 {
 	precision := GetPrecisionForInvestmentType(investmentType)
 	quantityWholeUnits := float64(quantity) / float64(precision)

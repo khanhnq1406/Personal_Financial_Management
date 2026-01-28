@@ -50,6 +50,7 @@ func (i *Investment) BeforeUpdate(tx *gorm.DB) error {
 }
 
 // recalculate updates CurrentValue, UnrealizedPNL, UnrealizedPNLPercent based on investment type
+// Both CurrentPrice and CurrentValue are stored in cents (currency's smallest unit)
 func (i *Investment) recalculate() {
 	if i.Quantity > 0 && i.CurrentPrice > 0 {
 		// Determine divisor based on investment type
@@ -63,23 +64,29 @@ func (i *Investment) recalculate() {
 			divisor = 10000 // 4 decimals for stocks
 		}
 
-		// Current Value = (Quantity * Price) / divisor / 100
-		// The divisor handles quantity decimals, the /100 converts price from cents to dollars
-		i.CurrentValue = (i.Quantity * i.CurrentPrice) / divisor / 100
+		// Current Value = (Quantity / divisor) * CurrentPrice
+		// - divisor converts quantity from storage units to whole units (e.g., satoshis to BTC)
+		// - CurrentPrice is in cents, so CurrentValue will also be in cents
+		// Using float64 for intermediate calculation to avoid integer overflow with large quantities
+		quantityWholeUnits := float64(i.Quantity) / float64(divisor)
+		i.CurrentValue = int64(quantityWholeUnits * float64(i.CurrentPrice))
 		i.UnrealizedPNL = i.CurrentValue - i.TotalCost
 		if i.TotalCost > 0 {
 			i.UnrealizedPNLPercent = (float64(i.UnrealizedPNL) / float64(i.TotalCost)) * 100
 		}
-	} else if i.TotalCost > 0 {
-		// If quantity or price is zero, unrealized PNL is -100%
-		// If quantity is zero (fully sold), there's no unrealized PNL
-		i.UnrealizedPNL = 0
-		i.UnrealizedPNLPercent = 0
 	} else {
-		// No cost, no value, no PNL
+		// If quantity or price is zero, current value is zero
 		i.CurrentValue = 0
-		i.UnrealizedPNL = 0
-		i.UnrealizedPNLPercent = 0
+
+		// If we have cost but no quantity/price, that's a 100% loss
+		if i.TotalCost > 0 {
+			i.UnrealizedPNL = -i.TotalCost
+			i.UnrealizedPNLPercent = -100.0
+		} else {
+			// No cost, no PNL
+			i.UnrealizedPNL = 0
+			i.UnrealizedPNLPercent = 0
+		}
 	}
 }
 

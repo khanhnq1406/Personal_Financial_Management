@@ -163,6 +163,9 @@ func (r *investmentRepository) Delete(ctx context.Context, id int32) error {
 }
 
 // UpdatePrices updates current prices for multiple investments.
+// This method fetches each investment, updates its current_price, and saves it
+// to ensure GORM hooks (BeforeUpdate) are triggered for recalculating
+// current_value, unrealized_pnl, and unrealized_pnl_percent.
 func (r *investmentRepository) UpdatePrices(ctx context.Context, updates []PriceUpdate) error {
 	if len(updates) == 0 {
 		return nil
@@ -171,14 +174,18 @@ func (r *investmentRepository) UpdatePrices(ctx context.Context, updates []Price
 	// Use a transaction for batch updates
 	err := r.db.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, update := range updates {
-			// Update current_price for the investment
-			// The GORM hooks (BeforeUpdate) will automatically recalculate
-			// current_value, unrealized_pnl, and unrealized_pnl_percent
-			result := tx.Model(&models.Investment{}).
-				Where("id = ?", update.InvestmentID).
-				Update("current_price", update.Price)
-			if result.Error != nil {
-				return apperrors.NewInternalErrorWithCause("failed to update investment price", result.Error)
+			// Fetch the investment first
+			var investment models.Investment
+			if err := tx.Where("id = ?", update.InvestmentID).First(&investment).Error; err != nil {
+				return apperrors.NewInternalErrorWithCause("failed to fetch investment", err)
+			}
+
+			// Update the current_price field
+			investment.CurrentPrice = update.Price
+
+			// Save the investment - this triggers BeforeUpdate hook which calls recalculate()
+			if err := tx.Save(&investment).Error; err != nil {
+				return apperrors.NewInternalErrorWithCause("failed to update investment price", err)
 			}
 		}
 		return nil
