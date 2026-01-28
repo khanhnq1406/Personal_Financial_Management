@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"wealthjourney/domain/models"
@@ -909,5 +910,39 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 		Message:            fmt.Sprintf("Updated prices for %d investments", len(priceUpdates)),
 		UpdatedInvestments: updatedInvestments,
 		Timestamp:          time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// SearchSymbols searches for investment symbols by query using Yahoo Finance search API.
+func (s *investmentService) SearchSymbols(ctx context.Context, query string, limit int) (*investmentv1.SearchSymbolsResponse, error) {
+	// 1. Validate query
+	if strings.TrimSpace(query) == "" {
+		return nil, apperrors.NewValidationError("query is required")
+	}
+
+	// 2. Call Yahoo Finance search
+	results, err := s.marketDataService.SearchSymbols(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Convert to protobuf format
+	data := make([]*investmentv1.SearchResult, 0, len(results))
+	for _, r := range results {
+		data = append(data, &investmentv1.SearchResult{
+			Symbol:   r.Symbol,
+			Name:     r.Name,
+			Type:     r.Type,
+			Exchange: r.Exchange,
+			ExchDisp: r.ExchDisp,
+		})
+	}
+
+	// 4. Return response
+	return &investmentv1.SearchSymbolsResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("found %d symbols", len(data)),
+		Data:      data,
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }

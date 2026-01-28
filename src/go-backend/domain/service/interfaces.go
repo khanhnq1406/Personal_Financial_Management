@@ -190,4 +190,7 @@ type InvestmentService interface {
 
 	// UpdatePrices updates current prices for investments.
 	UpdatePrices(ctx context.Context, userID int32, req *investmentv1.UpdatePricesRequest) (*investmentv1.UpdatePricesResponse, error)
+
+	// SearchSymbols searches for investment symbols by query using Yahoo Finance search API.
+	SearchSymbols(ctx context.Context, query string, limit int) (*investmentv1.SearchSymbolsResponse, error)
 }

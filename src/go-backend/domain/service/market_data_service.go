@@ -20,6 +20,9 @@ type MarketDataService interface {
 
 	// UpdatePricesForInvestments updates prices for multiple investments.
 	UpdatePricesForInvestments(ctx context.Context, investments []*models.Investment, forceRefresh bool) (map[int32]int64, error)
+
+	// SearchSymbols searches for investment symbols by query.
+	SearchSymbols(ctx context.Context, query string, limit int) ([]yahoo.SearchResult, error)
 }
 
 // marketDataService implements MarketDataService.
@@ -144,4 +147,9 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 		Volume24h: quote.Volume24h, // Raw volume
 		Timestamp: time.Now(),
 	}, nil
+}
+
+// SearchSymbols searches for investment symbols by query.
+func (s *marketDataService) SearchSymbols(ctx context.Context, query string, limit int) ([]yahoo.SearchResult, error) {
+	return yahoo.SearchSymbols(ctx, query, limit)
 }
