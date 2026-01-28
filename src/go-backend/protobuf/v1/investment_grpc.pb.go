@@ -30,6 +30,7 @@ const (
 	InvestmentService_DeleteInvestmentTransaction_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction"
 	InvestmentService_GetPortfolioSummary_FullMethodName         = "/wealthjourney.investment.v1.InvestmentService/GetPortfolioSummary"
 	InvestmentService_UpdatePrices_FullMethodName                = "/wealthjourney.investment.v1.InvestmentService/UpdatePrices"
+	InvestmentService_SearchSymbols_FullMethodName               = "/wealthjourney.investment.v1.InvestmentService/SearchSymbols"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -58,6 +59,8 @@ type InvestmentServiceClient interface {
 	GetPortfolioSummary(ctx context.Context, in *GetPortfolioSummaryRequest, opts ...grpc.CallOption) (*GetPortfolioSummaryResponse, error)
 	// Update current prices (manual or automatic)
 	UpdatePrices(ctx context.Context, in *UpdatePricesRequest, opts ...grpc.CallOption) (*UpdatePricesResponse, error)
+	// SearchSymbols searches for investment symbols by query
+	SearchSymbols(ctx context.Context, in *SearchSymbolsRequest, opts ...grpc.CallOption) (*SearchSymbolsResponse, error)
 }
 
 type investmentServiceClient struct {
@@ -167,6 +170,15 @@ func (c *investmentServiceClient) UpdatePrices(ctx context.Context, in *UpdatePr
 	return out, nil
 }
 
+func (c *investmentServiceClient) SearchSymbols(ctx context.Context, in *SearchSymbolsRequest, opts ...grpc.CallOption) (*SearchSymbolsResponse, error) {
+	out := new(SearchSymbolsResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_SearchSymbols_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvestmentServiceServer is the server API for InvestmentService service.
 // All implementations must embed UnimplementedInvestmentServiceServer
 // for forward compatibility
@@ -193,6 +205,8 @@ type InvestmentServiceServer interface {
 	GetPortfolioSummary(context.Context, *GetPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error)
 	// Update current prices (manual or automatic)
 	UpdatePrices(context.Context, *UpdatePricesRequest) (*UpdatePricesResponse, error)
+	// SearchSymbols searches for investment symbols by query
+	SearchSymbols(context.Context, *SearchSymbolsRequest) (*SearchSymbolsResponse, error)
 	mustEmbedUnimplementedInvestmentServiceServer()
 }
 
@@ -232,6 +246,9 @@ func (UnimplementedInvestmentServiceServer) GetPortfolioSummary(context.Context,
 }
 func (UnimplementedInvestmentServiceServer) UpdatePrices(context.Context, *UpdatePricesRequest) (*UpdatePricesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePrices not implemented")
+}
+func (UnimplementedInvestmentServiceServer) SearchSymbols(context.Context, *SearchSymbolsRequest) (*SearchSymbolsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchSymbols not implemented")
 }
 func (UnimplementedInvestmentServiceServer) mustEmbedUnimplementedInvestmentServiceServer() {}
 
@@ -444,6 +461,24 @@ func _InvestmentService_UpdatePrices_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InvestmentService_SearchSymbols_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchSymbolsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).SearchSymbols(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_SearchSymbols_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).SearchSymbols(ctx, req.(*SearchSymbolsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InvestmentService_ServiceDesc is the grpc.ServiceDesc for InvestmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -494,6 +529,10 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdatePrices",
 			Handler:    _InvestmentService_UpdatePrices_Handler,
+		},
+		{
+			MethodName: "SearchSymbols",
+			Handler:    _InvestmentService_SearchSymbols_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -166,6 +166,13 @@ service InvestmentService {
       body: "*"
     };
   }
+
+  // SearchSymbols searches for investment symbols by query
+  rpc SearchSymbols(SearchSymbolsRequest) returns (SearchSymbolsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/symbols/search"
+    };
+  }
 }
 
 // Request/Response messages
@@ -312,5 +319,28 @@ message UpdatePricesResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   repeated Investment updatedInvestments = 3 [json_name = "updatedInvestments"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// SearchSymbolsRequest represents the search request parameters
+message SearchSymbolsRequest {
+  string query = 1 [json_name = "query"];  // Search query (e.g., "AAPL", "Apple", "Bitcoin")
+  int32 limit = 2 [json_name = "limit"];   // Max results to return (default: 10, max: 20)
+}
+
+// SearchResult represents a single search result from Yahoo Finance
+message SearchResult {
+  string symbol = 1 [json_name = "symbol"];       // Ticker symbol (e.g., "AAPL", "BTC-USD")
+  string name = 2 [json_name = "name"];           // Company/asset name
+  string type = 3 [json_name = "type"];           // Type from quoteType (EQUITY, ETF, CRYPTOCURRENCY, etc.)
+  string exchange = 4 [json_name = "exchange"];   // Exchange code (NAS, NMS, VSE, etc.)
+  string exchDisp = 5 [json_name = "exchDisp"];   // Display name for exchange
+}
+
+// SearchSymbolsResponse represents the search response
+message SearchSymbolsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated SearchResult data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
 }
