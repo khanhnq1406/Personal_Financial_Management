@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect, KeyboardEvent, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  KeyboardEvent,
+  useCallback,
+} from "react";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -29,6 +35,8 @@ export interface SelectProps<T extends string = string> {
   value?: T;
   /** Callback when selection changes */
   onChange: (value: T) => void;
+  /** Callback when input value changes (for search/filter scenarios) */
+  onInputChange?: (value: string) => void;
   /** Placeholder text when no value is selected */
   placeholder?: string;
   /** Additional CSS classes for the container */
@@ -41,6 +49,8 @@ export interface SelectProps<T extends string = string> {
   displayValue?: string;
   /** Whether to show a clear button to reset the selection */
   clearable?: boolean;
+  /** Whether to disable filtering options by input (useful for autocomplete with server-side filtering) */
+  disableFilter?: boolean;
   /** Custom render function for the dropdown container */
   renderDropdown?: (props: {
     children: React.ReactNode;
@@ -53,7 +63,7 @@ export interface SelectProps<T extends string = string> {
       isSelected: boolean;
       isHighlighted: boolean;
       onSelect: () => void;
-    }
+    },
   ) => React.ReactNode;
   /** Optional callback when dropdown opens */
   onOpen?: () => void;
@@ -100,12 +110,14 @@ export function Select<T extends string = string>({
   options,
   value,
   onChange,
+  onInputChange,
   placeholder = "Select...",
   className = "",
   disabled = false,
   isLoading = false,
   displayValue,
   clearable = true,
+  disableFilter = false,
   renderDropdown,
   renderOption,
   onOpen,
@@ -118,9 +130,15 @@ export function Select<T extends string = string>({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Update input value when selection changes externally
+  // Update input value when selection changes externally (but not when focused/typing)
   useEffect(() => {
+    // Don't override input value while user is typing
+    if (isFocused) {
+      return;
+    }
+
     if (selectedOption) {
       setInputValue(selectedOption.label);
     } else if (value === "" || value === undefined) {
@@ -128,7 +146,7 @@ export function Select<T extends string = string>({
     } else if (displayValue) {
       setInputValue(displayValue);
     }
-  }, [value, selectedOption, displayValue]);
+  }, [value, selectedOption, displayValue, isFocused]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -149,19 +167,23 @@ export function Select<T extends string = string>({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
+  const filteredOptions = disableFilter
+    ? options
+    : options.filter((option) =>
+        option.label.toLowerCase().includes(inputValue.toLowerCase()),
+      );
 
   const handleSelect = useCallback(
     (selectedValue: T) => {
       onChange(selectedValue);
       setIsOpen(false);
       setHighlightedIndex(-1);
-      setInputValue(options.find((opt) => opt.value === selectedValue)?.label || "");
+      setInputValue(
+        options.find((opt) => opt.value === selectedValue)?.label || "",
+      );
       onClose?.();
     },
-    [onChange, options, onClose]
+    [onChange, options, onClose],
   );
 
   const handleClear = useCallback(
@@ -171,13 +193,15 @@ export function Select<T extends string = string>({
       setInputValue("");
       inputRef.current?.focus();
     },
-    [onChange]
+    [onChange],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
+    const newValue = e.target.value;
+    setInputValue(newValue);
     setIsOpen(true);
     setHighlightedIndex(-1);
+    onInputChange?.(newValue);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -193,7 +217,7 @@ export function Select<T extends string = string>({
       case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < filteredOptions.length - 1 ? prev + 1 : prev
+          prev < filteredOptions.length - 1 ? prev + 1 : prev,
         );
         break;
       case "ArrowUp":
@@ -202,7 +226,10 @@ export function Select<T extends string = string>({
         break;
       case "Enter":
         e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+        if (
+          highlightedIndex >= 0 &&
+          highlightedIndex < filteredOptions.length
+        ) {
           handleSelect(filteredOptions[highlightedIndex].value);
         } else if (filteredOptions.length === 1) {
           handleSelect(filteredOptions[0].value);
@@ -224,10 +251,15 @@ export function Select<T extends string = string>({
   };
 
   const handleFocus = () => {
+    setIsFocused(true);
     if (!disabled && !isOpen) {
       setIsOpen(true);
       onOpen?.();
     }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
   };
 
   const dropdownClassName =
@@ -235,11 +267,15 @@ export function Select<T extends string = string>({
 
   const defaultRenderOption = (
     option: SelectOption<T>,
-    { isSelected, isHighlighted, onSelect }: {
+    {
+      isSelected,
+      isHighlighted,
+      onSelect,
+    }: {
       isSelected: boolean;
       isHighlighted: boolean;
       onSelect: () => void;
-    }
+    },
   ) => {
     return (
       <div
@@ -249,57 +285,42 @@ export function Select<T extends string = string>({
           "px-3 py-2 cursor-pointer text-sm",
           isHighlighted
             ? "bg-hgreen text-white"
-            : "hover:bg-gray-100",
-          isSelected && "font-semibold"
+            : isSelected
+              ? "bg-green-50 font-semibold"
+              : "hover:bg-gray-100",
         )}
       >
         {option.render ? option.render(option) : option.label}
-        {isSelected && (
-          <span className="ml-2">
-            <svg
-              className="w-4 h-4 inline"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </span>
-        )}
       </div>
     );
   };
 
-  const dropdownContent = filteredOptions.length === 0 ? (
-    <div className="p-2 text-gray-500 text-sm">No options found</div>
-  ) : (
-    filteredOptions.map((option, index) => {
-      const isSelected = value === option.value;
-      const isHighlighted = highlightedIndex === index;
+  const dropdownContent =
+    filteredOptions.length === 0 ? (
+      <div className="p-2 text-gray-500 text-sm">No options found</div>
+    ) : (
+      filteredOptions.map((option, index) => {
+        const isSelected = value === option.value;
+        const isHighlighted = highlightedIndex === index;
 
-      if (renderOption) {
-        return renderOption(option, {
+        if (renderOption) {
+          return renderOption(option, {
+            isSelected,
+            isHighlighted,
+            onSelect: () => handleSelect(option.value),
+          });
+        }
+
+        return defaultRenderOption(option, {
           isSelected,
           isHighlighted,
           onSelect: () => handleSelect(option.value),
         });
-      }
-
-      return defaultRenderOption(option, {
-        isSelected,
-        isHighlighted,
-        onSelect: () => handleSelect(option.value),
-      });
-    })
-  );
+      })
+    );
 
   const defaultDropdown = (
-    <div className={dropdownClassName}>
-      {dropdownContent}
-    </div>
+    <div className={dropdownClassName}>{dropdownContent}</div>
   );
 
   return (
@@ -312,9 +333,12 @@ export function Select<T extends string = string>({
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
+          onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           disabled={disabled || isLoading}
-          placeholder={placeholder && placeholder.length > 0 ? `${placeholder}…` : ""}
+          placeholder={
+            placeholder && placeholder.length > 0 ? `${placeholder}…` : ""
+          }
           autoComplete="off"
           spellCheck={false}
           className="p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2"
@@ -335,11 +359,7 @@ export function Select<T extends string = string>({
               className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-hgreen rounded-full p-0.5"
               aria-label="Clear selection"
             >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -368,7 +388,10 @@ export function Select<T extends string = string>({
               aria-expanded={isOpen}
             >
               <svg
-                className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")}
+                className={cn(
+                  "w-4 h-4 transition-transform",
+                  isOpen && "rotate-180",
+                )}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -414,14 +437,12 @@ export function Select<T extends string = string>({
       {/* Dropdown menu */}
       {isOpen && !disabled && (
         <>
-          {renderDropdown ? (
-            renderDropdown({
-              children: dropdownContent,
-              className: dropdownClassName,
-            })
-          ) : (
-            defaultDropdown
-          )}
+          {renderDropdown
+            ? renderDropdown({
+                children: dropdownContent,
+                className: dropdownClassName,
+              })
+            : defaultDropdown}
         </>
       )}
     </div>

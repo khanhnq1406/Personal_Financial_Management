@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { cn } from "@/lib/utils/cn";
 
-interface Option {
+export interface Option {
   value: string;
   label: string;
 }

@@ -22,25 +22,36 @@ type SearchResult struct {
 
 // SearchParams holds configurable parameters for Yahoo Finance search API
 type SearchParams struct {
-	Query        string
-	QuotesCount  int
-	NewsCount    int
-	ListsCount   int
-	EnableFuzzyQuery           bool
-	EnableEnhancedTrivialQuery bool
-	EnableCccBoost             bool
-	EnablePrivateCompany       bool
-	EnableResearchReports      bool
-	EnableCulturalAssets       bool
-	EnableLogoUrl              bool
-	EnableNavLinks             bool
-	EnableCb                   bool
-	EnableLists                bool
-	QuotesQueryId              string
-	MultiQuoteQueryId          string
-	NewsQueryId                string
-	RecommendCount             int
-	Lang                       string
+	// Core search parameters
+	Query       string // Search query (symbol, company name, etc.)
+	QuotesCount int    // Number of quote results to return (default: 10, max: 20)
+	NewsCount   int    // Number of news results (default: 0, not needed for symbol search)
+	ListsCount  int    // Number of list results (default: 0, not needed)
+
+	// Query optimization parameters
+	EnableFuzzyQuery           bool // Enable fuzzy matching (default: false for exact matching)
+	EnableEnhancedTrivialQuery bool // Enable better trivial query handling (default: true)
+	EnableCccBoost             bool // Enable cryptocurrency boost (default: true)
+	EnablePrivateCompany       bool // Include private companies (default: true)
+
+	// Feature flags
+	EnableResearchReports bool // Enable research reports data (default: true)
+	EnableCulturalAssets  bool // Enable cultural assets data (default: true)
+	EnableLogoUrl         bool // Enable logo URLs (default: true)
+	EnableNavLinks        bool // Enable navigation links (default: true)
+	EnableCb              bool // Enable clickback (default: false)
+	EnableLists           bool // Enable lists in results (default: false)
+
+	// Query IDs (Yahoo Finance internal query routing)
+	QuotesQueryId     string // Default: "tss_match_phrase_query"
+	MultiQuoteQueryId string // Default: "multi_quote_single_token_query"
+	NewsQueryId       string // Default: "news_cie_vespa" (not used when newsCount=0)
+
+	// Recommendation
+	RecommendCount int // Number of recommendations (default: 5)
+
+	// Language
+	Lang string // Language code (default: "en-US")
 }
 
 // DefaultSearchParams creates a SearchParams with sensible defaults for symbol search

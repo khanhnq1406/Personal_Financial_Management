@@ -10,6 +10,7 @@ import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { Success } from "@/components/modals/Success";
+import { SymbolAutocomplete } from "@/components/forms/SymbolAutocomplete";
 import {
   useMutationCreateInvestment,
   EVENT_InvestmentCreateInvestment,
@@ -23,7 +24,13 @@ import {
   createInvestmentSchema,
   CreateInvestmentFormInput,
 } from "@/lib/validation/investment.schema";
-import { quantityToStorage, dollarsToCents, getQuantityInputConfig } from "@/lib/utils/units";
+import {
+  quantityToStorage,
+  dollarsToCents,
+  getQuantityInputConfig,
+} from "@/lib/utils/units";
+import { Label } from "@/components/forms/Label";
+import { ErrorMessage } from "@/components/forms/ErrorMessage";
 
 interface AddInvestmentFormProps {
   walletId: number;
@@ -82,8 +89,9 @@ export function AddInvestmentForm({
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
     watch,
+    setValue,
   } = useForm<CreateInvestmentFormInput>({
     resolver: zodResolver(createInvestmentSchema),
     defaultValues: {
@@ -122,15 +130,21 @@ export function AddInvestmentForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Symbol */}
-      <FormInput
-        name="symbol"
-        control={control}
-        label="Symbol"
-        placeholder="AAPL, BTC, VTI..."
-        required
-        disabled={isSubmitting}
-        className="mb-4"
-      />
+      <div className="mb-4">
+        <Label htmlFor="symbol" required>
+          Symbol
+        </Label>
+        <SymbolAutocomplete
+          value={watch("symbol")}
+          onChange={(symbol) => setValue("symbol", symbol)}
+          placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
+          disabled={isSubmitting}
+          className="mt-1"
+        />
+        {errors.symbol && (
+          <ErrorMessage id="symbol-error">{errors.symbol.message}</ErrorMessage>
+        )}
+      </div>
 
       {/* Name */}
       <FormInput
