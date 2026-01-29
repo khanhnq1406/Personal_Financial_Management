@@ -56,8 +56,18 @@ func TestSellTransaction_CostBasisPreserved(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -155,8 +165,18 @@ func TestSellTransaction_SellAllShares(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -240,8 +260,18 @@ func TestSellTransaction_MultipleBuysThenSell(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -339,8 +369,18 @@ func TestSellTransaction_InsufficientQuantity(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -393,8 +433,18 @@ func TestSellTransaction_NoOpenLots(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -449,8 +499,18 @@ func TestSellTransaction_FIFOMultipleLots(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)

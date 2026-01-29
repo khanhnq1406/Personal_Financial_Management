@@ -8,6 +8,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/yahoo"
 
 	investmentv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
@@ -238,6 +239,95 @@ func (m *MockMarketDataService) UpdatePricesForInvestments(ctx context.Context, 
 	return args.Get(0).(map[int32]int64), args.Error(1)
 }
 
+func (m *MockMarketDataService) SearchSymbols(ctx context.Context, query string, quotesCount int) ([]yahoo.SearchResult, error) {
+	args := m.Called(ctx, query, quotesCount)
+	return args.Get(0).([]yahoo.SearchResult), args.Error(1)
+}
+
+func (m *MockMarketDataService) GetPriceBatch(ctx context.Context, symbols []string) (map[string]*models.MarketData, error) {
+	args := m.Called(ctx, symbols)
+	return args.Get(0).(map[string]*models.MarketData), args.Error(1)
+}
+
+type MockUserRepository struct {
+	mock.Mock
+}
+
+func (m *MockUserRepository) GetByID(ctx context.Context, id int32) (*models.User, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserRepository) Create(ctx context.Context, user *models.User) error {
+	args := m.Called(ctx, user)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) Update(ctx context.Context, user *models.User) error {
+	args := m.Called(ctx, user)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) Delete(ctx context.Context, id int32) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) List(ctx context.Context, opts repository.ListOptions) ([]*models.User, int, error) {
+	args := m.Called(ctx, opts)
+	return args.Get(0).([]*models.User), args.Get(1).(int), args.Error(2)
+}
+
+func (m *MockUserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+	args := m.Called(ctx, email)
+	return args.Get(0).(bool), args.Error(1)
+}
+
+type MockFXRateService struct {
+	mock.Mock
+}
+
+func (m *MockFXRateService) GetRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error) {
+	args := m.Called(ctx, fromCurrency, toCurrency)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockFXRateService) ConvertAmount(ctx context.Context, amount int64, fromCurrency, toCurrency string) (int64, error) {
+	args := m.Called(ctx, amount, fromCurrency, toCurrency)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFXRateService) BatchGetRates(ctx context.Context, pairs []CurrencyPair) (map[CurrencyPair]float64, error) {
+	args := m.Called(ctx, pairs)
+	return args.Get(0).(map[CurrencyPair]float64), args.Error(1)
+}
+
+func (m *MockFXRateService) UpdateRate(ctx context.Context, fromCurrency, toCurrency string) error {
+	args := m.Called(ctx, fromCurrency, toCurrency)
+	return args.Error(0)
+}
+
+func (m *MockFXRateService) IsSupportedCurrency(currency string) bool {
+	args := m.Called(currency)
+	return args.Get(0).(bool)
+}
+
+func (m *MockFXRateService) GetSupportedCurrencies() []string {
+	args := m.Called()
+	return args.Get(0).([]string)
+}
+
 // Test helper functions
 func createTestWallet(id int32, userID int32, walletType walletv1.WalletType) *models.Wallet {
 	return &models.Wallet{
@@ -271,8 +361,18 @@ func TestInvestmentService_CreateInvestment_Success(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -316,8 +416,18 @@ func TestInvestmentService_CreateInvestment_WalletNotFound(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -352,8 +462,18 @@ func TestInvestmentService_CreateInvestment_WrongWalletType(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -390,8 +510,18 @@ func TestInvestmentService_CreateInvestment_DuplicateSymbol(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -431,8 +561,18 @@ func TestInvestmentService_AddTransaction_BuyCreatesLot(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -479,8 +619,18 @@ func TestInvestmentService_AddTransaction_SellConsumesOldestLot(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -552,8 +702,18 @@ func TestInvestmentService_AddTransaction_SellConsumesMultipleLots(t *testing.T)
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -621,8 +781,18 @@ func TestInvestmentService_AddTransaction_SellExceedsQuantity(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -664,8 +834,18 @@ func TestInvestmentService_GetPortfolioSummary_Success(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)
@@ -723,8 +903,18 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 	mockInvestmentRepo := new(MockInvestmentRepository)
 	mockTxRepo := new(MockInvestmentTransactionRepository)
 	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
 
-	service := NewInvestmentService(mockInvestmentRepo, mockWalletRepo, mockTxRepo, mockMarketDataService).(*investmentService)
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+	).(*investmentService)
 
 	ctx := context.Background()
 	userID := int32(1)

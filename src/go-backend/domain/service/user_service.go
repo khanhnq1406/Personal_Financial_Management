@@ -306,7 +306,7 @@ func (s *userService) UpdateUserPreferences(ctx context.Context, userID int32, p
 	// Validate that we can get the FX rate for this pair
 	rate, err := s.fxRateSvc.GetRate(ctx, oldCurrency, preferredCurrency)
 	if err != nil {
-		return nil, apperrors.NewValidationError(fmt.Sprintf("cannot get exchange rate from %s to %s: %w", oldCurrency, preferredCurrency, err))
+		return nil, apperrors.NewValidationError(fmt.Sprintf("cannot get exchange rate from %s to %s: %v", oldCurrency, preferredCurrency, err))
 	}
 	if rate == 0 {
 		return nil, apperrors.NewValidationError("invalid exchange rate returned")

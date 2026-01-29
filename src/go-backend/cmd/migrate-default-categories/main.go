@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 
+	redisv8 "github.com/go-redis/redis/v8"
+
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
+	pkgredis "wealthjourney/pkg/redis"
 )
 
 func main() {
@@ -33,8 +36,20 @@ func main() {
 		Category:    repository.NewCategoryRepository(db),
 	}
 
+	// Initialize redis
+	redisClient, err := pkgredis.New(cfg)
+	if err != nil {
+		log.Printf("Warning: Redis connection failed: %v", err)
+	}
+
+	// Get the underlying redis.Client for services
+	var underlyingRedisClient *redisv8.Client = nil
+	if redisClient != nil {
+		underlyingRedisClient = redisClient.GetClient()
+	}
+
 	// Initialize services
-	services := service.NewServices(repos)
+	services := service.NewServices(repos, underlyingRedisClient)
 
 	// Run migration
 	ctx := context.Background()
