@@ -75,12 +75,14 @@ func (m *UserMapper) ModelToProto(user *models.User) *protobufv1.User {
 	}
 
 	return &protobufv1.User{
-		Id:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt.Unix(),
-		UpdatedAt: user.UpdatedAt.Unix(),
+		Id:                   user.ID,
+		Email:                user.Email,
+		Name:                 user.Name,
+		Picture:              user.Picture,
+		PreferredCurrency:    user.PreferredCurrency,
+		ConversionInProgress: user.ConversionInProgress,
+		CreatedAt:            user.CreatedAt.Unix(),
+		UpdatedAt:            user.UpdatedAt.Unix(),
 	}
 }
 

@@ -24,6 +24,7 @@ export function CurrencySelector() {
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Find current currency info - will update when currency context changes
   const currentCurrency = SUPPORTED_CURRENCIES.find((c) => c.code === currency);
   const isDisabled = isConverting || isLoading;
 
@@ -64,7 +65,11 @@ export function CurrencySelector() {
           }`}
           aria-label="Select currency"
           disabled={isDisabled}
-          title={isConverting ? "Currency conversion in progress..." : "Select currency"}
+          title={
+            isConverting
+              ? "Currency conversion in progress..."
+              : "Select currency"
+          }
         >
           {isConverting ? (
             // Show loading spinner during conversion
@@ -115,35 +120,35 @@ export function CurrencySelector() {
 
         {/* Dropdown menu - only show when not disabled */}
         {!isDisabled && (
-          <div className="absolute right-0 top-full mt-2 bg-white rounded-lg drop-shadow-round py-2 z-50 hidden group-hover:block min-w-[200px]">
-          {SUPPORTED_CURRENCIES.map((curr) => (
-            <button
-              key={curr.code}
-              onClick={() => handleCurrencyClick(curr.code)}
-              className={`w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors flex items-center gap-3 ${
-                curr.code === currency ? "bg-green-50 font-semibold" : ""
-              }`}
-            >
-              <span className="text-lg w-6">{curr.symbol}</span>
-              <div className="flex flex-col">
-                <span className="text-sm">{curr.code}</span>
-                <span className="text-xs text-gray-500">{curr.name}</span>
-              </div>
-              {curr.code === currency && (
-                <svg
-                  className="w-4 h-4 text-hgreen ml-auto"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </button>
-          ))}
+          <div className="absolute right-0 bottom-full mb-2 bg-white rounded-lg drop-shadow-round py-2 z-50 hidden group-hover:block min-w-[200px]">
+            {SUPPORTED_CURRENCIES.map((curr) => (
+              <button
+                key={curr.code}
+                onClick={() => handleCurrencyClick(curr.code)}
+                className={`w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors flex items-center gap-3 ${
+                  curr.code === currency ? "bg-green-50 font-semibold" : ""
+                }`}
+              >
+                <span className="text-lg w-6">{curr.symbol}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm">{curr.code}</span>
+                  <span className="text-xs text-gray-500">{curr.name}</span>
+                </div>
+                {curr.code === currency && (
+                  <svg
+                    className="w-4 h-4 text-hgreen ml-auto"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -152,9 +157,20 @@ export function CurrencySelector() {
       {showConfirmation && (
         <ConfirmationDialog
           title="Change Currency?"
-          message={`Are you sure you want to change your display currency to ${
-            SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.name
-          }? This will convert all your financial data. This process may take a few minutes.`}
+          message={
+            <div>
+              <div>
+                {`Are you sure you want to change your display currency to ${
+                  SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)
+                    ?.name
+                }?`}
+              </div>
+              <div>
+                This will convert all your financial data. This process may take
+                a few minutes.
+              </div>
+            </div>
+          }
           confirmText="Change Currency"
           cancelText="Cancel"
           onConfirm={handleConfirm}

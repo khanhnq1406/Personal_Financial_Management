@@ -42,11 +42,14 @@ func NewServer(db *database.Database, rdb *redis.RedisClient, cfg *config.Config
 
 // UserData represents user information
 type UserData struct {
-	ID        int32     `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Picture   string    `json:"picture"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID                   int32     `json:"id"`
+	Email                string    `json:"email"`
+	Name                 string    `json:"name"`
+	Picture              string    `json:"picture"`
+	PreferredCurrency    string    `json:"preferredCurrency"`
+	ConversionInProgress bool      `json:"conversionInProgress"`
+	CreatedAt            time.Time `json:"createdAt"`
+	UpdatedAt            time.Time `json:"updatedAt"`
 }
 
 // userDataToProto converts UserData to proto User
@@ -55,12 +58,14 @@ func userDataToProto(data *UserData) *authv1.User {
 		return nil
 	}
 	return &authv1.User{
-		Id:        data.ID,
-		Email:     data.Email,
-		Name:      data.Name,
-		Picture:   data.Picture,
-		CreatedAt: data.CreatedAt.Unix(),
-		UpdatedAt: data.CreatedAt.Unix(),
+		Id:                   data.ID,
+		Email:                data.Email,
+		Name:                 data.Name,
+		Picture:              data.Picture,
+		PreferredCurrency:    data.PreferredCurrency,
+		ConversionInProgress: data.ConversionInProgress,
+		CreatedAt:            data.CreatedAt.Unix(),
+		UpdatedAt:            data.UpdatedAt.Unix(),
 	}
 }
 
@@ -85,7 +90,16 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 		return &authv1.RegisterResponse{
 			Success:   true,
 			Message:   "User already exists",
-			Data:      userDataToProto(&UserData{ID: existingUser.ID, Email: existingUser.Email, Name: existingUser.Name, Picture: existingUser.Picture, CreatedAt: existingUser.CreatedAt}),
+			Data: userDataToProto(&UserData{
+				ID:                   existingUser.ID,
+				Email:                existingUser.Email,
+				Name:                 existingUser.Name,
+				Picture:              existingUser.Picture,
+				PreferredCurrency:    existingUser.PreferredCurrency,
+				ConversionInProgress: existingUser.ConversionInProgress,
+				CreatedAt:            existingUser.CreatedAt,
+				UpdatedAt:            existingUser.UpdatedAt,
+			}),
 			Timestamp: time.Now().Format(time.RFC3339),
 		}, nil
 	} else if result.Error != gorm.ErrRecordNotFound {
@@ -106,7 +120,16 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 	return &authv1.RegisterResponse{
 		Success:   true,
 		Message:   "User registered successfully",
-		Data:      userDataToProto(&UserData{ID: user.ID, Email: user.Email, Name: user.Name, Picture: user.Picture, CreatedAt: user.CreatedAt}),
+		Data: userDataToProto(&UserData{
+			ID:                   user.ID,
+			Email:                user.Email,
+			Name:                 user.Name,
+			Picture:              user.Picture,
+			PreferredCurrency:    user.PreferredCurrency,
+			ConversionInProgress: user.ConversionInProgress,
+			CreatedAt:            user.CreatedAt,
+			UpdatedAt:            user.UpdatedAt,
+		}),
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -221,11 +244,14 @@ func (s *Server) VerifyAuth(tokenString string) (*authv1.VerifyAuthResponse, err
 	}
 
 	userData := &UserData{
-		ID:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		Picture:   user.Picture,
-		CreatedAt: user.CreatedAt,
+		ID:                   user.ID,
+		Email:                user.Email,
+		Name:                 user.Name,
+		Picture:              user.Picture,
+		PreferredCurrency:    user.PreferredCurrency,
+		ConversionInProgress: user.ConversionInProgress,
+		CreatedAt:            user.CreatedAt,
+		UpdatedAt:            user.UpdatedAt,
 	}
 
 	return &authv1.VerifyAuthResponse{
@@ -267,7 +293,16 @@ func (s *Server) GetAuth(ctx context.Context, email string) (*authv1.GetAuthResp
 	return &authv1.GetAuthResponse{
 		Success:   true,
 		Message:   "User retrieved successfully",
-		Data:      userDataToProto(&UserData{ID: user.ID, Email: user.Email, Name: user.Name, Picture: user.Picture, CreatedAt: user.CreatedAt}),
+		Data: userDataToProto(&UserData{
+			ID:                   user.ID,
+			Email:                user.Email,
+			Name:                 user.Name,
+			Picture:              user.Picture,
+			PreferredCurrency:    user.PreferredCurrency,
+			ConversionInProgress: user.ConversionInProgress,
+			CreatedAt:            user.CreatedAt,
+			UpdatedAt:            user.UpdatedAt,
+		}),
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }

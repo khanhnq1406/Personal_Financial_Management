@@ -1,9 +1,19 @@
 "use client";
 
-import React, { createContext, useContext, useCallback, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setAuth } from "@/redux/actions";
-import { useMutationUpdatePreferences, useQueryGetAuth, EVENT_AuthGetAuth } from "@/utils/generated/hooks";
+import {
+  useMutationUpdatePreferences,
+  useQueryGetAuth,
+  EVENT_AuthGetAuth,
+} from "@/utils/generated/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface CurrencyContextType {
@@ -13,26 +23,27 @@ interface CurrencyContextType {
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
-  const auth = useSelector((state: any) => state.auth);
+  const auth = useSelector((state: any) => state.setAuthReducer);
   const [isConverting, setIsConverting] = useState(false);
 
-  const currency = auth.preferredCurrency || "VND";
+  // Use selector with equality check to ensure re-renders on currency change
+  const currency = useSelector((state: any) => state.setAuthReducer?.preferredCurrency || "VND");
 
   // Poll user data to check conversion progress
-  // Only poll when we expect conversion to be in progress
+  // Fetch on mount to check initial conversion state, then poll if converting
   const { data: userData, refetch: refetchUserData } = useQueryGetAuth(
-    { email: auth.email },
+    { email: auth?.email || "" },
     {
-      enabled: !!auth.email && isConverting,
+      enabled: !!auth?.email,
       refetchInterval: isConverting ? 2000 : false, // Poll every 2 seconds during conversion
       refetchOnMount: "always",
-    }
+    },
   );
 
   // Update isConverting state based on backend data
@@ -40,8 +51,12 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     if (userData?.data?.conversionInProgress !== undefined) {
       const backendIsConverting = userData.data.conversionInProgress;
 
-      // If backend says conversion is done but we thought it was converting
-      if (!backendIsConverting && isConverting) {
+      // Sync local state with backend state
+      if (backendIsConverting && !isConverting) {
+        // Backend says conversion is in progress, update local state
+        setIsConverting(true);
+      } else if (!backendIsConverting && isConverting) {
+        // Backend says conversion is done, update local state
         setIsConverting(false);
         // Invalidate all queries to refetch with new converted values
         queryClient.invalidateQueries();
@@ -55,7 +70,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
               fullname: userData.data.name,
               picture: userData.data.picture,
               preferredCurrency: userData.data.preferredCurrency,
-            }) as any
+            }) as any,
           );
         }
       }
@@ -64,17 +79,17 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
   const updatePreferencesMutation = useMutationUpdatePreferences({
     onSuccess: (data) => {
-      // Update Redux auth state with new currency
+      // Update Redux auth state with new currency immediately
       if (data.data) {
-        dispatch(
-          setAuth({
-            isAuthenticated: true,
-            email: auth.email,
-            fullname: auth.fullname,
-            picture: auth.picture,
-            preferredCurrency: data.data.preferredCurrency,
-          }) as any // Type assertion for Redux Toolkit compatibility
-        );
+        const newAuthState = {
+          isAuthenticated: true,
+          email: auth?.email || "",
+          fullname: auth?.fullname || "",
+          picture: auth?.picture || "",
+          preferredCurrency: data.data.preferredCurrency,
+        };
+
+        dispatch(setAuth(newAuthState) as any);
 
         // Set converting flag if backend indicates conversion started
         if (data.data.conversionInProgress) {
@@ -100,7 +115,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         },
       });
     },
-    [currency, updatePreferencesMutation]
+    [currency, updatePreferencesMutation],
   );
 
   return (

@@ -150,9 +150,11 @@ func GetAuth(c *gin.Context) {
 
 	// Return response using the standard format with success, data, message, timestamp, and path
 	handler.SuccessWithPath(c, gin.H{
-		"id":      userData.Data.Id,
-		"email":   userData.Data.Email,
-		"name":    userData.Data.Name,
-		"picture": userData.Data.Picture,
+		"id":                   userData.Data.Id,
+		"email":                userData.Data.Email,
+		"name":                 userData.Data.Name,
+		"picture":              userData.Data.Picture,
+		"preferredCurrency":    userData.Data.PreferredCurrency,
+		"conversionInProgress": userData.Data.ConversionInProgress,
 	})
 }

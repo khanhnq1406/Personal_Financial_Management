@@ -57,6 +57,7 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
           email: authResponse.data.email,
           fullname: authResponse.data.name,
           picture: authResponse.data.picture,
+          preferredCurrency: authResponse.data.preferredCurrency || "VND",
         })
       );
     }
