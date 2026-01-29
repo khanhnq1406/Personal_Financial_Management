@@ -7,36 +7,32 @@ import (
 	"testing"
 )
 
-func TestBuildQuoteURL(t *testing.T) {
+func TestBuildChartURL(t *testing.T) {
 	tests := []struct {
 		name           string
 		symbol         string
 		expectedSymbol string
-		hasFields      bool
 	}{
 		{
 			name:           "Valid symbol AAPL",
 			symbol:         "AAPL",
 			expectedSymbol: "AAPL",
-			hasFields:      true,
 		},
 		{
 			name:           "Vietnamese stock VCB.VN",
 			symbol:         "VCB.VN",
 			expectedSymbol: "VCB.VN",
-			hasFields:      true,
 		},
 		{
 			name:           "Crypto BTC-USD",
 			symbol:         "BTC-USD",
 			expectedSymbol: "BTC-USD",
-			hasFields:      true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urlStr := buildQuoteURL(tt.symbol)
+			urlStr := buildChartURL(tt.symbol)
 
 			// Parse URL to verify components
 			parsedURL, err := url.Parse(urlStr)
@@ -45,45 +41,26 @@ func TestBuildQuoteURL(t *testing.T) {
 			}
 
 			// Check base URL
-			if parsedURL.Host != "query2.finance.yahoo.com" {
-				t.Errorf("Host = %s, want query2.finance.yahoo.com", parsedURL.Host)
+			if parsedURL.Host != "query1.finance.yahoo.com" {
+				t.Errorf("Host = %s, want query1.finance.yahoo.com", parsedURL.Host)
 			}
-			if parsedURL.Path != "/v7/finance/quote" {
-				t.Errorf("Path = %s, want /v7/finance/quote", parsedURL.Path)
+			if !strings.HasPrefix(parsedURL.Path, "/v8/finance/chart/") {
+				t.Errorf("Path = %s, want /v8/finance/chart/<symbol>", parsedURL.Path)
 			}
-
-			// Check symbols parameter
-			symbols := parsedURL.Query().Get("symbols")
-			if symbols != tt.expectedSymbol {
-				t.Errorf("symbols = %s, want %s", symbols, tt.expectedSymbol)
+			if !strings.HasSuffix(parsedURL.Path, tt.expectedSymbol) {
+				t.Errorf("Path = %s, should end with %s", parsedURL.Path, tt.expectedSymbol)
 			}
 
-			// Check fields parameter
-			fields := parsedURL.Query().Get("fields")
-			if tt.hasFields && fields == "" {
-				t.Error("fields parameter should not be empty")
-			}
-			if tt.hasFields && !strings.Contains(fields, "regularMarketPrice") {
-				t.Error("fields should contain regularMarketPrice")
-			}
-			if tt.hasFields && !strings.Contains(fields, "regularMarketChange") {
-				t.Error("fields should contain regularMarketChange")
+			// Check interval parameter
+			interval := parsedURL.Query().Get("interval")
+			if interval != "1d" {
+				t.Errorf("interval = %s, want 1d", interval)
 			}
 
-			// Check other parameters
-			formatted := parsedURL.Query().Get("formatted")
-			if formatted != "false" {
-				t.Errorf("formatted = %s, want false", formatted)
-			}
-
-			region := parsedURL.Query().Get("region")
-			if region != "US" {
-				t.Errorf("region = %s, want US", region)
-			}
-
-			lang := parsedURL.Query().Get("lang")
-			if lang != "en-US" {
-				t.Errorf("lang = %s, want en-US", lang)
+			// Check range parameter
+			rangeVal := parsedURL.Query().Get("range")
+			if rangeVal != "1d" {
+				t.Errorf("range = %s, want 1d", rangeVal)
 			}
 		})
 	}
@@ -203,44 +180,82 @@ func TestGetQuoteBatch_OnlyEmptyStrings(t *testing.T) {
 	}
 }
 
-func TestToSmallestCurrencyUnit(t *testing.T) {
+func TestToSmallestCurrencyUnitByCurrency(t *testing.T) {
 	tests := []struct {
-		name       string
-		price      float64
-		priceHint  int
-		expected   int64
+		name     string
+		price    float64
+		currency string
+		expected int64
 	}{
 		{
-			name:      "USD price $150.25 with 2 decimals",
-			price:     150.25,
-			priceHint: 2,
-			expected:  15025,
+			name:     "USD price $150.25 with 2 decimals",
+			price:    150.25,
+			currency: "USD",
+			expected: 15025,
 		},
 		{
-			name:      "VND price 69600 with 2 decimals",
-			price:     69600.00,
-			priceHint: 2,
-			expected:  6960000,
+			name:     "VND price 69800 with 0 decimals",
+			price:    69800.00,
+			currency: "VND",
+			expected: 69800,
 		},
 		{
-			name:      "Whole number price 100 with 2 decimals",
-			price:     100.00,
-			priceHint: 2,
-			expected:  10000,
+			name:     "JPY price 15000 with 0 decimals",
+			price:    15000.00,
+			currency: "JPY",
+			expected: 15000,
 		},
 		{
-			name:      "Price with 4 decimal places (crypto)",
-			price:     1.2345,
-			priceHint: 4,
-			expected:  12345,
+			name:     "EUR price 100.50",
+			price:    100.50,
+			currency: "EUR",
+			expected: 10050,
+		},
+		{
+			name:     "KWD price with 3 decimals",
+			price:    1.234,
+			currency: "KWD",
+			expected: 1234,
+		},
+		{
+			name:     "Unknown currency defaults to 2 decimals",
+			price:    100.25,
+			currency: "XYZ",
+			expected: 10025,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ToSmallestCurrencyUnit(tt.price, tt.priceHint)
+			result := ToSmallestCurrencyUnitByCurrency(tt.price, tt.currency)
 			if result != tt.expected {
-				t.Errorf("ToSmallestCurrencyUnit() = %d, want %d", result, tt.expected)
+				t.Errorf("ToSmallestCurrencyUnitByCurrency() = %d, want %d", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetCurrencyDecimalPlaces(t *testing.T) {
+	tests := []struct {
+		currency string
+		expected int
+	}{
+		{"VND", 0},
+		{"JPY", 0},
+		{"KRW", 0},
+		{"USD", 2},
+		{"EUR", 2},
+		{"GBP", 2},
+		{"KWD", 3},
+		{"BHD", 3},
+		{"XYZ", 2}, // Unknown defaults to 2
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.currency, func(t *testing.T) {
+			result := GetCurrencyDecimalPlaces(tt.currency)
+			if result != tt.expected {
+				t.Errorf("GetCurrencyDecimalPlaces(%s) = %d, want %d", tt.currency, result, tt.expected)
 			}
 		})
 	}

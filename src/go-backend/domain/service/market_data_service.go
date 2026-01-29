@@ -122,18 +122,13 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 }
 
 // fetchPriceFromAPI fetches price data from Yahoo Finance API.
-// Uses the new v7 quote API which provides comprehensive market data.
+// Uses the v8 chart API which provides comprehensive market data.
 func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, currency string) (*models.MarketData, error) {
-	// Use new GetQuote function for comprehensive data
+	// Use GetQuote function for comprehensive data
 	quote, err := yahoo.GetQuote(ctx, symbol)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch quote for %s: %w", symbol, err)
 	}
-
-	// Convert price from float to int64 (smallest currency unit)
-	// For VND: 69600.00 -> 6960000 (multiply by 100 for 2 decimal places)
-	// For USD: 150.25 -> 15025
-	priceInSmallestUnit := yahoo.ToSmallestCurrencyUnit(quote.RegularMarketPrice, quote.PriceHint)
 
 	// Use quote's currency if available, otherwise fall back to investment's currency
 	fetchedCurrency := quote.Currency
@@ -141,12 +136,18 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 		fetchedCurrency = currency
 	}
 
+	// Convert price from float to int64 (smallest currency unit)
+	// Uses currency-based decimal places: VND has 0, USD has 2, etc.
+	// For VND: 69800.00 -> 69800 (no decimal places)
+	// For USD: 150.25 -> 15025 (2 decimal places)
+	priceInSmallestUnit := yahoo.ToSmallestCurrencyUnitByCurrency(quote.RegularMarketPrice, fetchedCurrency)
+
 	return &models.MarketData{
 		Symbol:    quote.Symbol,
 		Currency:  fetchedCurrency,
 		Price:     priceInSmallestUnit,
 		Change24h: quote.RegularMarketChangePercent,
-		Volume24h: 0, // Not provided by v7 quote API in current field set
+		Volume24h: 0,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -172,7 +173,7 @@ func (s *marketDataService) GetPriceBatch(ctx context.Context, symbols []string)
 	// Convert to MarketData
 	results := make(map[string]*models.MarketData)
 	for _, quote := range quotes {
-		priceInSmallestUnit := yahoo.ToSmallestCurrencyUnit(quote.RegularMarketPrice, quote.PriceHint)
+		priceInSmallestUnit := yahoo.ToSmallestCurrencyUnitByCurrency(quote.RegularMarketPrice, quote.Currency)
 		results[quote.Symbol] = &models.MarketData{
 			Symbol:    quote.Symbol,
 			Currency:  quote.Currency,

@@ -166,7 +166,7 @@ type yahooSearchResponse struct {
 }
 
 func buildSearchURL(params SearchParams) string {
-	baseURL := "https://query2.finance.yahoo.com/v1/finance/search"
+	baseURL := "https://query1.finance.yahoo.com/v1/finance/search"
 	values := url.Values{}
 	values.Set("q", params.Query)
 	values.Set("lang", params.Lang)
