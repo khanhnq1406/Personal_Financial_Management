@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/cache"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
 	budgetv1 "wealthjourney/protobuf/v1"
@@ -17,6 +19,8 @@ type budgetService struct {
 	budgetRepo     repository.BudgetRepository
 	budgetItemRepo repository.BudgetItemRepository
 	userRepo       repository.UserRepository
+	fxRateSvc      FXRateService
+	currencyCache  *cache.CurrencyCache
 	mapper         *BudgetMapper
 }
 
@@ -25,11 +29,15 @@ func NewBudgetService(
 	budgetRepo repository.BudgetRepository,
 	budgetItemRepo repository.BudgetItemRepository,
 	userRepo repository.UserRepository,
+	fxRateSvc FXRateService,
+	currencyCache *cache.CurrencyCache,
 ) BudgetService {
 	return &budgetService{
 		budgetRepo:     budgetRepo,
 		budgetItemRepo: budgetItemRepo,
 		userRepo:       userRepo,
+		fxRateSvc:      fxRateSvc,
+		currencyCache:  currencyCache,
 		mapper:         NewBudgetMapper(),
 	}
 }
@@ -169,6 +177,12 @@ func (s *budgetService) CreateBudget(ctx context.Context, userID int32, req *bud
 		return nil, err
 	}
 
+	// Populate currency cache
+	if err := s.populateBudgetCache(ctx, userID, budgetWithItems); err != nil {
+		// Log error but don't fail - cache population is not critical
+		fmt.Printf("Warning: failed to populate currency cache for budget %d: %v\n", budgetWithItems.ID, err)
+	}
+
 	return &budgetv1.CreateBudgetResponse{
 		Success:   true,
 		Message:   "Budget created successfully",
@@ -213,6 +227,14 @@ func (s *budgetService) UpdateBudget(ctx context.Context, budgetID int32, userID
 		return nil, err
 	}
 
+	// Invalidate and repopulate currency cache
+	if err := s.invalidateBudgetCache(ctx, userID, budgetID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for budget %d: %v\n", budgetID, err)
+	}
+	if err := s.populateBudgetCache(ctx, userID, budget); err != nil {
+		fmt.Printf("Warning: failed to populate currency cache for budget %d: %v\n", budget.ID, err)
+	}
+
 	return &budgetv1.UpdateBudgetResponse{
 		Success:   true,
 		Message:   "Budget updated successfully",
@@ -245,6 +267,11 @@ func (s *budgetService) DeleteBudget(ctx context.Context, budgetID int32, userID
 	// Delete budget
 	if err := s.budgetRepo.Delete(ctx, budgetID); err != nil {
 		return nil, err
+	}
+
+	// Invalidate currency cache
+	if err := s.invalidateBudgetCache(ctx, userID, budgetID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for budget %d: %v\n", budgetID, err)
 	}
 
 	return &budgetv1.DeleteBudgetResponse{
@@ -328,6 +355,17 @@ func (s *budgetService) CreateBudgetItem(ctx context.Context, budgetID int32, us
 		return nil, err
 	}
 
+	// Get budget to determine currency
+	budget, _ := s.budgetRepo.GetByID(ctx, budgetID)
+
+	// Populate currency cache
+	if budget != nil {
+		if err := s.populateBudgetItemCache(ctx, userID, item, budget.Currency); err != nil {
+			// Log error but don't fail - cache population is not critical
+			fmt.Printf("Warning: failed to populate currency cache for budget item %d: %v\n", item.ID, err)
+		}
+	}
+
 	return &budgetv1.CreateBudgetItemResponse{
 		Success:   true,
 		Message:   "Budget item created successfully",
@@ -389,6 +427,19 @@ func (s *budgetService) UpdateBudgetItem(ctx context.Context, budgetID int32, it
 		return nil, err
 	}
 
+	// Get budget to determine currency
+	budget, _ := s.budgetRepo.GetByID(ctx, budgetID)
+
+	// Invalidate and repopulate currency cache
+	if err := s.invalidateBudgetItemCache(ctx, userID, itemID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for budget item %d: %v\n", itemID, err)
+	}
+	if budget != nil {
+		if err := s.populateBudgetItemCache(ctx, userID, item, budget.Currency); err != nil {
+			fmt.Printf("Warning: failed to populate currency cache for budget item %d: %v\n", item.ID, err)
+		}
+	}
+
 	return &budgetv1.UpdateBudgetItemResponse{
 		Success:   true,
 		Message:   "Budget item updated successfully",
@@ -425,6 +476,11 @@ func (s *budgetService) DeleteBudgetItem(ctx context.Context, budgetID int32, it
 	// Delete budget item
 	if err := s.budgetItemRepo.Delete(ctx, itemID); err != nil {
 		return nil, err
+	}
+
+	// Invalidate currency cache
+	if err := s.invalidateBudgetItemCache(ctx, userID, itemID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for budget item %d: %v\n", itemID, err)
 	}
 
 	return &budgetv1.DeleteBudgetItemResponse{
@@ -475,5 +531,134 @@ func validateMoneyAmount(money *budgetv1.Money) error {
 		return apperrors.NewValidationError("amount cannot be negative")
 	}
 	return nil
+}
+
+// Currency conversion helper methods
+
+// convertBudgetTotal converts a budget's total to the user's preferred currency
+// Uses cache for fast lookups and populates cache on misses
+func (s *budgetService) convertBudgetTotal(ctx context.Context, userID int32, budget *models.Budget) (int64, error) {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	// If same currency, no conversion needed
+	if budget.Currency == user.PreferredCurrency {
+		return budget.Total, nil
+	}
+
+	// Check cache first
+	cachedValue, err := s.currencyCache.GetConvertedValue(ctx, userID, "budget", budget.ID, user.PreferredCurrency)
+	if err == nil && cachedValue > 0 {
+		return cachedValue, nil
+	}
+
+	// Cache miss - convert and cache
+	convertedTotal, err := s.fxRateSvc.ConvertAmount(ctx, budget.Total, budget.Currency, user.PreferredCurrency)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert total: %w", err)
+	}
+
+	// Store in cache (non-blocking, log errors only)
+	go func() {
+		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "budget", budget.ID, user.PreferredCurrency, convertedTotal); err != nil {
+			fmt.Printf("Warning: failed to cache converted total for budget %d: %v\n", budget.ID, err)
+		}
+	}()
+
+	return convertedTotal, nil
+}
+
+// convertBudgetItemTotal converts a budget item's total to the user's preferred currency
+func (s *budgetService) convertBudgetItemTotal(ctx context.Context, userID int32, budgetItem *models.BudgetItem, budgetCurrency string) (int64, error) {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	// If same currency, no conversion needed
+	if budgetCurrency == user.PreferredCurrency {
+		return budgetItem.Total, nil
+	}
+
+	// Check cache first
+	cachedValue, err := s.currencyCache.GetConvertedValue(ctx, userID, "budget_item", budgetItem.ID, user.PreferredCurrency)
+	if err == nil && cachedValue > 0 {
+		return cachedValue, nil
+	}
+
+	// Cache miss - convert and cache
+	convertedTotal, err := s.fxRateSvc.ConvertAmount(ctx, budgetItem.Total, budgetCurrency, user.PreferredCurrency)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert item total: %w", err)
+	}
+
+	// Store in cache (non-blocking, log errors only)
+	go func() {
+		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "budget_item", budgetItem.ID, user.PreferredCurrency, convertedTotal); err != nil {
+			fmt.Printf("Warning: failed to cache converted total for budget item %d: %v\n", budgetItem.ID, err)
+		}
+	}()
+
+	return convertedTotal, nil
+}
+
+// populateBudgetCache populates the currency cache for a budget
+// Called when budget is created or updated
+func (s *budgetService) populateBudgetCache(ctx context.Context, userID int32, budget *models.Budget) error {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	// If same currency, no need to cache
+	if budget.Currency == user.PreferredCurrency {
+		return nil
+	}
+
+	// Convert and cache
+	convertedTotal, err := s.fxRateSvc.ConvertAmount(ctx, budget.Total, budget.Currency, user.PreferredCurrency)
+	if err != nil {
+		return fmt.Errorf("failed to convert total for caching: %w", err)
+	}
+
+	return s.currencyCache.SetConvertedValue(ctx, userID, "budget", budget.ID, user.PreferredCurrency, convertedTotal)
+}
+
+// populateBudgetItemCache populates the currency cache for a budget item
+func (s *budgetService) populateBudgetItemCache(ctx context.Context, userID int32, budgetItem *models.BudgetItem, budgetCurrency string) error {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	// If same currency, no need to cache
+	if budgetCurrency == user.PreferredCurrency {
+		return nil
+	}
+
+	// Convert and cache
+	convertedTotal, err := s.fxRateSvc.ConvertAmount(ctx, budgetItem.Total, budgetCurrency, user.PreferredCurrency)
+	if err != nil {
+		return fmt.Errorf("failed to convert item total for caching: %w", err)
+	}
+
+	return s.currencyCache.SetConvertedValue(ctx, userID, "budget_item", budgetItem.ID, user.PreferredCurrency, convertedTotal)
+}
+
+// invalidateBudgetCache removes cached conversions for a budget
+// Called when budget is updated or deleted
+func (s *budgetService) invalidateBudgetCache(ctx context.Context, userID int32, budgetID int32) error {
+	return s.currencyCache.DeleteEntityCache(ctx, userID, "budget", budgetID)
+}
+
+// invalidateBudgetItemCache removes cached conversions for a budget item
+func (s *budgetService) invalidateBudgetItemCache(ctx context.Context, userID int32, budgetItemID int32) error {
+	return s.currencyCache.DeleteEntityCache(ctx, userID, "budget_item", budgetItemID)
 }
 

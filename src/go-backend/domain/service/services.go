@@ -1,7 +1,10 @@
 package service
 
 import (
+	"github.com/go-redis/redis/v8"
+
 	"wealthjourney/domain/repository"
+	"wealthjourney/pkg/cache"
 )
 
 // Services holds all service instances.
@@ -12,10 +15,11 @@ type Services struct {
 	Category    CategoryService
 	Budget      BudgetService
 	Investment  InvestmentService
+	FXRate      FXRateService
 }
 
 // NewServices creates all service instances.
-func NewServices(repos *Repositories) *Services {
+func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 	categorySvc := NewCategoryService(repos.Category)
 	userSvc := NewUserService(repos.User)
 
@@ -27,13 +31,25 @@ func NewServices(repos *Repositories) *Services {
 	// Create market data service
 	marketDataSvc := NewMarketDataService(repos.MarketData)
 
+	// Create FX rate service
+	fxRateSvc := NewFXRateService(repos.FXRate, redisClient)
+
+	// Create currency cache
+	currencyCache := cache.NewCurrencyCache(redisClient)
+
+	// Wire up repositories for currency conversion after fxRateSvc and currencyCache are created
+	if us, ok := userSvc.(*userService); ok {
+		us.SetRepositories(repos.Wallet, repos.Transaction, repos.Budget, repos.BudgetItem, repos.Investment, fxRateSvc, currencyCache)
+	}
+
 	return &Services{
-		Wallet:      NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc),
+		Wallet:      NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc, fxRateSvc, currencyCache),
 		User:        userSvc,
-		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category),
+		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category, repos.User, fxRateSvc, currencyCache),
 		Category:    categorySvc,
-		Budget:      NewBudgetService(repos.Budget, repos.BudgetItem, repos.User),
-		Investment:  NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc),
+		Budget:      NewBudgetService(repos.Budget, repos.BudgetItem, repos.User, fxRateSvc, currencyCache),
+		Investment:  NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache),
+		FXRate:      fxRateSvc,
 	}
 }
 
@@ -48,6 +64,7 @@ type Repositories struct {
 	Investment                repository.InvestmentRepository
 	InvestmentTransaction     repository.InvestmentTransactionRepository
 	MarketData                repository.MarketDataRepository
+	FXRate                    repository.FXRateRepository
 }
 
 // NewRepositories creates all repository instances.

@@ -10,6 +10,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/cache"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/units"
 	"wealthjourney/pkg/validator"
@@ -23,6 +24,9 @@ type investmentService struct {
 	walletRepo        repository.WalletRepository
 	txRepo            repository.InvestmentTransactionRepository
 	marketDataService MarketDataService
+	userRepo          repository.UserRepository
+	fxRateSvc         FXRateService
+	currencyCache     *cache.CurrencyCache
 	mapper            *InvestmentMapper
 }
 
@@ -32,12 +36,18 @@ func NewInvestmentService(
 	walletRepo repository.WalletRepository,
 	txRepo repository.InvestmentTransactionRepository,
 	marketDataService MarketDataService,
+	userRepo repository.UserRepository,
+	fxRateSvc FXRateService,
+	currencyCache *cache.CurrencyCache,
 ) InvestmentService {
 	return &investmentService{
 		investmentRepo:    investmentRepo,
 		walletRepo:        walletRepo,
 		txRepo:            txRepo,
 		marketDataService: marketDataService,
+		userRepo:          userRepo,
+		fxRateSvc:         fxRateSvc,
+		currencyCache:     currencyCache,
 		mapper:            NewInvestmentMapper(),
 	}
 }
@@ -152,6 +162,12 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	if err := s.txRepo.Update(ctx, tx); err != nil {
 		// Log error but don't fail - transaction is created
 		fmt.Printf("Warning: failed to update transaction with lot ID: %v\n", err)
+	}
+
+	// Populate currency cache
+	if err := s.populateInvestmentCache(ctx, userID, investment); err != nil {
+		// Log error but don't fail - cache population is not critical
+		fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", investment.ID, err)
 	}
 
 	return &investmentv1.CreateInvestmentResponse{
@@ -274,6 +290,14 @@ func (s *investmentService) UpdateInvestment(ctx context.Context, investmentID i
 		return nil, err
 	}
 
+	// Invalidate and repopulate currency cache
+	if err := s.invalidateInvestmentCache(ctx, userID, investmentID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", investmentID, err)
+	}
+	if err := s.populateInvestmentCache(ctx, userID, investment); err != nil {
+		fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", investment.ID, err)
+	}
+
 	return &investmentv1.UpdateInvestmentResponse{
 		Success:   true,
 		Message:   "Investment updated successfully",
@@ -313,6 +337,11 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 	// Delete investment
 	if err := s.investmentRepo.Delete(ctx, investmentID); err != nil {
 		return nil, err
+	}
+
+	// Invalidate currency cache
+	if err := s.invalidateInvestmentCache(ctx, userID, investmentID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", investmentID, err)
 	}
 
 	return &investmentv1.DeleteInvestmentResponse{
@@ -381,6 +410,18 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 
 	default:
 		return nil, apperrors.NewValidationError("unsupported transaction type")
+	}
+
+	// Invalidate and repopulate currency cache
+	if err := s.invalidateInvestmentCache(ctx, userID, req.InvestmentId); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", req.InvestmentId, err)
+	}
+	// Get updated investment for cache population
+	updatedInv, _ := s.investmentRepo.GetByID(ctx, req.InvestmentId)
+	if updatedInv != nil {
+		if err := s.populateInvestmentCache(ctx, userID, updatedInv); err != nil {
+			fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", updatedInv.ID, err)
+		}
 	}
 
 	// Get the created transaction for response
@@ -945,4 +986,78 @@ func (s *investmentService) SearchSymbols(ctx context.Context, query string, lim
 		Data:      data,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// Currency conversion helper methods
+
+// convertInvestmentValues converts investment values to the user's preferred currency
+// Converts: TotalCost, CurrentValue, RealizedPNL
+// Uses cache for fast lookups and populates cache on misses
+func (s *investmentService) convertInvestmentValues(ctx context.Context, userID int32, investment *models.Investment) (totalCost, currentValue, realizedPNL int64, err error) {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	// If same currency, no conversion needed
+	if investment.Currency == user.PreferredCurrency {
+		return investment.TotalCost, investment.CurrentValue, investment.RealizedPNL, nil
+	}
+
+	// Cache miss - convert all values
+	var convertedTotalCost, convertedCurrentValue, convertedRealizedPNL int64
+
+	convertedTotalCost, err = s.fxRateSvc.ConvertAmount(ctx, investment.TotalCost, investment.Currency, user.PreferredCurrency)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to convert total cost: %w", err)
+	}
+
+	convertedCurrentValue, err = s.fxRateSvc.ConvertAmount(ctx, investment.CurrentValue, investment.Currency, user.PreferredCurrency)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to convert current value: %w", err)
+	}
+
+	convertedRealizedPNL, err = s.fxRateSvc.ConvertAmount(ctx, investment.RealizedPNL, investment.Currency, user.PreferredCurrency)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to convert realized PNL: %w", err)
+	}
+
+	// Store total cost in cache (non-blocking, log errors only)
+	go func() {
+		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "investment", investment.ID, user.PreferredCurrency, convertedTotalCost); err != nil {
+			fmt.Printf("Warning: failed to cache converted values for investment %d: %v\n", investment.ID, err)
+		}
+	}()
+
+	return convertedTotalCost, convertedCurrentValue, convertedRealizedPNL, nil
+}
+
+// populateInvestmentCache populates the currency cache for an investment
+// Called when investment is created or updated
+func (s *investmentService) populateInvestmentCache(ctx context.Context, userID int32, investment *models.Investment) error {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	// If same currency, no need to cache
+	if investment.Currency == user.PreferredCurrency {
+		return nil
+	}
+
+	// Convert and cache total cost
+	convertedTotalCost, err := s.fxRateSvc.ConvertAmount(ctx, investment.TotalCost, investment.Currency, user.PreferredCurrency)
+	if err != nil {
+		return fmt.Errorf("failed to convert total cost for caching: %w", err)
+	}
+
+	return s.currencyCache.SetConvertedValue(ctx, userID, "investment", investment.ID, user.PreferredCurrency, convertedTotalCost)
+}
+
+// invalidateInvestmentCache removes cached conversions for an investment
+// Called when investment is updated or deleted
+func (s *investmentService) invalidateInvestmentCache(ctx context.Context, userID int32, investmentID int32) error {
+	return s.currencyCache.DeleteEntityCache(ctx, userID, "investment", investmentID)
 }

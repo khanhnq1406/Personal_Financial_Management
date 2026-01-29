@@ -83,3 +83,8 @@ func (r *RedisClient) RemoveFromWhitelist(email string) error {
 func (r *RedisClient) Close() error {
 	return r.client.Close()
 }
+
+// GetClient returns the underlying redis.Client for advanced use cases
+func (r *RedisClient) GetClient() *redis.Client {
+	return r.client
+}

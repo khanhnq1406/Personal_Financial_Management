@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	redisv8 "github.com/go-redis/redis/v8"
 
 	"wealthjourney/handlers"
 	"wealthjourney/domain/auth"
@@ -62,10 +63,25 @@ func main() {
 		Investment:            repository.NewInvestmentRepository(db),
 		InvestmentTransaction: repository.NewInvestmentTransactionRepository(db),
 		MarketData:            repository.NewMarketDataRepository(db),
+		FXRate:                repository.NewFXRateRepository(db),
+	}
+
+	// Initialize redis
+	redisClient, err := redis.New(cfg)
+	if err != nil {
+		log.Printf("Warning: Redis connection failed: %v", err)
+	} else {
+		handlers.SetRedis(redisClient)
+	}
+
+	// Get the underlying redis.Client for services
+	var underlyingRedisClient *redisv8.Client = nil
+	if redisClient != nil {
+		underlyingRedisClient = redisClient.GetClient()
 	}
 
 	// Initialize services
-	services := service.NewServices(repos)
+	services := service.NewServices(repos, underlyingRedisClient)
 
 	// Initialize handlers
 	h := handlers.NewHandlers(services)

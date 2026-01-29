@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/cache"
 	"wealthjourney/pkg/types"
 
 	v1 "wealthjourney/protobuf/v1"
@@ -17,6 +19,9 @@ type transactionService struct {
 	txRepo       repository.TransactionRepository
 	walletRepo   repository.WalletRepository
 	categoryRepo repository.CategoryRepository
+	userRepo     repository.UserRepository
+	fxRateSvc    FXRateService
+	currencyCache *cache.CurrencyCache
 }
 
 // NewTransactionService creates a new TransactionService.
@@ -24,11 +29,17 @@ func NewTransactionService(
 	txRepo repository.TransactionRepository,
 	walletRepo repository.WalletRepository,
 	categoryRepo repository.CategoryRepository,
+	userRepo repository.UserRepository,
+	fxRateSvc FXRateService,
+	currencyCache *cache.CurrencyCache,
 ) TransactionService {
 	return &transactionService{
-		txRepo:       txRepo,
-		walletRepo:   walletRepo,
-		categoryRepo: categoryRepo,
+		txRepo:        txRepo,
+		walletRepo:    walletRepo,
+		categoryRepo:  categoryRepo,
+		userRepo:      userRepo,
+		fxRateSvc:     fxRateSvc,
+		currencyCache: currencyCache,
 	}
 }
 
@@ -97,6 +108,12 @@ func (s *transactionService) CreateTransaction(ctx context.Context, userID int32
 
 	// Get updated wallet for response
 	updatedWallet, _ := s.walletRepo.GetByID(ctx, req.WalletId)
+
+	// Populate currency cache
+	if err := s.populateTransactionCache(ctx, userID, transaction, updatedWallet.Currency); err != nil {
+		// Log error but don't fail - cache population is not critical
+		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", transaction.ID, err)
+	}
 
 	return &v1.CreateTransactionResponse{
 		Success: true,
@@ -286,6 +303,14 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 	updatedTransaction, _ := s.txRepo.GetByID(ctx, transactionID)
 	updatedWallet, _ := s.walletRepo.GetByID(ctx, targetWalletID)
 
+	// Invalidate and repopulate currency cache
+	if err := s.invalidateTransactionCache(ctx, userID, transactionID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for transaction %d: %v\n", transactionID, err)
+	}
+	if err := s.populateTransactionCache(ctx, userID, updatedTransaction, updatedWallet.Currency); err != nil {
+		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", updatedTransaction.ID, err)
+	}
+
 	return &v1.UpdateTransactionResponse{
 		Success: true,
 		Message: "Transaction updated successfully",
@@ -326,6 +351,11 @@ func (s *transactionService) DeleteTransaction(ctx context.Context, transactionI
 	updatedWallet, err := s.walletRepo.UpdateBalance(ctx, transaction.WalletID, restoreDelta)
 	if err != nil {
 		return nil, err
+	}
+
+	// Invalidate currency cache
+	if err := s.invalidateTransactionCache(ctx, userID, transactionID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for transaction %d: %v\n", transactionID, err)
 	}
 
 	return &v1.DeleteTransactionResponse{
@@ -640,4 +670,71 @@ func deriveTransactionType(category *models.Category) v1.TransactionType {
 	default:
 		return v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
 	}
+}
+
+// Currency conversion helper methods
+
+// convertTransactionAmount converts a transaction's amount to the user's preferred currency
+// Uses cache for fast lookups and populates cache on misses
+func (s *transactionService) convertTransactionAmount(ctx context.Context, userID int32, transaction *models.Transaction, walletCurrency string) (int64, error) {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	// If same currency, no conversion needed
+	if walletCurrency == user.PreferredCurrency {
+		return transaction.Amount, nil
+	}
+
+	// Check cache first
+	cachedValue, err := s.currencyCache.GetConvertedValue(ctx, userID, "transaction", transaction.ID, user.PreferredCurrency)
+	if err == nil && cachedValue > 0 {
+		return cachedValue, nil
+	}
+
+	// Cache miss - convert and cache
+	convertedAmount, err := s.fxRateSvc.ConvertAmount(ctx, transaction.Amount, walletCurrency, user.PreferredCurrency)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert amount: %w", err)
+	}
+
+	// Store in cache (non-blocking, log errors only)
+	go func() {
+		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "transaction", transaction.ID, user.PreferredCurrency, convertedAmount); err != nil {
+			fmt.Printf("Warning: failed to cache converted amount for transaction %d: %v\n", transaction.ID, err)
+		}
+	}()
+
+	return convertedAmount, nil
+}
+
+// populateTransactionCache populates the currency cache for a transaction
+// Called when transaction is created or updated
+func (s *transactionService) populateTransactionCache(ctx context.Context, userID int32, transaction *models.Transaction, walletCurrency string) error {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	// If same currency, no need to cache
+	if walletCurrency == user.PreferredCurrency {
+		return nil
+	}
+
+	// Convert and cache
+	convertedAmount, err := s.fxRateSvc.ConvertAmount(ctx, transaction.Amount, walletCurrency, user.PreferredCurrency)
+	if err != nil {
+		return fmt.Errorf("failed to convert amount for caching: %w", err)
+	}
+
+	return s.currencyCache.SetConvertedValue(ctx, userID, "transaction", transaction.ID, user.PreferredCurrency, convertedAmount)
+}
+
+// invalidateTransactionCache removes cached conversions for a transaction
+// Called when transaction is updated or deleted
+func (s *transactionService) invalidateTransactionCache(ctx context.Context, userID int32, transactionID int32) error {
+	return s.currencyCache.DeleteEntityCache(ctx, userID, "transaction", transactionID)
 }
