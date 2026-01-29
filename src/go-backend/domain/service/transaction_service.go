@@ -528,27 +528,34 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 		walletDataList = append(walletDataList, data)
 	}
 
+	// Get user's preferred currency for aggregation
+	user, _ := s.userRepo.GetByID(ctx, userID)
+	preferredCurrency := types.VND // Default
+	if user != nil && user.PreferredCurrency != "" {
+		preferredCurrency = user.PreferredCurrency
+	}
+
 	// Calculate totals across all wallets for each month
+	// NOTE: This is a simplified aggregation that assumes all transactions are in the same currency
+	// or have been converted to the user's preferred currency in the cache.
+	// For accurate multi-currency aggregation, each transaction amount should be converted
+	// to the user's preferred currency before summing.
 	totals := make([]*v1.MonthlyFinancialData, 12)
 	for month := 0; month < 12; month++ {
 		var totalIncome, totalExpense int64
-		currency := "VND" // Default currency
 
 		for _, walletData := range walletDataList {
 			if len(walletData.MonthlyData) > month {
 				monthlyData := walletData.MonthlyData[month]
 				totalIncome += monthlyData.Income.Amount
 				totalExpense += monthlyData.Expense.Amount
-				if monthlyData.Income.Currency != "" {
-					currency = monthlyData.Income.Currency
-				}
 			}
 		}
 
 		totals[month] = &v1.MonthlyFinancialData{
 			Month:   int32(month),
-			Income:  &v1.Money{Amount: totalIncome, Currency: currency},
-			Expense: &v1.Money{Amount: totalExpense, Currency: currency},
+			Income:  &v1.Money{Amount: totalIncome, Currency: preferredCurrency},
+			Expense: &v1.Money{Amount: totalExpense, Currency: preferredCurrency},
 		}
 	}
 
@@ -658,18 +665,24 @@ func (s *transactionService) modelToProto(tx *models.Transaction, wallet *models
 
 // modelToProtoSimple converts a model Transaction to protobuf without loading relationships.
 func (s *transactionService) modelToProtoSimple(tx *models.Transaction) *v1.Transaction {
+	// Use transaction's currency field (inherited from wallet at creation time)
+	currency := tx.Currency
+	if currency == "" {
+		currency = types.VND // Fallback only if not set
+	}
+
 	proto := &v1.Transaction{
 		Id:       tx.ID,
 		WalletId: tx.WalletID,
 		Type:     deriveTransactionType(tx.Category),
 		Amount: &v1.Money{
 			Amount:   tx.Amount,
-			Currency: "VND", // Default, should be loaded from wallet
+			Currency: currency,
 		},
 		Date:      tx.Date.Unix(),
 		Note:      tx.Note,
 		CreatedAt: tx.CreatedAt.Unix(),
-		Currency:  "VND", // Default, should be loaded from wallet
+		Currency:  currency,
 		UpdatedAt: tx.UpdatedAt.Unix(),
 	}
 

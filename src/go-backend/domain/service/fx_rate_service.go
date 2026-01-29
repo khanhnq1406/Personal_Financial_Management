@@ -90,6 +90,7 @@ func (s *fxRateService) GetRate(ctx context.Context, fromCurrency, toCurrency st
 }
 
 // ConvertAmount converts an amount from one currency to another
+// Accounts for different decimal places between currencies (e.g., USD has 2, VND has 0)
 func (s *fxRateService) ConvertAmount(ctx context.Context, amount int64, fromCurrency, toCurrency string) (int64, error) {
 	// Get the rate
 	rate, err := s.GetRate(ctx, fromCurrency, toCurrency)
@@ -97,8 +98,8 @@ func (s *fxRateService) ConvertAmount(ctx context.Context, amount int64, fromCur
 		return 0, err
 	}
 
-	// Convert using the rate
-	return s.converter.ConvertAmountWithRate(amount, rate), nil
+	// Convert using the rate with proper decimal handling
+	return s.converter.ConvertAmountWithRateAndCurrencies(amount, rate, fromCurrency, toCurrency), nil
 }
 
 // BatchGetRates retrieves multiple FX rates in parallel for efficiency
@@ -252,6 +253,7 @@ func NewCurrencyConverter(rateProvider fx.Provider) *CurrencyConverter {
 }
 
 // ConvertAmountWithRate converts an amount using a provided rate
+// DEPRECATED: Use ConvertAmountWithRateAndCurrencies for proper decimal handling
 // This is used when we already have the rate and don't want to fetch it again
 func (c *CurrencyConverter) ConvertAmountWithRate(amount int64, rate float64) int64 {
 	// Use decimal for precision
@@ -259,4 +261,27 @@ func (c *CurrencyConverter) ConvertAmountWithRate(amount int64, rate float64) in
 	rateDecimal := decimal.NewFromFloat(rate)
 	convertedDecimal := amountDecimal.Mul(rateDecimal)
 	return convertedDecimal.IntPart()
+}
+
+// ConvertAmountWithRateAndCurrencies converts an amount using a provided rate
+// while accounting for different decimal places between currencies
+// Example: 42 cents USD to VND at rate 25850 = 10857 dong (not 1085700)
+func (c *CurrencyConverter) ConvertAmountWithRateAndCurrencies(amount int64, rate float64, fromCurrency, toCurrency string) int64 {
+	// Get decimal multipliers for both currencies
+	fromMultiplier := fx.GetDecimalMultiplier(fromCurrency)
+	toMultiplier := fx.GetDecimalMultiplier(toCurrency)
+
+	// Use decimal for precision
+	amountDecimal := decimal.NewFromInt(amount)
+	fromMultiplierDecimal := decimal.NewFromInt(fromMultiplier)
+	toMultiplierDecimal := decimal.NewFromInt(toMultiplier)
+	rateDecimal := decimal.NewFromFloat(rate)
+
+	// Formula: (amount / fromMultiplier) * rate * toMultiplier
+	convertedDecimal := amountDecimal.
+		Div(fromMultiplierDecimal).
+		Mul(rateDecimal).
+		Mul(toMultiplierDecimal)
+
+	return convertedDecimal.Round(0).IntPart()
 }

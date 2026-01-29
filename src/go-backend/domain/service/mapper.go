@@ -123,17 +123,23 @@ func (m *BudgetMapper) ModelToProto(budget *models.Budget) *protobufv1.Budget {
 		return nil
 	}
 
+	// Use budget's currency field, fallback to VND if not set
+	currency := budget.Currency
+	if currency == "" {
+		currency = types.VND
+	}
+
 	return &protobufv1.Budget{
 		Id:        budget.ID,
 		UserId:    budget.UserID,
 		Name:      budget.Name,
 		Total: &protobufv1.Money{
 			Amount:   budget.Total,
-			Currency: "VND", // Budgets use VND as default currency
+			Currency: currency,
 		},
 		CreatedAt: budget.CreatedAt.Unix(),
 		UpdatedAt: budget.UpdatedAt.Unix(),
-		Currency:  budget.Currency,
+		Currency:  currency,
 	}
 }
 
@@ -156,18 +162,24 @@ func (m *BudgetMapper) ModelItemToProto(item *models.BudgetItem) *protobufv1.Bud
 		return nil
 	}
 
+	// Use budget item's currency field, fallback to VND if not set
+	currency := item.Currency
+	if currency == "" {
+		currency = types.VND
+	}
+
 	return &protobufv1.BudgetItem{
 		Id:        item.ID,
 		BudgetId:  item.BudgetID,
 		Name:      item.Name,
 		Total: &protobufv1.Money{
 			Amount:   item.Total,
-			Currency: "VND", // Budget items use VND as default currency
+			Currency: currency,
 		},
 		Checked:   item.Checked,
 		CreatedAt: item.CreatedAt.Unix(),
 		UpdatedAt: item.UpdatedAt.Unix(),
-		Currency:  "VND", // Budget items use VND as default currency
+		Currency:  currency,
 	}
 }
 

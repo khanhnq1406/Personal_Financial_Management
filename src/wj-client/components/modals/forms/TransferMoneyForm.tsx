@@ -71,20 +71,20 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
 
   const formatWalletOption = (wallet: SelectOption): string => {
     const walletData = wallets.find((w) => w.id === Number(wallet.value));
-    const balance = walletData?.balance?.amount || 0;
+    const balance = (walletData?.displayBalance?.amount ?? walletData?.balance?.amount) || 0;
     return `${wallet.label} (${formatCurrency(balance, currency)})`;
   };
 
   const walletOptions: SelectOption[] = wallets.map((wallet) => ({
     value: wallet.id,
     label: wallet.walletName,
-    balance: wallet.balance?.amount || 0,
+    balance: wallet.balance?.amount || 0, // Keep raw balance for validation
   }));
 
   const toWalletOptions: SelectOption[] = availableToWallets.map((wallet) => ({
     value: wallet.id,
     label: wallet.walletName,
-    balance: wallet.balance?.amount || 0,
+    balance: wallet.balance?.amount || 0, // Keep raw balance for validation
   }));
 
   const onSubmit = (data: TransferMoneyFormInput) => {

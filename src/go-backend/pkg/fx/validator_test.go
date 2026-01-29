@@ -226,6 +226,69 @@ func TestNormalizeCurrency(t *testing.T) {
 	}
 }
 
+func TestGetDecimalPlaces(t *testing.T) {
+	tests := []struct {
+		name     string
+		currency string
+		want     int
+	}{
+		// 2 decimal place currencies
+		{"USD has 2 decimals", "USD", 2},
+		{"EUR has 2 decimals", "EUR", 2},
+		{"GBP has 2 decimals", "GBP", 2},
+
+		// 0 decimal place currencies
+		{"VND has 0 decimals", "VND", 0},
+		{"JPY has 0 decimals", "JPY", 0},
+		{"KRW has 0 decimals", "KRW", 0},
+		{"IDR has 0 decimals", "IDR", 0},
+
+		// Case insensitivity
+		{"lowercase usd", "usd", 2},
+		{"lowercase vnd", "vnd", 0},
+
+		// Unknown currency defaults to 2
+		{"unknown currency", "XXX", 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetDecimalPlaces(tt.currency); got != tt.want {
+				t.Errorf("GetDecimalPlaces() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetDecimalMultiplier(t *testing.T) {
+	tests := []struct {
+		name     string
+		currency string
+		want     int64
+	}{
+		// 2 decimal place currencies -> multiplier 100
+		{"USD multiplier", "USD", 100},
+		{"EUR multiplier", "EUR", 100},
+		{"GBP multiplier", "GBP", 100},
+
+		// 0 decimal place currencies -> multiplier 1
+		{"VND multiplier", "VND", 1},
+		{"JPY multiplier", "JPY", 1},
+		{"KRW multiplier", "KRW", 1},
+
+		// Unknown currency defaults to 100
+		{"unknown currency", "XXX", 100},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetDecimalMultiplier(tt.currency); got != tt.want {
+				t.Errorf("GetDecimalMultiplier() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 // Helper function to check if a string contains a substring
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || indexOfSubstring(s, substr) >= 0)

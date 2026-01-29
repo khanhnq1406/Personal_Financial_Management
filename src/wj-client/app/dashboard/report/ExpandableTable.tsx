@@ -14,6 +14,7 @@ interface WalletData {
   id: number;
   walletName: string;
   balance?: { amount: number };
+  displayBalance?: { amount: number };
   isExpanded: boolean;
   monthlyData: MonthlyData[];
 }
@@ -162,7 +163,7 @@ export const ExpandableTable = memo(function ExpandableTable({
                     </td>
                   ))}
                   <td className="text-center py-2 px-2 sm:py-3 sm:px-4 font-semibold text-xs sm:text-sm whitespace-nowrap">
-                    {formatCurrency(wallet.balance?.amount ?? 0)}
+                    {formatCurrency(wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0)}
                   </td>
                 </tr>
 
@@ -250,7 +251,7 @@ export const ExpandableTable = memo(function ExpandableTable({
               ))}
               <td className="text-center py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap">
                 {formatCurrency(
-                  wallets.reduce((sum, w) => sum + (w.balance?.amount ?? 0), 0),
+                  wallets.reduce((sum, w) => sum + (w.displayBalance?.amount ?? w.balance?.amount ?? 0), 0)
                 )}
               </td>
             </tr>

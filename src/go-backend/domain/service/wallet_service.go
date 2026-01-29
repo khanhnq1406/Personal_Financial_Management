@@ -241,10 +241,14 @@ func (s *walletService) UpdateWallet(ctx context.Context, walletID int32, userID
 		fmt.Printf("Warning: failed to populate currency cache for wallet %d: %v\n", wallet.ID, err)
 	}
 
+	// Enrich wallet proto with display fields
+	walletProto := s.mapper.ModelToProto(wallet)
+	_ = s.enrichWalletProto(ctx, userID, walletProto, wallet)
+
 	return &walletv1.UpdateWalletResponse{
 		Success:   true,
 		Message:   "Wallet updated successfully",
-		Data:      s.mapper.ModelToProto(wallet),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -399,10 +403,14 @@ func (s *walletService) AddFunds(ctx context.Context, walletID int32, userID int
 		fmt.Printf("Warning: failed to populate currency cache for wallet %d: %v\n", updated.ID, err)
 	}
 
+	// Enrich wallet proto with display fields
+	walletProto := s.mapper.ModelToProto(updated)
+	_ = s.enrichWalletProto(ctx, userID, walletProto, updated)
+
 	return &walletv1.AddFundsResponse{
 		Success:   true,
 		Message:   "Funds added successfully",
-		Data:      s.mapper.ModelToProto(updated),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -449,10 +457,14 @@ func (s *walletService) WithdrawFunds(ctx context.Context, walletID int32, userI
 		fmt.Printf("Warning: failed to populate currency cache for wallet %d: %v\n", updated.ID, err)
 	}
 
+	// Enrich wallet proto with display fields
+	walletProto := s.mapper.ModelToProto(updated)
+	_ = s.enrichWalletProto(ctx, userID, walletProto, updated)
+
 	return &walletv1.WithdrawFundsResponse{
 		Success:   true,
 		Message:   "Funds withdrawn successfully",
-		Data:      s.mapper.ModelToProto(updated),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -647,10 +659,14 @@ func (s *walletService) AdjustBalance(ctx context.Context, walletID int32, userI
 		fmt.Printf("Warning: failed to populate currency cache for wallet %d: %v\n", updatedWallet.ID, err)
 	}
 
+	// Enrich wallet proto with display fields
+	walletProto := s.mapper.ModelToProto(updatedWallet)
+	_ = s.enrichWalletProto(ctx, userID, walletProto, updatedWallet)
+
 	return &walletv1.AdjustBalanceResponse{
 		Success:   true,
 		Message:   "Balance adjusted successfully",
-		Data:      s.mapper.ModelToProto(updatedWallet),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -661,18 +677,73 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 		return nil, err
 	}
 
-	// Get total balance from repository
-	totalBalance, err := s.walletRepo.GetTotalBalance(ctx, userID)
+	// Get user to determine preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, apperrors.NewNotFoundError("user")
+	}
+
+	// Get all active wallets for the user
+	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit:  1000, // Get all wallets
+		Offset: 0,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Return response
+	// Calculate total in user's preferred currency
+	var totalInPreferredCurrency int64
+	preferredCurrency := user.PreferredCurrency
+	if preferredCurrency == "" {
+		preferredCurrency = types.VND // Default to VND if not set
+	}
+
+	for _, wallet := range wallets {
+		// Skip inactive wallets
+		if wallet.Status != walletv1.WalletStatus_WALLET_STATUS_ACTIVE {
+			continue
+		}
+
+		// Convert to user's preferred currency
+		if wallet.Currency == preferredCurrency {
+			totalInPreferredCurrency += wallet.Balance
+		} else {
+			// Try cache first
+			convertedBalance, err := s.currencyCache.GetConvertedValue(ctx, userID, "wallet", wallet.ID, preferredCurrency)
+			if err != nil || convertedBalance == 0 {
+				// Cache miss - convert on the fly using ConvertAmount which handles decimal places
+				if s.fxRateSvc != nil {
+					convertedBalance, err = s.fxRateSvc.ConvertAmount(ctx, wallet.Balance, wallet.Currency, preferredCurrency)
+					if err != nil {
+						fmt.Printf("Warning: failed to convert balance for %s->%s: %v\n", wallet.Currency, preferredCurrency, err)
+						continue
+					}
+				} else {
+					// No FX service available, skip this wallet
+					fmt.Printf("Warning: no FX service available for currency conversion\n")
+					continue
+				}
+			}
+			totalInPreferredCurrency += convertedBalance
+		}
+	}
+
+	// Return response with display values
 	return &walletv1.GetTotalBalanceResponse{
 		Success:   true,
 		Message:   "Total balance retrieved successfully",
-		Data:      &walletv1.Money{Amount: totalBalance, Currency: "VND"},
-		Timestamp: time.Now().Format(time.RFC3339),
+		Data: &walletv1.Money{
+			Amount:   totalInPreferredCurrency,
+			Currency: preferredCurrency,
+		},
+		DisplayValue: &walletv1.Money{
+			Amount:   totalInPreferredCurrency,
+			Currency: preferredCurrency,
+		},
+		DisplayCurrency: preferredCurrency,
+		Currency:        preferredCurrency,
+		Timestamp:       time.Now().Format(time.RFC3339),
 	}, nil
 }
 

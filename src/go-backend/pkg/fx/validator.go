@@ -108,3 +108,37 @@ func ValidateRate(fromCurrency, toCurrency string, rate float64) error {
 func normalizeCurrency(currency string) string {
 	return strings.ToUpper(strings.TrimSpace(currency))
 }
+
+// CurrencyDecimalPlaces defines the number of decimal places for each currency
+// This is used for proper currency conversion accounting for different smallest units
+var CurrencyDecimalPlaces = map[string]int{
+	// 2 decimal places (standard)
+	"USD": 2, "EUR": 2, "GBP": 2, "CHF": 2, "CAD": 2, "AUD": 2, "NZD": 2,
+	"CNY": 2, "HKD": 2, "SGD": 2, "MYR": 2, "THB": 2, "PHP": 2, "INR": 2,
+	"SEK": 2, "NOK": 2, "DKK": 2, "MXN": 2, "BRL": 2, "ZAR": 2, "RUB": 2,
+
+	// 0 decimal places (no cents/subunits commonly used)
+	"VND": 0, "JPY": 0, "KRW": 0, "IDR": 0,
+}
+
+// GetDecimalPlaces returns the number of decimal places for a currency
+// Defaults to 2 if the currency is not explicitly defined
+func GetDecimalPlaces(currency string) int {
+	normalized := normalizeCurrency(currency)
+	if places, ok := CurrencyDecimalPlaces[normalized]; ok {
+		return places
+	}
+	return 2 // Default to 2 decimal places
+}
+
+// GetDecimalMultiplier returns the multiplier for converting to/from smallest units
+// For USD (2 decimals): 100 (1 dollar = 100 cents)
+// For VND (0 decimals): 1 (1 dong = 1 dong)
+func GetDecimalMultiplier(currency string) int64 {
+	places := GetDecimalPlaces(currency)
+	multiplier := int64(1)
+	for i := 0; i < places; i++ {
+		multiplier *= 10
+	}
+	return multiplier
+}

@@ -204,7 +204,9 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
   }
 
   // Calculate projected balance
+  // Use raw balance for calculation, but displayBalance for display purposes
   const currentBalance = wallet.balance?.amount || 0;
+  const displayBalance = (wallet.displayBalance?.amount ?? wallet.balance?.amount) || 0;
   const adjustmentAmount = watchAdjustmentAmount || 0;
   const adjustmentType = watchAdjustmentType || "add";
   const isAdd = adjustmentType === "add";

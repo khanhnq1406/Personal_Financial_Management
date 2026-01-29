@@ -23,6 +23,15 @@ func NewConverter(rateProvider fx.Provider) *Converter {
 // ConvertAmount converts an amount from one currency to another
 // Amount is in the smallest currency unit (e.g., cents for USD, dong for VND)
 // Returns the converted amount also in the smallest currency unit
+//
+// The conversion accounts for different decimal places between currencies:
+// - USD has 2 decimal places (100 cents = $1)
+// - VND has 0 decimal places (1 dong = 1 dong)
+//
+// Example: Converting 42 cents USD to VND at rate 25850:
+// 1. Convert 42 cents to dollars: 42 / 100 = 0.42
+// 2. Apply FX rate: 0.42 * 25850 = 10857
+// 3. Convert to VND smallest unit: 10857 * 1 = 10857 dong
 func (c *Converter) ConvertAmount(ctx context.Context, amount int64, fromCurrency, toCurrency string) (int64, error) {
 	// Normalize currency codes
 	fromCurrency = normalize(fromCurrency)
@@ -44,22 +53,34 @@ func (c *Converter) ConvertAmount(ctx context.Context, amount int64, fromCurrenc
 		return 0, fmt.Errorf("invalid FX rate: %w", err)
 	}
 
+	// Get decimal multipliers for both currencies
+	fromMultiplier := fx.GetDecimalMultiplier(fromCurrency)
+	toMultiplier := fx.GetDecimalMultiplier(toCurrency)
+
 	// Convert using decimal for precision
-	// amount (int64) -> decimal -> multiply by rate -> convert back to int64
+	// 1. Convert from smallest unit to base unit (divide by fromMultiplier)
+	// 2. Apply FX rate
+	// 3. Convert to target smallest unit (multiply by toMultiplier)
 	amountDecimal := decimal.NewFromInt(amount)
+	fromMultiplierDecimal := decimal.NewFromInt(fromMultiplier)
+	toMultiplierDecimal := decimal.NewFromInt(toMultiplier)
 	rateDecimal := decimal.NewFromFloat(rate)
 
-	convertedDecimal := amountDecimal.Mul(rateDecimal)
+	// Formula: (amount / fromMultiplier) * rate * toMultiplier
+	convertedDecimal := amountDecimal.
+		Div(fromMultiplierDecimal).
+		Mul(rateDecimal).
+		Mul(toMultiplierDecimal)
 
-	// Get integer part (we lose decimal places in currency conversion)
-	// This is acceptable for most use cases where we work in smallest currency units
-	converted := convertedDecimal.IntPart()
+	// Round to nearest integer (we're in smallest currency units)
+	converted := convertedDecimal.Round(0).IntPart()
 
 	return converted, nil
 }
 
-// ConvertAmountWithRate converts an amount using a provided rate
+// ConvertAmountWithRate converts an amount using a provided rate and currency info
 // Useful when you have multiple conversions with the same rate
+// DEPRECATED: Use ConvertAmountWithRateAndCurrencies instead for proper decimal handling
 func (c *Converter) ConvertAmountWithRate(amount int64, rate float64) int64 {
 	amountDecimal := decimal.NewFromInt(amount)
 	rateDecimal := decimal.NewFromFloat(rate)
@@ -67,11 +88,36 @@ func (c *Converter) ConvertAmountWithRate(amount int64, rate float64) int64 {
 	return convertedDecimal.IntPart()
 }
 
+// ConvertAmountWithRateAndCurrencies converts an amount using a provided rate
+// while accounting for different decimal places between currencies
+func (c *Converter) ConvertAmountWithRateAndCurrencies(amount int64, rate float64, fromCurrency, toCurrency string) int64 {
+	// Get decimal multipliers for both currencies
+	fromMultiplier := fx.GetDecimalMultiplier(fromCurrency)
+	toMultiplier := fx.GetDecimalMultiplier(toCurrency)
+
+	amountDecimal := decimal.NewFromInt(amount)
+	fromMultiplierDecimal := decimal.NewFromInt(fromMultiplier)
+	toMultiplierDecimal := decimal.NewFromInt(toMultiplier)
+	rateDecimal := decimal.NewFromFloat(rate)
+
+	// Formula: (amount / fromMultiplier) * rate * toMultiplier
+	convertedDecimal := amountDecimal.
+		Div(fromMultiplierDecimal).
+		Mul(rateDecimal).
+		Mul(toMultiplierDecimal)
+
+	return convertedDecimal.Round(0).IntPart()
+}
+
 // ConvertBatch converts multiple amounts using batch rate fetching for efficiency
 // Returns a map of index to converted amount
 func (c *Converter) ConvertBatch(ctx context.Context, amounts []int64, fromCurrency, toCurrency string) ([]int64, error) {
+	// Normalize currency codes
+	fromCurrency = normalize(fromCurrency)
+	toCurrency = normalize(toCurrency)
+
 	// If same currency, return as-is
-	if normalize(fromCurrency) == normalize(toCurrency) {
+	if fromCurrency == toCurrency {
 		return amounts, nil
 	}
 
@@ -86,10 +132,10 @@ func (c *Converter) ConvertBatch(ctx context.Context, amounts []int64, fromCurre
 		return nil, fmt.Errorf("invalid FX rate: %w", err)
 	}
 
-	// Convert all amounts
+	// Convert all amounts using the new method that accounts for decimal places
 	results := make([]int64, len(amounts))
 	for i, amount := range amounts {
-		results[i] = c.ConvertAmountWithRate(amount, rate)
+		results[i] = c.ConvertAmountWithRateAndCurrencies(amount, rate, fromCurrency, toCurrency)
 	}
 
 	return results, nil
