@@ -9,6 +9,9 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import NextImage from "next/image";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { CurrencySelector } from "@/components/CurrencySelector";
+import { CurrencyConversionProgress } from "@/components/CurrencyConversionProgress";
 
 export default function DashboardLayout({
   children,
@@ -86,55 +89,70 @@ export default function DashboardLayout({
   };
   return (
     <AuthCheck>
-      <div className="bg-bg h-full sm:p-3 flex flex-col">
-        <div className="block sm:grid grid-cols-[250px_auto] flex-1 min-h-0">
-          <div className="sm:hidden bg-bg flex justify-between p-3">
-            <div className="flex items-center">
-              <Button
-                type={ButtonType.IMG}
-                src={`${resources}/menu.png`}
-                onClick={handleExtend}
-              />
+      <CurrencyProvider>
+        {/* Currency conversion progress banner */}
+        <CurrencyConversionProgress />
+
+        <div className="bg-bg h-full sm:p-3 flex flex-col">
+          <div className="block sm:grid grid-cols-[250px_auto] flex-1 min-h-0">
+            {/* Mobile header */}
+            <div className="sm:hidden bg-bg flex justify-between items-center p-3 gap-3">
+              <div className="flex items-center">
+                <Button
+                  type={ButtonType.IMG}
+                  src={`${resources}/menu.png`}
+                  onClick={handleExtend}
+                />
+              </div>
+              <div className="text-fg font-semibold text-lg flex items-center">
+                {pathname}
+              </div>
+              <div className="flex items-center gap-2">
+                <CurrencySelector />
+                <img
+                  src={
+                    user.picture !== null
+                      ? user.picture
+                      : `${resources}/user.png`
+                  }
+                  alt={user.fullname || "User avatar"}
+                  className="rounded-full h-9 w-9"
+                />
+              </div>
             </div>
-            <div className="text-fg font-semibold text-lg flex items-center">
-              {pathname}
-            </div>
-            <div>
-              <img
-                src={
-                  user.picture !== null ? user.picture : `${resources}/user.png`
-                }
-                alt={user.fullname || "User avatar"}
-                className="rounded-full h-9 w-9"
-              />
-            </div>
-          </div>
           <div
             className="sm:hidden overflow-hidden opacity-0 scale-95 pointer-events-none h-0 transition-opacity transition-transform duration-300 ease-out"
             ref={menuRef}
           >
             <div className="pb-3">{navigationItems}</div>
           </div>
-          <div className="hidden sm:flex flex-wrap justify-center h-fit">
-            <div className="flex h-fit items-center gap-2 my-8">
-              <NextImage
-                alt="Wealth Journey logo"
-                src="/logo.png"
-                width={50}
-                height={50}
-              />
-              <div className="text-fg font-bold h-fit text-lg">
-                Wealth Journey
+          {/* Desktop sidebar */}
+          <div className="hidden sm:flex flex-col justify-between h-full">
+            <div>
+              <div className="flex h-fit items-center gap-2 my-8 justify-center">
+                <NextImage
+                  alt="Wealth Journey logo"
+                  src="/logo.png"
+                  width={50}
+                  height={50}
+                />
+                <div className="text-fg font-bold h-fit text-lg">
+                  Wealth Journey
+                </div>
               </div>
+              {navigationItems}
             </div>
-            {navigationItems}
+            <div className="px-4 pb-4">
+              <CurrencySelector />
+            </div>
           </div>
           <div className="bg-fg sm:rounded-md h-full overflow-auto">
             {children}
           </div>
+          </div>
         </div>
-      </div>
-      <FloatingActionButton />
+        <FloatingActionButton />
+      </CurrencyProvider>
     </AuthCheck>
   );
 }

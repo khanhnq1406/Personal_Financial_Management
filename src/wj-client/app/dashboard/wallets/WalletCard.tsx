@@ -3,8 +3,9 @@ import Image from "next/image";
 import { BaseCard } from "@/components/BaseCard";
 import { Button } from "@/components/Button";
 import { ButtonType, resources } from "@/app/constants";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface WalletCardProps {
   wallet: Wallet;
@@ -17,7 +18,11 @@ export const WalletCard = memo(function WalletCard({
   onEdit,
   onDelete,
 }: WalletCardProps) {
-  const balance = wallet.balance?.amount ?? 0;
+  const { currency } = useCurrency();
+
+  // Use displayBalance if available (converted), otherwise use original balance
+  const balance = wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
+  const displayCurrency = wallet.displayCurrency || currency;
 
   return (
     <BaseCard className="p-4">
@@ -51,7 +56,7 @@ export const WalletCard = memo(function WalletCard({
         <div className="text-right">
           <div className="text-sm text-gray-500">Balance</div>
           <div className="text-2xl font-bold text-bg">
-            {currencyFormatter.format(balance)}
+            {formatCurrency(balance, displayCurrency)}
           </div>
         </div>
       </div>

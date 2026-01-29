@@ -1,13 +1,9 @@
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
+import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
 
 // Formatting helpers
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount / 100); // Convert from cents to dollars
+export const formatCurrency = (amount: number, currency: string = "USD"): string => {
+  return formatCurrencyUtil(amount, currency);
 };
 
 export const formatQuantity = (
@@ -34,23 +30,9 @@ export const formatPercent = (value: number): string => {
 };
 
 // Format prices with appropriate decimals based on investment type
-export const formatPrice = (price: number, type: InvestmentType): string => {
-  let decimals = 2;
-
-  // price is stored as int64 in cents (1/100 of currency unit)
-  // For display with more than 2 decimals, we need to handle it specially
-  if (decimals <= 2) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(price / 100);
-  } else {
-    // For crypto with more decimals, convert to decimal amount first
-    const decimalPrice = price / 100; // Convert to dollars
-    return `$${decimalPrice.toFixed(decimals)}`;
-  }
+export const formatPrice = (price: number, type: InvestmentType, currency: string = "USD"): string => {
+  // Use the multi-currency formatter from utils
+  return formatCurrencyUtil(price, currency);
 };
 
 export const getInvestmentTypeLabel = (type: InvestmentType): string => {

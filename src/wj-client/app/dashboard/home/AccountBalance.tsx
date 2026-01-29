@@ -15,6 +15,8 @@ import {
 import { useQueryGetBalanceHistory } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { formatTickValue } from "@/utils/number-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface AccountBalanceProps {
   availableYears?: number[];
@@ -24,6 +26,7 @@ export const AccountBalance = memo(function AccountBalance({
   availableYears = [new Date().getFullYear()],
 }: AccountBalanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { currency } = useCurrency();
 
   // Fetch balance history for total balance (walletId: 0 = all wallets)
   const { data: balanceHistory, isLoading } = useQueryGetBalanceHistory(
@@ -81,11 +84,8 @@ export const AccountBalance = memo(function AccountBalance({
           <YAxis tickFormatter={formatTickValue} />
           <Tooltip
             formatter={(value: number, name: string) => {
-              // Format as VND
-              const formatted = new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              }).format(value);
+              // Format with dynamic currency
+              const formatted = formatCurrency(value, currency);
               return [formatted, name];
             }}
           />
