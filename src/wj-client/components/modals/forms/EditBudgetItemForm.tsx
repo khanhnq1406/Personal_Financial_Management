@@ -16,6 +16,7 @@ import {
 } from "@/lib/validation/budget.schema";
 import { Success } from "@/components/modals/Success";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface EditBudgetItemFormProps {
   budgetId: number;
@@ -77,7 +78,7 @@ export function EditBudgetItemForm({
       itemId: item.id,
       name: data.name,
       total: {
-        amount: data.total,
+        amount: amountToSmallestUnit(data.total, currency),
         currency: currency,
       },
       checked: item.checked ?? false,

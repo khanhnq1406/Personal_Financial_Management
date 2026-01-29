@@ -21,6 +21,7 @@ import {
 import { SelectOption } from "@/components/forms/FormSelect";
 import { useMemo } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface CreateWalletFormProps {
   onSuccess?: () => void;
@@ -69,7 +70,7 @@ export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormPro
       {
         walletName: data.walletName,
         initialBalance: {
-          amount: data.initialBalance,
+          amount: amountToSmallestUnit(data.initialBalance, currency),
           currency: currency,
         },
         type: data.type,

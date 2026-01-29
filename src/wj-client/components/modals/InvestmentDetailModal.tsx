@@ -149,13 +149,13 @@ export function InvestmentDetailModal({
         id: "price",
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }) => formatCurrency(row.original.price || 0),
+        cell: ({ row }) => formatCurrency(row.original.price || 0, investment?.currency || "USD"),
       },
       {
         id: "fees",
         accessorKey: "fees",
         header: "Fees",
-        cell: ({ row }) => formatCurrency(row.original.fees || 0),
+        cell: ({ row }) => formatCurrency(row.original.fees || 0, investment?.currency || "USD"),
       },
       {
         id: "cost",
@@ -163,7 +163,7 @@ export function InvestmentDetailModal({
         header: "Total",
         cell: ({ row }) => (
           <span className="font-medium">
-            {formatCurrency(row.original.cost || 0)}
+            {formatCurrency(row.original.cost || 0, investment?.currency || "USD")}
           </span>
         ),
       },
@@ -211,17 +211,17 @@ export function InvestmentDetailModal({
       {
         id: "price",
         header: "Price",
-        accessorFn: (row) => formatCurrency(row.price || 0),
+        accessorFn: (row) => formatCurrency(row.price || 0, investment?.currency || "USD"),
       },
       {
         id: "fees",
         header: "Fees",
-        accessorFn: (row) => formatCurrency(row.fees || 0),
+        accessorFn: (row) => formatCurrency(row.fees || 0, investment?.currency || "USD"),
       },
       {
         id: "cost",
         header: "Total",
-        accessorFn: (row) => formatCurrency(row.cost || 0),
+        accessorFn: (row) => formatCurrency(row.cost || 0, investment?.currency || "USD"),
       },
       {
         id: "transactionDate",
@@ -300,6 +300,10 @@ export function InvestmentDetailModal({
                 <span>{investment.name}</span>
               </div>
               <div className="flex justify-between items-center">
+                <span className="text-gray-600">Currency</span>
+                <span className="font-medium">{investment.currency || "USD"}</span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-gray-600">Quantity</span>
                 <span className="font-medium">
                   {formatQuantity(investment.quantity, investment.type)}
@@ -307,7 +311,7 @@ export function InvestmentDetailModal({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Avg Cost</span>
-                <span>{formatCurrency(investment.averageCost || 0)}</span>
+                <span>{formatCurrency(investment.averageCost || 0, investment.currency || "USD")}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -337,7 +341,7 @@ export function InvestmentDetailModal({
                   </button>
                 </div>
                 <div className="text-right">
-                  <span>{formatCurrency(investment.currentPrice || 0)}</span>
+                  <span>{formatCurrency(investment.currentPrice || 0, investment.currency || "USD")}</span>
                   <div className="mt-1">
                     {(() => {
                       const date = new Date(investment.updatedAt * 1000);
@@ -379,26 +383,47 @@ export function InvestmentDetailModal({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Cost</span>
-                <span>{formatCurrency(investment.totalCost || 0)}</span>
+                <div className="text-right">
+                  <span>{formatCurrency(investment.totalCost || 0, investment.currency || "USD")}</span>
+                  {investment.displayTotalCost && investment.displayCurrency && (
+                    <span className="text-xs text-gray-500 block">
+                      ≈ {formatCurrency(investment.displayTotalCost.amount || 0, investment.displayCurrency)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Current Value</span>
-                <span className="font-semibold">
-                  {formatCurrency(investment.currentValue || 0)}
-                </span>
+                <div className="text-right">
+                  <span className="font-semibold">
+                    {formatCurrency(investment.currentValue || 0, investment.currency || "USD")}
+                  </span>
+                  {investment.displayCurrentValue && investment.displayCurrency && (
+                    <span className="text-xs text-gray-500 block">
+                      ≈ {formatCurrency(investment.displayCurrentValue.amount || 0, investment.displayCurrency)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Unrealized PNL</span>
-                  <span
-                    className={`font-semibold ${
-                      (investment.unrealizedPnl || 0) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {formatCurrency(investment.unrealizedPnl || 0)}
-                  </span>
+                  <div className="text-right">
+                    <span
+                      className={`font-semibold ${
+                        (investment.unrealizedPnl || 0) >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(investment.unrealizedPnl || 0, investment.currency || "USD")}
+                    </span>
+                    {investment.displayUnrealizedPnl && investment.displayCurrency && (
+                      <span className="text-xs text-gray-500 block">
+                        ≈ {formatCurrency(investment.displayUnrealizedPnl.amount || 0, investment.displayCurrency)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Unrealized PNL %</span>
@@ -415,15 +440,22 @@ export function InvestmentDetailModal({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Realized PNL</span>
-                  <span
-                    className={`font-semibold ${
-                      (investment.realizedPnl || 0) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {formatCurrency(investment.realizedPnl || 0)}
-                  </span>
+                  <div className="text-right">
+                    <span
+                      className={`font-semibold ${
+                        (investment.realizedPnl || 0) >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(investment.realizedPnl || 0, investment.currency || "USD")}
+                    </span>
+                    {investment.displayRealizedPnl && investment.displayCurrency && (
+                      <span className="text-xs text-gray-500 block">
+                        ≈ {formatCurrency(investment.displayRealizedPnl.amount || 0, investment.displayCurrency)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -472,6 +504,7 @@ export function InvestmentDetailModal({
             <AddInvestmentTransactionForm
               investmentId={investmentId}
               investmentType={investment.type}
+              investmentCurrency={investment.currency || "USD"}
               onSuccess={handleTransactionSuccess}
             />
           )}

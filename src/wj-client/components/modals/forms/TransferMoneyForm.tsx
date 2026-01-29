@@ -22,6 +22,7 @@ import { SelectOption } from "@/components/forms/FormSelect";
 import { toDateTimeLocal, getCurrentTimestamp } from "@/lib/utils/date";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface TransferMoneyFormProps {
   onSuccess?: () => void;
@@ -94,7 +95,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         fromWalletId: Number(data.fromWalletId),
         toWalletId: Number(data.toWalletId),
         amount: {
-          amount: data.amount,
+          amount: amountToSmallestUnit(data.amount, currency),
           currency: currency,
         },
       },

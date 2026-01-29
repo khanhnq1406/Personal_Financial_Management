@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
-  label: string;
+  label?: string;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -45,10 +45,12 @@ export const FormNumberInput = ({
 
   return (
     <div className={cn("mb-2", className)}>
-      <Label htmlFor={props.name} required={required}>
-        {label}
-      </Label>
-      <div className="relative mt-1">
+      {label && (
+        <Label htmlFor={props.name} required={required}>
+          {label}
+        </Label>
+      )}
+      <div className={cn("relative", label && "mt-1")}>
         {prefix && (
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
             {prefix}

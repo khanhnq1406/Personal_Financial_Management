@@ -13,8 +13,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 export interface SymbolAutocompleteProps {
   /** Currently selected symbol value */
   value: string;
-  /** Callback when selection changes */
-  onChange: (symbol: string) => void;
+  /** Callback when selection changes - includes full result for currency/name auto-fill */
+  onChange: (symbol: string, result?: SearchResult) => void;
   /** Additional CSS classes for the container */
   className?: string;
   /** Whether the autocomplete is disabled */
@@ -134,12 +134,15 @@ export function SymbolAutocomplete({
     }
   }, [value]);
 
-  // Handle selection change
+  // Handle selection change - find full result to pass currency/name info
   const handleChange = useCallback(
     (selectedValue: string) => {
-      onChange(selectedValue);
+      const selectedResult = searchQuery.data?.data?.find(
+        (r: SearchResult) => r.symbol === selectedValue,
+      );
+      onChange(selectedValue, selectedResult);
     },
-    [onChange],
+    [onChange, searchQuery.data?.data],
   );
 
   // Handle input value changes (for search)

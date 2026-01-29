@@ -18,6 +18,81 @@ type SearchResult struct {
 	Type     string `json:"type"`
 	Exchange string `json:"exchange"`
 	ExchDisp string `json:"exchDisp"`
+	Currency string `json:"currency"` // Trading currency (ISO 4217), derived from exchange
+}
+
+// exchangeToCurrency maps Yahoo Finance exchange codes to ISO 4217 currency codes
+var exchangeToCurrency = map[string]string{
+	// US Exchanges
+	"NMS": "USD", // NASDAQ Global Select Market
+	"NGM": "USD", // NASDAQ Global Market
+	"NCM": "USD", // NASDAQ Capital Market
+	"NAS": "USD", // NASDAQ (general)
+	"NYQ": "USD", // NYSE
+	"NYS": "USD", // NYSE (alternative code)
+	"PCX": "USD", // NYSE Arca
+	"ASE": "USD", // NYSE American (AMEX)
+	"BTS": "USD", // BATS Exchange
+	"OPR": "USD", // OPRA (options)
+
+	// Cryptocurrency (traded in USD by default)
+	"CCC": "USD", // Cryptocurrency
+
+	// Vietnam
+	"VNM": "VND", // Vietnam Stock Exchange (general)
+	"HNX": "VND", // Hanoi Stock Exchange
+	"HSX": "VND", // Ho Chi Minh Stock Exchange
+	"UPX": "VND", // UPCoM (unlisted public companies)
+	"VSE": "VND",
+
+	// Hong Kong
+	"HKG": "HKD", // Hong Kong Stock Exchange
+
+	// Japan
+	"TYO": "JPY", // Tokyo Stock Exchange
+	"JPX": "JPY", // Japan Exchange Group
+
+	// UK/Europe
+	"LSE": "GBP", // London Stock Exchange
+	"LON": "GBP", // London (alternative)
+	"FRA": "EUR", // Frankfurt Stock Exchange
+	"ETR": "EUR", // XETRA (Germany)
+	"PAR": "EUR", // Euronext Paris
+	"AMS": "EUR", // Euronext Amsterdam
+	"BRU": "EUR", // Euronext Brussels
+	"MIL": "EUR", // Borsa Italiana (Milan)
+
+	// Asia-Pacific
+	"SHH": "CNY", // Shanghai Stock Exchange
+	"SHZ": "CNY", // Shenzhen Stock Exchange
+	"KSC": "KRW", // Korea Stock Exchange (KOSPI)
+	"KOE": "KRW", // Korea Exchange
+	"TWO": "TWD", // Taiwan OTC
+	"TPE": "TWD", // Taiwan Stock Exchange
+	"SES": "SGD", // Singapore Exchange
+	"SGX": "SGD", // Singapore Exchange (alternative)
+	"ASX": "AUD", // Australian Securities Exchange
+	"NSI": "INR", // National Stock Exchange of India
+	"BSE": "INR", // Bombay Stock Exchange
+
+	// Canada
+	"TOR": "CAD", // Toronto Stock Exchange
+	"TSX": "CAD", // TSX (alternative)
+	"CVE": "CAD", // TSX Venture Exchange
+	"CNQ": "CAD", // Canadian Securities Exchange
+
+	// Other
+	"SAO": "BRL", // B3 (Brazil)
+	"MEX": "MXN", // Bolsa Mexicana de Valores
+	"SWX": "CHF", // SIX Swiss Exchange
+}
+
+// GetCurrencyForExchange returns the currency code for a given exchange
+func GetCurrencyForExchange(exchange string) string {
+	if currency, ok := exchangeToCurrency[exchange]; ok {
+		return currency
+	}
+	return "USD" // Default to USD for unknown exchanges
 }
 
 // SearchParams holds configurable parameters for Yahoo Finance search API
@@ -186,6 +261,7 @@ func SearchSymbolsWithOptions(ctx context.Context, params SearchParams) ([]Searc
 			Type:     quote.QuoteType,
 			Exchange: quote.Exchange,
 			ExchDisp: quote.ExchDisp,
+			Currency: GetCurrencyForExchange(quote.Exchange),
 		})
 	}
 

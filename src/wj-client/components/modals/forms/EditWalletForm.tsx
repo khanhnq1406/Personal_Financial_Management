@@ -22,6 +22,7 @@ import {
 } from "@/lib/validation/wallet.schema";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface EditWalletFormProps {
   wallet: Wallet;
@@ -158,7 +159,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
         await adjustBalanceMutation.mutateAsync({
           walletId: wallet.id,
           amount: {
-            amount: Math.round(adjustment.adjustmentAmount),
+            amount: amountToSmallestUnit(adjustment.adjustmentAmount, wallet.balance?.currency || currency),
             currency: wallet.balance?.currency || currency,
           },
           reason: adjustment.reason || "Balance adjustment",

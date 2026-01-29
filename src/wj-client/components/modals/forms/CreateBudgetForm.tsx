@@ -14,6 +14,7 @@ import {
 } from "@/lib/validation/budget.schema";
 import { Success } from "@/components/modals/Success";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface CreateBudgetFormProps {
   onSuccess?: () => void;
@@ -47,7 +48,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
       {
         name: data.name,
         total: {
-          amount: data.total,
+          amount: amountToSmallestUnit(data.total, currency),
           currency: currency,
         },
         items: [],

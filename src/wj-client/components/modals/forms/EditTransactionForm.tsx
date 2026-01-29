@@ -30,6 +30,7 @@ import { Success } from "@/components/modals/Success";
 import { toDateTimeLocal, fromDateTimeLocal } from "@/lib/utils/date";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface EditTransactionFormProps {
   transactionId: number;
@@ -160,10 +161,12 @@ export function EditTransactionForm({
         walletId: Number(data.walletId),
         categoryId: data.categoryId ? Number(data.categoryId) : undefined,
         amount: {
-          amount:
+          amount: amountToSmallestUnit(
             data.transactionType === "income"
               ? data.amount
               : -Math.abs(data.amount),
+            currency,
+          ),
           currency: currency,
         },
         date: fromDateTimeLocal(data.date),

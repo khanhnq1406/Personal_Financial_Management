@@ -34,6 +34,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { amountToSmallestUnit } from "@/lib/utils/units";
 
 interface AddTransactionFormProps {
   onSuccess?: () => void;
@@ -147,7 +148,7 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
         walletId: Number(data.walletId),
         categoryId: Number(data.categoryId),
         amount: {
-          amount: signedAmount,
+          amount: amountToSmallestUnit(signedAmount, currency),
           currency: currency,
         },
         date: fromDateTimeLocal(data.date),

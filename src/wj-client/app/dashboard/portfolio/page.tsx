@@ -83,44 +83,51 @@ const EmptyInvestmentWalletsState = memo(
 EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
 
 // Memoized portfolio summary cards to prevent re-renders
+// Prefers display fields (converted to user's preferred currency) when available
 const PortfolioSummaryCards = memo(
-  ({ portfolioSummary, currency }: { portfolioSummary: any; currency: string }) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <BaseCard className="p-4">
-        <div className="text-sm text-gray-600">Total Value</div>
-        <div className="text-2xl font-bold text-gray-900 mt-1">
-          {formatCurrency(portfolioSummary.totalValue || 0, currency)}
-        </div>
-      </BaseCard>
+  ({ portfolioSummary, userCurrency }: { portfolioSummary: any; userCurrency: string }) => {
+    // Use display fields if available, otherwise fall back to base values
+    const displayValue = portfolioSummary.displayTotalValue?.amount ?? portfolioSummary.totalValue ?? 0;
+    const displayCost = portfolioSummary.displayTotalCost?.amount ?? portfolioSummary.totalCost ?? 0;
+    const displayPnl = portfolioSummary.displayTotalPnl?.amount ?? portfolioSummary.totalPnl ?? 0;
+    const displayCurrency = portfolioSummary.displayCurrency || portfolioSummary.currency || userCurrency;
 
-      <BaseCard className="p-4">
-        <div className="text-sm text-gray-600">Total Cost</div>
-        <div className="text-2xl font-bold text-gray-900 mt-1">
-          {formatCurrency(portfolioSummary.totalCost || 0, currency)}
-        </div>
-      </BaseCard>
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <BaseCard className="p-4">
+          <div className="text-sm text-gray-600">Total Value</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {formatCurrency(displayValue, displayCurrency)}
+          </div>
+        </BaseCard>
 
-      <BaseCard className="p-4">
-        <div className="text-sm text-gray-600">Total PNL</div>
-        <div
-          className={`text-2xl font-bold mt-1 ${
-            (portfolioSummary.totalPnl || 0) >= 0
-              ? "text-green-600"
-              : "text-red-600"
-          }`}
-        >
-          {formatCurrency(portfolioSummary.totalPnl || 0, currency)}
-        </div>
-      </BaseCard>
+        <BaseCard className="p-4">
+          <div className="text-sm text-gray-600">Total Cost</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {formatCurrency(displayCost, displayCurrency)}
+          </div>
+        </BaseCard>
 
-      <BaseCard className="p-4">
-        <div className="text-sm text-gray-600">Holdings</div>
-        <div className="text-2xl font-bold text-gray-900 mt-1">
-          {portfolioSummary.totalInvestments || 0}
-        </div>
-      </BaseCard>
-    </div>
-  ),
+        <BaseCard className="p-4">
+          <div className="text-sm text-gray-600">Total PNL</div>
+          <div
+            className={`text-2xl font-bold mt-1 ${
+              displayPnl >= 0 ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {formatCurrency(displayPnl, displayCurrency)}
+          </div>
+        </BaseCard>
+
+        <BaseCard className="p-4">
+          <div className="text-sm text-gray-600">Holdings</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {portfolioSummary.totalInvestments || 0}
+          </div>
+        </BaseCard>
+      </div>
+    );
+  },
 );
 PortfolioSummaryCards.displayName = "PortfolioSummaryCards";
 
@@ -137,6 +144,12 @@ type InvestmentData = {
   unrealizedPnl?: number;
   unrealizedPnlPercent?: number;
   updatedAt?: number;
+  // Native currency of the investment
+  currency?: string;
+  // Display fields (converted to user's preferred currency)
+  displayCurrentValue?: { amount: number; currency: string };
+  displayUnrealizedPnl?: { amount: number; currency: string };
+  displayCurrency?: string;
 };
 
 // Column definitions for TanStackTable (memoized to prevent recreation)
@@ -175,10 +188,11 @@ const useInvestmentColumns = (
         header: "Avg Cost",
         cell: (info) => {
           const row = info.row.original;
+          const nativeCurrency = row.currency || "USD";
           return formatPrice(
             (info.getValue() as number | undefined) || 0,
             row.type as any,
-            currency,
+            nativeCurrency,
           );
         },
       },
@@ -187,36 +201,59 @@ const useInvestmentColumns = (
         header: "Current Price",
         cell: (info) => {
           const row = info.row.original;
+          const nativeCurrency = row.currency || "USD";
           return formatPrice(
             (info.getValue() as number | undefined) || 0,
             row.type as any,
-            currency,
+            nativeCurrency,
           );
         },
       },
       {
         accessorKey: "currentValue",
         header: "Current Value",
-        cell: (info) => (
-          <span className="font-medium">
-            {formatCurrency((info.getValue() as number | undefined) || 0, currency)}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          const nativeCurrency = row.currency || "USD";
+          const value = (info.getValue() as number | undefined) || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatCurrency(value, nativeCurrency)}
+              </span>
+              {row.displayCurrentValue && row.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈ {formatCurrency(row.displayCurrentValue.amount || 0, row.displayCurrency)}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "unrealizedPnl",
         header: "PNL",
-        cell: (info) => (
-          <span
-            className={`font-medium ${
-              ((info.getValue() as number | undefined) || 0) >= 0
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
-          >
-            {formatCurrency((info.getValue() as number | undefined) || 0, currency)}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          const nativeCurrency = row.currency || "USD";
+          const value = (info.getValue() as number | undefined) || 0;
+          return (
+            <div>
+              <span
+                className={`font-medium ${
+                  value >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {formatCurrency(value, nativeCurrency)}
+              </span>
+              {row.displayUnrealizedPnl && row.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈ {formatCurrency(row.displayUnrealizedPnl.amount || 0, row.displayCurrency)}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "unrealizedPnlPercent",
@@ -296,25 +333,39 @@ const useMobileInvestmentColumns = (
         id: "averageCost",
         header: "Avg Cost",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.averageCost || 0, row.type as any, currency),
+          formatPrice(row.averageCost || 0, row.type as any, row.currency || "USD"),
       },
       {
         id: "currentPrice",
         header: "Current Price",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.currentPrice || 0, row.type as any, currency),
+          formatPrice(row.currentPrice || 0, row.type as any, row.currency || "USD"),
       },
       {
         id: "currentValue",
         header: "Current Value",
-        accessorFn: (row: InvestmentData) =>
-          formatCurrency(row.currentValue || 0, currency),
+        accessorFn: (row: InvestmentData) => {
+          const nativeCurrency = row.currency || "USD";
+          const native = formatCurrency(row.currentValue || 0, nativeCurrency);
+          if (row.displayCurrentValue && row.displayCurrency) {
+            const converted = formatCurrency(row.displayCurrentValue.amount || 0, row.displayCurrency);
+            return `${native} (≈ ${converted})`;
+          }
+          return native;
+        },
       },
       {
         id: "unrealizedPnl",
         header: "PNL",
-        accessorFn: (row: InvestmentData) =>
-          formatCurrency(row.unrealizedPnl || 0, currency),
+        accessorFn: (row: InvestmentData) => {
+          const nativeCurrency = row.currency || "USD";
+          const native = formatCurrency(row.unrealizedPnl || 0, nativeCurrency);
+          if (row.displayUnrealizedPnl && row.displayCurrency) {
+            const converted = formatCurrency(row.displayUnrealizedPnl.amount || 0, row.displayCurrency);
+            return `${native} (≈ ${converted})`;
+          }
+          return native;
+        },
       },
       {
         id: "unrealizedPnlPercent",
@@ -603,7 +654,7 @@ export default function PortfolioPage() {
               <LoadingSpinner text="Loading summary..." />
             </div>
           ) : portfolioSummary?.data ? (
-            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} currency={currency} />
+            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} userCurrency={currency} />
           ) : null}
 
           {/* Holdings Table */}

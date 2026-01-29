@@ -449,6 +449,8 @@ export interface SearchResult {
   exchange: string;
   /** Display name for exchange */
   exchDisp: string;
+  /** Trading currency (ISO 4217), derived from exchange */
+  currency: string;
 }
 
 /** SearchSymbolsResponse represents the search response */
@@ -3917,7 +3919,7 @@ export const SearchSymbolsRequest: MessageFns<SearchSymbolsRequest> = {
 };
 
 function createBaseSearchResult(): SearchResult {
-  return { symbol: "", name: "", type: "", exchange: "", exchDisp: "" };
+  return { symbol: "", name: "", type: "", exchange: "", exchDisp: "", currency: "" };
 }
 
 export const SearchResult: MessageFns<SearchResult> = {
@@ -3936,6 +3938,9 @@ export const SearchResult: MessageFns<SearchResult> = {
     }
     if (message.exchDisp !== "") {
       writer.uint32(42).string(message.exchDisp);
+    }
+    if (message.currency !== "") {
+      writer.uint32(50).string(message.currency);
     }
     return writer;
   },
@@ -3987,6 +3992,14 @@ export const SearchResult: MessageFns<SearchResult> = {
           message.exchDisp = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4003,6 +4016,7 @@ export const SearchResult: MessageFns<SearchResult> = {
       type: isSet(object.type) ? globalThis.String(object.type) : "",
       exchange: isSet(object.exchange) ? globalThis.String(object.exchange) : "",
       exchDisp: isSet(object.exchDisp) ? globalThis.String(object.exchDisp) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
     };
   },
 
@@ -4023,6 +4037,9 @@ export const SearchResult: MessageFns<SearchResult> = {
     if (message.exchDisp !== "") {
       obj.exchDisp = message.exchDisp;
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
     return obj;
   },
 
@@ -4036,6 +4053,7 @@ export const SearchResult: MessageFns<SearchResult> = {
     message.type = object.type ?? "";
     message.exchange = object.exchange ?? "";
     message.exchDisp = object.exchDisp ?? "";
+    message.currency = object.currency ?? "";
     return message;
   },
 };

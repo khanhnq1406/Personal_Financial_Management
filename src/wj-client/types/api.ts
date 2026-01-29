@@ -49,12 +49,16 @@ export function isApiResponseError(response: { success: boolean; error?: Error }
 // MONEY DISPLAY HELPER
 // ============================================================================
 
+import { smallestUnitToAmount } from "@/lib/utils/units";
+
 /**
- * Format Money for display (converts int64 cents to decimal string)
- * @param money - Money object with amount in cents
- * @returns Formatted string (e.g., "USD 123.45")
+ * Format Money for display (converts smallest currency unit to decimal string)
+ * @param money - Money object with amount in smallest currency unit (e.g., cents for USD, whole number for VND)
+ * @returns Formatted string (e.g., "USD 123.45" or "VND 30000")
  */
 export function formatMoney(money: Money): string {
-  const dollars = money.amount / 100;
-  return `${money.currency} ${dollars.toFixed(2)}`;
+  const displayAmount = smallestUnitToAmount(money.amount, money.currency);
+  // For currencies with no decimals (VND, JPY), show as integer
+  const decimals = ["VND", "JPY"].includes(money.currency) ? 0 : 2;
+  return `${money.currency} ${displayAmount.toFixed(decimals)}`;
 }

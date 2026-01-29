@@ -349,6 +349,7 @@ message SearchResult {
   string type = 3 [json_name = "type"];           // Type from quoteType (EQUITY, ETF, CRYPTOCURRENCY, etc.)
   string exchange = 4 [json_name = "exchange"];   // Exchange code (NAS, NMS, VSE, etc.)
   string exchDisp = 5 [json_name = "exchDisp"];   // Display name for exchange
+  string currency = 6 [json_name = "currency"];   // Trading currency (ISO 4217), derived from exchange
 }
 
 // SearchSymbolsResponse represents the search response

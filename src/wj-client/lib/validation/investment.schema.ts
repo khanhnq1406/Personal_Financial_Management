@@ -23,6 +23,9 @@ export const createInvestmentSchema = z
     type: investmentTypeEnum,
     initialQuantity: z.number().min(0.00000001, "Quantity must be positive"),
     initialCost: z.number().min(0, "Initial cost must be 0 or greater"),
+    currency: z
+      .string()
+      .length(3, "Currency must be a 3-letter ISO code"),
   })
   .refine(
     (data) => {

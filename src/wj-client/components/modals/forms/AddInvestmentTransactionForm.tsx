@@ -20,7 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
   quantityToStorage,
-  dollarsToCents,
+  amountToSmallestUnit,
   getQuantityInputConfig,
 } from "@/lib/utils/units";
 import {
@@ -31,6 +31,7 @@ import {
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
   investmentType: InvestmentType;
+  investmentCurrency?: string;  // Currency of the parent investment (ISO 4217)
   onSuccess?: () => void;
 }
 
@@ -57,6 +58,7 @@ const transactionTypeOptions: SelectOption[] = [
 export function AddInvestmentTransactionForm({
   investmentId,
   investmentType,
+  investmentCurrency = "USD",
   onSuccess,
 }: AddInvestmentTransactionFormProps) {
   const queryClient = useQueryClient();
@@ -110,8 +112,8 @@ export function AddInvestmentTransactionForm({
       investmentId: investmentId,
       type: data.type,
       quantity: quantityToStorage(data.quantity, investmentType),
-      price: dollarsToCents(data.price),
-      fees: dollarsToCents(data.fees),
+      price: amountToSmallestUnit(data.price, investmentCurrency),
+      fees: amountToSmallestUnit(data.fees, investmentCurrency),
       transactionDate: Math.floor(
         new Date(data.transactionDate).getTime() / 1000,
       ),
@@ -167,7 +169,7 @@ export function AddInvestmentTransactionForm({
       <FormNumberInput
         name="price"
         control={control}
-        label="Price per Unit (USD)"
+        label={`Price per Unit (${investmentCurrency})`}
         placeholder="0.00"
         required
         disabled={isSubmitting}
@@ -179,7 +181,7 @@ export function AddInvestmentTransactionForm({
       <FormNumberInput
         name="fees"
         control={control}
-        label="Fees (USD)"
+        label={`Fees (${investmentCurrency})`}
         placeholder="0.00"
         disabled={isSubmitting}
         min={0}

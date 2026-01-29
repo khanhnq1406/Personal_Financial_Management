@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
@@ -18,7 +18,7 @@ import {
   EVENT_InvestmentGetPortfolioSummary,
   EVENT_WalletListWallets,
 } from "@/utils/generated/hooks";
-import { InvestmentType } from "@/gen/protobuf/v1/investment";
+import { InvestmentType, SearchResult } from "@/gen/protobuf/v1/investment";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createInvestmentSchema,
@@ -26,11 +26,12 @@ import {
 } from "@/lib/validation/investment.schema";
 import {
   quantityToStorage,
-  dollarsToCents,
+  amountToSmallestUnit,
   getQuantityInputConfig,
 } from "@/lib/utils/units";
 import { Label } from "@/components/forms/Label";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
+import { CurrencyBadge } from "@/components/forms/CurrencyBadge";
 
 interface AddInvestmentFormProps {
   walletId: number;
@@ -100,12 +101,25 @@ export function AddInvestmentForm({
       type: InvestmentType.INVESTMENT_TYPE_STOCK,
       initialQuantity: 0,
       initialCost: 0,
+      currency: "USD",
     },
   });
 
   // Watch investment type to update quantity input config dynamically
   const investmentType = watch("type");
+  const currency = watch("currency");
   const quantityConfig = getQuantityInputConfig(investmentType);
+
+  // Handle symbol selection - auto-fill name and currency from search result
+  const handleSymbolChange = (symbol: string, result?: SearchResult) => {
+    setValue("symbol", symbol);
+    if (result?.name) {
+      setValue("name", result.name);
+    }
+    if (result?.currency) {
+      setValue("currency", result.currency);
+    }
+  };
 
   const onSubmit = (data: CreateInvestmentFormInput) => {
     setErrorMessage(undefined);
@@ -117,8 +131,8 @@ export function AddInvestmentForm({
       name: data.name,
       type: data.type,
       initialQuantity: quantityToStorage(data.initialQuantity, data.type),
-      initialCost: dollarsToCents(data.initialCost),
-      currency: "USD",
+      initialCost: amountToSmallestUnit(data.initialCost, data.currency),
+      currency: data.currency,
     });
   };
 
@@ -136,7 +150,7 @@ export function AddInvestmentForm({
         </Label>
         <SymbolAutocomplete
           value={watch("symbol")}
-          onChange={(symbol) => setValue("symbol", symbol)}
+          onChange={handleSymbolChange}
           placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
           disabled={isSubmitting}
           className="mt-1"
@@ -188,10 +202,19 @@ export function AddInvestmentForm({
 
       {/* Initial Cost */}
       <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Label htmlFor="initialCost" required>
+            Total Initial Cost
+          </Label>
+          <CurrencyBadge
+            value={currency}
+            onChange={(newCurrency) => setValue("currency", newCurrency)}
+            disabled={isSubmitting}
+          />
+        </div>
         <FormNumberInput
           name="initialCost"
           control={control}
-          label="Total Initial Cost (USD)"
           placeholder="15000.00"
           required
           disabled={isSubmitting}

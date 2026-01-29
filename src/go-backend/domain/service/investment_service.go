@@ -790,12 +790,23 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 }
 
 // GetPortfolioSummary retrieves portfolio summary for a wallet.
+// For mixed-currency portfolios, all values are converted to user's preferred currency.
 func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID int32, userID int32) (*investmentv1.GetPortfolioSummaryResponse, error) {
 	if err := validator.ID(walletID); err != nil {
 		return nil, err
 	}
 	if err := validator.ID(userID); err != nil {
 		return nil, err
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	preferredCurrency := user.PreferredCurrency
+	if preferredCurrency == "" {
+		preferredCurrency = "USD" // Default fallback
 	}
 
 	// Verify wallet ownership
@@ -843,34 +854,97 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 		}
 	}
 
-	// Get portfolio summary from repository
-	summary, err := s.investmentRepo.GetPortfolioSummary(ctx, walletID)
-	if err != nil {
-		return nil, err
+	// Calculate portfolio summary with currency conversion
+	// All values are converted to user's preferred currency before summing
+	var totalValueInPreferred int64 = 0
+	var totalCostInPreferred int64 = 0
+	var realizedPNLInPreferred int64 = 0
+	var unrealizedPNLInPreferred int64 = 0
+	investmentsByType := make(map[investmentv1.InvestmentType]*investmentv1.InvestmentByType)
+
+	for _, inv := range investments {
+		invCurrency := inv.Currency
+		if invCurrency == "" {
+			invCurrency = "USD"
+		}
+
+		// Convert values to preferred currency if different
+		var currentValue, totalCost, realizedPNL, unrealizedPNL int64
+		if invCurrency == preferredCurrency {
+			currentValue = inv.CurrentValue
+			totalCost = inv.TotalCost
+			realizedPNL = inv.RealizedPNL
+			unrealizedPNL = inv.UnrealizedPNL
+		} else {
+			// Convert each value
+			var err error
+			currentValue, err = s.fxRateSvc.ConvertAmount(ctx, inv.CurrentValue, invCurrency, preferredCurrency)
+			if err != nil {
+				log.Printf("Warning: FX conversion failed for investment %d: %v, using original value", inv.ID, err)
+				currentValue = inv.CurrentValue
+			}
+			totalCost, err = s.fxRateSvc.ConvertAmount(ctx, inv.TotalCost, invCurrency, preferredCurrency)
+			if err != nil {
+				totalCost = inv.TotalCost
+			}
+			realizedPNL, err = s.fxRateSvc.ConvertAmount(ctx, inv.RealizedPNL, invCurrency, preferredCurrency)
+			if err != nil {
+				realizedPNL = inv.RealizedPNL
+			}
+			unrealizedPNL, err = s.fxRateSvc.ConvertAmount(ctx, inv.UnrealizedPNL, invCurrency, preferredCurrency)
+			if err != nil {
+				unrealizedPNL = inv.UnrealizedPNL
+			}
+		}
+
+		// Aggregate totals
+		totalValueInPreferred += currentValue
+		totalCostInPreferred += totalCost
+		realizedPNLInPreferred += realizedPNL
+		unrealizedPNLInPreferred += unrealizedPNL
+
+		// Update type-specific totals (in preferred currency)
+		if _, exists := investmentsByType[inv.Type]; !exists {
+			investmentsByType[inv.Type] = &investmentv1.InvestmentByType{
+				Type:       inv.Type,
+				TotalValue: 0,
+				Count:      0,
+			}
+		}
+		investmentsByType[inv.Type].TotalValue += currentValue
+		investmentsByType[inv.Type].Count++
 	}
 
-	// Convert to protobuf format
-	investmentsByType := make([]*investmentv1.InvestmentByType, 0, len(summary.InvestmentsByType))
-	for invType, typeSummary := range summary.InvestmentsByType {
-		investmentsByType = append(investmentsByType, &investmentv1.InvestmentByType{
-			Type:       invType,
-			TotalValue: typeSummary.TotalValue,
-			Count:      typeSummary.Count,
-		})
+	// Calculate total PNL
+	totalPNL := unrealizedPNLInPreferred + realizedPNLInPreferred
+
+	// Calculate total PNL percent
+	var totalPNLPercent float64
+	if totalCostInPreferred > 0 {
+		totalPNLPercent = (float64(totalPNL) / float64(totalCostInPreferred)) * 100
+	}
+
+	// Convert map to slice
+	investmentsByTypeSlice := make([]*investmentv1.InvestmentByType, 0, len(investmentsByType))
+	for _, typeSummary := range investmentsByType {
+		investmentsByTypeSlice = append(investmentsByTypeSlice, typeSummary)
 	}
 
 	return &investmentv1.GetPortfolioSummaryResponse{
 		Success: true,
 		Message: "Portfolio summary retrieved successfully",
 		Data: &investmentv1.PortfolioSummary{
-			TotalValue:        summary.TotalValue,
-			TotalCost:         summary.TotalCost,
-			TotalPnl:          summary.TotalPNL,
-			TotalPnlPercent:   summary.TotalPNLPercent,
-			RealizedPnl:       summary.RealizedPNL,
-			UnrealizedPnl:     summary.UnrealizedPNL,
-			TotalInvestments:  summary.TotalInvestments,
-			InvestmentsByType: investmentsByType,
+			TotalValue:        totalValueInPreferred,
+			TotalCost:         totalCostInPreferred,
+			TotalPnl:          totalPNL,
+			TotalPnlPercent:   totalPNLPercent,
+			RealizedPnl:       realizedPNLInPreferred,
+			UnrealizedPnl:     unrealizedPNLInPreferred,
+			TotalInvestments:  int32(len(investments)),
+			InvestmentsByType: investmentsByTypeSlice,
+			// Currency fields - summary is in user's preferred currency
+			Currency:        preferredCurrency,
+			DisplayCurrency: preferredCurrency,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
@@ -991,6 +1065,7 @@ func (s *investmentService) SearchSymbols(ctx context.Context, query string, lim
 			Type:     r.Type,
 			Exchange: r.Exchange,
 			ExchDisp: r.ExchDisp,
+			Currency: r.Currency,
 		})
 	}
 

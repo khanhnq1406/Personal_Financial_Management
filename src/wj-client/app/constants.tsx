@@ -136,3 +136,17 @@ export const ModalType = {
   ADD_INVESTMENT: "Add Investment",
   INVESTMENT_DETAIL: "Investment Details",
 };
+
+export const SUPPORTED_CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "VND", symbol: "₫", name: "Vietnamese Đồng" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
+  { code: "HKD", symbol: "HK$", name: "Hong Kong Dollar" },
+  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
+  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
+  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
+  { code: "CNY", symbol: "¥", name: "Chinese Yuan" },
+  { code: "INR", symbol: "₹", name: "Indian Rupee" },
+];
