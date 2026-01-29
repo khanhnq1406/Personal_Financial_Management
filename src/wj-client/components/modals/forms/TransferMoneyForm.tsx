@@ -20,6 +20,8 @@ import {
 import { Success } from "@/components/modals/Success";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { toDateTimeLocal, getCurrentTimestamp } from "@/lib/utils/date";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface TransferMoneyFormProps {
   onSuccess?: () => void;
@@ -31,6 +33,7 @@ interface TransferMoneyFormProps {
  * After successful transfer, calls onSuccess() callback (caller handles refetch + modal close).
  */
 export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -69,7 +72,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
   const formatWalletOption = (wallet: SelectOption): string => {
     const walletData = wallets.find((w) => w.id === Number(wallet.value));
     const balance = walletData?.balance?.amount || 0;
-    return `${wallet.label} (${balance.toLocaleString()} VND)`;
+    return `${wallet.label} (${formatCurrency(balance, currency)})`;
   };
 
   const walletOptions: SelectOption[] = wallets.map((wallet) => ({
@@ -92,7 +95,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         toWalletId: Number(data.toWalletId),
         amount: {
           amount: data.amount,
-          currency: "VND",
+          currency: currency,
         },
       },
       {
@@ -129,7 +132,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         name="amount"
         control={control}
         label="Amount"
-        suffix="VND"
+        suffix={currency}
         required
       />
 

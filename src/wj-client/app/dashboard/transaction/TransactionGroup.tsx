@@ -3,6 +3,8 @@
 import { Transaction, CategoryType } from "@/gen/protobuf/v1/transaction";
 import { TransactionItem } from "./TransactionItem";
 import { formatDateFriendly } from "@/lib/utils/transaction";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 type TransactionGroupProps = {
   date: string;
@@ -19,6 +21,8 @@ export const TransactionGroup = ({
   onDelete,
   onEdit,
 }: TransactionGroupProps) => {
+  const { currency } = useCurrency();
+
   // Calculate daily total using signed amounts
   // Amounts are signed: positive for income, negative for expense
   const dailyTotal = transactions.reduce((total, transaction) => {
@@ -39,7 +43,7 @@ export const TransactionGroup = ({
           }`}
         >
           {dailyTotal >= 0 ? "+" : ""}
-          {Math.abs(dailyTotal).toLocaleString()} VND
+          {formatCurrency(Math.abs(dailyTotal), currency)}
         </div>
       </div>
 

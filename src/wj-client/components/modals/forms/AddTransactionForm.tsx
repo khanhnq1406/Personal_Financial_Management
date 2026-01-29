@@ -32,6 +32,8 @@ import {
   fromDateTimeLocal,
 } from "@/lib/utils/date";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface AddTransactionFormProps {
   onSuccess?: () => void;
@@ -44,6 +46,7 @@ interface AddTransactionFormProps {
  */
 export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
   const queryClient = useQueryClient();
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -108,12 +111,10 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
     () =>
       (walletsData?.wallets || []).map((wallet) => ({
         value: wallet.id,
-        label: `${wallet.walletName} (${(
-          wallet.balance?.amount || 0
-        ).toLocaleString()} VND)`,
-        balance: wallet.balance?.amount || 0,
+        label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount || 0, currency)})`,
+        balance: wallet.displayBalance?.amount || 0,
       })),
-    [walletsData?.wallets],
+    [walletsData?.wallets, currency],
   );
 
   const categoryOptions = useMemo(
@@ -147,7 +148,7 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
         categoryId: Number(data.categoryId),
         amount: {
           amount: signedAmount,
-          currency: "VND",
+          currency: currency,
         },
         date: fromDateTimeLocal(data.date),
         note: data.note,
@@ -203,7 +204,7 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
         name="amount"
         control={control}
         label="Amount"
-        suffix="VND"
+        suffix={currency}
         required
       />
 

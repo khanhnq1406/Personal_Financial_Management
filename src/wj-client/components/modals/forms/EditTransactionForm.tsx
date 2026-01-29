@@ -28,6 +28,8 @@ import {
 } from "@/lib/validation/transaction.schema";
 import { Success } from "@/components/modals/Success";
 import { toDateTimeLocal, fromDateTimeLocal } from "@/lib/utils/date";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface EditTransactionFormProps {
   transactionId: number;
@@ -43,6 +45,7 @@ export function EditTransactionForm({
   transactionId,
   onSuccess,
 }: EditTransactionFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -145,8 +148,8 @@ export function EditTransactionForm({
   const walletOptions =
     (walletsData?.wallets || []).map((wallet) => ({
       value: String(wallet.id),
-      label: `${wallet.walletName} (${(wallet.balance?.amount || 0).toLocaleString()} VND)`,
-      balance: wallet.balance?.amount || 0,
+      label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount || 0, currency)})`,
+      balance: wallet.displayBalance?.amount || 0,
     })) || [];
 
   const onSubmit = (data: UpdateTransactionFormInput) => {
@@ -161,7 +164,7 @@ export function EditTransactionForm({
             data.transactionType === "income"
               ? data.amount
               : -Math.abs(data.amount),
-          currency: "VND",
+          currency: currency,
         },
         date: fromDateTimeLocal(data.date),
         note: data.note,
@@ -225,7 +228,7 @@ export function EditTransactionForm({
         name="amount"
         control={control}
         label="Amount"
-        suffix="VND"
+        suffix={currency}
         required
       />
 

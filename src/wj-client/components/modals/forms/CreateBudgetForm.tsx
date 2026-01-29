@@ -13,6 +13,7 @@ import {
   CreateBudgetFormInput,
 } from "@/lib/validation/budget.schema";
 import { Success } from "@/components/modals/Success";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface CreateBudgetFormProps {
   onSuccess?: () => void;
@@ -24,6 +25,7 @@ interface CreateBudgetFormProps {
  * After successful creation, calls onSuccess() callback (caller handles refetch + modal close).
  */
 export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -46,7 +48,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
         name: data.name,
         total: {
           amount: data.total,
-          currency: "VND",
+          currency: currency,
         },
         items: [],
       },
@@ -93,7 +95,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
         control={control}
         label="Total Amount"
         placeholder="0"
-        suffix="VND"
+        suffix={currency}
         required
         min={1}
         step="1"

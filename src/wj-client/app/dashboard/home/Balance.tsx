@@ -18,6 +18,8 @@ import {
 } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { formatTickValue } from "@/utils/number-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface BalanceProps {
   availableYears: number[];
@@ -28,6 +30,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
   const [selectedWalletId, setSelectedWalletId] = useState<number | undefined>(
     undefined,
   );
+  const { currency } = useCurrency();
 
   // Fetch wallets for the dropdown
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets(
@@ -111,13 +114,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
           <XAxis dataKey="label" />
           <YAxis tickFormatter={formatTickValue} />
           <Tooltip
-            formatter={(value: number) => {
-              // Format as VND
-              return new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              }).format(value);
-            }}
+            formatter={(value: number) => formatCurrency(value, currency)}
           />
           <Legend />
           <Line

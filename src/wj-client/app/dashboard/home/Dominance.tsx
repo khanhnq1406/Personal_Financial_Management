@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { useQueryListWallets } from "@/utils/generated/hooks";
 import { ChartSkeleton } from "@/components/loading/Skeleton";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 type CustomizedLabelType = {
   cx: number;
@@ -31,6 +33,7 @@ export const Dominance = memo(function Dominance({
   availableYears,
 }: DominanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { currency } = useCurrency();
 
   // Fetch wallets for the dropdown
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets(
@@ -48,11 +51,11 @@ export const Dominance = memo(function Dominance({
     );
   }
 
-  // Prepare chart data - use current wallet balances
+  // Prepare chart data - use display balances in user's preferred currency
   const data =
     walletsData?.wallets?.map((wallet) => ({
       name: wallet.walletName,
-      value: wallet.balance?.amount ?? 0,
+      value: wallet.displayBalance?.amount ?? 0,
     })) ?? [];
 
   const RADIAN = Math.PI / 180;
@@ -89,10 +92,7 @@ export const Dominance = memo(function Dominance({
         <div className="bg-white p-2 border rounded shadow">
           <p className="font-semibold">{data.name}</p>
           <p className="text-sm">
-            {new Intl.NumberFormat("vi-VN", {
-              style: "currency",
-              currency: "VND",
-            }).format(data.value)}
+            {formatCurrency(data.value, currency)}
           </p>
         </div>
       );

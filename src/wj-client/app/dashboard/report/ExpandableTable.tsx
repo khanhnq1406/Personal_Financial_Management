@@ -1,6 +1,8 @@
 "use client";
 
 import { memo, Fragment, useRef, useEffect } from "react";
+import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface MonthlyData {
   income: number;
@@ -29,23 +31,19 @@ interface ExpandableTableProps {
   onToggleWallet: (walletId: number) => void;
 }
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
 export const ExpandableTable = memo(function ExpandableTable({
   months,
   wallets,
   totals,
   onToggleWallet,
 }: ExpandableTableProps) {
+  const { currency } = useCurrency();
   const scrollableRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
+
+  const formatCurrency = (amount: number): string => {
+    return formatCurrencyUtil(amount, currency);
+  };
 
   // Synchronize horizontal scroll between body and footer
   useEffect(() => {

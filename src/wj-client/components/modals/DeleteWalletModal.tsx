@@ -7,6 +7,7 @@ import {
 } from "@/utils/generated/hooks";
 import { Wallet, WalletDeletionOption } from "@/gen/protobuf/v1/wallet";
 import { Success } from "./Success";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface DeleteWalletModalProps {
   wallet: Wallet;
@@ -156,8 +157,7 @@ export function DeleteWalletModal({
                 <option value="">Select a wallet...</option>
                 {otherWallets.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.walletName} ({(w.balance?.amount ?? 0) / 1000}k{" "}
-                    {w.currency})
+                    {w.walletName} ({formatCurrency(w.balance?.amount ?? 0, w.currency)})
                   </option>
                 ))}
               </select>

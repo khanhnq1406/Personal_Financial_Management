@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { BudgetItem } from "@/gen/protobuf/v1/budget";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 import { Checkbox } from "@/components/Checkbox";
@@ -28,6 +29,7 @@ export function BudgetItemCard({
   onEditItem,
 }: BudgetItemCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { currency } = useCurrency();
   const queryClient = useQueryClient();
 
   const updateBudgetItemMutation = useMutationUpdateBudgetItem({
@@ -93,7 +95,7 @@ export function BudgetItemCard({
               {item.name}
             </span>
             <span className="text-xs text-gray-500">
-              {currencyFormatter.format(item.total?.amount ?? 0)}
+              {formatCurrency(item.displayTotal?.amount ?? 0, currency)}
             </span>
           </div>
         </div>

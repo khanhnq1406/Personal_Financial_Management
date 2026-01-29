@@ -15,6 +15,7 @@ import {
   UpdateBudgetItemFormInput,
 } from "@/lib/validation/budget.schema";
 import { Success } from "@/components/modals/Success";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface EditBudgetItemFormProps {
   budgetId: number;
@@ -32,6 +33,7 @@ export function EditBudgetItemForm({
   item,
   onSuccess,
 }: EditBudgetItemFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -76,7 +78,7 @@ export function EditBudgetItemForm({
       name: data.name,
       total: {
         amount: data.total,
-        currency: "VND",
+        currency: currency,
       },
       checked: item.checked ?? false,
     });
@@ -109,7 +111,7 @@ export function EditBudgetItemForm({
         control={control}
         label="Allocated Amount"
         placeholder="0"
-        suffix="VND"
+        suffix={currency}
         required
         min={1}
         step="1"

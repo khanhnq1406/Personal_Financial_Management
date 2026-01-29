@@ -4,7 +4,8 @@ import { UseQueryResult } from "@tanstack/react-query";
 import { memo, useMemo } from "react";
 import { ListWalletsResponse } from "@/gen/protobuf/v1/wallet";
 import { ErrorType } from "@/utils/generated/hooks.types";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { WalletListSkeleton } from "@/components/loading/Skeleton";
 
 type WalletsProps = {
@@ -15,9 +16,11 @@ type WalletsProps = {
 const WalletItem = memo(function WalletItem({
   walletName,
   balance,
+  currency,
 }: {
   walletName: string;
   balance: number;
+  currency: string;
 }) {
   return (
     <div className="flex flex-nowrap justify-between m-3">
@@ -30,7 +33,7 @@ const WalletItem = memo(function WalletItem({
         />
         <div className="font-semibold">{walletName}</div>
       </div>
-      <div className="font-semibold">{currencyFormatter.format(balance)}</div>
+      <div className="font-semibold">{formatCurrency(balance, currency)}</div>
     </div>
   );
 });
@@ -48,6 +51,7 @@ const Wallets: React.FC<WalletsProps> = memo(function Wallets({
   getListWallets,
 }) {
   const { isLoading, data } = getListWallets;
+  const { currency } = useCurrency();
 
   // Memoize wallet list rendering
   const walletList = useMemo(() => {
@@ -59,10 +63,11 @@ const Wallets: React.FC<WalletsProps> = memo(function Wallets({
       <WalletItem
         key={wallet.id}
         walletName={wallet.walletName}
-        balance={wallet.balance?.amount ?? 0}
+        balance={wallet.displayBalance?.amount ?? 0}
+        currency={currency}
       />
     ));
-  }, [data]);
+  }, [data, currency]);
 
   if (isLoading) {
     return <WalletListSkeleton />;

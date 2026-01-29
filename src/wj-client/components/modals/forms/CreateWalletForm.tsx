@@ -20,6 +20,7 @@ import {
 } from "@/lib/validation/wallet.schema";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { useMemo } from "react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface CreateWalletFormProps {
   onSuccess?: () => void;
@@ -33,6 +34,7 @@ interface CreateWalletFormProps {
  */
 export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormProps) {
   const createWallet = useMutationCreateWallet();
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -68,7 +70,7 @@ export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormPro
         walletName: data.walletName,
         initialBalance: {
           amount: data.initialBalance,
-          currency: "VND",
+          currency: currency,
         },
         type: data.type,
       },
@@ -114,7 +116,7 @@ export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormPro
         name="initialBalance"
         control={control}
         label="Initial Balance"
-        suffix="VND"
+        suffix={currency}
       />
 
       <FormSelect

@@ -1,4 +1,5 @@
 import { GetFinancialReportResponse } from "@/gen/protobuf/v1/transaction";
+import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
 
 const MONTHS = [
   "Jan",
@@ -16,18 +17,6 @@ const MONTHS = [
 ] as const;
 
 /**
- * Format amount to VND currency string
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-/**
  * Escape CSV value by wrapping in quotes if it contains commas, quotes, or newlines
  */
 const escapeCSV = (value: string): string => {
@@ -42,10 +31,12 @@ const escapeCSV = (value: string): string => {
  *
  * @param reportData - Financial report data from API
  * @param selectedYear - Year for the report
+ * @param currency - User's preferred currency code (e.g., "VND", "USD")
  */
 export const exportFinancialReportToCSV = (
   reportData: GetFinancialReportResponse | undefined,
   selectedYear: number,
+  currency: string = "VND",
 ): void => {
   if (!reportData?.walletData || reportData.walletData.length === 0) {
     throw new Error("No data available to export for the selected period.");
@@ -70,9 +61,9 @@ export const exportFinancialReportToCSV = (
     const expense = monthData.expense?.amount ?? 0;
     totalIncome += income;
     totalExpense += expense;
-    totalsRow.push(formatCurrency(income - expense));
+    totalsRow.push(formatCurrencyUtil(income - expense, currency));
   });
-  totalsRow.push(formatCurrency(totalIncome - totalExpense));
+  totalsRow.push(formatCurrencyUtil(totalIncome - totalExpense, currency));
   rows.push(totalsRow.join(","));
 
   rows.push("");
@@ -109,24 +100,24 @@ export const exportFinancialReportToCSV = (
 
     monthlyDataWithBalance.forEach((data) => {
       // Process income row
-      incomeRow.push(data.income > 0 ? formatCurrency(data.income) : "-");
+      incomeRow.push(data.income > 0 ? formatCurrencyUtil(data.income, currency) : "-");
       walletTotalIncome += data.income;
 
       // Process expense row
-      expenseRow.push(data.expense > 0 ? formatCurrency(data.expense) : "-");
+      expenseRow.push(data.expense > 0 ? formatCurrencyUtil(data.expense, currency) : "-");
       walletTotalExpense += data.expense;
 
       // Process balance row
-      balanceRow.push(formatCurrency(data.balance));
+      balanceRow.push(formatCurrencyUtil(data.balance, currency));
     });
 
-    incomeRow.push(formatCurrency(walletTotalIncome));
+    incomeRow.push(formatCurrencyUtil(walletTotalIncome, currency));
     rows.push(incomeRow.join(","));
 
-    expenseRow.push(formatCurrency(walletTotalExpense));
+    expenseRow.push(formatCurrencyUtil(walletTotalExpense, currency));
     rows.push(expenseRow.join(","));
 
-    balanceRow.push(formatCurrency(runningBalance));
+    balanceRow.push(formatCurrencyUtil(runningBalance, currency));
     rows.push(balanceRow.join(","));
   });
 
@@ -145,9 +136,9 @@ export const exportFinancialReportToCSV = (
     });
   });
 
-  rows.push(`Total Income,"${formatCurrency(yearTotalIncome)}"`);
-  rows.push(`Total Expense,"${formatCurrency(yearTotalExpense)}"`);
-  rows.push(`Net Balance,"${formatCurrency(yearTotalIncome - yearTotalExpense)}"`);
+  rows.push(`Total Income,"${formatCurrencyUtil(yearTotalIncome, currency)}"`);
+  rows.push(`Total Expense,"${formatCurrencyUtil(yearTotalExpense, currency)}"`);
+  rows.push(`Net Balance,"${formatCurrencyUtil(yearTotalIncome - yearTotalExpense, currency)}"`);
 
   // Convert rows to CSV string
   const csvContent = rows.join("\n");

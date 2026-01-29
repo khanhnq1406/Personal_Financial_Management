@@ -6,7 +6,8 @@ import { resources, ButtonType } from "@/app/constants";
 import { Button } from "@/components/Button";
 import Image from "next/image";
 import { formatDateTime } from "@/lib/utils/date";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 type TransactionItemProps = {
@@ -23,7 +24,8 @@ export const TransactionItem = ({
   onEdit,
 }: TransactionItemProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const amount = transaction.amount?.amount || 0;
+  const { currency } = useCurrency();
+  const amount = transaction.displayAmount?.amount || 0;
 
   // Determine if this is income or expense based on category type
   const categoryType = transaction.categoryId
@@ -98,7 +100,7 @@ export const TransactionItem = ({
           }`}
         >
           {isIncome ? "+" : "-"}
-          {currencyFormatter.format(Math.abs(amount))}
+          {formatCurrency(Math.abs(amount), currency)}
         </div>
 
         {/* Action Buttons */}

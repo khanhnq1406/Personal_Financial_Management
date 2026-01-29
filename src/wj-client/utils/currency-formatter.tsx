@@ -56,6 +56,17 @@ export function getCurrencySymbol(currency: string = "VND"): string {
 /**
  * Legacy formatter for backward compatibility (VND only)
  * @deprecated Use formatCurrency(amount, currency) instead
+ * This formatter is deprecated and will be removed in a future version.
+ * Please use formatCurrency(amount, currency) with the user's preferred currency.
+ *
+ * Migration example:
+ * // Before
+ * currencyFormatter.format(amount)
+ *
+ * // After
+ * import { useCurrency } from "@/contexts/CurrencyContext";
+ * const { currency } = useCurrency();
+ * formatCurrency(amount, currency)
  */
 export const currencyFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",

@@ -6,7 +6,8 @@ import { useMemo, useCallback, memo } from "react";
 import { TanStackTable } from "../../../components/table/TanStackTable";
 import { resources } from "@/app/constants";
 import { Transaction } from "@/gen/protobuf/v1/transaction";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -78,6 +79,7 @@ export const TransactionTable = memo(function TransactionTable({
   className,
 }: TransactionTableProps) {
   const columnHelper = createColumnHelper<Transaction>();
+  const { currency } = useCurrency();
 
   // Memoize date formatter to avoid recreating on every render
   const formatDate = useCallback((timestamp: number) => {
@@ -104,10 +106,10 @@ export const TransactionTable = memo(function TransactionTable({
         header: "Wallet",
         cell: (info) => getWalletName(info.getValue()),
       }),
-      columnHelper.accessor("amount", {
+      columnHelper.accessor("displayAmount", {
         id: "amount",
         header: "Amount",
-        cell: (info) => currencyFormatter.format(info.getValue()?.amount || 0),
+        cell: (info) => formatCurrency(info.getValue()?.amount || 0, currency),
       }),
       columnHelper.accessor("date", {
         id: "date",
@@ -131,7 +133,7 @@ export const TransactionTable = memo(function TransactionTable({
         ),
       }),
     ],
-    [columnHelper, getCategoryName, getWalletName, formatDate, onEdit, onDelete],
+    [columnHelper, getCategoryName, getWalletName, formatDate, onEdit, onDelete, currency],
   );
 
   return (

@@ -20,6 +20,8 @@ import {
   UpdateWalletFormOutput,
   adjustBalanceSchema,
 } from "@/lib/validation/wallet.schema";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 interface EditWalletFormProps {
   wallet: Wallet;
@@ -32,6 +34,7 @@ interface EditWalletFormProps {
  * Owns its mutation logic, error handling, and loading state.
  */
 export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
@@ -156,7 +159,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
           walletId: wallet.id,
           amount: {
             amount: Math.round(adjustment.adjustmentAmount),
-            currency: wallet.balance?.currency || "VND",
+            currency: wallet.balance?.currency || currency,
           },
           reason: adjustment.reason || "Balance adjustment",
           adjustmentType,
@@ -246,7 +249,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
         {showAdjustment && (
           <div className="space-y-3 bg-gray-50 p-4 rounded-md">
             <div className="text-sm text-gray-600 mb-2">
-              Current Balance: {currentBalance.toLocaleString()} VND
+              Current Balance: {formatCurrency(currentBalance, currency)}
             </div>
 
             {/* Adjustment Type Radio Buttons */}
@@ -281,7 +284,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
             <FormNumberInput
               name="adjustmentAmount"
               control={control}
-              label="Adjustment Amount (VND)"
+              label={`Adjustment Amount (${currency})`}
               placeholder="Enter amount"
               step="1"
               min={0}
@@ -297,7 +300,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
                 <span
                   className={`font-medium ${projectedBalance < 0 ? "text-red-600" : "text-green-600"}`}
                 >
-                  {projectedBalance.toLocaleString()} VND
+                  {formatCurrency(projectedBalance, currency)}
                 </span>
               </div>
             )}

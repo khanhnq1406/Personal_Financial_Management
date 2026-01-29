@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { CircularProgress } from "./CircularProgress";
 import { useQueryGetBudgetItems } from "@/utils/generated/hooks";
 import { BudgetItemCard } from "./BudgetItemCard";
@@ -28,6 +29,7 @@ export function BudgetCard({
   onAddBudgetItem,
   onEditBudgetItem,
 }: BudgetCardProps) {
+  const { currency } = useCurrency();
   const getBudgetItems = useQueryGetBudgetItems(
     { budgetId: budget.id },
     { enabled: !!budget.id },
@@ -41,10 +43,10 @@ export function BudgetCard({
 
   const budgetItems = getBudgetItems.data?.items ?? [];
 
-  // Calculate total budget and spent amounts
-  const totalBudget = budget.total?.amount ?? 0;
+  // Calculate total budget and spent amounts using display values
+  const totalBudget = budget.displayTotal?.amount ?? 0;
   const totalSpent = budgetItems.reduce(
-    (sum, item) => sum + (item.total?.amount ?? 0),
+    (sum, item) => sum + (item.displayTotal?.amount ?? 0),
     0,
   );
   const remaining = totalBudget - totalSpent;
@@ -95,11 +97,11 @@ export function BudgetCard({
         <div className="text-center space-y-1">
           <div className="text-sm text-gray-500">Total Budget</div>
           <div className="text-xl font-bold text-bg">
-            {currencyFormatter.format(totalBudget)}
+            {formatCurrency(totalBudget, currency)}
           </div>
           <div className="text-sm text-gray-500">Amount you can spend</div>
           <div className="text-xl font-bold text-gray-900">
-            {currencyFormatter.format(remaining)}
+            {formatCurrency(remaining, currency)}
           </div>
         </div>
 

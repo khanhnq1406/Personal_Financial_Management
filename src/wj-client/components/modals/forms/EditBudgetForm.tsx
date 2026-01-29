@@ -15,6 +15,7 @@ import {
   UpdateBudgetFormInput,
 } from "@/lib/validation/budget.schema";
 import { Success } from "@/components/modals/Success";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface EditBudgetFormProps {
   budget: Budget;
@@ -27,6 +28,7 @@ interface EditBudgetFormProps {
  * After successful update, calls onSuccess() callback (caller handles refetch + modal close).
  */
 export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
+  const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,7 +72,7 @@ export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
       name: data.name,
       total: {
         amount: data.total,
-        currency: "VND",
+        currency: currency,
       },
     });
   };
@@ -102,7 +104,7 @@ export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
         control={control}
         label="Total Amount"
         placeholder="0"
-        suffix="VND"
+        suffix={currency}
         required
         min={1}
         step="1"

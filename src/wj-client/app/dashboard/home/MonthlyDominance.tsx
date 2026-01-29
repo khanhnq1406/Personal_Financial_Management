@@ -14,6 +14,8 @@ import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { useQueryGetMonthlyDominance } from "@/utils/generated/hooks";
 import { chartColors } from "@/app/constants";
 import { formatTickValue } from "@/utils/number-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface MonthlyDominanceProps {
   availableYears: number[];
@@ -23,6 +25,7 @@ export const MonthlyDominance = memo(function MonthlyDominance({
   availableYears,
 }: MonthlyDominanceProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { currency } = useCurrency();
 
   // Fetch monthly dominance data for the selected year
   const { data: dominanceData, isLoading } = useQueryGetMonthlyDominance(
@@ -100,11 +103,7 @@ export const MonthlyDominance = memo(function MonthlyDominance({
             const walletName = entry.payload[`wallet_name_${walletId}`];
             return (
               <p key={index} className="text-sm" style={{ color: entry.color }}>
-                {walletName}:{" "}
-                {new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(entry.value)}
+                {walletName}: {formatCurrency(entry.value, currency)}
               </p>
             );
           })}

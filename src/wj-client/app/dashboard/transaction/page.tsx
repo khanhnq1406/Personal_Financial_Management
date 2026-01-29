@@ -14,7 +14,8 @@ import { SelectDropdown } from "@/components/select/SelectDropdown";
 import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
 import { TablePagination } from "@/components/table/TanStackTable";
 import { MobileTable } from "@/components/table/MobileTable";
-import { currencyFormatter } from "@/utils/currency-formatter";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
@@ -30,6 +31,7 @@ type ModalState =
   | null;
 
 export default function TransactionPage() {
+  const { currency } = useCurrency();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<string>("date");
@@ -173,10 +175,10 @@ export default function TransactionPage() {
     sortOrder,
   ]);
 
-  const totalBalance = totalBalanceData?.data?.amount || 0;
+  const totalBalance = totalBalanceData?.displayValue?.amount || 0;
   const formattedBalance = useMemo(() => {
-    return currencyFormatter.format(totalBalance);
-  }, [totalBalance]);
+    return formatCurrency(totalBalance, currency);
+  }, [totalBalance, currency]);
   const transactions = transactionsData?.transactions || [];
   const totalCount =
     transactionsData?.pagination?.totalCount ?? transactions.length;
@@ -240,7 +242,7 @@ export default function TransactionPage() {
         id: "amount",
         header: "Amount",
         accessorFn: (row: (typeof transactions)[number]) =>
-          currencyFormatter.format(row.amount?.amount || 0),
+          formatCurrency(row.displayAmount?.amount || 0, currency),
       },
       {
         id: "date",
@@ -253,7 +255,7 @@ export default function TransactionPage() {
         accessorFn: (row: (typeof transactions)[number]) => row.note || "-",
       },
     ],
-    [getCategoryName, getWalletName, formatDate],
+    [getCategoryName, getWalletName, formatDate, currency],
   );
 
   return (
