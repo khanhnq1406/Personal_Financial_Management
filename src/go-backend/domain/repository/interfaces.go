@@ -242,3 +242,24 @@ type MarketDataRepository interface {
 	// List retrieves market data with pagination.
 	List(ctx context.Context, opts ListOptions) ([]*models.MarketData, int, error)
 }
+
+// FXRateRepository defines the interface for foreign exchange rate operations.
+type FXRateRepository interface {
+	// GetByPair retrieves the latest FX rate for a currency pair.
+	GetByPair(ctx context.Context, fromCurrency, toCurrency string) (*models.FXRate, error)
+
+	// Create creates a new FX rate entry.
+	Create(ctx context.Context, rate *models.FXRate) error
+
+	// Update updates an existing FX rate entry.
+	Update(ctx context.Context, rate *models.FXRate) error
+
+	// Delete soft deletes an FX rate entry by ID.
+	Delete(ctx context.Context, id int32) error
+
+	// List retrieves FX rates with pagination.
+	List(ctx context.Context, opts ListOptions) ([]*models.FXRate, int, error)
+
+	// GetLatestRates retrieves the latest rates for a given from currency.
+	GetLatestRates(ctx context.Context, fromCurrency string) ([]*models.FXRate, error)
+}

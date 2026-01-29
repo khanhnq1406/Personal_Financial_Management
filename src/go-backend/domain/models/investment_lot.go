@@ -22,6 +22,7 @@ type InvestmentLot struct {
 	RemainingQuantity int64          `gorm:"type:bigint;not null" json:"remainingQuantity"`
 	AverageCost       int64          `gorm:"type:bigint;not null" json:"averageCost"`
 	TotalCost         int64          `gorm:"type:bigint;not null" json:"totalCost"`
+	Currency          string         `gorm:"size:3;not null;default:'USD'" json:"currency"`
 	PurchasedAt       time.Time      `gorm:"not null;index" json:"purchasedAt"`
 	CreatedAt         time.Time      `json:"createdAt"`
 	UpdatedAt         time.Time      `json:"updatedAt"`

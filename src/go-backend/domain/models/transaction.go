@@ -13,7 +13,8 @@ type Transaction struct {
 	ID         int32          `gorm:"primaryKey;autoIncrement" json:"id"`
 	WalletID   int32          `gorm:"not null;index" json:"walletId"`
 	CategoryID *int32         `gorm:"index" json:"categoryId"`
-	Amount     int64          `gorm:"type:bigint;not null" json:"amount"` // Stored in cents
+	Amount     int64          `gorm:"type:bigint;not null" json:"amount"` // Stored in smallest currency unit
+	Currency   string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
 	Date       time.Time      `gorm:"not null;index" json:"date"`
 	Note       string         `gorm:"type:text" json:"note"`
 	CreatedAt  time.Time      `json:"createdAt"`

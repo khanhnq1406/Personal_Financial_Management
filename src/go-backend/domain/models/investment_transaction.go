@@ -17,6 +17,7 @@ type InvestmentTransaction struct {
 	Quantity          int64                                      `gorm:"type:bigint;not null" json:"quantity"`
 	Price             int64                                      `gorm:"type:bigint;not null" json:"price"`
 	Cost              int64                                      `gorm:"type:bigint;not null" json:"cost"`
+	Currency          string                                     `gorm:"size:3;not null;default:'USD'" json:"currency"`
 	Fees              int64                                      `gorm:"type:bigint;default:0" json:"fees"`
 	TransactionDate   time.Time                                  `gorm:"not null;index" json:"transactionDate"`
 	Notes             string                                     `gorm:"type:text" json:"notes"`

@@ -13,7 +13,9 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/oscarli916/yahoo-finance-api v0.1.2
 	github.com/prometheus/client_golang v1.23.2
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/time v0.6.0
 	google.golang.org/api v0.197.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b
 	google.golang.org/grpc v1.78.0

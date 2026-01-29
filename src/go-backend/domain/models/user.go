@@ -8,13 +8,15 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID        int32          `gorm:"primaryKey;autoIncrement" json:"id"`
-	Email     string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
-	Name      string         `gorm:"size:100" json:"name"`
-	Picture   string         `gorm:"size:255" json:"picture"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                  int32          `gorm:"primaryKey;autoIncrement" json:"id"`
+	Email               string         `gorm:"uniqueIndex;size:100;not null" json:"email"`
+	Name                string         `gorm:"size:100" json:"name"`
+	Picture             string         `gorm:"size:255" json:"picture"`
+	CreatedAt           time.Time      `json:"createdAt"`
+	UpdatedAt           time.Time      `json:"updatedAt"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+	PreferredCurrency   string         `gorm:"size:3;not null;default:'VND';index" json:"preferredCurrency"`
+	ConversionInProgress bool          `gorm:"default:false;index" json:"conversionInProgress"`
 }
 
 // TableName specifies the table name for User model

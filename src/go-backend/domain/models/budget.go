@@ -12,6 +12,7 @@ type Budget struct {
 	UserID    int32          `gorm:"not null;index" json:"userId"`
 	Name      string         `gorm:"size:100;not null" json:"name"`
 	Total     int64          `gorm:"type:bigint;default:0;not null" json:"total"` // Stored in smallest currency unit
+	Currency  string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
@@ -30,6 +31,7 @@ type BudgetItem struct {
 	BudgetID  int32          `gorm:"not null;index" json:"budgetId"`
 	Name      string         `gorm:"size:100;not null" json:"name"`
 	Total     int64          `gorm:"type:bigint;default:0;not null" json:"total"` // Stored in smallest currency unit
+	Currency  string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
 	Checked   bool           `gorm:"type:bool;default:false;not null" json:"checked"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
