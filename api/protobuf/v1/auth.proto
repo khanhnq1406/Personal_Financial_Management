@@ -54,6 +54,8 @@ message User {
   string email = 2 [json_name = "email"];
   string name = 3 [json_name = "name"];
   string picture = 4 [json_name = "picture"];
+  string preferredCurrency = 7 [json_name = "preferredCurrency"];  // User's preferred display currency (ISO 4217)
+  bool conversionInProgress = 8 [json_name = "conversionInProgress"];  // Whether currency conversion is in progress
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
 }

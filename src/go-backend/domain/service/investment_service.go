@@ -170,10 +170,14 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", investment.ID, err)
 	}
 
+	invProto := s.mapper.ModelToProto(investment)
+	// Enrich with conversion fields
+	s.enrichInvestmentProto(ctx, userID, invProto, investment)
+
 	return &investmentv1.CreateInvestmentResponse{
 		Success:   true,
 		Message:   "Investment created successfully",
-		Data:      s.mapper.ModelToProto(investment),
+		Data:      invProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -192,10 +196,14 @@ func (s *investmentService) GetInvestment(ctx context.Context, investmentID int3
 		return nil, err
 	}
 
+	invProto := s.mapper.ModelToProto(investment)
+	// Enrich with conversion fields
+	s.enrichInvestmentProto(ctx, requestingUserID, invProto, investment)
+
 	return &investmentv1.GetInvestmentResponse{
 		Success:   true,
 		Message:   "Investment retrieved successfully",
-		Data:      s.mapper.ModelToProto(investment),
+		Data:      invProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -249,6 +257,9 @@ func (s *investmentService) ListInvestments(ctx context.Context, userID int32, r
 	}
 
 	protoInvestments := s.mapper.ModelSliceToProto(investments)
+	// Enrich with conversion fields
+	s.enrichInvestmentSliceProto(ctx, userID, protoInvestments, investments)
+
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &investmentv1.ListInvestmentsResponse{
@@ -298,10 +309,14 @@ func (s *investmentService) UpdateInvestment(ctx context.Context, investmentID i
 		fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", investment.ID, err)
 	}
 
+	invProto := s.mapper.ModelToProto(investment)
+	// Enrich with conversion fields
+	s.enrichInvestmentProto(ctx, userID, invProto, investment)
+
 	return &investmentv1.UpdateInvestmentResponse{
 		Success:   true,
 		Message:   "Investment updated successfully",
-		Data:      s.mapper.ModelToProto(investment),
+		Data:      invProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -1061,3 +1076,61 @@ func (s *investmentService) populateInvestmentCache(ctx context.Context, userID 
 func (s *investmentService) invalidateInvestmentCache(ctx context.Context, userID int32, investmentID int32) error {
 	return s.currencyCache.DeleteEntityCache(ctx, userID, "investment", investmentID)
 }
+
+// enrichInvestmentProto adds conversion fields to an investment proto response
+func (s *investmentService) enrichInvestmentProto(ctx context.Context, userID int32, invProto *investmentv1.Investment, invModel *models.Investment) {
+	if s.currencyCache == nil {
+		return
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	// If same currency, no conversion needed
+	if invModel.Currency == user.PreferredCurrency {
+		return
+	}
+
+	// Try to get converted total cost from cache
+	convertedTotalCost, err := s.currencyCache.GetConvertedValue(ctx, userID, "investment", invModel.ID, user.PreferredCurrency)
+	if err == nil && convertedTotalCost > 0 {
+		invProto.DisplayTotalCost = &investmentv1.Money{
+			Amount:   convertedTotalCost,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
+	// For current value and PNL, we need to convert on-the-fly since they change frequently
+	convertedCurrentValue, _ := s.fxRateSvc.ConvertAmount(ctx, invModel.CurrentValue, invModel.Currency, user.PreferredCurrency)
+	invProto.DisplayCurrentValue = &investmentv1.Money{
+		Amount:   convertedCurrentValue,
+		Currency: user.PreferredCurrency,
+	}
+
+	convertedUnrealizedPNL, _ := s.fxRateSvc.ConvertAmount(ctx, invModel.UnrealizedPNL, invModel.Currency, user.PreferredCurrency)
+	invProto.DisplayUnrealizedPnl = &investmentv1.Money{
+		Amount:   convertedUnrealizedPNL,
+		Currency: user.PreferredCurrency,
+	}
+
+	convertedRealizedPNL, _ := s.fxRateSvc.ConvertAmount(ctx, invModel.RealizedPNL, invModel.Currency, user.PreferredCurrency)
+	invProto.DisplayRealizedPnl = &investmentv1.Money{
+		Amount:   convertedRealizedPNL,
+		Currency: user.PreferredCurrency,
+	}
+
+	invProto.DisplayCurrency = user.PreferredCurrency
+}
+
+// enrichInvestmentSliceProto adds conversion fields to a slice of investment proto responses
+func (s *investmentService) enrichInvestmentSliceProto(ctx context.Context, userID int32, invProtos []*investmentv1.Investment, invModels []*models.Investment) {
+	for i, invProto := range invProtos {
+		if i < len(invModels) {
+			s.enrichInvestmentProto(ctx, userID, invProto, invModels[i])
+		}
+	}
+}
+

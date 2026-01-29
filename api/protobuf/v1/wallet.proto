@@ -141,6 +141,9 @@ message Wallet {
   WalletType type = 7 [json_name = "type"];
   WalletStatus status = 8 [json_name = "status"];
   string currency = 9 [json_name = "currency"];
+  // Conversion fields (populated when user's preferred currency differs from wallet currency)
+  wealthjourney.common.v1.Money displayBalance = 10 [json_name = "displayBalance"];  // Balance in user's preferred currency
+  string displayCurrency = 11 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 // GetWallet request
@@ -287,6 +290,10 @@ message GetTotalBalanceResponse {
   string message = 2 [json_name = "message"];
   wealthjourney.common.v1.Money data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
+  // Conversion fields
+  string currency = 5 [json_name = "currency"];  // Base currency of the total (e.g., "VND")
+  wealthjourney.common.v1.Money displayValue = 6 [json_name = "displayValue"];  // Value in user's preferred currency
+  string displayCurrency = 7 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 // GetBalanceHistory request

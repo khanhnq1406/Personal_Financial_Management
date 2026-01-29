@@ -115,10 +115,14 @@ func (s *transactionService) CreateTransaction(ctx context.Context, userID int32
 		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", transaction.ID, err)
 	}
 
+	txProto := s.modelToProto(transaction, updatedWallet, category)
+	// Enrich with conversion fields
+	s.enrichTransactionProto(ctx, userID, txProto, transaction, updatedWallet.Currency)
+
 	return &v1.CreateTransactionResponse{
 		Success: true,
 		Message: "Transaction created successfully",
-		Data:    s.modelToProto(transaction, updatedWallet, category),
+		Data:    txProto,
 		NewBalance: &v1.Money{
 			Amount:   updatedWallet.Balance,
 			Currency: updatedWallet.Currency,
@@ -141,10 +145,14 @@ func (s *transactionService) GetTransaction(ctx context.Context, transactionID i
 		category, _ = s.categoryRepo.GetByID(ctx, *transaction.CategoryID)
 	}
 
+	txProto := s.modelToProto(transaction, wallet, category)
+	// Enrich with conversion fields
+	s.enrichTransactionProto(ctx, userID, txProto, transaction, wallet.Currency)
+
 	return &v1.GetTransactionResponse{
 		Success:   true,
 		Message:   "Transaction retrieved successfully",
-		Data:      s.modelToProto(transaction, wallet, category),
+		Data:      txProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -170,9 +178,18 @@ func (s *transactionService) ListTransactions(ctx context.Context, userID int32,
 
 	// Convert to protobuf
 	protoTransactions := make([]*v1.Transaction, len(transactions))
+	walletCurrencies := make([]string, len(transactions))
+
 	for i, tx := range transactions {
 		protoTransactions[i] = s.modelToProtoSimple(tx)
+		// Try to get wallet currency for enrichment (non-blocking)
+		if wallet, err := s.walletRepo.GetByID(ctx, tx.WalletID); err == nil && wallet != nil {
+			walletCurrencies[i] = wallet.Currency
+		}
 	}
+
+	// Enrich with conversion fields where we have wallet currency data
+	s.enrichTransactionSliceProto(ctx, userID, protoTransactions, transactions, walletCurrencies)
 
 	// Build pagination result
 	totalPages := int32(total) / int32(params.PageSize)
@@ -311,10 +328,14 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", updatedTransaction.ID, err)
 	}
 
+	txProto := s.modelToProto(updatedTransaction, updatedWallet, category)
+	// Enrich with conversion fields
+	s.enrichTransactionProto(ctx, userID, txProto, updatedTransaction, updatedWallet.Currency)
+
 	return &v1.UpdateTransactionResponse{
 		Success: true,
 		Message: "Transaction updated successfully",
-		Data:    s.modelToProto(updatedTransaction, updatedWallet, category),
+		Data:    txProto,
 		NewBalance: &v1.Money{
 			Amount:   updatedWallet.Balance,
 			Currency: updatedWallet.Currency,
@@ -625,6 +646,7 @@ func (s *transactionService) modelToProto(tx *models.Transaction, wallet *models
 		Note:      tx.Note,
 		CreatedAt: tx.CreatedAt.Unix(),
 		UpdatedAt: tx.UpdatedAt.Unix(),
+		Currency:  wallet.Currency, // Set the transaction's original currency
 	}
 
 	if tx.CategoryID != nil {
@@ -647,6 +669,7 @@ func (s *transactionService) modelToProtoSimple(tx *models.Transaction) *v1.Tran
 		Date:      tx.Date.Unix(),
 		Note:      tx.Note,
 		CreatedAt: tx.CreatedAt.Unix(),
+		Currency:  "VND", // Default, should be loaded from wallet
 		UpdatedAt: tx.UpdatedAt.Unix(),
 	}
 
@@ -737,4 +760,41 @@ func (s *transactionService) populateTransactionCache(ctx context.Context, userI
 // Called when transaction is updated or deleted
 func (s *transactionService) invalidateTransactionCache(ctx context.Context, userID int32, transactionID int32) error {
 	return s.currencyCache.DeleteEntityCache(ctx, userID, "transaction", transactionID)
+}
+
+// enrichTransactionProto adds conversion fields to a transaction proto response
+func (s *transactionService) enrichTransactionProto(ctx context.Context, userID int32, txProto *v1.Transaction, txModel *models.Transaction, walletCurrency string) {
+	if s.currencyCache == nil {
+		return
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	// If same currency, no conversion needed
+	if walletCurrency == user.PreferredCurrency {
+		return
+	}
+
+	// Try to get from cache first
+	convertedAmount, err := s.currencyCache.GetConvertedValue(ctx, userID, "transaction", txModel.ID, user.PreferredCurrency)
+	if err == nil && convertedAmount > 0 {
+		txProto.DisplayAmount = &v1.Money{
+			Amount:   convertedAmount,
+			Currency: user.PreferredCurrency,
+		}
+		txProto.DisplayCurrency = user.PreferredCurrency
+	}
+}
+
+// enrichTransactionSliceProto adds conversion fields to a slice of transaction proto responses
+func (s *transactionService) enrichTransactionSliceProto(ctx context.Context, userID int32, txProtos []*v1.Transaction, txModels []*models.Transaction, walletCurrencies []string) {
+	for i, txProto := range txProtos {
+		if i < len(txModels) && i < len(walletCurrencies) {
+			s.enrichTransactionProto(ctx, userID, txProto, txModels[i], walletCurrencies[i])
+		}
+	}
 }

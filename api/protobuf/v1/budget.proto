@@ -85,6 +85,10 @@ message Budget {
   wealthjourney.common.v1.Money total = 4 [json_name = "total"];
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
+  // Conversion fields (populated when user's preferred currency differs from budget currency)
+  string currency = 7 [json_name = "currency"];  // Original currency of the budget
+  wealthjourney.common.v1.Money displayTotal = 8 [json_name = "displayTotal"];  // Total in user's preferred currency
+  string displayCurrency = 9 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 // BudgetItem message
@@ -96,6 +100,10 @@ message BudgetItem {
   bool checked = 7 [json_name = "checked"];
   int64 createdAt = 5 [json_name = "createdAt"];
   int64 updatedAt = 6 [json_name = "updatedAt"];
+  // Conversion fields (populated when user's preferred currency differs from budget item currency)
+  string currency = 8 [json_name = "currency"];  // Original currency of the budget item
+  wealthjourney.common.v1.Money displayTotal = 9 [json_name = "displayTotal"];  // Total in user's preferred currency
+  string displayCurrency = 10 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 // GetBudget request

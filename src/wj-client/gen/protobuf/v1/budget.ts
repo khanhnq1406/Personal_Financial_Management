@@ -18,6 +18,14 @@ export interface Budget {
   total: Money | undefined;
   createdAt: number;
   updatedAt: number;
+  /** Conversion fields (populated when user's preferred currency differs from budget currency) */
+  currency: string;
+  /** Total in user's preferred currency */
+  displayTotal:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** BudgetItem message */
@@ -29,6 +37,14 @@ export interface BudgetItem {
   checked: boolean;
   createdAt: number;
   updatedAt: number;
+  /** Conversion fields (populated when user's preferred currency differs from budget item currency) */
+  currency: string;
+  /** Total in user's preferred currency */
+  displayTotal:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** GetBudget request */
@@ -151,7 +167,17 @@ export interface DeleteBudgetItemResponse {
 }
 
 function createBaseBudget(): Budget {
-  return { id: 0, userId: 0, name: "", total: undefined, createdAt: 0, updatedAt: 0 };
+  return {
+    id: 0,
+    userId: 0,
+    name: "",
+    total: undefined,
+    createdAt: 0,
+    updatedAt: 0,
+    currency: "",
+    displayTotal: undefined,
+    displayCurrency: "",
+  };
 }
 
 export const Budget: MessageFns<Budget> = {
@@ -173,6 +199,15 @@ export const Budget: MessageFns<Budget> = {
     }
     if (message.updatedAt !== 0) {
       writer.uint32(48).int64(message.updatedAt);
+    }
+    if (message.currency !== "") {
+      writer.uint32(58).string(message.currency);
+    }
+    if (message.displayTotal !== undefined) {
+      Money.encode(message.displayTotal, writer.uint32(66).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(74).string(message.displayCurrency);
     }
     return writer;
   },
@@ -232,6 +267,30 @@ export const Budget: MessageFns<Budget> = {
           message.updatedAt = longToNumber(reader.int64());
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.displayTotal = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -249,6 +308,9 @@ export const Budget: MessageFns<Budget> = {
       total: isSet(object.total) ? Money.fromJSON(object.total) : undefined,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayTotal: isSet(object.displayTotal) ? Money.fromJSON(object.displayTotal) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -272,6 +334,15 @@ export const Budget: MessageFns<Budget> = {
     if (message.updatedAt !== 0) {
       obj.updatedAt = Math.round(message.updatedAt);
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.displayTotal !== undefined) {
+      obj.displayTotal = Money.toJSON(message.displayTotal);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -286,12 +357,28 @@ export const Budget: MessageFns<Budget> = {
     message.total = (object.total !== undefined && object.total !== null) ? Money.fromPartial(object.total) : undefined;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
+    message.currency = object.currency ?? "";
+    message.displayTotal = (object.displayTotal !== undefined && object.displayTotal !== null)
+      ? Money.fromPartial(object.displayTotal)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };
 
 function createBaseBudgetItem(): BudgetItem {
-  return { id: 0, budgetId: 0, name: "", total: undefined, checked: false, createdAt: 0, updatedAt: 0 };
+  return {
+    id: 0,
+    budgetId: 0,
+    name: "",
+    total: undefined,
+    checked: false,
+    createdAt: 0,
+    updatedAt: 0,
+    currency: "",
+    displayTotal: undefined,
+    displayCurrency: "",
+  };
 }
 
 export const BudgetItem: MessageFns<BudgetItem> = {
@@ -316,6 +403,15 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     }
     if (message.updatedAt !== 0) {
       writer.uint32(48).int64(message.updatedAt);
+    }
+    if (message.currency !== "") {
+      writer.uint32(66).string(message.currency);
+    }
+    if (message.displayTotal !== undefined) {
+      Money.encode(message.displayTotal, writer.uint32(74).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(82).string(message.displayCurrency);
     }
     return writer;
   },
@@ -383,6 +479,30 @@ export const BudgetItem: MessageFns<BudgetItem> = {
           message.updatedAt = longToNumber(reader.int64());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.displayTotal = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -401,6 +521,9 @@ export const BudgetItem: MessageFns<BudgetItem> = {
       checked: isSet(object.checked) ? globalThis.Boolean(object.checked) : false,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayTotal: isSet(object.displayTotal) ? Money.fromJSON(object.displayTotal) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -427,6 +550,15 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     if (message.updatedAt !== 0) {
       obj.updatedAt = Math.round(message.updatedAt);
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.displayTotal !== undefined) {
+      obj.displayTotal = Money.toJSON(message.displayTotal);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -442,6 +574,11 @@ export const BudgetItem: MessageFns<BudgetItem> = {
     message.checked = object.checked ?? false;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
+    message.currency = object.currency ?? "";
+    message.displayTotal = (object.displayTotal !== undefined && object.displayTotal !== null)
+      ? Money.fromPartial(object.displayTotal)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };

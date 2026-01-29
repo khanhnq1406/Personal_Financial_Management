@@ -135,10 +135,14 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *wal
 		fmt.Printf("Warning: failed to populate currency cache for wallet %d: %v\n", wallet.ID, err)
 	}
 
+	walletProto := s.mapper.ModelToProto(wallet)
+	// Enrich with conversion fields
+	_ = s.enrichWalletProto(ctx, userID, walletProto, wallet)
+
 	return &walletv1.CreateWalletResponse{
 		Success:   true,
 		Message:   "Wallet created successfully",
-		Data:      s.mapper.ModelToProto(wallet),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -157,10 +161,14 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 		return nil, err
 	}
 
+	walletProto := s.mapper.ModelToProto(wallet)
+	// Enrich with conversion fields
+	_ = s.enrichWalletProto(ctx, requestingUserID, walletProto, wallet)
+
 	return &walletv1.GetWalletResponse{
 		Success:   true,
 		Message:   "Wallet retrieved successfully",
-		Data:      s.mapper.ModelToProto(wallet),
+		Data:      walletProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -186,6 +194,9 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 	}
 
 	protoWallets := s.mapper.ModelSliceToProto(wallets)
+	// Enrich with conversion fields
+	s.enrichWalletSliceProto(ctx, userID, protoWallets, wallets)
+
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &walletv1.ListWalletsResponse{
@@ -1007,4 +1018,44 @@ func (s *walletService) populateWalletCache(ctx context.Context, userID int32, w
 // Called when wallet is updated or deleted
 func (s *walletService) invalidateWalletCache(ctx context.Context, userID int32, walletID int32) error {
 	return s.currencyCache.DeleteEntityCache(ctx, userID, "wallet", walletID)
+}
+
+// enrichWalletProto adds conversion fields to a wallet proto response
+// This fetches the user's preferred currency and gets the converted balance from cache
+func (s *walletService) enrichWalletProto(ctx context.Context, userID int32, walletProto *walletv1.Wallet, walletModel *models.Wallet) error {
+	if s.currencyCache == nil {
+		return nil
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil // Don't fail if user lookup fails
+	}
+
+	// If same currency, no conversion needed
+	if walletModel.Currency == user.PreferredCurrency {
+		return nil
+	}
+
+	// Try to get from cache first
+	convertedBalance, err := s.currencyCache.GetConvertedValue(ctx, userID, "wallet", walletModel.ID, user.PreferredCurrency)
+	if err == nil && convertedBalance > 0 {
+		walletProto.DisplayBalance = &walletv1.Money{
+			Amount:   convertedBalance,
+			Currency: user.PreferredCurrency,
+		}
+		walletProto.DisplayCurrency = user.PreferredCurrency
+	}
+
+	return nil
+}
+
+// enrichWalletSliceProto adds conversion fields to a slice of wallet proto responses
+func (s *walletService) enrichWalletSliceProto(ctx context.Context, userID int32, walletProtos []*walletv1.Wallet, walletModels []*models.Wallet) {
+	for i, walletProto := range walletProtos {
+		if i < len(walletModels) {
+			_ = s.enrichWalletProto(ctx, userID, walletProto, walletModels[i])
+		}
+	}
 }

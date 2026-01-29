@@ -15,6 +15,10 @@ export interface User {
   email: string;
   name: string;
   picture: string;
+  /** User's preferred display currency (ISO 4217) */
+  preferredCurrency: string;
+  /** Whether currency conversion is in progress */
+  conversionInProgress: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -96,7 +100,16 @@ export interface GetAuthResponse {
 }
 
 function createBaseUser(): User {
-  return { id: 0, email: "", name: "", picture: "", createdAt: 0, updatedAt: 0 };
+  return {
+    id: 0,
+    email: "",
+    name: "",
+    picture: "",
+    preferredCurrency: "",
+    conversionInProgress: false,
+    createdAt: 0,
+    updatedAt: 0,
+  };
 }
 
 export const User: MessageFns<User> = {
@@ -112,6 +125,12 @@ export const User: MessageFns<User> = {
     }
     if (message.picture !== "") {
       writer.uint32(34).string(message.picture);
+    }
+    if (message.preferredCurrency !== "") {
+      writer.uint32(58).string(message.preferredCurrency);
+    }
+    if (message.conversionInProgress !== false) {
+      writer.uint32(64).bool(message.conversionInProgress);
     }
     if (message.createdAt !== 0) {
       writer.uint32(40).int64(message.createdAt);
@@ -161,6 +180,22 @@ export const User: MessageFns<User> = {
           message.picture = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.preferredCurrency = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.conversionInProgress = reader.bool();
+          continue;
+        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -192,6 +227,10 @@ export const User: MessageFns<User> = {
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       picture: isSet(object.picture) ? globalThis.String(object.picture) : "",
+      preferredCurrency: isSet(object.preferredCurrency) ? globalThis.String(object.preferredCurrency) : "",
+      conversionInProgress: isSet(object.conversionInProgress)
+        ? globalThis.Boolean(object.conversionInProgress)
+        : false,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
     };
@@ -211,6 +250,12 @@ export const User: MessageFns<User> = {
     if (message.picture !== "") {
       obj.picture = message.picture;
     }
+    if (message.preferredCurrency !== "") {
+      obj.preferredCurrency = message.preferredCurrency;
+    }
+    if (message.conversionInProgress !== false) {
+      obj.conversionInProgress = message.conversionInProgress;
+    }
     if (message.createdAt !== 0) {
       obj.createdAt = Math.round(message.createdAt);
     }
@@ -229,6 +274,8 @@ export const User: MessageFns<User> = {
     message.email = object.email ?? "";
     message.name = object.name ?? "";
     message.picture = object.picture ?? "";
+    message.preferredCurrency = object.preferredCurrency ?? "";
+    message.conversionInProgress = object.conversionInProgress ?? false;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
     return message;

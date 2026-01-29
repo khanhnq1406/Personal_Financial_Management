@@ -49,6 +49,17 @@ export interface DeleteUserRequest {
   userId: number;
 }
 
+/** UserPreferences message */
+export interface UserPreferences {
+  /** ISO 4217 currency code (e.g., "USD", "VND", "EUR") */
+  preferredCurrency: string;
+}
+
+/** UpdatePreferences request */
+export interface UpdatePreferencesRequest {
+  preferences: UserPreferences | undefined;
+}
+
 /** GetUser response */
 export interface GetUserResponse {
   success: boolean;
@@ -94,6 +105,14 @@ export interface UpdateUserResponse {
 export interface DeleteUserResponse {
   success: boolean;
   message: string;
+  timestamp: string;
+}
+
+/** UpdatePreferences response */
+export interface UpdatePreferencesResponse {
+  success: boolean;
+  message: string;
+  data: User | undefined;
   timestamp: string;
 }
 
@@ -527,6 +546,124 @@ export const DeleteUserRequest: MessageFns<DeleteUserRequest> = {
   fromPartial(object: DeepPartial<DeleteUserRequest>): DeleteUserRequest {
     const message = createBaseDeleteUserRequest();
     message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseUserPreferences(): UserPreferences {
+  return { preferredCurrency: "" };
+}
+
+export const UserPreferences: MessageFns<UserPreferences> = {
+  encode(message: UserPreferences, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.preferredCurrency !== "") {
+      writer.uint32(10).string(message.preferredCurrency);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserPreferences {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserPreferences();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.preferredCurrency = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserPreferences {
+    return { preferredCurrency: isSet(object.preferredCurrency) ? globalThis.String(object.preferredCurrency) : "" };
+  },
+
+  toJSON(message: UserPreferences): unknown {
+    const obj: any = {};
+    if (message.preferredCurrency !== "") {
+      obj.preferredCurrency = message.preferredCurrency;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UserPreferences>): UserPreferences {
+    return UserPreferences.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UserPreferences>): UserPreferences {
+    const message = createBaseUserPreferences();
+    message.preferredCurrency = object.preferredCurrency ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdatePreferencesRequest(): UpdatePreferencesRequest {
+  return { preferences: undefined };
+}
+
+export const UpdatePreferencesRequest: MessageFns<UpdatePreferencesRequest> = {
+  encode(message: UpdatePreferencesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.preferences !== undefined) {
+      UserPreferences.encode(message.preferences, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdatePreferencesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdatePreferencesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.preferences = UserPreferences.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdatePreferencesRequest {
+    return { preferences: isSet(object.preferences) ? UserPreferences.fromJSON(object.preferences) : undefined };
+  },
+
+  toJSON(message: UpdatePreferencesRequest): unknown {
+    const obj: any = {};
+    if (message.preferences !== undefined) {
+      obj.preferences = UserPreferences.toJSON(message.preferences);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdatePreferencesRequest>): UpdatePreferencesRequest {
+    return UpdatePreferencesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdatePreferencesRequest>): UpdatePreferencesRequest {
+    const message = createBaseUpdatePreferencesRequest();
+    message.preferences = (object.preferences !== undefined && object.preferences !== null)
+      ? UserPreferences.fromPartial(object.preferences)
+      : undefined;
     return message;
   },
 };
@@ -1176,6 +1313,114 @@ export const DeleteUserResponse: MessageFns<DeleteUserResponse> = {
     const message = createBaseDeleteUserResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdatePreferencesResponse(): UpdatePreferencesResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const UpdatePreferencesResponse: MessageFns<UpdatePreferencesResponse> = {
+  encode(message: UpdatePreferencesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      User.encode(message.data, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdatePreferencesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdatePreferencesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = User.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdatePreferencesResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: UpdatePreferencesResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = User.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdatePreferencesResponse>): UpdatePreferencesResponse {
+    return UpdatePreferencesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdatePreferencesResponse>): UpdatePreferencesResponse {
+    const message = createBaseUpdatePreferencesResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
     return message;
   },

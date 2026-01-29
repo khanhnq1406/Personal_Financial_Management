@@ -5,6 +5,7 @@ import (
 
 	"wealthjourney/domain/service"
 	"wealthjourney/pkg/handler"
+	"wealthjourney/protobuf/v1"
 )
 
 // UserHandlers handles user-related HTTP requests.
@@ -198,4 +199,52 @@ func (h *UserHandlers) DeleteUser(c *gin.Context) {
 	}
 
 	handler.NoContent(c)
+}
+
+// UpdatePreferences updates a user's preferences, including currency preference.
+// @Summary Update user preferences
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body object{preferences:object{preferredCurrency:string}} true "User preferences update request"
+// @Success 200 {object} types.APIResponse{data=protobufv1.User}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 409 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/users/preferences [put]
+func (h *UserHandlers) UpdatePreferences(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	var req struct {
+		Preferences *struct {
+			PreferredCurrency string `json:"preferredCurrency" binding:"required"`
+		} `json:"preferences" binding:"required"`
+	}
+
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Build protobuf request
+	protoReq := &v1.UpdatePreferencesRequest{
+		Preferences: &v1.UserPreferences{
+			PreferredCurrency: req.Preferences.PreferredCurrency,
+		},
+	}
+
+	// Call service
+	result, err := h.userService.UpdatePreferences(c.Request.Context(), userID, protoReq)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
 }

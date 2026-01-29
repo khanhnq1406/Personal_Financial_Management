@@ -133,6 +133,10 @@ message Transaction {
   string note = 7 [json_name = "note"];
   int64 createdAt = 8 [json_name = "createdAt"];
   int64 updatedAt = 9 [json_name = "updatedAt"];
+  // Conversion fields (populated when user's preferred currency differs from transaction currency)
+  string currency = 10 [json_name = "currency"];  // Original currency of the transaction
+  wealthjourney.common.v1.Money displayAmount = 11 [json_name = "displayAmount"];  // Amount in user's preferred currency
+  string displayCurrency = 12 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 // Category message

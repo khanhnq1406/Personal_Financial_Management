@@ -53,6 +53,14 @@ service UserService {
       delete: "/api/v1/users/{userId}"
     };
   }
+
+  // Update user preferences (including currency preference)
+  rpc UpdatePreferences(UpdatePreferencesRequest) returns (UpdatePreferencesResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/users/preferences"
+      body: "*"
+    };
+  }
 }
 
 // GetUser request
@@ -88,6 +96,16 @@ message UpdateUserRequest {
 // DeleteUser request
 message DeleteUserRequest {
   int32 userId = 1 [json_name = "userId"];  // User ID from context (authenticated user)
+}
+
+// UserPreferences message
+message UserPreferences {
+  string preferredCurrency = 1 [json_name = "preferredCurrency"];  // ISO 4217 currency code (e.g., "USD", "VND", "EUR")
+}
+
+// UpdatePreferences request
+message UpdatePreferencesRequest {
+  UserPreferences preferences = 1 [json_name = "preferences"];
 }
 
 // GetUser response
@@ -136,4 +154,12 @@ message DeleteUserResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+}
+
+// UpdatePreferences response
+message UpdatePreferencesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  wealthjourney.auth.v1.User data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }

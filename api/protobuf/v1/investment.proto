@@ -25,6 +25,12 @@ message Investment {
   int64 realizedPnl = 14 [json_name = "realizedPnl"];  // From sold positions
   int64 createdAt = 15 [json_name = "createdAt"];
   int64 updatedAt = 16 [json_name = "updatedAt"];
+  // Conversion fields (populated when user's preferred currency differs from investment currency)
+  wealthjourney.common.v1.Money displayTotalCost = 17 [json_name = "displayTotalCost"];  // Total cost in user's preferred currency
+  wealthjourney.common.v1.Money displayCurrentValue = 18 [json_name = "displayCurrentValue"];  // Current value in user's preferred currency
+  wealthjourney.common.v1.Money displayUnrealizedPnl = 19 [json_name = "displayUnrealizedPnl"];  // Unrealized PNL in user's preferred currency
+  wealthjourney.common.v1.Money displayRealizedPnl = 20 [json_name = "displayRealizedPnl"];  // Realized PNL in user's preferred currency
+  string displayCurrency = 21 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 enum InvestmentType {
@@ -75,6 +81,14 @@ message PortfolioSummary {
   int64 unrealizedPnl = 6 [json_name = "unrealizedPnl"];
   int32 totalInvestments = 7 [json_name = "totalInvestments"];
   repeated InvestmentByType investmentsByType = 8 [json_name = "investmentsByType"];
+  // Conversion fields (populated when user's preferred currency differs from summary currency)
+  string currency = 9 [json_name = "currency"];  // Base currency of the summary
+  wealthjourney.common.v1.Money displayTotalValue = 10 [json_name = "displayTotalValue"];  // Total value in user's preferred currency
+  wealthjourney.common.v1.Money displayTotalCost = 11 [json_name = "displayTotalCost"];  // Total cost in user's preferred currency
+  wealthjourney.common.v1.Money displayTotalPnl = 12 [json_name = "displayTotalPnl"];  // Total PNL in user's preferred currency
+  wealthjourney.common.v1.Money displayRealizedPnl = 13 [json_name = "displayRealizedPnl"];  // Realized PNL in user's preferred currency
+  wealthjourney.common.v1.Money displayUnrealizedPnl = 14 [json_name = "displayUnrealizedPnl"];  // Unrealized PNL in user's preferred currency
+  string displayCurrency = 15 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 message InvestmentByType {

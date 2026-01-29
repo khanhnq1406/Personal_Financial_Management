@@ -672,3 +672,27 @@ func (s *userService) convertInvestmentCurrencies(ctx context.Context, userID in
 	log.Printf("Converted %d investment(s) for user %d", totalProcessed, userID)
 	return nil
 }
+
+// UpdatePreferences updates a user's preferences, including currency preference.
+// This is the handler for the UpdatePreferences RPC call.
+func (s *userService) UpdatePreferences(ctx context.Context, userID int32, req *v1.UpdatePreferencesRequest) (*v1.UpdatePreferencesResponse, error) {
+	// Extract preferred currency from request
+	var preferredCurrency string
+	if req.Preferences != nil {
+		preferredCurrency = req.Preferences.PreferredCurrency
+	}
+
+	// Call the existing implementation
+	updateResp, err := s.UpdateUserPreferences(ctx, userID, preferredCurrency)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert response to UpdatePreferencesResponse format
+	return &v1.UpdatePreferencesResponse{
+		Success:   updateResp.Success,
+		Message:   updateResp.Message,
+		Data:      updateResp.Data,
+		Timestamp: updateResp.Timestamp,
+	}, nil
+}

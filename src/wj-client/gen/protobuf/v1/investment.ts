@@ -6,7 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { PaginationParams, PaginationResult } from "./common";
+import { Money, PaginationParams, PaginationResult } from "./common";
 
 export const protobufPackage = "wealthjourney.investment.v1";
 
@@ -186,6 +186,24 @@ export interface Investment {
   realizedPnl: number;
   createdAt: number;
   updatedAt: number;
+  /** Conversion fields (populated when user's preferred currency differs from investment currency) */
+  displayTotalCost:
+    | Money
+    | undefined;
+  /** Current value in user's preferred currency */
+  displayCurrentValue:
+    | Money
+    | undefined;
+  /** Unrealized PNL in user's preferred currency */
+  displayUnrealizedPnl:
+    | Money
+    | undefined;
+  /** Realized PNL in user's preferred currency */
+  displayRealizedPnl:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -223,6 +241,30 @@ export interface PortfolioSummary {
   unrealizedPnl: number;
   totalInvestments: number;
   investmentsByType: InvestmentByType[];
+  /** Conversion fields (populated when user's preferred currency differs from summary currency) */
+  currency: string;
+  /** Total value in user's preferred currency */
+  displayTotalValue:
+    | Money
+    | undefined;
+  /** Total cost in user's preferred currency */
+  displayTotalCost:
+    | Money
+    | undefined;
+  /** Total PNL in user's preferred currency */
+  displayTotalPnl:
+    | Money
+    | undefined;
+  /** Realized PNL in user's preferred currency */
+  displayRealizedPnl:
+    | Money
+    | undefined;
+  /** Unrealized PNL in user's preferred currency */
+  displayUnrealizedPnl:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 export interface InvestmentByType {
@@ -435,6 +477,11 @@ function createBaseInvestment(): Investment {
     realizedPnl: 0,
     createdAt: 0,
     updatedAt: 0,
+    displayTotalCost: undefined,
+    displayCurrentValue: undefined,
+    displayUnrealizedPnl: undefined,
+    displayRealizedPnl: undefined,
+    displayCurrency: "",
   };
 }
 
@@ -487,6 +534,21 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.updatedAt !== 0) {
       writer.uint32(128).int64(message.updatedAt);
+    }
+    if (message.displayTotalCost !== undefined) {
+      Money.encode(message.displayTotalCost, writer.uint32(138).fork()).join();
+    }
+    if (message.displayCurrentValue !== undefined) {
+      Money.encode(message.displayCurrentValue, writer.uint32(146).fork()).join();
+    }
+    if (message.displayUnrealizedPnl !== undefined) {
+      Money.encode(message.displayUnrealizedPnl, writer.uint32(154).fork()).join();
+    }
+    if (message.displayRealizedPnl !== undefined) {
+      Money.encode(message.displayRealizedPnl, writer.uint32(162).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(170).string(message.displayCurrency);
     }
     return writer;
   },
@@ -626,6 +688,46 @@ export const Investment: MessageFns<Investment> = {
           message.updatedAt = longToNumber(reader.int64());
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.displayTotalCost = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.displayCurrentValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.displayUnrealizedPnl = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.displayRealizedPnl = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -653,6 +755,13 @@ export const Investment: MessageFns<Investment> = {
       realizedPnl: isSet(object.realizedPnl) ? globalThis.Number(object.realizedPnl) : 0,
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
+      displayTotalCost: isSet(object.displayTotalCost) ? Money.fromJSON(object.displayTotalCost) : undefined,
+      displayCurrentValue: isSet(object.displayCurrentValue) ? Money.fromJSON(object.displayCurrentValue) : undefined,
+      displayUnrealizedPnl: isSet(object.displayUnrealizedPnl)
+        ? Money.fromJSON(object.displayUnrealizedPnl)
+        : undefined,
+      displayRealizedPnl: isSet(object.displayRealizedPnl) ? Money.fromJSON(object.displayRealizedPnl) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -706,6 +815,21 @@ export const Investment: MessageFns<Investment> = {
     if (message.updatedAt !== 0) {
       obj.updatedAt = Math.round(message.updatedAt);
     }
+    if (message.displayTotalCost !== undefined) {
+      obj.displayTotalCost = Money.toJSON(message.displayTotalCost);
+    }
+    if (message.displayCurrentValue !== undefined) {
+      obj.displayCurrentValue = Money.toJSON(message.displayCurrentValue);
+    }
+    if (message.displayUnrealizedPnl !== undefined) {
+      obj.displayUnrealizedPnl = Money.toJSON(message.displayUnrealizedPnl);
+    }
+    if (message.displayRealizedPnl !== undefined) {
+      obj.displayRealizedPnl = Money.toJSON(message.displayRealizedPnl);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -730,6 +854,19 @@ export const Investment: MessageFns<Investment> = {
     message.realizedPnl = object.realizedPnl ?? 0;
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
+    message.displayTotalCost = (object.displayTotalCost !== undefined && object.displayTotalCost !== null)
+      ? Money.fromPartial(object.displayTotalCost)
+      : undefined;
+    message.displayCurrentValue = (object.displayCurrentValue !== undefined && object.displayCurrentValue !== null)
+      ? Money.fromPartial(object.displayCurrentValue)
+      : undefined;
+    message.displayUnrealizedPnl = (object.displayUnrealizedPnl !== undefined && object.displayUnrealizedPnl !== null)
+      ? Money.fromPartial(object.displayUnrealizedPnl)
+      : undefined;
+    message.displayRealizedPnl = (object.displayRealizedPnl !== undefined && object.displayRealizedPnl !== null)
+      ? Money.fromPartial(object.displayRealizedPnl)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };
@@ -1027,6 +1164,13 @@ function createBasePortfolioSummary(): PortfolioSummary {
     unrealizedPnl: 0,
     totalInvestments: 0,
     investmentsByType: [],
+    currency: "",
+    displayTotalValue: undefined,
+    displayTotalCost: undefined,
+    displayTotalPnl: undefined,
+    displayRealizedPnl: undefined,
+    displayUnrealizedPnl: undefined,
+    displayCurrency: "",
   };
 }
 
@@ -1055,6 +1199,27 @@ export const PortfolioSummary: MessageFns<PortfolioSummary> = {
     }
     for (const v of message.investmentsByType) {
       InvestmentByType.encode(v!, writer.uint32(66).fork()).join();
+    }
+    if (message.currency !== "") {
+      writer.uint32(74).string(message.currency);
+    }
+    if (message.displayTotalValue !== undefined) {
+      Money.encode(message.displayTotalValue, writer.uint32(82).fork()).join();
+    }
+    if (message.displayTotalCost !== undefined) {
+      Money.encode(message.displayTotalCost, writer.uint32(90).fork()).join();
+    }
+    if (message.displayTotalPnl !== undefined) {
+      Money.encode(message.displayTotalPnl, writer.uint32(98).fork()).join();
+    }
+    if (message.displayRealizedPnl !== undefined) {
+      Money.encode(message.displayRealizedPnl, writer.uint32(106).fork()).join();
+    }
+    if (message.displayUnrealizedPnl !== undefined) {
+      Money.encode(message.displayUnrealizedPnl, writer.uint32(114).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(122).string(message.displayCurrency);
     }
     return writer;
   },
@@ -1130,6 +1295,62 @@ export const PortfolioSummary: MessageFns<PortfolioSummary> = {
           message.investmentsByType.push(InvestmentByType.decode(reader, reader.uint32()));
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.displayTotalValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.displayTotalCost = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.displayTotalPnl = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.displayRealizedPnl = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.displayUnrealizedPnl = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1151,6 +1372,15 @@ export const PortfolioSummary: MessageFns<PortfolioSummary> = {
       investmentsByType: globalThis.Array.isArray(object?.investmentsByType)
         ? object.investmentsByType.map((e: any) => InvestmentByType.fromJSON(e))
         : [],
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayTotalValue: isSet(object.displayTotalValue) ? Money.fromJSON(object.displayTotalValue) : undefined,
+      displayTotalCost: isSet(object.displayTotalCost) ? Money.fromJSON(object.displayTotalCost) : undefined,
+      displayTotalPnl: isSet(object.displayTotalPnl) ? Money.fromJSON(object.displayTotalPnl) : undefined,
+      displayRealizedPnl: isSet(object.displayRealizedPnl) ? Money.fromJSON(object.displayRealizedPnl) : undefined,
+      displayUnrealizedPnl: isSet(object.displayUnrealizedPnl)
+        ? Money.fromJSON(object.displayUnrealizedPnl)
+        : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -1180,6 +1410,27 @@ export const PortfolioSummary: MessageFns<PortfolioSummary> = {
     if (message.investmentsByType?.length) {
       obj.investmentsByType = message.investmentsByType.map((e) => InvestmentByType.toJSON(e));
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.displayTotalValue !== undefined) {
+      obj.displayTotalValue = Money.toJSON(message.displayTotalValue);
+    }
+    if (message.displayTotalCost !== undefined) {
+      obj.displayTotalCost = Money.toJSON(message.displayTotalCost);
+    }
+    if (message.displayTotalPnl !== undefined) {
+      obj.displayTotalPnl = Money.toJSON(message.displayTotalPnl);
+    }
+    if (message.displayRealizedPnl !== undefined) {
+      obj.displayRealizedPnl = Money.toJSON(message.displayRealizedPnl);
+    }
+    if (message.displayUnrealizedPnl !== undefined) {
+      obj.displayUnrealizedPnl = Money.toJSON(message.displayUnrealizedPnl);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -1196,6 +1447,23 @@ export const PortfolioSummary: MessageFns<PortfolioSummary> = {
     message.unrealizedPnl = object.unrealizedPnl ?? 0;
     message.totalInvestments = object.totalInvestments ?? 0;
     message.investmentsByType = object.investmentsByType?.map((e) => InvestmentByType.fromPartial(e)) || [];
+    message.currency = object.currency ?? "";
+    message.displayTotalValue = (object.displayTotalValue !== undefined && object.displayTotalValue !== null)
+      ? Money.fromPartial(object.displayTotalValue)
+      : undefined;
+    message.displayTotalCost = (object.displayTotalCost !== undefined && object.displayTotalCost !== null)
+      ? Money.fromPartial(object.displayTotalCost)
+      : undefined;
+    message.displayTotalPnl = (object.displayTotalPnl !== undefined && object.displayTotalPnl !== null)
+      ? Money.fromPartial(object.displayTotalPnl)
+      : undefined;
+    message.displayRealizedPnl = (object.displayRealizedPnl !== undefined && object.displayRealizedPnl !== null)
+      ? Money.fromPartial(object.displayRealizedPnl)
+      : undefined;
+    message.displayUnrealizedPnl = (object.displayUnrealizedPnl !== undefined && object.displayUnrealizedPnl !== null)
+      ? Money.fromPartial(object.displayUnrealizedPnl)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };

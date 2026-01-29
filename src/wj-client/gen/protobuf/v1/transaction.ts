@@ -181,6 +181,14 @@ export interface Transaction {
   note: string;
   createdAt: number;
   updatedAt: number;
+  /** Conversion fields (populated when user's preferred currency differs from transaction currency) */
+  currency: string;
+  /** Amount in user's preferred currency */
+  displayAmount:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** Category message */
@@ -410,6 +418,9 @@ function createBaseTransaction(): Transaction {
     note: "",
     createdAt: 0,
     updatedAt: 0,
+    currency: "",
+    displayAmount: undefined,
+    displayCurrency: "",
   };
 }
 
@@ -441,6 +452,15 @@ export const Transaction: MessageFns<Transaction> = {
     }
     if (message.updatedAt !== 0) {
       writer.uint32(72).int64(message.updatedAt);
+    }
+    if (message.currency !== "") {
+      writer.uint32(82).string(message.currency);
+    }
+    if (message.displayAmount !== undefined) {
+      Money.encode(message.displayAmount, writer.uint32(90).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(98).string(message.displayCurrency);
     }
     return writer;
   },
@@ -524,6 +544,30 @@ export const Transaction: MessageFns<Transaction> = {
           message.updatedAt = longToNumber(reader.int64());
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.displayAmount = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -544,6 +588,9 @@ export const Transaction: MessageFns<Transaction> = {
       note: isSet(object.note) ? globalThis.String(object.note) : "",
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayAmount: isSet(object.displayAmount) ? Money.fromJSON(object.displayAmount) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -576,6 +623,15 @@ export const Transaction: MessageFns<Transaction> = {
     if (message.updatedAt !== 0) {
       obj.updatedAt = Math.round(message.updatedAt);
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.displayAmount !== undefined) {
+      obj.displayAmount = Money.toJSON(message.displayAmount);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -595,6 +651,11 @@ export const Transaction: MessageFns<Transaction> = {
     message.note = object.note ?? "";
     message.createdAt = object.createdAt ?? 0;
     message.updatedAt = object.updatedAt ?? 0;
+    message.currency = object.currency ?? "";
+    message.displayAmount = (object.displayAmount !== undefined && object.displayAmount !== null)
+      ? Money.fromPartial(object.displayAmount)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };

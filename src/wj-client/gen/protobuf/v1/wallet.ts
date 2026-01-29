@@ -228,6 +228,12 @@ export interface Wallet {
   type: WalletType;
   status: WalletStatus;
   currency: string;
+  /** Conversion fields (populated when user's preferred currency differs from wallet currency) */
+  displayBalance:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** GetWallet request */
@@ -384,6 +390,14 @@ export interface GetTotalBalanceResponse {
   message: string;
   data: Money | undefined;
   timestamp: string;
+  /** Conversion fields */
+  currency: string;
+  /** Value in user's preferred currency */
+  displayValue:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** GetBalanceHistory request */
@@ -451,6 +465,8 @@ function createBaseWallet(): Wallet {
     type: 0,
     status: 0,
     currency: "",
+    displayBalance: undefined,
+    displayCurrency: "",
   };
 }
 
@@ -482,6 +498,12 @@ export const Wallet: MessageFns<Wallet> = {
     }
     if (message.currency !== "") {
       writer.uint32(74).string(message.currency);
+    }
+    if (message.displayBalance !== undefined) {
+      Money.encode(message.displayBalance, writer.uint32(82).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(90).string(message.displayCurrency);
     }
     return writer;
   },
@@ -565,6 +587,22 @@ export const Wallet: MessageFns<Wallet> = {
           message.currency = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.displayBalance = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -585,6 +623,8 @@ export const Wallet: MessageFns<Wallet> = {
       type: isSet(object.type) ? walletTypeFromJSON(object.type) : 0,
       status: isSet(object.status) ? walletStatusFromJSON(object.status) : 0,
       currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayBalance: isSet(object.displayBalance) ? Money.fromJSON(object.displayBalance) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -617,6 +657,12 @@ export const Wallet: MessageFns<Wallet> = {
     if (message.currency !== "") {
       obj.currency = message.currency;
     }
+    if (message.displayBalance !== undefined) {
+      obj.displayBalance = Money.toJSON(message.displayBalance);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -636,6 +682,10 @@ export const Wallet: MessageFns<Wallet> = {
     message.type = object.type ?? 0;
     message.status = object.status ?? 0;
     message.currency = object.currency ?? "";
+    message.displayBalance = (object.displayBalance !== undefined && object.displayBalance !== null)
+      ? Money.fromPartial(object.displayBalance)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };
@@ -2476,7 +2526,15 @@ export const AdjustBalanceResponse: MessageFns<AdjustBalanceResponse> = {
 };
 
 function createBaseGetTotalBalanceResponse(): GetTotalBalanceResponse {
-  return { success: false, message: "", data: undefined, timestamp: "" };
+  return {
+    success: false,
+    message: "",
+    data: undefined,
+    timestamp: "",
+    currency: "",
+    displayValue: undefined,
+    displayCurrency: "",
+  };
 }
 
 export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
@@ -2492,6 +2550,15 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     }
     if (message.timestamp !== "") {
       writer.uint32(34).string(message.timestamp);
+    }
+    if (message.currency !== "") {
+      writer.uint32(42).string(message.currency);
+    }
+    if (message.displayValue !== undefined) {
+      Money.encode(message.displayValue, writer.uint32(50).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(58).string(message.displayCurrency);
     }
     return writer;
   },
@@ -2535,6 +2602,30 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
           message.timestamp = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.displayValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2550,6 +2641,9 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
       message: isSet(object.message) ? globalThis.String(object.message) : "",
       data: isSet(object.data) ? Money.fromJSON(object.data) : undefined,
       timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      displayValue: isSet(object.displayValue) ? Money.fromJSON(object.displayValue) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -2567,6 +2661,15 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     if (message.timestamp !== "") {
       obj.timestamp = message.timestamp;
     }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.displayValue !== undefined) {
+      obj.displayValue = Money.toJSON(message.displayValue);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -2579,6 +2682,11 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     message.message = object.message ?? "";
     message.data = (object.data !== undefined && object.data !== null) ? Money.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
+    message.currency = object.currency ?? "";
+    message.displayValue = (object.displayValue !== undefined && object.displayValue !== null)
+      ? Money.fromPartial(object.displayValue)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };

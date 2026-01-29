@@ -8,6 +8,7 @@ import (
 	budgetv1 "wealthjourney/protobuf/v1"
 	investmentv1 "wealthjourney/protobuf/v1"
 	transactionv1 "wealthjourney/protobuf/v1"
+	v1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
 )
 
@@ -72,6 +73,9 @@ type UserService interface {
 
 	// ExistsByEmail checks if a user exists by email.
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
+
+	// UpdatePreferences updates a user's preferences (including currency preference).
+	UpdatePreferences(ctx context.Context, userID int32, req *v1.UpdatePreferencesRequest) (*v1.UpdatePreferencesResponse, error)
 }
 
 // TransactionService defines the interface for transaction business logic.

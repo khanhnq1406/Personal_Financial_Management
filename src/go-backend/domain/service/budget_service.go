@@ -58,10 +58,14 @@ func (s *budgetService) GetBudget(ctx context.Context, budgetID int32, userID in
 		return nil, err
 	}
 
+	budgetProto := s.mapper.ModelToProto(budget)
+	// Enrich with conversion fields
+	s.enrichBudgetProto(ctx, userID, budgetProto, budget)
+
 	return &budgetv1.GetBudgetResponse{
 		Success:   true,
 		Message:   "Budget retrieved successfully",
-		Data:      s.mapper.ModelToProto(budget),
+		Data:      budgetProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -88,6 +92,9 @@ func (s *budgetService) ListBudgets(ctx context.Context, userID int32, params ty
 	}
 
 	protoBudgets := s.mapper.ModelSliceToProto(budgets)
+	// Enrich with conversion fields
+	s.enrichBudgetSliceProto(ctx, userID, protoBudgets, budgets)
+
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &budgetv1.ListBudgetsResponse{
@@ -291,8 +298,8 @@ func (s *budgetService) GetBudgetItems(ctx context.Context, budgetID int32, user
 		return nil, err
 	}
 
-	// Verify budget ownership
-	_, err := s.budgetRepo.GetByIDForUser(ctx, budgetID, userID)
+	// Verify budget ownership and get budget for currency
+	budget, err := s.budgetRepo.GetByIDForUser(ctx, budgetID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -304,6 +311,8 @@ func (s *budgetService) GetBudgetItems(ctx context.Context, budgetID int32, user
 	}
 
 	protoItems := s.mapper.ModelSliceToProtoItems(items)
+	// Enrich with conversion fields
+	s.enrichBudgetItemSliceProto(ctx, userID, protoItems, items, budget.Currency)
 
 	return &budgetv1.GetBudgetItemsResponse{
 		Success:   true,
@@ -660,5 +669,79 @@ func (s *budgetService) invalidateBudgetCache(ctx context.Context, userID int32,
 // invalidateBudgetItemCache removes cached conversions for a budget item
 func (s *budgetService) invalidateBudgetItemCache(ctx context.Context, userID int32, budgetItemID int32) error {
 	return s.currencyCache.DeleteEntityCache(ctx, userID, "budget_item", budgetItemID)
+}
+
+// enrichBudgetProto adds conversion fields to a budget proto response
+func (s *budgetService) enrichBudgetProto(ctx context.Context, userID int32, budgetProto *budgetv1.Budget, budgetModel *models.Budget) {
+	if s.currencyCache == nil {
+		return
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	// If same currency, no conversion needed
+	if budgetModel.Currency == user.PreferredCurrency {
+		return
+	}
+
+	// Try to get from cache first
+	convertedTotal, err := s.currencyCache.GetConvertedValue(ctx, userID, "budget", budgetModel.ID, user.PreferredCurrency)
+	if err == nil && convertedTotal > 0 {
+		budgetProto.DisplayTotal = &budgetv1.Money{
+			Amount:   convertedTotal,
+			Currency: user.PreferredCurrency,
+		}
+		budgetProto.DisplayCurrency = user.PreferredCurrency
+	}
+}
+
+// enrichBudgetSliceProto adds conversion fields to a slice of budget proto responses
+func (s *budgetService) enrichBudgetSliceProto(ctx context.Context, userID int32, budgetProtos []*budgetv1.Budget, budgetModels []*models.Budget) {
+	for i, budgetProto := range budgetProtos {
+		if i < len(budgetModels) {
+			s.enrichBudgetProto(ctx, userID, budgetProto, budgetModels[i])
+		}
+	}
+}
+
+// enrichBudgetItemProto adds conversion fields to a budget item proto response
+func (s *budgetService) enrichBudgetItemProto(ctx context.Context, userID int32, itemProto *budgetv1.BudgetItem, itemModel *models.BudgetItem, budgetCurrency string) {
+	if s.currencyCache == nil {
+		return
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	// If same currency, no conversion needed
+	if budgetCurrency == user.PreferredCurrency {
+		return
+	}
+
+	// Try to get from cache first
+	convertedTotal, err := s.currencyCache.GetConvertedValue(ctx, userID, "budget_item", itemModel.ID, user.PreferredCurrency)
+	if err == nil && convertedTotal > 0 {
+		itemProto.DisplayTotal = &budgetv1.Money{
+			Amount:   convertedTotal,
+			Currency: user.PreferredCurrency,
+		}
+		itemProto.DisplayCurrency = user.PreferredCurrency
+	}
+}
+
+// enrichBudgetItemSliceProto adds conversion fields to a slice of budget item proto responses
+func (s *budgetService) enrichBudgetItemSliceProto(ctx context.Context, userID int32, itemProtos []*budgetv1.BudgetItem, itemModels []*models.BudgetItem, budgetCurrency string) {
+	for i, itemProto := range itemProtos {
+		if i < len(itemModels) {
+			s.enrichBudgetItemProto(ctx, userID, itemProto, itemModels[i], budgetCurrency)
+		}
+	}
 }
 

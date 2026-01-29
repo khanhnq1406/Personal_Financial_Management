@@ -43,8 +43,9 @@ func RegisterRoutes(
 	}
 	users.Use(AuthMiddleware())
 	{
-		users.GET("", h.User.GetUser)       // Get current user
-		users.GET("/all", h.User.ListUsers) // List all users (admin)
+		users.GET("", h.User.GetUser)           // Get current user
+		users.GET("/all", h.User.ListUsers)     // List all users (admin)
+		users.PUT("/preferences", h.User.UpdatePreferences) // Update user preferences
 		users.GET("/:email", h.User.GetUserByEmail)
 		users.POST("", h.User.CreateUser)
 		users.PUT("", h.User.UpdateUser)
