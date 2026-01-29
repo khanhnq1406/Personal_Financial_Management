@@ -175,7 +175,7 @@ export default function TransactionPage() {
     sortOrder,
   ]);
 
-  const totalBalance = totalBalanceData?.displayValue?.amount || 0;
+  const totalBalance = totalBalanceData?.displayValue?.amount ?? totalBalanceData?.data?.amount ?? 0;
   const formattedBalance = useMemo(() => {
     return formatCurrency(totalBalance, currency);
   }, [totalBalance, currency]);
@@ -242,7 +242,7 @@ export default function TransactionPage() {
         id: "amount",
         header: "Amount",
         accessorFn: (row: (typeof transactions)[number]) =>
-          formatCurrency(row.displayAmount?.amount || 0, currency),
+          formatCurrency(row.displayAmount?.amount ?? row.amount?.amount ?? 0, currency),
       },
       {
         id: "date",

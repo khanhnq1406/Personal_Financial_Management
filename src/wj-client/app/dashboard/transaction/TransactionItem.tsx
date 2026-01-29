@@ -25,7 +25,7 @@ export const TransactionItem = ({
 }: TransactionItemProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { currency } = useCurrency();
-  const amount = transaction.displayAmount?.amount || 0;
+  const amount = transaction.displayAmount?.amount ?? transaction.amount?.amount ?? 0;
 
   // Determine if this is income or expense based on category type
   const categoryType = transaction.categoryId

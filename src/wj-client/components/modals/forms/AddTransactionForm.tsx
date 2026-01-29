@@ -111,8 +111,8 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
     () =>
       (walletsData?.wallets || []).map((wallet) => ({
         value: wallet.id,
-        label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount || 0, currency)})`,
-        balance: wallet.displayBalance?.amount || 0,
+        label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0, currency)})`,
+        balance: wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
       })),
     [walletsData?.wallets, currency],
   );

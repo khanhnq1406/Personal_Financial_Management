@@ -44,9 +44,9 @@ export function BudgetCard({
   const budgetItems = getBudgetItems.data?.items ?? [];
 
   // Calculate total budget and spent amounts using display values
-  const totalBudget = budget.displayTotal?.amount ?? 0;
+  const totalBudget = budget.displayTotal?.amount ?? budget.total?.amount ?? 0;
   const totalSpent = budgetItems.reduce(
-    (sum, item) => sum + (item.displayTotal?.amount ?? 0),
+    (sum, item) => sum + (item.displayTotal?.amount ?? item.total?.amount ?? 0),
     0,
   );
   const remaining = totalBudget - totalSpent;

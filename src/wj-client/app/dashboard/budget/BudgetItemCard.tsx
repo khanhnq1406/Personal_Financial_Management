@@ -95,7 +95,7 @@ export function BudgetItemCard({
               {item.name}
             </span>
             <span className="text-xs text-gray-500">
-              {formatCurrency(item.displayTotal?.amount ?? 0, currency)}
+              {formatCurrency(item.displayTotal?.amount ?? item.total?.amount ?? 0, currency)}
             </span>
           </div>
         </div>

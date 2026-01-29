@@ -2,7 +2,7 @@ import { InvestmentType } from "@/gen/protobuf/v1/investment";
 import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
 
 // Formatting helpers
-export const formatCurrency = (amount: number, currency: string = "USD"): string => {
+export const formatCurrency = (amount: number, currency: string = "VND"): string => {
   return formatCurrencyUtil(amount, currency);
 };
 
@@ -30,7 +30,7 @@ export const formatPercent = (value: number): string => {
 };
 
 // Format prices with appropriate decimals based on investment type
-export const formatPrice = (price: number, type: InvestmentType, currency: string = "USD"): string => {
+export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND"): string => {
   // Use the multi-currency formatter from utils
   return formatCurrencyUtil(price, currency);
 };

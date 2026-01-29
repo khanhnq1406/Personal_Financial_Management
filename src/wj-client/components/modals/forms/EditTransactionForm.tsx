@@ -148,8 +148,8 @@ export function EditTransactionForm({
   const walletOptions =
     (walletsData?.wallets || []).map((wallet) => ({
       value: String(wallet.id),
-      label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount || 0, currency)})`,
-      balance: wallet.displayBalance?.amount || 0,
+      label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0, currency)})`,
+      balance: wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
     })) || [];
 
   const onSubmit = (data: UpdateTransactionFormInput) => {

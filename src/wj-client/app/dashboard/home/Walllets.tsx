@@ -63,7 +63,7 @@ const Wallets: React.FC<WalletsProps> = memo(function Wallets({
       <WalletItem
         key={wallet.id}
         walletName={wallet.walletName}
-        balance={wallet.displayBalance?.amount ?? 0}
+        balance={wallet.balance?.amount ?? 0}
         currency={currency}
       />
     ));

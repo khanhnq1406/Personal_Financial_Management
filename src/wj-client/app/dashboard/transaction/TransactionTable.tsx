@@ -106,10 +106,16 @@ export const TransactionTable = memo(function TransactionTable({
         header: "Wallet",
         cell: (info) => getWalletName(info.getValue()),
       }),
-      columnHelper.accessor("displayAmount", {
+      columnHelper.display({
         id: "amount",
         header: "Amount",
-        cell: (info) => formatCurrency(info.getValue()?.amount || 0, currency),
+        cell: (info) => {
+          const row = info.row.original;
+          const amountValue = row.displayAmount?.amount ?? row.amount?.amount ?? 0;
+          // Ensure we have a valid number
+          const numericAmount = typeof amountValue === 'number' ? amountValue : Number(amountValue) || 0;
+          return formatCurrency(numericAmount, currency);
+        },
       }),
       columnHelper.accessor("date", {
         id: "date",

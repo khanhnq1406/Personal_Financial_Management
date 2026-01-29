@@ -33,13 +33,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 import {
-  formatCurrency,
   formatPercent,
   formatQuantity,
   getInvestmentTypeLabel,
-  formatPrice,
   formatTimeAgo,
+  formatPrice,
 } from "./helpers";
+import { formatCurrency } from "@/utils/currency-formatter";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   CreateWalletForm,
   AddInvestmentForm,
@@ -83,19 +84,19 @@ EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
 
 // Memoized portfolio summary cards to prevent re-renders
 const PortfolioSummaryCards = memo(
-  ({ portfolioSummary }: { portfolioSummary: any }) => (
+  ({ portfolioSummary, currency }: { portfolioSummary: any; currency: string }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <BaseCard className="p-4">
         <div className="text-sm text-gray-600">Total Value</div>
         <div className="text-2xl font-bold text-gray-900 mt-1">
-          {formatCurrency(portfolioSummary.totalValue || 0)}
+          {formatCurrency(portfolioSummary.totalValue || 0, currency)}
         </div>
       </BaseCard>
 
       <BaseCard className="p-4">
         <div className="text-sm text-gray-600">Total Cost</div>
         <div className="text-2xl font-bold text-gray-900 mt-1">
-          {formatCurrency(portfolioSummary.totalCost || 0)}
+          {formatCurrency(portfolioSummary.totalCost || 0, currency)}
         </div>
       </BaseCard>
 
@@ -108,7 +109,7 @@ const PortfolioSummaryCards = memo(
               : "text-red-600"
           }`}
         >
-          {formatCurrency(portfolioSummary.totalPnl || 0)}
+          {formatCurrency(portfolioSummary.totalPnl || 0, currency)}
         </div>
       </BaseCard>
 
@@ -141,6 +142,7 @@ type InvestmentData = {
 // Column definitions for TanStackTable (memoized to prevent recreation)
 const useInvestmentColumns = (
   onRowClick: (investmentId: number) => void,
+  currency: string,
 ): ColumnDef<InvestmentData>[] => {
   return useMemo(
     () => [
@@ -176,6 +178,7 @@ const useInvestmentColumns = (
           return formatPrice(
             (info.getValue() as number | undefined) || 0,
             row.type as any,
+            currency,
           );
         },
       },
@@ -187,6 +190,7 @@ const useInvestmentColumns = (
           return formatPrice(
             (info.getValue() as number | undefined) || 0,
             row.type as any,
+            currency,
           );
         },
       },
@@ -195,7 +199,7 @@ const useInvestmentColumns = (
         header: "Current Value",
         cell: (info) => (
           <span className="font-medium">
-            {formatCurrency((info.getValue() as number | undefined) || 0)}
+            {formatCurrency((info.getValue() as number | undefined) || 0, currency)}
           </span>
         ),
       },
@@ -210,7 +214,7 @@ const useInvestmentColumns = (
                 : "text-red-600"
             }`}
           >
-            {formatCurrency((info.getValue() as number | undefined) || 0)}
+            {formatCurrency((info.getValue() as number | undefined) || 0, currency)}
           </span>
         ),
       },
@@ -255,13 +259,14 @@ const useInvestmentColumns = (
         },
       },
     ],
-    [onRowClick],
+    [onRowClick, currency],
   );
 };
 
 // Mobile columns for MobileTable
 const useMobileInvestmentColumns = (
   onRowClick: (investmentId: number) => void,
+  currency: string,
 ) => {
   return useMemo(
     () => [
@@ -291,25 +296,25 @@ const useMobileInvestmentColumns = (
         id: "averageCost",
         header: "Avg Cost",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.averageCost || 0, row.type as any),
+          formatPrice(row.averageCost || 0, row.type as any, currency),
       },
       {
         id: "currentPrice",
         header: "Current Price",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.currentPrice || 0, row.type as any),
+          formatPrice(row.currentPrice || 0, row.type as any, currency),
       },
       {
         id: "currentValue",
         header: "Current Value",
         accessorFn: (row: InvestmentData) =>
-          formatCurrency(row.currentValue || 0),
+          formatCurrency(row.currentValue || 0, currency),
       },
       {
         id: "unrealizedPnl",
         header: "PNL",
         accessorFn: (row: InvestmentData) =>
-          formatCurrency(row.unrealizedPnl || 0),
+          formatCurrency(row.unrealizedPnl || 0, currency),
       },
       {
         id: "unrealizedPnlPercent",
@@ -326,7 +331,7 @@ const useMobileInvestmentColumns = (
         },
       },
     ],
-    [],
+    [currency],
   );
 };
 
@@ -336,13 +341,15 @@ const HoldingsTable = memo(
     investments,
     onRowClick,
     onRowHover,
+    currency,
   }: {
     investments: InvestmentData[];
     onRowClick: (investmentId: number) => void;
     onRowHover?: () => void;
+    currency: string;
   }) => {
-    const columns = useInvestmentColumns(onRowClick);
-    const mobileColumns = useMobileInvestmentColumns(onRowClick);
+    const columns = useInvestmentColumns(onRowClick, currency);
+    const mobileColumns = useMobileInvestmentColumns(onRowClick, currency);
 
     return (
       <>
@@ -384,6 +391,7 @@ const HoldingsTable = memo(
 HoldingsTable.displayName = "HoldingsTable";
 
 export default function PortfolioPage() {
+  const { currency } = useCurrency();
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
   const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
     null,
@@ -595,7 +603,7 @@ export default function PortfolioPage() {
               <LoadingSpinner text="Loading summary..." />
             </div>
           ) : portfolioSummary?.data ? (
-            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} />
+            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} currency={currency} />
           ) : null}
 
           {/* Holdings Table */}
@@ -646,6 +654,7 @@ export default function PortfolioPage() {
                   handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
                 }
                 onRowHover={handleRowHover}
+                currency={currency}
               />
             )}
           </BaseCard>

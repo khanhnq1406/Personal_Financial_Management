@@ -55,7 +55,7 @@ export const Dominance = memo(function Dominance({
   const data =
     walletsData?.wallets?.map((wallet) => ({
       name: wallet.walletName,
-      value: wallet.displayBalance?.amount ?? 0,
+      value: wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
     })) ?? [];
 
   const RADIAN = Math.PI / 180;
