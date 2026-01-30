@@ -206,6 +206,8 @@ export interface Investment {
   displayCurrency: string;
   /** Total dividends received */
   totalDividends: number;
+  /** Name of the wallet (for display in "All Wallets" view) */
+  walletName: string;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -463,6 +465,35 @@ export interface SearchSymbolsResponse {
   timestamp: string;
 }
 
+/** ListUserInvestmentsRequest for listing investments across all wallets or filtered */
+export interface ListUserInvestmentsRequest {
+  pagination:
+    | PaginationParams
+    | undefined;
+  /** Optional filter by investment type */
+  typeFilter: InvestmentType;
+  /** Optional: 0 or omitted = all investment wallets */
+  walletId: number;
+}
+
+/** ListUserInvestmentsResponse for user investments list */
+export interface ListUserInvestmentsResponse {
+  success: boolean;
+  message: string;
+  investments: Investment[];
+  totalCount: number;
+  timestamp: string;
+  pagination: PaginationResult | undefined;
+}
+
+/** GetAggregatedPortfolioSummaryRequest for aggregated portfolio summary */
+export interface GetAggregatedPortfolioSummaryRequest {
+  /** Optional: 0 or omitted = aggregate all investment wallets */
+  walletId: number;
+  /** Optional filter by investment type */
+  typeFilter: InvestmentType;
+}
+
 function createBaseInvestment(): Investment {
   return {
     id: 0,
@@ -487,6 +518,7 @@ function createBaseInvestment(): Investment {
     displayRealizedPnl: undefined,
     displayCurrency: "",
     totalDividends: 0,
+    walletName: "",
   };
 }
 
@@ -557,6 +589,9 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.totalDividends !== 0) {
       writer.uint32(176).int64(message.totalDividends);
+    }
+    if (message.walletName !== "") {
+      writer.uint32(186).string(message.walletName);
     }
     return writer;
   },
@@ -744,6 +779,14 @@ export const Investment: MessageFns<Investment> = {
           message.totalDividends = longToNumber(reader.int64());
           continue;
         }
+        case 23: {
+          if (tag !== 186) {
+            break;
+          }
+
+          message.walletName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -779,6 +822,7 @@ export const Investment: MessageFns<Investment> = {
       displayRealizedPnl: isSet(object.displayRealizedPnl) ? Money.fromJSON(object.displayRealizedPnl) : undefined,
       displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
       totalDividends: isSet(object.totalDividends) ? globalThis.Number(object.totalDividends) : 0,
+      walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
     };
   },
 
@@ -850,6 +894,9 @@ export const Investment: MessageFns<Investment> = {
     if (message.totalDividends !== 0) {
       obj.totalDividends = Math.round(message.totalDividends);
     }
+    if (message.walletName !== "") {
+      obj.walletName = message.walletName;
+    }
     return obj;
   },
 
@@ -888,6 +935,7 @@ export const Investment: MessageFns<Investment> = {
       : undefined;
     message.displayCurrency = object.displayCurrency ?? "";
     message.totalDividends = object.totalDividends ?? 0;
+    message.walletName = object.walletName ?? "";
     return message;
   },
 };
@@ -4181,6 +4229,320 @@ export const SearchSymbolsResponse: MessageFns<SearchSymbolsResponse> = {
     message.message = object.message ?? "";
     message.data = object.data?.map((e) => SearchResult.fromPartial(e)) || [];
     message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseListUserInvestmentsRequest(): ListUserInvestmentsRequest {
+  return { pagination: undefined, typeFilter: 0, walletId: 0 };
+}
+
+export const ListUserInvestmentsRequest: MessageFns<ListUserInvestmentsRequest> = {
+  encode(message: ListUserInvestmentsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.pagination !== undefined) {
+      PaginationParams.encode(message.pagination, writer.uint32(10).fork()).join();
+    }
+    if (message.typeFilter !== 0) {
+      writer.uint32(16).int32(message.typeFilter);
+    }
+    if (message.walletId !== 0) {
+      writer.uint32(24).int32(message.walletId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserInvestmentsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserInvestmentsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pagination = PaginationParams.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.typeFilter = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUserInvestmentsRequest {
+    return {
+      pagination: isSet(object.pagination) ? PaginationParams.fromJSON(object.pagination) : undefined,
+      typeFilter: isSet(object.typeFilter) ? investmentTypeFromJSON(object.typeFilter) : 0,
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+    };
+  },
+
+  toJSON(message: ListUserInvestmentsRequest): unknown {
+    const obj: any = {};
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationParams.toJSON(message.pagination);
+    }
+    if (message.typeFilter !== 0) {
+      obj.typeFilter = investmentTypeToJSON(message.typeFilter);
+    }
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserInvestmentsRequest>): ListUserInvestmentsRequest {
+    return ListUserInvestmentsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUserInvestmentsRequest>): ListUserInvestmentsRequest {
+    const message = createBaseListUserInvestmentsRequest();
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationParams.fromPartial(object.pagination)
+      : undefined;
+    message.typeFilter = object.typeFilter ?? 0;
+    message.walletId = object.walletId ?? 0;
+    return message;
+  },
+};
+
+function createBaseListUserInvestmentsResponse(): ListUserInvestmentsResponse {
+  return { success: false, message: "", investments: [], totalCount: 0, timestamp: "", pagination: undefined };
+}
+
+export const ListUserInvestmentsResponse: MessageFns<ListUserInvestmentsResponse> = {
+  encode(message: ListUserInvestmentsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.investments) {
+      Investment.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.totalCount !== 0) {
+      writer.uint32(32).int32(message.totalCount);
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(42).string(message.timestamp);
+    }
+    if (message.pagination !== undefined) {
+      PaginationResult.encode(message.pagination, writer.uint32(50).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserInvestmentsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserInvestmentsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.investments.push(Investment.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.totalCount = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.pagination = PaginationResult.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUserInvestmentsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      investments: globalThis.Array.isArray(object?.investments)
+        ? object.investments.map((e: any) => Investment.fromJSON(e))
+        : [],
+      totalCount: isSet(object.totalCount) ? globalThis.Number(object.totalCount) : 0,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+      pagination: isSet(object.pagination) ? PaginationResult.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ListUserInvestmentsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.investments?.length) {
+      obj.investments = message.investments.map((e) => Investment.toJSON(e));
+    }
+    if (message.totalCount !== 0) {
+      obj.totalCount = Math.round(message.totalCount);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResult.toJSON(message.pagination);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserInvestmentsResponse>): ListUserInvestmentsResponse {
+    return ListUserInvestmentsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUserInvestmentsResponse>): ListUserInvestmentsResponse {
+    const message = createBaseListUserInvestmentsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.investments = object.investments?.map((e) => Investment.fromPartial(e)) || [];
+    message.totalCount = object.totalCount ?? 0;
+    message.timestamp = object.timestamp ?? "";
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResult.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetAggregatedPortfolioSummaryRequest(): GetAggregatedPortfolioSummaryRequest {
+  return { walletId: 0, typeFilter: 0 };
+}
+
+export const GetAggregatedPortfolioSummaryRequest: MessageFns<GetAggregatedPortfolioSummaryRequest> = {
+  encode(message: GetAggregatedPortfolioSummaryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.walletId !== 0) {
+      writer.uint32(8).int32(message.walletId);
+    }
+    if (message.typeFilter !== 0) {
+      writer.uint32(16).int32(message.typeFilter);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAggregatedPortfolioSummaryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAggregatedPortfolioSummaryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.typeFilter = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetAggregatedPortfolioSummaryRequest {
+    return {
+      walletId: isSet(object.walletId) ? globalThis.Number(object.walletId) : 0,
+      typeFilter: isSet(object.typeFilter) ? investmentTypeFromJSON(object.typeFilter) : 0,
+    };
+  },
+
+  toJSON(message: GetAggregatedPortfolioSummaryRequest): unknown {
+    const obj: any = {};
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    if (message.typeFilter !== 0) {
+      obj.typeFilter = investmentTypeToJSON(message.typeFilter);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetAggregatedPortfolioSummaryRequest>): GetAggregatedPortfolioSummaryRequest {
+    return GetAggregatedPortfolioSummaryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetAggregatedPortfolioSummaryRequest>): GetAggregatedPortfolioSummaryRequest {
+    const message = createBaseGetAggregatedPortfolioSummaryRequest();
+    message.walletId = object.walletId ?? 0;
+    message.typeFilter = object.typeFilter ?? 0;
     return message;
   },
 };

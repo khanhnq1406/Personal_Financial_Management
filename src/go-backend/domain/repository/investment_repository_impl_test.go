@@ -498,7 +498,7 @@ func TestInvestmentRepository_ListByUserID(t *testing.T) {
 		WithArgs(1, 2).
 		WillReturnRows(investmentRows)
 
-	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{})
+	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{}, 0)
 
 	assert.NoError(t, err)
 	assert.Len(t, investments, 2)
@@ -523,7 +523,7 @@ func TestInvestmentRepository_ListByUserID_NoWallets(t *testing.T) {
 		WithArgs(10).
 		WillReturnRows(walletRows)
 
-	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{})
+	investments, total, err := repo.ListByUserID(ctx, 10, ListOptions{}, 0)
 
 	assert.NoError(t, err)
 	assert.Len(t, investments, 0)

@@ -644,3 +644,136 @@ func (h *InvestmentHandlers) SearchSymbols(c *gin.Context) {
 
 	handler.Success(c, result)
 }
+
+// ListUserInvestments lists all investments across all user's investment wallets.
+// @Summary List all user investments across all wallets
+// @Tags investments
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param page_size query int false "Page size (default: 100, max: 100)"
+// @Param order_by query string false "Order by field (default: symbol)"
+// @Param order query string false "Order direction (asc or desc, default: asc)"
+// @Param typeFilter query int false "Filter by investment type"
+// @Param walletId query int false "Filter by specific wallet (optional)"
+// @Success 200 {object} types.APIResponse{data=investmentv1.ListUserInvestmentsResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/investments [get]
+func (h *InvestmentHandlers) ListUserInvestments(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Build request
+	var req investmentv1.ListUserInvestmentsRequest
+
+	// Parse pagination parameters
+	pagination := parsePaginationParams(c)
+	req.Pagination = &investmentv1.PaginationParams{
+		Page:     int32(pagination.Page),
+		PageSize: int32(pagination.PageSize),
+		OrderBy:  pagination.OrderBy,
+		Order:    pagination.Order,
+	}
+
+	// Parse optional walletId (support both snake_case and camelCase)
+	walletIDStr := c.Query("walletId")
+	if walletIDStr == "" {
+		walletIDStr = c.Query("wallet_id") // Fallback to snake_case
+	}
+	if walletIDStr != "" {
+		walletID, err := strconv.ParseInt(walletIDStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid walletId parameter"))
+			return
+		}
+		req.WalletId = int32(walletID)
+	}
+
+	// Parse type filter if provided (support both snake_case and camelCase)
+	typeFilterStr := c.Query("typeFilter")
+	if typeFilterStr == "" {
+		typeFilterStr = c.Query("type_filter") // Fallback to snake_case
+	}
+	if typeFilterStr != "" {
+		typeFilter, err := strconv.ParseInt(typeFilterStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid typeFilter parameter"))
+			return
+		}
+		req.TypeFilter = investmentv1.InvestmentType(typeFilter)
+	}
+
+	// Call service
+	result, err := h.investmentService.ListUserInvestments(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
+// GetAggregatedPortfolioSummary retrieves aggregated portfolio summary across all investment wallets.
+// @Summary Get aggregated portfolio summary
+// @Tags investments
+// @Produce json
+// @Param walletId query int false "Filter by specific wallet (optional, 0 or omitted = all wallets)"
+// @Param typeFilter query int false "Filter by investment type"
+// @Success 200 {object} types.APIResponse{data=investmentv1.PortfolioSummary}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/portfolio-summary [get]
+func (h *InvestmentHandlers) GetAggregatedPortfolioSummary(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Build request
+	var req investmentv1.GetAggregatedPortfolioSummaryRequest
+
+	// Parse optional walletId (support both snake_case and camelCase)
+	walletIDStr := c.Query("walletId")
+	if walletIDStr == "" {
+		walletIDStr = c.Query("wallet_id") // Fallback to snake_case
+	}
+	if walletIDStr != "" {
+		walletID, err := strconv.ParseInt(walletIDStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid walletId parameter"))
+			return
+		}
+		req.WalletId = int32(walletID)
+	}
+
+	// Parse type filter if provided (support both snake_case and camelCase)
+	typeFilterStr := c.Query("typeFilter")
+	if typeFilterStr == "" {
+		typeFilterStr = c.Query("type_filter") // Fallback to snake_case
+	}
+	if typeFilterStr != "" {
+		typeFilter, err := strconv.ParseInt(typeFilterStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid typeFilter parameter"))
+			return
+		}
+		req.TypeFilter = investmentv1.InvestmentType(typeFilter)
+	}
+
+	// Call service
+	result, err := h.investmentService.GetAggregatedPortfolioSummary(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}

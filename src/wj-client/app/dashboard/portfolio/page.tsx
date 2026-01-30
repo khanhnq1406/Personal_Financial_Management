@@ -24,14 +24,15 @@ import { ButtonType } from "@/app/constants";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import {
   useQueryListWallets,
-  useQueryGetPortfolioSummary,
-  useQueryListInvestments,
+  useQueryListUserInvestments,
+  useQueryGetAggregatedPortfolioSummary,
   useMutationUpdatePrices,
-  EVENT_InvestmentListInvestments,
-  EVENT_InvestmentGetPortfolioSummary,
+  EVENT_InvestmentListUserInvestments,
+  EVENT_InvestmentGetAggregatedPortfolioSummary,
 } from "@/utils/generated/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
+import { InvestmentType } from "@/gen/protobuf/v1/investment";
 import {
   formatPercent,
   formatQuantity,
@@ -39,6 +40,7 @@ import {
   formatTimeAgo,
   formatPrice,
 } from "./helpers";
+import { Select, SelectOption } from "@/components/select/Select";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
@@ -85,12 +87,30 @@ EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
 // Memoized portfolio summary cards to prevent re-renders
 // Prefers display fields (converted to user's preferred currency) when available
 const PortfolioSummaryCards = memo(
-  ({ portfolioSummary, userCurrency }: { portfolioSummary: any; userCurrency: string }) => {
+  ({
+    portfolioSummary,
+    userCurrency,
+  }: {
+    portfolioSummary: any;
+    userCurrency: string;
+  }) => {
     // Use display fields if available, otherwise fall back to base values
-    const displayValue = portfolioSummary.displayTotalValue?.amount ?? portfolioSummary.totalValue ?? 0;
-    const displayCost = portfolioSummary.displayTotalCost?.amount ?? portfolioSummary.totalCost ?? 0;
-    const displayPnl = portfolioSummary.displayTotalPnl?.amount ?? portfolioSummary.totalPnl ?? 0;
-    const displayCurrency = portfolioSummary.displayCurrency || portfolioSummary.currency || userCurrency;
+    const displayValue =
+      portfolioSummary.displayTotalValue?.amount ??
+      portfolioSummary.totalValue ??
+      0;
+    const displayCost =
+      portfolioSummary.displayTotalCost?.amount ??
+      portfolioSummary.totalCost ??
+      0;
+    const displayPnl =
+      portfolioSummary.displayTotalPnl?.amount ??
+      portfolioSummary.totalPnl ??
+      0;
+    const displayCurrency =
+      portfolioSummary.displayCurrency ||
+      portfolioSummary.currency ||
+      userCurrency;
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,12 +170,15 @@ type InvestmentData = {
   displayCurrentValue?: { amount: number; currency: string };
   displayUnrealizedPnl?: { amount: number; currency: string };
   displayCurrency?: string;
+  // Wallet name for "All Wallets" view
+  walletName?: string;
 };
 
 // Column definitions for TanStackTable (memoized to prevent recreation)
 const useInvestmentColumns = (
   onRowClick: (investmentId: number) => void,
   currency: string,
+  showWalletColumn: boolean,
 ): ColumnDef<InvestmentData>[] => {
   return useMemo(
     () => [
@@ -170,6 +193,18 @@ const useInvestmentColumns = (
         accessorKey: "name",
         header: "Name",
       },
+      // Conditionally include wallet column
+      ...(showWalletColumn
+        ? [
+            {
+              accessorKey: "walletName" as const,
+              header: "Wallet",
+              cell: (info: any) => (
+                <span className="text-gray-600">{info.getValue()}</span>
+              ),
+            },
+          ]
+        : []),
       {
         accessorKey: "type",
         header: "Type",
@@ -223,7 +258,11 @@ const useInvestmentColumns = (
               </span>
               {row.displayCurrentValue && row.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
-                  ≈ {formatCurrency(row.displayCurrentValue.amount || 0, row.displayCurrency)}
+                  ≈{" "}
+                  {formatCurrency(
+                    row.displayCurrentValue.amount || 0,
+                    row.displayCurrency,
+                  )}
                 </span>
               )}
             </div>
@@ -248,7 +287,11 @@ const useInvestmentColumns = (
               </span>
               {row.displayUnrealizedPnl && row.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
-                  ≈ {formatCurrency(row.displayUnrealizedPnl.amount || 0, row.displayCurrency)}
+                  ≈{" "}
+                  {formatCurrency(
+                    row.displayUnrealizedPnl.amount || 0,
+                    row.displayCurrency,
+                  )}
                 </span>
               )}
             </div>
@@ -296,7 +339,7 @@ const useInvestmentColumns = (
         },
       },
     ],
-    [onRowClick, currency],
+    [onRowClick, currency, showWalletColumn],
   );
 };
 
@@ -304,6 +347,7 @@ const useInvestmentColumns = (
 const useMobileInvestmentColumns = (
   onRowClick: (investmentId: number) => void,
   currency: string,
+  showWalletColumn: boolean,
 ) => {
   return useMemo(
     () => [
@@ -317,6 +361,16 @@ const useMobileInvestmentColumns = (
         header: "Name",
         accessorFn: (row: InvestmentData) => row.name,
       },
+      // Conditionally include wallet column
+      ...(showWalletColumn
+        ? [
+            {
+              id: "walletName",
+              header: "Wallet",
+              accessorFn: (row: InvestmentData) => row.walletName || "",
+            },
+          ]
+        : []),
       {
         id: "type",
         header: "Type",
@@ -333,13 +387,21 @@ const useMobileInvestmentColumns = (
         id: "averageCost",
         header: "Avg Cost",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.averageCost || 0, row.type as any, row.currency || "USD"),
+          formatPrice(
+            row.averageCost || 0,
+            row.type as any,
+            row.currency || "USD",
+          ),
       },
       {
         id: "currentPrice",
         header: "Current Price",
         accessorFn: (row: InvestmentData) =>
-          formatPrice(row.currentPrice || 0, row.type as any, row.currency || "USD"),
+          formatPrice(
+            row.currentPrice || 0,
+            row.type as any,
+            row.currency || "USD",
+          ),
       },
       {
         id: "currentValue",
@@ -348,7 +410,10 @@ const useMobileInvestmentColumns = (
           const nativeCurrency = row.currency || "USD";
           const native = formatCurrency(row.currentValue || 0, nativeCurrency);
           if (row.displayCurrentValue && row.displayCurrency) {
-            const converted = formatCurrency(row.displayCurrentValue.amount || 0, row.displayCurrency);
+            const converted = formatCurrency(
+              row.displayCurrentValue.amount || 0,
+              row.displayCurrency,
+            );
             return `${native} (≈ ${converted})`;
           }
           return native;
@@ -361,7 +426,10 @@ const useMobileInvestmentColumns = (
           const nativeCurrency = row.currency || "USD";
           const native = formatCurrency(row.unrealizedPnl || 0, nativeCurrency);
           if (row.displayUnrealizedPnl && row.displayCurrency) {
-            const converted = formatCurrency(row.displayUnrealizedPnl.amount || 0, row.displayCurrency);
+            const converted = formatCurrency(
+              row.displayUnrealizedPnl.amount || 0,
+              row.displayCurrency,
+            );
             return `${native} (≈ ${converted})`;
           }
           return native;
@@ -382,7 +450,7 @@ const useMobileInvestmentColumns = (
         },
       },
     ],
-    [currency],
+    [currency, showWalletColumn],
   );
 };
 
@@ -393,14 +461,24 @@ const HoldingsTable = memo(
     onRowClick,
     onRowHover,
     currency,
+    showWalletColumn = false,
   }: {
     investments: InvestmentData[];
     onRowClick: (investmentId: number) => void;
     onRowHover?: () => void;
     currency: string;
+    showWalletColumn?: boolean;
   }) => {
-    const columns = useInvestmentColumns(onRowClick, currency);
-    const mobileColumns = useMobileInvestmentColumns(onRowClick, currency);
+    const columns = useInvestmentColumns(
+      onRowClick,
+      currency,
+      showWalletColumn,
+    );
+    const mobileColumns = useMobileInvestmentColumns(
+      onRowClick,
+      currency,
+      showWalletColumn,
+    );
 
     return (
       <>
@@ -441,9 +519,37 @@ const HoldingsTable = memo(
 );
 HoldingsTable.displayName = "HoldingsTable";
 
+// Wallet filter value: "all" for all wallets, or wallet ID as string
+type WalletFilterValue = "all" | string;
+
+// Type filter options
+const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
+  { value: "0", label: "All Types" },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY),
+    label: "Cryptocurrency",
+  },
+  { value: String(InvestmentType.INVESTMENT_TYPE_STOCK), label: "Stock" },
+  { value: String(InvestmentType.INVESTMENT_TYPE_ETF), label: "ETF" },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND),
+    label: "Mutual Fund",
+  },
+  { value: String(InvestmentType.INVESTMENT_TYPE_BOND), label: "Bond" },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_COMMODITY),
+    label: "Commodity",
+  },
+  { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
+];
+
 export default function PortfolioPage() {
   const { currency } = useCurrency();
-  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
+  // "all" for all wallets, or wallet ID as string
+  const [selectedWallet, setSelectedWallet] =
+    useState<WalletFilterValue>("all");
+  // Type filter (0 = all types)
+  const [typeFilter, setTypeFilter] = useState<string>("0");
   const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
     null,
   );
@@ -472,50 +578,75 @@ export default function PortfolioPage() {
     );
   }, [getListWallets.data]);
 
-  // Set default wallet if none selected (use functional setState)
-  React.useEffect(() => {
-    setSelectedWalletId((prevId) => {
-      if (!prevId && investmentWallets.length > 0) {
-        return investmentWallets[0].id;
-      }
-      return prevId;
+  // Build wallet filter options
+  const walletOptions = useMemo((): SelectOption<string>[] => {
+    const options: SelectOption<string>[] = [
+      { value: "all", label: "All Investment Wallets" },
+    ];
+    investmentWallets.forEach((wallet) => {
+      options.push({
+        value: String(wallet.id),
+        label: wallet.walletName,
+      });
     });
+    return options;
   }, [investmentWallets]);
 
-  // Fetch portfolio summary for selected wallet
-  const getPortfolioSummary = useQueryGetPortfolioSummary(
-    { walletId: selectedWalletId || 0 },
+  // Computed values for API calls
+  const walletIdForApi = useMemo(() => {
+    if (selectedWallet === "all") return 0;
+    return parseInt(selectedWallet, 10);
+  }, [selectedWallet]);
+
+  const typeFilterForApi = useMemo(() => {
+    return parseInt(
+      typeFilter,
+      10,
+    ) as (typeof InvestmentType)[keyof typeof InvestmentType];
+  }, [typeFilter]);
+
+  const isAllWalletsView = selectedWallet === "all";
+
+  // Fetch portfolio summary (uses aggregated endpoint)
+  const getPortfolioSummary = useQueryGetAggregatedPortfolioSummary(
     {
-      enabled: !!selectedWalletId,
+      walletId: walletIdForApi,
+      typeFilter: typeFilterForApi,
+    },
+    {
+      enabled: investmentWallets.length > 0,
       refetchOnMount: "always",
     },
   );
 
-  // Fetch investments for selected wallet
-  const getListInvestments = useQueryListInvestments(
+  // Fetch investments (uses user investments endpoint)
+  const getListInvestments = useQueryListUserInvestments(
     {
-      walletId: selectedWalletId || 0,
+      walletId: walletIdForApi,
       pagination: { page: 1, pageSize: 100, orderBy: "symbol", order: "asc" },
-      typeFilter: 0,
+      typeFilter: typeFilterForApi,
     },
     {
-      enabled: !!selectedWalletId,
+      enabled: investmentWallets.length > 0,
       refetchOnMount: "always",
     },
   );
 
   // Get selected wallet balance and currency for AddInvestmentForm validation
+  // Only available when a specific wallet is selected (not "all")
   const selectedWalletBalance = useMemo(() => {
-    if (!selectedWalletId) return 0;
-    const wallet = investmentWallets.find((w) => w.id === selectedWalletId);
+    if (isAllWalletsView) return 0;
+    const walletId = parseInt(selectedWallet, 10);
+    const wallet = investmentWallets.find((w) => w.id === walletId);
     return wallet?.balance?.amount || 0;
-  }, [selectedWalletId, investmentWallets]);
+  }, [selectedWallet, investmentWallets, isAllWalletsView]);
 
   const selectedWalletCurrency = useMemo(() => {
-    if (!selectedWalletId) return "USD";
-    const wallet = investmentWallets.find((w) => w.id === selectedWalletId);
+    if (isAllWalletsView) return "USD";
+    const walletId = parseInt(selectedWallet, 10);
+    const wallet = investmentWallets.find((w) => w.id === walletId);
     return wallet?.balance?.currency || "USD";
-  }, [selectedWalletId, investmentWallets]);
+  }, [selectedWallet, investmentWallets, isAllWalletsView]);
 
   // Query client for invalidating queries
   const queryClient = useQueryClient();
@@ -524,11 +655,17 @@ export default function PortfolioPage() {
   const updatePricesMutation = useMutationUpdatePrices({
     onSuccess: (data) => {
       // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentListUserInvestments],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
+      });
 
       // Show success message
-      console.log(`Updated prices for ${data.updatedInvestments?.length || 0} investments`);
+      console.log(
+        `Updated prices for ${data.updatedInvestments?.length || 0} investments`,
+      );
     },
     onError: (error: any) => {
       console.error(`Failed to update prices: ${error.message}`);
@@ -608,7 +745,8 @@ export default function PortfolioPage() {
   }
 
   const portfolioSummary = getPortfolioSummary.data;
-  const investments = (getListInvestments.data?.data || []) as InvestmentData[];
+  const investments = (getListInvestments.data?.investments ||
+    []) as InvestmentData[];
 
   // No investment wallets - render empty state with modal
   if (investmentWallets.length === 0) {
@@ -638,27 +776,43 @@ export default function PortfolioPage() {
       <div className="flex justify-center py-4 px-6">
         <div className="w-full space-y-4">
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-xl font-bold">Investment Portfolio</h1>
 
-            {/* Wallet Selector */}
-            {investmentWallets.length > 1 && (
-              <select
-                value={selectedWalletId || ""}
-                onChange={(e) =>
-                  startTransition(() => {
-                    setSelectedWalletId(Number(e.target.value));
-                  })
-                }
-                className="px-4 py-2 border-2 border-hgreen rounded-md focus:outline-none focus:ring-2 focus:ring-hgreen"
-              >
-                {investmentWallets.map((wallet) => (
-                  <option key={wallet.id} value={wallet.id}>
-                    {wallet.walletName}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {/* Wallet Selector */}
+              <div className="w-full sm:w-56">
+                <Select
+                  options={walletOptions}
+                  value={selectedWallet}
+                  onChange={(value) => {
+                    startTransition(() => {
+                      setSelectedWallet(value as WalletFilterValue);
+                    });
+                  }}
+                  placeholder="Select Wallet"
+                  clearable={false}
+                  disableFilter={true}
+                />
+              </div>
+
+              {/* Type Filter */}
+              <div className="w-full sm:w-44">
+                <Select
+                  options={TYPE_FILTER_OPTIONS}
+                  value={typeFilter}
+                  onChange={(value) => {
+                    startTransition(() => {
+                      setTypeFilter(value);
+                    });
+                  }}
+                  placeholder="Filter by Type"
+                  clearable={false}
+                  disableFilter={true}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Portfolio Summary Cards */}
@@ -667,7 +821,10 @@ export default function PortfolioPage() {
               <LoadingSpinner text="Loading summary..." />
             </div>
           ) : portfolioSummary?.data ? (
-            <PortfolioSummaryCards portfolioSummary={portfolioSummary.data} userCurrency={currency} />
+            <PortfolioSummaryCards
+              portfolioSummary={portfolioSummary.data}
+              userCurrency={currency}
+            />
           ) : null}
 
           {/* Holdings Table */}
@@ -677,23 +834,38 @@ export default function PortfolioPage() {
               <div className="flex gap-2">
                 <Button
                   type={ButtonType.SECONDARY}
-                  onClick={() => updatePricesMutation.mutate({
-                    investmentIds: [], // Empty = update all investments
-                    forceRefresh: true, // Bypass cache for fresh data
-                  })}
+                  onClick={() =>
+                    updatePricesMutation.mutate({
+                      investmentIds: [], // Empty = update all investments
+                      forceRefresh: true, // Bypass cache for fresh data
+                    })
+                  }
                   loading={updatePricesMutation.isPending}
-                  disabled={updatePricesMutation.isPending || !selectedWalletId}
+                  disabled={
+                    updatePricesMutation.isPending ||
+                    investmentWallets.length === 0
+                  }
                   className="w-auto px-4"
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   Refresh Prices
                 </Button>
                 <Button
                   type={ButtonType.PRIMARY}
                   onClick={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
-                  disabled={!selectedWalletId}
+                  disabled={isAllWalletsView}
                   className="w-auto px-4"
                 >
                   Add Investment
@@ -719,6 +891,7 @@ export default function PortfolioPage() {
                 }
                 onRowHover={handleRowHover}
                 currency={currency}
+                showWalletColumn={isAllWalletsView}
               />
             )}
           </BaseCard>
@@ -747,9 +920,9 @@ export default function PortfolioPage() {
             defaultType={WalletType.INVESTMENT}
           />
         )}
-        {modalType === ModalType.ADD_INVESTMENT && selectedWalletId && (
+        {modalType === ModalType.ADD_INVESTMENT && !isAllWalletsView && (
           <AddInvestmentForm
-            walletId={selectedWalletId}
+            walletId={parseInt(selectedWallet, 10)}
             walletBalance={selectedWalletBalance}
             walletCurrency={selectedWalletCurrency}
             onSuccess={handleModalSuccess}

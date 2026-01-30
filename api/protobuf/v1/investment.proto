@@ -32,6 +32,7 @@ message Investment {
   wealthjourney.common.v1.Money displayRealizedPnl = 20 [json_name = "displayRealizedPnl"];  // Realized PNL in user's preferred currency
   string displayCurrency = 21 [json_name = "displayCurrency"];  // User's preferred currency code
   int64 totalDividends = 22 [json_name = "totalDividends"];  // Total dividends received
+  string walletName = 23 [json_name = "walletName"];  // Name of the wallet (for display in "All Wallets" view)
 }
 
 enum InvestmentType {
@@ -186,6 +187,20 @@ service InvestmentService {
   rpc SearchSymbols(SearchSymbolsRequest) returns (SearchSymbolsResponse) {
     option (google.api.http) = {
       get: "/api/v1/investments/symbols/search"
+    };
+  }
+
+  // List all user investments across all wallets (or filtered by wallet)
+  rpc ListUserInvestments(ListUserInvestmentsRequest) returns (ListUserInvestmentsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments"
+    };
+  }
+
+  // Get aggregated portfolio summary across all wallets (or for specific wallet)
+  rpc GetAggregatedPortfolioSummary(GetAggregatedPortfolioSummaryRequest) returns (GetPortfolioSummaryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/portfolio-summary"
     };
   }
 }
@@ -359,4 +374,27 @@ message SearchSymbolsResponse {
   string message = 2 [json_name = "message"];
   repeated SearchResult data = 3 [json_name = "data"];
   string timestamp = 4 [json_name = "timestamp"];
+}
+
+// ListUserInvestmentsRequest for listing investments across all wallets or filtered
+message ListUserInvestmentsRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+  InvestmentType typeFilter = 2 [json_name = "typeFilter"];  // Optional filter by investment type
+  int32 walletId = 3 [json_name = "walletId"];  // Optional: 0 or omitted = all investment wallets
+}
+
+// ListUserInvestmentsResponse for user investments list
+message ListUserInvestmentsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated Investment investments = 3 [json_name = "investments"];
+  int32 totalCount = 4 [json_name = "totalCount"];
+  string timestamp = 5 [json_name = "timestamp"];
+  wealthjourney.common.v1.PaginationResult pagination = 6 [json_name = "pagination"];
+}
+
+// GetAggregatedPortfolioSummaryRequest for aggregated portfolio summary
+message GetAggregatedPortfolioSummaryRequest {
+  int32 walletId = 1 [json_name = "walletId"];  // Optional: 0 or omitted = aggregate all investment wallets
+  InvestmentType typeFilter = 2 [json_name = "typeFilter"];  // Optional filter by investment type
 }

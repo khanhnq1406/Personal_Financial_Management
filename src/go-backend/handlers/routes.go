@@ -136,6 +136,7 @@ func RegisterRoutes(
 	investments.Use(AuthMiddleware())
 	{
 		// Investment management routes
+		investments.GET("", h.Investment.ListUserInvestments) // NEW: List all user investments across all wallets
 		investments.POST("", h.Investment.CreateInvestment)
 		investments.POST("/update-prices", h.Investment.UpdatePrices)
 		// Symbol search routes (must come before :id parameterized route)
@@ -159,5 +160,16 @@ func RegisterRoutes(
 	{
 		investmentTransactions.PUT("/:id", h.Investment.EditTransaction)
 		investmentTransactions.DELETE("/:id", h.Investment.DeleteTransaction)
+	}
+
+	// Aggregated portfolio summary route (protected)
+	// This is a top-level route for getting summary across all wallets
+	portfolioSummary := v1.Group("/portfolio-summary")
+	if rateLimiter != nil {
+		portfolioSummary.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	portfolioSummary.Use(AuthMiddleware())
+	{
+		portfolioSummary.GET("", h.Investment.GetAggregatedPortfolioSummary)
 	}
 }

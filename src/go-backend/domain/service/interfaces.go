@@ -197,6 +197,12 @@ type InvestmentService interface {
 
 	// SearchSymbols searches for investment symbols by query using Yahoo Finance search API.
 	SearchSymbols(ctx context.Context, query string, limit int) (*investmentv1.SearchSymbolsResponse, error)
+
+	// ListUserInvestments retrieves investments across all wallets or filtered by wallet.
+	ListUserInvestments(ctx context.Context, userID int32, req *investmentv1.ListUserInvestmentsRequest) (*investmentv1.ListUserInvestmentsResponse, error)
+
+	// GetAggregatedPortfolioSummary retrieves portfolio summary aggregated across all wallets or for specific wallet.
+	GetAggregatedPortfolioSummary(ctx context.Context, userID int32, req *investmentv1.GetAggregatedPortfolioSummaryRequest) (*investmentv1.GetPortfolioSummaryResponse, error)
 }
 
 // FXRateService defines the interface for foreign exchange rate business logic.

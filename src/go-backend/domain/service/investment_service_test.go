@@ -118,8 +118,8 @@ func (m *MockInvestmentRepository) GetByWalletAndSymbol(ctx context.Context, wal
 	return args.Get(0).(*models.Investment), args.Error(1)
 }
 
-func (m *MockInvestmentRepository) ListByUserID(ctx context.Context, userID int32, opts repository.ListOptions) ([]*models.Investment, int, error) {
-	args := m.Called(ctx, userID, opts)
+func (m *MockInvestmentRepository) ListByUserID(ctx context.Context, userID int32, opts repository.ListOptions, typeFilter investmentv1.InvestmentType) ([]*models.Investment, int, error) {
+	args := m.Called(ctx, userID, opts, typeFilter)
 	return args.Get(0).([]*models.Investment), args.Get(1).(int), args.Error(2)
 }
 
@@ -145,6 +145,14 @@ func (m *MockInvestmentRepository) UpdatePrices(ctx context.Context, updates []r
 
 func (m *MockInvestmentRepository) GetPortfolioSummary(ctx context.Context, walletID int32) (*repository.PortfolioSummary, error) {
 	args := m.Called(ctx, walletID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*repository.PortfolioSummary), args.Error(1)
+}
+
+func (m *MockInvestmentRepository) GetAggregatedPortfolioSummary(ctx context.Context, userID int32, typeFilter investmentv1.InvestmentType) (*repository.PortfolioSummary, error) {
+	args := m.Called(ctx, userID, typeFilter)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

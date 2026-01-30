@@ -74,12 +74,12 @@ func (r *investmentRepository) GetByWalletAndSymbol(ctx context.Context, walletI
 }
 
 // ListByUserID retrieves all investments for a user (via their wallets).
-func (r *investmentRepository) ListByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.Investment, int, error) {
-	// First, get all wallet IDs for the user
+func (r *investmentRepository) ListByUserID(ctx context.Context, userID int32, opts ListOptions, typeFilter v1.InvestmentType) ([]*models.Investment, int, error) {
+	// First, get all investment wallet IDs for the user
 	var walletIDs []int32
 	err := r.db.DB.WithContext(ctx).
 		Model(&models.Wallet{}).
-		Where("user_id = ? AND status = 1", userID).
+		Where("user_id = ? AND status = 1 AND type = ?", userID, v1.WalletType_INVESTMENT).
 		Pluck("id", &walletIDs).Error
 	if err != nil {
 		return nil, 0, apperrors.NewInternalErrorWithCause("failed to get user wallets", err)
@@ -90,22 +90,23 @@ func (r *investmentRepository) ListByUserID(ctx context.Context, userID int32, o
 		return []*models.Investment{}, 0, nil
 	}
 
+	// Build base query
+	query := r.db.DB.WithContext(ctx).Model(&models.Investment{}).Where("wallet_id IN ?", walletIDs)
+
+	// Apply type filter if specified
+	if typeFilter != v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED && typeFilter != 0 {
+		query = query.Where("type = ?", typeFilter)
+	}
+
 	// Get total count
 	var total int64
-	err = r.db.DB.WithContext(ctx).
-		Model(&models.Investment{}).
-		Where("wallet_id IN ?", walletIDs).
-		Count(&total).Error
-	if err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, apperrors.NewInternalErrorWithCause("failed to count investments", err)
 	}
 
 	// Build query with pagination
 	orderClause := r.buildOrderClause(opts)
-	query := r.db.DB.WithContext(ctx).
-		Model(&models.Investment{}).
-		Where("wallet_id IN ?", walletIDs).
-		Order(orderClause)
+	query = query.Order(orderClause)
 	query = r.applyPagination(query, opts)
 
 	// Execute query
@@ -202,6 +203,63 @@ func (r *investmentRepository) UpdatePrices(ctx context.Context, updates []Price
 func (r *investmentRepository) GetPortfolioSummary(ctx context.Context, walletID int32) (*PortfolioSummary, error) {
 	// Get all investments for the wallet
 	investments, _, err := r.ListByWalletID(ctx, walletID, ListOptions{}, v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize summary
+	summary := &PortfolioSummary{
+		TotalValue:        0,
+		TotalCost:         0,
+		TotalPNL:          0,
+		TotalPNLPercent:   0,
+		RealizedPNL:       0,
+		UnrealizedPNL:     0,
+		TotalInvestments:  int32(len(investments)),
+		InvestmentsByType: make(map[v1.InvestmentType]*TypeSummary),
+	}
+
+	// Handle empty portfolio
+	if len(investments) == 0 {
+		return summary, nil
+	}
+
+	// Calculate totals by iterating through investments
+	for _, inv := range investments {
+		summary.TotalValue += inv.CurrentValue
+		summary.TotalCost += inv.TotalCost
+		summary.UnrealizedPNL += inv.UnrealizedPNL
+		summary.RealizedPNL += inv.RealizedPNL
+
+		// Update type-specific totals
+		if _, exists := summary.InvestmentsByType[inv.Type]; !exists {
+			summary.InvestmentsByType[inv.Type] = &TypeSummary{
+				TotalValue: 0,
+				Count:      0,
+			}
+		}
+		summary.InvestmentsByType[inv.Type].TotalValue += inv.CurrentValue
+		summary.InvestmentsByType[inv.Type].Count++
+	}
+
+	// Calculate total PNL
+	summary.TotalPNL = summary.UnrealizedPNL + summary.RealizedPNL
+
+	// Calculate total PNL percent
+	if summary.TotalCost > 0 {
+		summary.TotalPNLPercent = (float64(summary.TotalPNL) / float64(summary.TotalCost)) * 100
+	}
+
+	return summary, nil
+}
+
+// GetAggregatedPortfolioSummary calculates summary stats across all user's investment wallets.
+func (r *investmentRepository) GetAggregatedPortfolioSummary(ctx context.Context, userID int32, typeFilter v1.InvestmentType) (*PortfolioSummary, error) {
+	// Get all investments for the user across all investment wallets
+	investments, _, err := r.ListByUserID(ctx, userID, ListOptions{
+		Limit:  10000, // Large enough to get all investments
+		Offset: 0,
+	}, typeFilter)
 	if err != nil {
 		return nil, err
 	}

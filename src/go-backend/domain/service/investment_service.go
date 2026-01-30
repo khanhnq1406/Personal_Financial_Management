@@ -1608,3 +1608,255 @@ func (s *investmentService) enrichInvestmentSliceProto(ctx context.Context, user
 	}
 }
 
+// ListUserInvestments retrieves investments across all user's investment wallets or filtered by specific wallet.
+func (s *investmentService) ListUserInvestments(ctx context.Context, userID int32, req *investmentv1.ListUserInvestmentsRequest) (*investmentv1.ListUserInvestmentsResponse, error) {
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Parse pagination parameters from protobuf
+	params := types.PaginationParams{
+		Page:     1,
+		PageSize: 100,
+		OrderBy:  "symbol",
+		Order:    "asc",
+	}
+	if req.Pagination != nil {
+		params.Page = int(req.Pagination.Page)
+		params.PageSize = int(req.Pagination.PageSize)
+		if req.Pagination.OrderBy != "" {
+			params.OrderBy = req.Pagination.OrderBy
+		}
+		if req.Pagination.Order != "" {
+			params.Order = req.Pagination.Order
+		}
+	}
+	params = params.Validate()
+
+	opts := repository.ListOptions{
+		Limit:   params.Limit(),
+		Offset:  params.Offset(),
+		OrderBy: params.OrderBy,
+		Order:   params.Order,
+	}
+
+	// Get type filter
+	typeFilter := investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED
+	if req.TypeFilter != 0 {
+		typeFilter = req.TypeFilter
+	}
+
+	var investments []*models.Investment
+	var total int
+	var err error
+
+	if req.WalletId != 0 {
+		// Specific wallet requested - validate ownership and type
+		wallet, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
+		if err != nil {
+			return nil, err
+		}
+		if wallet.Type != walletv1.WalletType_INVESTMENT {
+			return nil, apperrors.NewValidationError("investments can only be listed in investment wallets")
+		}
+		investments, total, err = s.investmentRepo.ListByWalletID(ctx, req.WalletId, opts, typeFilter)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// All investment wallets
+		investments, total, err = s.investmentRepo.ListByUserID(ctx, userID, opts, typeFilter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Build response with wallet names
+	protoInvestments := make([]*investmentv1.Investment, 0, len(investments))
+	for _, inv := range investments {
+		proto := s.mapper.ModelToProto(inv)
+		// Fetch wallet name for display
+		wallet, _ := s.walletRepo.GetByID(ctx, inv.WalletID)
+		if wallet != nil {
+			proto.WalletName = wallet.WalletName
+		}
+		// Enrich with conversion fields
+		s.enrichInvestmentProto(ctx, userID, proto, inv)
+		protoInvestments = append(protoInvestments, proto)
+	}
+
+	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
+
+	return &investmentv1.ListUserInvestmentsResponse{
+		Success:     true,
+		Message:     "Investments retrieved successfully",
+		Investments: protoInvestments,
+		TotalCount:  int32(total),
+		Pagination:  s.mapper.PaginationResultToProto(paginationResult),
+		Timestamp:   time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// GetAggregatedPortfolioSummary retrieves portfolio summary aggregated across all investment wallets or for specific wallet.
+func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, userID int32, req *investmentv1.GetAggregatedPortfolioSummaryRequest) (*investmentv1.GetPortfolioSummaryResponse, error) {
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// If specific wallet requested, delegate to existing GetPortfolioSummary
+	if req.WalletId != 0 {
+		return s.GetPortfolioSummary(ctx, req.WalletId, userID)
+	}
+
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	preferredCurrency := user.PreferredCurrency
+	if preferredCurrency == "" {
+		preferredCurrency = "USD" // Default fallback
+	}
+
+	// Get type filter
+	typeFilter := investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED
+	if req.TypeFilter != 0 {
+		typeFilter = req.TypeFilter
+	}
+
+	// Get all investments for the user across all investment wallets
+	investments, _, err := s.investmentRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit:  10000, // Large enough to get all investments
+		Offset: 0,
+	}, typeFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if prices need refresh (any investment updated > 15 min ago)
+	needsRefresh := false
+	for _, inv := range investments {
+		if time.Since(inv.UpdatedAt) > 15*time.Minute {
+			needsRefresh = true
+			break
+		}
+	}
+
+	// Auto-refresh if stale
+	if needsRefresh && len(investments) > 0 {
+		log.Printf("Auto-refreshing prices for aggregated portfolio")
+		_, err = s.UpdatePrices(ctx, userID, &investmentv1.UpdatePricesRequest{
+			InvestmentIds: []int32{}, // Empty = update all
+			ForceRefresh:  false,     // Use cache if fresh
+		})
+		if err != nil {
+			log.Printf("Warning: failed to auto-refresh prices: %v", err)
+			// Don't fail - continue with stale prices
+		} else {
+			// Re-fetch investments with updated prices
+			investments, _, err = s.investmentRepo.ListByUserID(ctx, userID, repository.ListOptions{
+				Limit:  10000,
+				Offset: 0,
+			}, typeFilter)
+			if err != nil {
+				log.Printf("Warning: failed to re-fetch investments: %v", err)
+			}
+		}
+	}
+
+	// Calculate portfolio summary with currency conversion
+	// All values are converted to user's preferred currency before summing
+	var totalValueInPreferred int64 = 0
+	var totalCostInPreferred int64 = 0
+	var realizedPNLInPreferred int64 = 0
+	var unrealizedPNLInPreferred int64 = 0
+	investmentsByType := make(map[investmentv1.InvestmentType]*investmentv1.InvestmentByType)
+
+	for _, inv := range investments {
+		invCurrency := inv.Currency
+		if invCurrency == "" {
+			invCurrency = "USD"
+		}
+
+		// Convert values to preferred currency if different
+		var currentValue, totalCost, realizedPNL, unrealizedPNL int64
+		if invCurrency == preferredCurrency {
+			currentValue = inv.CurrentValue
+			totalCost = inv.TotalCost
+			realizedPNL = inv.RealizedPNL
+			unrealizedPNL = inv.UnrealizedPNL
+		} else {
+			// Convert each value
+			var convErr error
+			currentValue, convErr = s.fxRateSvc.ConvertAmount(ctx, inv.CurrentValue, invCurrency, preferredCurrency)
+			if convErr != nil {
+				log.Printf("Warning: FX conversion failed for investment %d: %v, using original value", inv.ID, convErr)
+				currentValue = inv.CurrentValue
+			}
+			totalCost, convErr = s.fxRateSvc.ConvertAmount(ctx, inv.TotalCost, invCurrency, preferredCurrency)
+			if convErr != nil {
+				totalCost = inv.TotalCost
+			}
+			realizedPNL, convErr = s.fxRateSvc.ConvertAmount(ctx, inv.RealizedPNL, invCurrency, preferredCurrency)
+			if convErr != nil {
+				realizedPNL = inv.RealizedPNL
+			}
+			unrealizedPNL, convErr = s.fxRateSvc.ConvertAmount(ctx, inv.UnrealizedPNL, invCurrency, preferredCurrency)
+			if convErr != nil {
+				unrealizedPNL = inv.UnrealizedPNL
+			}
+		}
+
+		// Aggregate totals
+		totalValueInPreferred += currentValue
+		totalCostInPreferred += totalCost
+		realizedPNLInPreferred += realizedPNL
+		unrealizedPNLInPreferred += unrealizedPNL
+
+		// Update type-specific totals (in preferred currency)
+		if _, exists := investmentsByType[inv.Type]; !exists {
+			investmentsByType[inv.Type] = &investmentv1.InvestmentByType{
+				Type:       inv.Type,
+				TotalValue: 0,
+				Count:      0,
+			}
+		}
+		investmentsByType[inv.Type].TotalValue += currentValue
+		investmentsByType[inv.Type].Count++
+	}
+
+	// Calculate total PNL
+	totalPNL := unrealizedPNLInPreferred + realizedPNLInPreferred
+
+	// Calculate total PNL percent
+	var totalPNLPercent float64
+	if totalCostInPreferred > 0 {
+		totalPNLPercent = (float64(totalPNL) / float64(totalCostInPreferred)) * 100
+	}
+
+	// Convert map to slice
+	investmentsByTypeSlice := make([]*investmentv1.InvestmentByType, 0, len(investmentsByType))
+	for _, typeSummary := range investmentsByType {
+		investmentsByTypeSlice = append(investmentsByTypeSlice, typeSummary)
+	}
+
+	return &investmentv1.GetPortfolioSummaryResponse{
+		Success: true,
+		Message: "Aggregated portfolio summary retrieved successfully",
+		Data: &investmentv1.PortfolioSummary{
+			TotalValue:        totalValueInPreferred,
+			TotalCost:         totalCostInPreferred,
+			TotalPnl:          totalPNL,
+			TotalPnlPercent:   totalPNLPercent,
+			RealizedPnl:       realizedPNLInPreferred,
+			UnrealizedPnl:     unrealizedPNLInPreferred,
+			TotalInvestments:  int32(len(investments)),
+			InvestmentsByType: investmentsByTypeSlice,
+			// Currency fields - summary is in user's preferred currency
+			Currency:        preferredCurrency,
+			DisplayCurrency: preferredCurrency,
+		},
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+

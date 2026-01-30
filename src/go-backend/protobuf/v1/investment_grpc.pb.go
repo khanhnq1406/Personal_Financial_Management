@@ -19,18 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	InvestmentService_ListInvestments_FullMethodName             = "/wealthjourney.investment.v1.InvestmentService/ListInvestments"
-	InvestmentService_GetInvestment_FullMethodName               = "/wealthjourney.investment.v1.InvestmentService/GetInvestment"
-	InvestmentService_CreateInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/CreateInvestment"
-	InvestmentService_UpdateInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/UpdateInvestment"
-	InvestmentService_DeleteInvestment_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestment"
-	InvestmentService_AddInvestmentTransaction_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/AddInvestmentTransaction"
-	InvestmentService_ListInvestmentTransactions_FullMethodName  = "/wealthjourney.investment.v1.InvestmentService/ListInvestmentTransactions"
-	InvestmentService_EditInvestmentTransaction_FullMethodName   = "/wealthjourney.investment.v1.InvestmentService/EditInvestmentTransaction"
-	InvestmentService_DeleteInvestmentTransaction_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction"
-	InvestmentService_GetPortfolioSummary_FullMethodName         = "/wealthjourney.investment.v1.InvestmentService/GetPortfolioSummary"
-	InvestmentService_UpdatePrices_FullMethodName                = "/wealthjourney.investment.v1.InvestmentService/UpdatePrices"
-	InvestmentService_SearchSymbols_FullMethodName               = "/wealthjourney.investment.v1.InvestmentService/SearchSymbols"
+	InvestmentService_ListInvestments_FullMethodName               = "/wealthjourney.investment.v1.InvestmentService/ListInvestments"
+	InvestmentService_GetInvestment_FullMethodName                 = "/wealthjourney.investment.v1.InvestmentService/GetInvestment"
+	InvestmentService_CreateInvestment_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/CreateInvestment"
+	InvestmentService_UpdateInvestment_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/UpdateInvestment"
+	InvestmentService_DeleteInvestment_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestment"
+	InvestmentService_AddInvestmentTransaction_FullMethodName      = "/wealthjourney.investment.v1.InvestmentService/AddInvestmentTransaction"
+	InvestmentService_ListInvestmentTransactions_FullMethodName    = "/wealthjourney.investment.v1.InvestmentService/ListInvestmentTransactions"
+	InvestmentService_EditInvestmentTransaction_FullMethodName     = "/wealthjourney.investment.v1.InvestmentService/EditInvestmentTransaction"
+	InvestmentService_DeleteInvestmentTransaction_FullMethodName   = "/wealthjourney.investment.v1.InvestmentService/DeleteInvestmentTransaction"
+	InvestmentService_GetPortfolioSummary_FullMethodName           = "/wealthjourney.investment.v1.InvestmentService/GetPortfolioSummary"
+	InvestmentService_UpdatePrices_FullMethodName                  = "/wealthjourney.investment.v1.InvestmentService/UpdatePrices"
+	InvestmentService_SearchSymbols_FullMethodName                 = "/wealthjourney.investment.v1.InvestmentService/SearchSymbols"
+	InvestmentService_ListUserInvestments_FullMethodName           = "/wealthjourney.investment.v1.InvestmentService/ListUserInvestments"
+	InvestmentService_GetAggregatedPortfolioSummary_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/GetAggregatedPortfolioSummary"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -61,6 +63,10 @@ type InvestmentServiceClient interface {
 	UpdatePrices(ctx context.Context, in *UpdatePricesRequest, opts ...grpc.CallOption) (*UpdatePricesResponse, error)
 	// SearchSymbols searches for investment symbols by query
 	SearchSymbols(ctx context.Context, in *SearchSymbolsRequest, opts ...grpc.CallOption) (*SearchSymbolsResponse, error)
+	// List all user investments across all wallets (or filtered by wallet)
+	ListUserInvestments(ctx context.Context, in *ListUserInvestmentsRequest, opts ...grpc.CallOption) (*ListUserInvestmentsResponse, error)
+	// Get aggregated portfolio summary across all wallets (or for specific wallet)
+	GetAggregatedPortfolioSummary(ctx context.Context, in *GetAggregatedPortfolioSummaryRequest, opts ...grpc.CallOption) (*GetPortfolioSummaryResponse, error)
 }
 
 type investmentServiceClient struct {
@@ -179,6 +185,24 @@ func (c *investmentServiceClient) SearchSymbols(ctx context.Context, in *SearchS
 	return out, nil
 }
 
+func (c *investmentServiceClient) ListUserInvestments(ctx context.Context, in *ListUserInvestmentsRequest, opts ...grpc.CallOption) (*ListUserInvestmentsResponse, error) {
+	out := new(ListUserInvestmentsResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_ListUserInvestments_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *investmentServiceClient) GetAggregatedPortfolioSummary(ctx context.Context, in *GetAggregatedPortfolioSummaryRequest, opts ...grpc.CallOption) (*GetPortfolioSummaryResponse, error) {
+	out := new(GetPortfolioSummaryResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_GetAggregatedPortfolioSummary_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvestmentServiceServer is the server API for InvestmentService service.
 // All implementations must embed UnimplementedInvestmentServiceServer
 // for forward compatibility
@@ -207,6 +231,10 @@ type InvestmentServiceServer interface {
 	UpdatePrices(context.Context, *UpdatePricesRequest) (*UpdatePricesResponse, error)
 	// SearchSymbols searches for investment symbols by query
 	SearchSymbols(context.Context, *SearchSymbolsRequest) (*SearchSymbolsResponse, error)
+	// List all user investments across all wallets (or filtered by wallet)
+	ListUserInvestments(context.Context, *ListUserInvestmentsRequest) (*ListUserInvestmentsResponse, error)
+	// Get aggregated portfolio summary across all wallets (or for specific wallet)
+	GetAggregatedPortfolioSummary(context.Context, *GetAggregatedPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error)
 	mustEmbedUnimplementedInvestmentServiceServer()
 }
 
@@ -249,6 +277,12 @@ func (UnimplementedInvestmentServiceServer) UpdatePrices(context.Context, *Updat
 }
 func (UnimplementedInvestmentServiceServer) SearchSymbols(context.Context, *SearchSymbolsRequest) (*SearchSymbolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchSymbols not implemented")
+}
+func (UnimplementedInvestmentServiceServer) ListUserInvestments(context.Context, *ListUserInvestmentsRequest) (*ListUserInvestmentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserInvestments not implemented")
+}
+func (UnimplementedInvestmentServiceServer) GetAggregatedPortfolioSummary(context.Context, *GetAggregatedPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAggregatedPortfolioSummary not implemented")
 }
 func (UnimplementedInvestmentServiceServer) mustEmbedUnimplementedInvestmentServiceServer() {}
 
@@ -479,6 +513,42 @@ func _InvestmentService_SearchSymbols_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InvestmentService_ListUserInvestments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserInvestmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).ListUserInvestments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_ListUserInvestments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).ListUserInvestments(ctx, req.(*ListUserInvestmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InvestmentService_GetAggregatedPortfolioSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAggregatedPortfolioSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).GetAggregatedPortfolioSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_GetAggregatedPortfolioSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).GetAggregatedPortfolioSummary(ctx, req.(*GetAggregatedPortfolioSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InvestmentService_ServiceDesc is the grpc.ServiceDesc for InvestmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -533,6 +603,14 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchSymbols",
 			Handler:    _InvestmentService_SearchSymbols_Handler,
+		},
+		{
+			MethodName: "ListUserInvestments",
+			Handler:    _InvestmentService_ListUserInvestments_Handler,
+		},
+		{
+			MethodName: "GetAggregatedPortfolioSummary",
+			Handler:    _InvestmentService_GetAggregatedPortfolioSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -22,7 +22,7 @@ type InvestmentRepository interface {
 	GetByWalletAndSymbol(ctx context.Context, walletID int32, symbol string) (*models.Investment, error)
 
 	// ListByUserID retrieves all investments for a user (via their wallets).
-	ListByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.Investment, int, error)
+	ListByUserID(ctx context.Context, userID int32, opts ListOptions, typeFilter v1.InvestmentType) ([]*models.Investment, int, error)
 
 	// ListByWalletID retrieves all investments in a wallet.
 	ListByWalletID(ctx context.Context, walletID int32, opts ListOptions, typeFilter v1.InvestmentType) ([]*models.Investment, int, error)
@@ -38,6 +38,9 @@ type InvestmentRepository interface {
 
 	// GetPortfolioSummary calculates summary stats for a wallet.
 	GetPortfolioSummary(ctx context.Context, walletID int32) (*PortfolioSummary, error)
+
+	// GetAggregatedPortfolioSummary calculates summary stats across all user's investment wallets.
+	GetAggregatedPortfolioSummary(ctx context.Context, userID int32, typeFilter v1.InvestmentType) (*PortfolioSummary, error)
 }
 
 // PriceUpdate represents a price update for an investment.
