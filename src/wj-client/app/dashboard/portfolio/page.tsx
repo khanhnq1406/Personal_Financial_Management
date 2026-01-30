@@ -865,7 +865,6 @@ export default function PortfolioPage() {
                 <Button
                   type={ButtonType.PRIMARY}
                   onClick={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
-                  disabled={isAllWalletsView}
                   className="w-auto px-4"
                 >
                   Add Investment
@@ -920,11 +919,11 @@ export default function PortfolioPage() {
             defaultType={WalletType.INVESTMENT}
           />
         )}
-        {modalType === ModalType.ADD_INVESTMENT && !isAllWalletsView && (
+        {modalType === ModalType.ADD_INVESTMENT && (
           <AddInvestmentForm
-            walletId={parseInt(selectedWallet, 10)}
-            walletBalance={selectedWalletBalance}
-            walletCurrency={selectedWalletCurrency}
+            walletId={!isAllWalletsView ? parseInt(selectedWallet, 10) : undefined}
+            walletBalance={!isAllWalletsView ? selectedWalletBalance : undefined}
+            walletCurrency={!isAllWalletsView ? selectedWalletCurrency : undefined}
             onSuccess={handleModalSuccess}
           />
         )}

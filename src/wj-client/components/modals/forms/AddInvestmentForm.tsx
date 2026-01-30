@@ -9,15 +9,20 @@ import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
+import { Select, SelectOption as SelectComponentOption } from "@/components/select/Select";
 import { Success } from "@/components/modals/Success";
 import { SymbolAutocomplete } from "@/components/forms/SymbolAutocomplete";
 import {
   useMutationCreateInvestment,
+  useQueryListWallets,
   EVENT_InvestmentCreateInvestment,
   EVENT_InvestmentListInvestments,
   EVENT_InvestmentGetPortfolioSummary,
+  EVENT_InvestmentListUserInvestments,
+  EVENT_InvestmentGetAggregatedPortfolioSummary,
   EVENT_WalletListWallets,
 } from "@/utils/generated/hooks";
+import { WalletType } from "@/gen/protobuf/v1/wallet";
 import { InvestmentType, SearchResult } from "@/gen/protobuf/v1/investment";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,7 +41,7 @@ import { CurrencyBadge } from "@/components/forms/CurrencyBadge";
 import { useExchangeRate, convertAmount, formatExchangeRate } from "@/hooks/useExchangeRate";
 
 interface AddInvestmentFormProps {
-  walletId: number;
+  walletId?: number; // Optional: if not provided, user must select from dropdown
   walletBalance?: number;  // Wallet balance in smallest currency unit
   walletCurrency?: string; // Currency of the wallet (ISO 4217)
   onSuccess?: () => void;
@@ -59,9 +64,9 @@ const investmentTypeOptions: SelectOption[] = [
 ];
 
 export function AddInvestmentForm({
-  walletId,
-  walletBalance = 0,
-  walletCurrency = "USD",
+  walletId: propWalletId,
+  walletBalance: propWalletBalance,
+  walletCurrency: propWalletCurrency,
   onSuccess,
 }: AddInvestmentFormProps) {
   const queryClient = useQueryClient();
@@ -69,12 +74,56 @@ export function AddInvestmentForm({
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [insufficientBalance, setInsufficientBalance] = useState(false);
+  // Local wallet selection state (used when walletId not provided)
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(propWalletId ?? null);
+
+  // Fetch user's wallets if walletId not provided
+  const getListWallets = useQueryListWallets(
+    {
+      pagination: {
+        page: 1,
+        pageSize: 100,
+        orderBy: "created_at",
+        order: "desc",
+      },
+    },
+    {
+      refetchOnMount: "always",
+      enabled: propWalletId === undefined, // Only fetch if no wallet provided
+    },
+  );
+
+  // Filter for investment wallets
+  const investmentWallets = useMemo(() => {
+    if (!getListWallets.data?.wallets) return [];
+    return getListWallets.data.wallets.filter(
+      (wallet) => wallet.type === WalletType.INVESTMENT,
+    );
+  }, [getListWallets.data]);
+
+  // Determine the active wallet ID (either from props or from selector)
+  const walletId = propWalletId ?? selectedWalletId;
+
+  // Get wallet balance and currency from selected wallet or props
+  const walletBalance = useMemo(() => {
+    if (propWalletBalance !== undefined) return propWalletBalance;
+    if (!walletId) return 0;
+    const wallet = investmentWallets.find((w) => w.id === walletId);
+    return wallet?.balance?.amount || 0;
+  }, [propWalletBalance, walletId, investmentWallets]);
+
+  const walletCurrency = useMemo(() => {
+    if (propWalletCurrency !== undefined) return propWalletCurrency;
+    if (!walletId) return "USD";
+    const wallet = investmentWallets.find((w) => w.id === walletId);
+    return wallet?.balance?.currency || "USD";
+  }, [propWalletCurrency, walletId, investmentWallets]);
 
   const createInvestmentMutation = useMutationCreateInvestment({
     onSuccess: (data) => {
       setSuccessMessage(data.message || "Investment created successfully");
       setShowSuccess(true);
-      // Invalidate queries
+      // Invalidate queries (both old and new aggregated endpoints)
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey[0] as string;
@@ -82,6 +131,8 @@ export function AddInvestmentForm({
             EVENT_InvestmentCreateInvestment,
             EVENT_InvestmentListInvestments,
             EVENT_InvestmentGetPortfolioSummary,
+            EVENT_InvestmentListUserInvestments,
+            EVENT_InvestmentGetAggregatedPortfolioSummary,
             EVENT_WalletListWallets,
           ].includes(key);
         },
@@ -169,6 +220,12 @@ export function AddInvestmentForm({
   const onSubmit = (data: CreateInvestmentFormInput) => {
     setErrorMessage(undefined);
 
+    // Validate wallet is selected
+    if (!walletId) {
+      setErrorMessage("Please select a wallet");
+      return;
+    }
+
     // Convert to API format using utility functions
     createInvestmentMutation.mutate({
       walletId,
@@ -181,13 +238,44 @@ export function AddInvestmentForm({
     });
   };
 
-  // Show success state
+  // Build wallet options for selector
+  const walletSelectOptions = useMemo((): SelectComponentOption<string>[] => {
+    return investmentWallets.map((wallet) => ({
+      value: String(wallet.id),
+      label: wallet.walletName,
+    }));
+  }, [investmentWallets]);
+
+  // Show success state (AFTER all hooks have been called)
   if (showSuccess) {
     return <Success message={successMessage} onDone={onSuccess} />;
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Wallet Selector - only shown when walletId not provided */}
+      {propWalletId === undefined && (
+        <div className="mb-4">
+          <Label htmlFor="wallet" required>
+            Investment Wallet
+          </Label>
+          <Select
+            options={walletSelectOptions}
+            value={selectedWalletId ? String(selectedWalletId) : undefined}
+            onChange={(value) => setSelectedWalletId(parseInt(value, 10))}
+            placeholder="Select investment wallet"
+            disabled={isSubmitting || getListWallets.isLoading}
+            isLoading={getListWallets.isLoading}
+            clearable={false}
+            disableFilter={true}
+            className="mt-1"
+          />
+          {!walletId && (
+            <ErrorMessage id="wallet-error">Please select a wallet</ErrorMessage>
+          )}
+        </div>
+      )}
+
       {/* Symbol */}
       <div className="mb-4">
         <Label htmlFor="symbol" required>
