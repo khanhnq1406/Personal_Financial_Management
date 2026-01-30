@@ -117,14 +117,19 @@ export function centsToDollars(cents: number): number {
 
 /**
  * Format currency for display
+ * Converts from smallest currency unit to display format
  */
-export function formatCurrency(cents: number, currency: string = "USD"): string {
+export function formatCurrency(amount: number, currency: string = "USD"): string {
+  const decimals = getCurrencyDecimals(currency);
+  const divider = Math.pow(10, decimals);
+  const value = amount / divider;
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(centsToDollars(cents));
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 /**
