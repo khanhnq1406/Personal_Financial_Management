@@ -504,6 +504,19 @@ export default function PortfolioPage() {
     },
   );
 
+  // Get selected wallet balance and currency for AddInvestmentForm validation
+  const selectedWalletBalance = useMemo(() => {
+    if (!selectedWalletId) return 0;
+    const wallet = investmentWallets.find((w) => w.id === selectedWalletId);
+    return wallet?.balance?.amount || 0;
+  }, [selectedWalletId, investmentWallets]);
+
+  const selectedWalletCurrency = useMemo(() => {
+    if (!selectedWalletId) return "USD";
+    const wallet = investmentWallets.find((w) => w.id === selectedWalletId);
+    return wallet?.balance?.currency || "USD";
+  }, [selectedWalletId, investmentWallets]);
+
   // Query client for invalidating queries
   const queryClient = useQueryClient();
 
@@ -737,6 +750,8 @@ export default function PortfolioPage() {
         {modalType === ModalType.ADD_INVESTMENT && selectedWalletId && (
           <AddInvestmentForm
             walletId={selectedWalletId}
+            walletBalance={selectedWalletBalance}
+            walletCurrency={selectedWalletCurrency}
             onSuccess={handleModalSuccess}
           />
         )}

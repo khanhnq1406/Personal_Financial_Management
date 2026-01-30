@@ -204,6 +204,8 @@ export interface Investment {
     | undefined;
   /** User's preferred currency code */
   displayCurrency: string;
+  /** Total dividends received */
+  totalDividends: number;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -484,6 +486,7 @@ function createBaseInvestment(): Investment {
     displayUnrealizedPnl: undefined,
     displayRealizedPnl: undefined,
     displayCurrency: "",
+    totalDividends: 0,
   };
 }
 
@@ -551,6 +554,9 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.displayCurrency !== "") {
       writer.uint32(170).string(message.displayCurrency);
+    }
+    if (message.totalDividends !== 0) {
+      writer.uint32(176).int64(message.totalDividends);
     }
     return writer;
   },
@@ -730,6 +736,14 @@ export const Investment: MessageFns<Investment> = {
           message.displayCurrency = reader.string();
           continue;
         }
+        case 22: {
+          if (tag !== 176) {
+            break;
+          }
+
+          message.totalDividends = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -764,6 +778,7 @@ export const Investment: MessageFns<Investment> = {
         : undefined,
       displayRealizedPnl: isSet(object.displayRealizedPnl) ? Money.fromJSON(object.displayRealizedPnl) : undefined,
       displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
+      totalDividends: isSet(object.totalDividends) ? globalThis.Number(object.totalDividends) : 0,
     };
   },
 
@@ -832,6 +847,9 @@ export const Investment: MessageFns<Investment> = {
     if (message.displayCurrency !== "") {
       obj.displayCurrency = message.displayCurrency;
     }
+    if (message.totalDividends !== 0) {
+      obj.totalDividends = Math.round(message.totalDividends);
+    }
     return obj;
   },
 
@@ -869,6 +887,7 @@ export const Investment: MessageFns<Investment> = {
       ? Money.fromPartial(object.displayRealizedPnl)
       : undefined;
     message.displayCurrency = object.displayCurrency ?? "";
+    message.totalDividends = object.totalDividends ?? 0;
     return message;
   },
 };

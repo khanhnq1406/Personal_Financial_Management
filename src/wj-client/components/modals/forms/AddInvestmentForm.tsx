@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
@@ -28,13 +28,17 @@ import {
   quantityToStorage,
   amountToSmallestUnit,
   getQuantityInputConfig,
+  formatCurrency,
 } from "@/lib/utils/units";
 import { Label } from "@/components/forms/Label";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
 import { CurrencyBadge } from "@/components/forms/CurrencyBadge";
+import { useExchangeRate, convertAmount, formatExchangeRate } from "@/hooks/useExchangeRate";
 
 interface AddInvestmentFormProps {
   walletId: number;
+  walletBalance?: number;  // Wallet balance in smallest currency unit
+  walletCurrency?: string; // Currency of the wallet (ISO 4217)
   onSuccess?: () => void;
 }
 
@@ -56,12 +60,15 @@ const investmentTypeOptions: SelectOption[] = [
 
 export function AddInvestmentForm({
   walletId,
+  walletBalance = 0,
+  walletCurrency = "USD",
   onSuccess,
 }: AddInvestmentFormProps) {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [insufficientBalance, setInsufficientBalance] = useState(false);
 
   const createInvestmentMutation = useMutationCreateInvestment({
     onSuccess: (data) => {
@@ -108,7 +115,45 @@ export function AddInvestmentForm({
   // Watch investment type to update quantity input config dynamically
   const investmentType = watch("type");
   const currency = watch("currency");
+  const initialCost = watch("initialCost");
   const quantityConfig = getQuantityInputConfig(investmentType);
+
+  // Fetch exchange rate when currencies differ
+  const currenciesMatch = currency === walletCurrency;
+  const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
+    walletCurrency,
+    currency
+  );
+
+  // Calculate initial cost in smallest unit for balance validation
+  const initialCostInSmallestUnit = useMemo(() => {
+    return amountToSmallestUnit(Number(initialCost) || 0, currency);
+  }, [initialCost, currency]);
+
+  // Convert wallet balance to investment currency for comparison
+  const walletBalanceInInvestmentCurrency = useMemo(() => {
+    if (currenciesMatch || !exchangeRate) {
+      return walletBalance;
+    }
+    return convertAmount(walletBalance, exchangeRate, walletCurrency, currency);
+  }, [walletBalance, exchangeRate, walletCurrency, currency, currenciesMatch]);
+
+  // Check for insufficient balance (with currency conversion when needed)
+  useEffect(() => {
+    if (currenciesMatch) {
+      setInsufficientBalance(
+        initialCostInSmallestUnit > walletBalance && walletBalance > 0
+      );
+    } else if (exchangeRate) {
+      // Compare in investment currency
+      setInsufficientBalance(
+        initialCostInSmallestUnit > walletBalanceInInvestmentCurrency && walletBalance > 0
+      );
+    } else {
+      // No rate available yet, don't block submission
+      setInsufficientBalance(false);
+    }
+  }, [initialCostInSmallestUnit, walletBalance, walletBalanceInInvestmentCurrency, currenciesMatch, exchangeRate]);
 
   // Handle symbol selection - auto-fill name and currency from search result
   const handleSymbolChange = (symbol: string, result?: SearchResult) => {
@@ -226,6 +271,73 @@ export function AddInvestmentForm({
         </p>
       </div>
 
+      {/* Balance Preview - same currency */}
+      {walletBalance > 0 && currenciesMatch && (
+        <div className="mt-4 p-3 bg-gray-50 rounded-md">
+          <div className="flex justify-between text-sm">
+            <span>Wallet Balance:</span>
+            <span>{formatCurrency(walletBalance, walletCurrency)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Initial Cost:</span>
+            <span className="text-red-600">-{formatCurrency(initialCostInSmallestUnit, currency)}</span>
+          </div>
+          <hr className="my-2" />
+          <div className="flex justify-between font-medium">
+            <span>Remaining:</span>
+            <span className={walletBalance - initialCostInSmallestUnit < 0 ? "text-red-600" : "text-green-600"}>
+              {formatCurrency(walletBalance - initialCostInSmallestUnit, currency)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Balance Preview - different currencies with conversion */}
+      {walletBalance > 0 && !currenciesMatch && (
+        <div className="mt-4 p-3 bg-gray-50 rounded-md">
+          <div className="flex justify-between text-sm">
+            <span>Wallet Balance:</span>
+            <span>
+              {formatCurrency(walletBalance, walletCurrency)}
+              {exchangeRate && (
+                <span className="text-gray-500 ml-1">
+                  (≈ {formatCurrency(walletBalanceInInvestmentCurrency, currency)})
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Initial Cost:</span>
+            <span className="text-red-600">-{formatCurrency(initialCostInSmallestUnit, currency)}</span>
+          </div>
+          <hr className="my-2" />
+          <div className="flex justify-between font-medium">
+            <span>Remaining:</span>
+            {isLoadingRate ? (
+              <span className="text-gray-400">Loading rate...</span>
+            ) : exchangeRate ? (
+              <span className={walletBalanceInInvestmentCurrency - initialCostInSmallestUnit < 0 ? "text-red-600" : "text-green-600"}>
+                ≈ {formatCurrency(walletBalanceInInvestmentCurrency - initialCostInSmallestUnit, currency)}
+              </span>
+            ) : (
+              <span className="text-gray-400">Rate unavailable</span>
+            )}
+          </div>
+          {exchangeRate && (
+            <p className="text-xs text-gray-500 mt-2">
+              Exchange rate: 1 {walletCurrency} ≈ {formatExchangeRate(exchangeRate)} {currency}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Insufficient balance error */}
+      {insufficientBalance && (
+        <p className="text-red-600 text-sm mt-2">
+          Insufficient wallet balance for this investment.
+        </p>
+      )}
+
       {/* Error message */}
       {errorMessage && (
         <div className="bg-red-50 border border-lred text-lred px-4 py-3 rounded">
@@ -238,6 +350,7 @@ export function AddInvestmentForm({
         type={ButtonType.PRIMARY}
         onClick={handleSubmit(onSubmit)}
         loading={createInvestmentMutation.isPending || isSubmitting}
+        disabled={insufficientBalance}
         className="w-full"
       >
         Add Investment

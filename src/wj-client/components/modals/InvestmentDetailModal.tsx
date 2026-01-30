@@ -16,6 +16,7 @@ import {
   useMutationUpdatePrices,
   useMutationDeleteInvestmentTransaction,
   useMutationDeleteInvestment,
+  useQueryGetWallet,
   EVENT_InvestmentGetInvestment,
   EVENT_InvestmentListInvestments,
   EVENT_InvestmentGetPortfolioSummary,
@@ -88,6 +89,16 @@ export function InvestmentDetailModal({
       refetchOnMount: "always",
     },
   );
+
+  const investment = getInvestment.data?.data;
+
+  // Fetch wallet balance and currency for balance validation in AddInvestmentTransactionForm
+  const getWallet = useQueryGetWallet(
+    { walletId: investment?.walletId || 0 },
+    { enabled: !!investment?.walletId },
+  );
+  const walletBalance = getWallet.data?.data?.balance?.amount || 0;
+  const walletCurrency = getWallet.data?.data?.balance?.currency || "USD";
 
   // Mutation for updating investment prices
   const updatePricesMutation = useMutationUpdatePrices({
@@ -167,7 +178,6 @@ export function InvestmentDetailModal({
     },
   );
 
-  const investment = getInvestment.data?.data;
   const transactions = getListInvestmentTransactions.data?.data || [];
 
   // Define table columns using ColumnDef
@@ -550,6 +560,12 @@ export function InvestmentDetailModal({
                     )}
                   </div>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Dividends</span>
+                  <span className="font-semibold text-green-600">
+                    {formatCurrency(investment.totalDividends || 0, investment.currency || "USD")}
+                  </span>
+                </div>
               </div>
 
               {/* Delete Investment Section */}
@@ -611,6 +627,8 @@ export function InvestmentDetailModal({
               investmentId={investmentId}
               investmentType={investment.type}
               investmentCurrency={investment.currency || "USD"}
+              walletBalance={walletBalance}
+              walletCurrency={walletCurrency}
               onSuccess={handleTransactionSuccess}
             />
           )}

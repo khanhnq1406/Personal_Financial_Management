@@ -88,6 +88,12 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		return nil, apperrors.NewValidationError("investments can only be created in investment wallets")
 	}
 
+	// 3.5. Check wallet has sufficient balance for initial investment
+	if wallet.Balance < req.InitialCost {
+		return nil, apperrors.NewValidationError(
+			fmt.Sprintf("Insufficient balance: have %d, need %d", wallet.Balance, req.InitialCost))
+	}
+
 	// 4. Check for duplicate symbol in wallet
 	existing, err := s.investmentRepo.GetByWalletAndSymbol(ctx, req.WalletId, req.Symbol)
 	if err == nil && existing != nil {
@@ -162,6 +168,16 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	if err := s.txRepo.Update(ctx, tx); err != nil {
 		// Log error but don't fail - transaction is created
 		fmt.Printf("Warning: failed to update transaction with lot ID: %v\n", err)
+	}
+
+	// 11. Deduct initial cost from wallet balance
+	_, err = s.walletRepo.UpdateBalance(ctx, req.WalletId, -req.InitialCost)
+	if err != nil {
+		// Rollback: delete the investment, transaction, and lot
+		_ = s.txRepo.Delete(ctx, tx.ID)
+		_ = s.txRepo.DeleteLotsByInvestmentID(ctx, investment.ID)
+		_ = s.investmentRepo.Delete(ctx, investment.ID)
+		return nil, apperrors.NewInternalErrorWithCause("failed to deduct from wallet balance", err)
 	}
 
 	// Populate currency cache
@@ -420,6 +436,21 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 			return nil, err
 		}
 
+	case investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND:
+		var tx *models.InvestmentTransaction
+		updatedInvestment, tx, err = s.processDividendTransaction(ctx, investment, req)
+		if err != nil {
+			return nil, err
+		}
+		// Return early with the transaction for dividend
+		return &investmentv1.AddTransactionResponse{
+			Success:           true,
+			Message:           "Dividend transaction added successfully",
+			Data:              s.mapper.TransactionToProto(tx),
+			UpdatedInvestment: s.mapper.ModelToProto(updatedInvestment),
+			Timestamp:         time.Now().Format(time.RFC3339),
+		}, nil
+
 	default:
 		return nil, apperrors.NewValidationError("unsupported transaction type")
 	}
@@ -462,6 +493,16 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 
 // processBuyTransaction handles a buy transaction with lot creation.
 func (s *investmentService) processBuyTransaction(ctx context.Context, investment *models.Investment, req *investmentv1.AddTransactionRequest, cost, totalCost int64) (*models.Investment, error) {
+	// Fetch wallet to check balance
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+	if wallet.Balance < totalCost {
+		return nil, apperrors.NewValidationError(
+			fmt.Sprintf("Insufficient balance: have %d, need %d", wallet.Balance, totalCost))
+	}
+
 	// Get open lots to see if we can update the most recent one
 	openLots, err := s.txRepo.GetOpenLots(ctx, investment.ID)
 	if err != nil {
@@ -532,6 +573,11 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		return nil, apperrors.NewInternalErrorWithCause("failed to create transaction", err)
 	}
 
+	// Store original values for potential rollback
+	originalQuantity := investment.Quantity
+	originalTotalCost := investment.TotalCost
+	originalAverageCost := investment.AverageCost
+
 	// Update investment
 	investment.Quantity += req.Quantity
 	investment.TotalCost += totalCost
@@ -540,6 +586,17 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
+	}
+
+	// Deduct from wallet balance
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -totalCost)
+	if err != nil {
+		// Rollback investment changes
+		investment.Quantity = originalQuantity
+		investment.TotalCost = originalTotalCost
+		investment.AverageCost = originalAverageCost
+		_ = s.investmentRepo.Update(ctx, investment)
+		return nil, apperrors.NewInternalErrorWithCause("failed to deduct from wallet balance", err)
 	}
 
 	return investment, nil
@@ -638,6 +695,10 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		return nil, apperrors.NewInternalErrorWithCause("failed to create transaction", err)
 	}
 
+	// Store original values for potential rollback
+	originalQuantity := investment.Quantity
+	originalRealizedPNL := investment.RealizedPNL
+
 	// Update investment
 	investment.Quantity -= req.Quantity
 	investment.RealizedPNL += realizedPNL
@@ -662,7 +723,67 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
 	}
 
+	// Calculate net proceeds (sell value minus fees) and credit to wallet balance
+	proceeds := tx.Cost - tx.Fees
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, proceeds)
+	if err != nil {
+		// Rollback investment changes
+		investment.Quantity = originalQuantity
+		investment.RealizedPNL = originalRealizedPNL
+		_ = s.investmentRepo.Update(ctx, investment)
+		return nil, apperrors.NewInternalErrorWithCause("failed to credit wallet balance", err)
+	}
+
 	return investment, nil
+}
+
+// processDividendTransaction handles dividend transactions
+// Dividend calculation: totalDividend = quantity × price
+// - quantity = number of shares at dividend date
+// - price = dividend per share (e.g., $0.50 per share)
+func (s *investmentService) processDividendTransaction(ctx context.Context, investment *models.Investment, req *investmentv1.AddTransactionRequest) (*models.Investment, *models.InvestmentTransaction, error) {
+	// Calculate total dividend amount
+	totalDividend := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
+
+	// Create dividend transaction record
+	tx := &models.InvestmentTransaction{
+		InvestmentID:    investment.ID,
+		WalletID:        investment.WalletID,
+		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+		Quantity:        req.Quantity,
+		Price:           req.Price,
+		Cost:            totalDividend,
+		Fees:            0, // Dividends typically have no fees
+		TransactionDate: time.Unix(req.TransactionDate, 0),
+		Notes:           req.Notes,
+	}
+
+	if err := s.txRepo.Create(ctx, tx); err != nil {
+		return nil, nil, apperrors.NewInternalErrorWithCause("failed to create dividend transaction", err)
+	}
+
+	// Store original value for rollback
+	originalTotalDividends := investment.TotalDividends
+
+	// Update investment's total dividends
+	investment.TotalDividends += totalDividend
+	if err := s.investmentRepo.Update(ctx, investment); err != nil {
+		// Rollback: delete transaction
+		_ = s.txRepo.Delete(ctx, tx.ID)
+		return nil, nil, apperrors.NewInternalErrorWithCause("failed to update investment dividends", err)
+	}
+
+	// Credit dividend amount to wallet balance
+	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, totalDividend)
+	if err != nil {
+		// Rollback: restore investment and delete transaction
+		investment.TotalDividends = originalTotalDividends
+		_ = s.investmentRepo.Update(ctx, investment)
+		_ = s.txRepo.Delete(ctx, tx.ID)
+		return nil, nil, apperrors.NewInternalErrorWithCause("failed to credit wallet balance", err)
+	}
+
+	return investment, tx, nil
 }
 
 // ListTransactions retrieves transactions for an investment.
@@ -785,8 +906,12 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 		if err := s.reverseSellTransaction(ctx, investment, tx); err != nil {
 			return nil, err
 		}
+	case investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND:
+		if err := s.reverseDividendTransaction(ctx, investment, tx); err != nil {
+			return nil, err
+		}
 	default:
-		// For dividend/split, just delete the transaction without recalculation
+		// For split and other types, just delete the transaction without recalculation
 	}
 
 	// Delete transaction
@@ -851,6 +976,13 @@ func (s *investmentService) reverseBuyTransaction(ctx context.Context, investmen
 		return apperrors.NewInternalErrorWithCause("failed to update investment", err)
 	}
 
+	// Refund the cost back to wallet (cost + fees = totalCost)
+	refundAmount := tx.Cost + tx.Fees
+	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, refundAmount)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to refund wallet balance", err)
+	}
+
 	return nil
 }
 
@@ -904,6 +1036,36 @@ func (s *investmentService) reverseSellTransaction(ctx context.Context, investme
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return apperrors.NewInternalErrorWithCause("failed to update investment", err)
+	}
+
+	// Deduct the proceeds from wallet (undo the credit)
+	proceeds := tx.Cost - tx.Fees
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -proceeds)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to deduct from wallet balance", err)
+	}
+
+	return nil
+}
+
+// reverseDividendTransaction reverses a dividend transaction when deleted
+func (s *investmentService) reverseDividendTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
+	// Deduct dividend from wallet
+	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, -tx.Cost)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to deduct dividend from wallet", err)
+	}
+
+	// Reduce investment's total dividends
+	investment.TotalDividends -= tx.Cost
+	if investment.TotalDividends < 0 {
+		investment.TotalDividends = 0 // Safety guard
+	}
+
+	if err := s.investmentRepo.Update(ctx, investment); err != nil {
+		// Try to restore wallet balance
+		_, _ = s.walletRepo.UpdateBalance(ctx, investment.WalletID, tx.Cost)
+		return apperrors.NewInternalErrorWithCause("failed to update investment dividends", err)
 	}
 
 	return nil

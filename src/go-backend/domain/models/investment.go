@@ -24,6 +24,7 @@ type Investment struct {
 	UnrealizedPNL        int64                        `gorm:"type:bigint;default:0" json:"unrealizedPnl"`
 	UnrealizedPNLPercent float64                      `gorm:"type:double precision;default:0" json:"unrealizedPnlPercent"`
 	RealizedPNL          int64                        `gorm:"type:bigint;default:0" json:"realizedPnl"`
+	TotalDividends       int64                        `gorm:"type:bigint;default:0" json:"totalDividends"`
 	CreatedAt            time.Time                    `json:"createdAt"`
 	UpdatedAt            time.Time                    `json:"updatedAt"`
 	DeletedAt            gorm.DeletedAt               `gorm:"index" json:"-"`
@@ -107,6 +108,7 @@ func (i *Investment) ToProto() *v1.Investment {
 		UnrealizedPnl:        i.UnrealizedPNL,
 		UnrealizedPnlPercent: i.UnrealizedPNLPercent,
 		RealizedPnl:          i.RealizedPNL,
+		TotalDividends:       i.TotalDividends,
 		CreatedAt:            i.CreatedAt.Unix(),
 		UpdatedAt:            i.UpdatedAt.Unix(),
 	}

@@ -31,6 +31,7 @@ message Investment {
   wealthjourney.common.v1.Money displayUnrealizedPnl = 19 [json_name = "displayUnrealizedPnl"];  // Unrealized PNL in user's preferred currency
   wealthjourney.common.v1.Money displayRealizedPnl = 20 [json_name = "displayRealizedPnl"];  // Realized PNL in user's preferred currency
   string displayCurrency = 21 [json_name = "displayCurrency"];  // User's preferred currency code
+  int64 totalDividends = 22 [json_name = "totalDividends"];  // Total dividends received
 }
 
 enum InvestmentType {
