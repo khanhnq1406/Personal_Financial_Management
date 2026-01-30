@@ -335,18 +335,15 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 	if err != nil {
 		return nil, err
 	}
-	_ = investment // Used for ownership verification
 
-	// Check if investment has quantity
-	// Note: We can't access investment here after the check if we're not using it
-	// Let's refactor
-	inv, err := s.investmentRepo.GetByIDForUser(ctx, investmentID, userID)
-	if err != nil {
-		return nil, err
+	// Delete all related transactions first (cascade)
+	if err := s.txRepo.DeleteByInvestmentID(ctx, investmentID); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to delete transactions", err)
 	}
 
-	if inv.Quantity > 0 {
-		return nil, apperrors.NewValidationError("cannot delete investment with non-zero quantity. Sell all holdings first.")
+	// Delete all related lots (cascade)
+	if err := s.txRepo.DeleteLotsByInvestmentID(ctx, investmentID); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to delete lots", err)
 	}
 
 	// Delete investment
@@ -361,7 +358,7 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 
 	return &investmentv1.DeleteInvestmentResponse{
 		Success:   true,
-		Message:   "Investment deleted successfully",
+		Message:   fmt.Sprintf("Investment %s deleted successfully with all related data", investment.Symbol),
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -757,7 +754,7 @@ func (s *investmentService) EditTransaction(ctx context.Context, transactionID i
 	}, nil
 }
 
-// DeleteTransaction deletes a transaction.
+// DeleteTransaction deletes a transaction and recalculates the parent investment.
 func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID int32, userID int32) (*investmentv1.DeleteInvestmentTransactionResponse, error) {
 	if err := validator.ID(transactionID); err != nil {
 		return nil, err
@@ -771,15 +768,35 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 	if err != nil {
 		return nil, err
 	}
-	_ = tx // Used for ownership verification
 
-	// Note: Deleting transactions is complex with FIFO tracking
-	// For now, we only allow deleting recent transactions (within 24 hours)
-	// This would require checking tx.CreatedAt
+	// Get the parent investment
+	investment, err := s.investmentRepo.GetByID(ctx, tx.InvestmentID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to get parent investment", err)
+	}
+
+	// Handle based on transaction type
+	switch tx.Type {
+	case investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY:
+		if err := s.reverseBuyTransaction(ctx, investment, tx); err != nil {
+			return nil, err
+		}
+	case investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL:
+		if err := s.reverseSellTransaction(ctx, investment, tx); err != nil {
+			return nil, err
+		}
+	default:
+		// For dividend/split, just delete the transaction without recalculation
+	}
 
 	// Delete transaction
 	if err := s.txRepo.Delete(ctx, transactionID); err != nil {
 		return nil, err
+	}
+
+	// Invalidate currency cache
+	if err := s.invalidateInvestmentCache(ctx, userID, tx.InvestmentID); err != nil {
+		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", tx.InvestmentID, err)
 	}
 
 	return &investmentv1.DeleteInvestmentTransactionResponse{
@@ -787,6 +804,109 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 		Message:   "Transaction deleted successfully",
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// reverseBuyTransaction reverses a buy transaction by updating the lot and investment.
+func (s *investmentService) reverseBuyTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
+	// If transaction has a LotID, update that specific lot
+	if tx.LotID != nil {
+		lot, err := s.txRepo.GetLotByID(ctx, *tx.LotID)
+		if err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to get lot", err)
+		}
+
+		// Reduce lot quantity
+		lot.Quantity -= tx.Quantity
+		lot.RemainingQuantity -= tx.Quantity
+		if lot.RemainingQuantity < 0 {
+			lot.RemainingQuantity = 0
+		}
+		lot.TotalCost -= tx.Cost
+
+		// Recalculate average cost if still has quantity
+		if lot.Quantity > 0 {
+			lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investment.Type)
+		} else {
+			lot.AverageCost = 0
+		}
+
+		if err := s.txRepo.UpdateLot(ctx, lot); err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to update lot", err)
+		}
+	}
+
+	// Update investment totals
+	investment.Quantity -= tx.Quantity
+	investment.TotalCost -= tx.Cost
+
+	// Recalculate average cost if still has quantity
+	if investment.Quantity > 0 {
+		investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investment.Type)
+	} else {
+		investment.AverageCost = 0
+		investment.TotalCost = 0
+	}
+
+	if err := s.investmentRepo.Update(ctx, investment); err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to update investment", err)
+	}
+
+	return nil
+}
+
+// reverseSellTransaction reverses a sell transaction by restoring the lot and investment.
+func (s *investmentService) reverseSellTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
+	// If transaction has a LotID, restore quantity to that lot
+	if tx.LotID != nil {
+		lot, err := s.txRepo.GetLotByID(ctx, *tx.LotID)
+		if err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to get lot", err)
+		}
+
+		// Restore lot quantity
+		lot.RemainingQuantity += tx.Quantity
+
+		if err := s.txRepo.UpdateLot(ctx, lot); err != nil {
+			return apperrors.NewInternalErrorWithCause("failed to update lot", err)
+		}
+	}
+
+	// Update investment - add back the sold quantity
+	investment.Quantity += tx.Quantity
+
+	// Calculate the realized PNL that was recorded for this sell
+	// We need to reverse it from the investment's realized PNL
+	// The realized PNL for this sale = sell proceeds - cost basis
+	// Cost basis = tx.Quantity * lot.AverageCost (at time of sale)
+	// Since we don't have the exact cost basis stored, we approximate
+	// by calculating from the sale: sell_value - realized_pnl = cost_basis
+	// For now, we recalculate from remaining lots
+
+	// Get total cost from remaining open lots
+	openLots, err := s.txRepo.GetOpenLots(ctx, investment.ID)
+	if err == nil && len(openLots) > 0 {
+		totalCost := int64(0)
+		totalQty := int64(0)
+		precision := int64(units.GetPrecisionForInvestmentType(investment.Type))
+		for _, lot := range openLots {
+			if lot.RemainingQuantity > 0 {
+				// Calculate cost for remaining quantity in this lot
+				lotCost := lot.AverageCost * lot.RemainingQuantity / precision
+				totalCost += lotCost
+				totalQty += lot.RemainingQuantity
+			}
+		}
+		if totalQty > 0 {
+			investment.TotalCost = totalCost
+			investment.AverageCost = units.CalculateAverageCost(totalCost, totalQty, investment.Type)
+		}
+	}
+
+	if err := s.investmentRepo.Update(ctx, investment); err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to update investment", err)
+	}
+
+	return nil
 }
 
 // GetPortfolioSummary retrieves portfolio summary for a wallet.

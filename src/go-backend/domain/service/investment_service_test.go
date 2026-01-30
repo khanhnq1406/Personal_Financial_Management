@@ -222,6 +222,16 @@ func (m *MockInvestmentTransactionRepository) GetLotByIDForInvestment(ctx contex
 	return args.Get(0).(*models.InvestmentLot), args.Error(1)
 }
 
+func (m *MockInvestmentTransactionRepository) DeleteByInvestmentID(ctx context.Context, investmentID int32) error {
+	args := m.Called(ctx, investmentID)
+	return args.Error(0)
+}
+
+func (m *MockInvestmentTransactionRepository) DeleteLotsByInvestmentID(ctx context.Context, investmentID int32) error {
+	args := m.Called(ctx, investmentID)
+	return args.Error(0)
+}
+
 type MockMarketDataService struct {
 	mock.Mock
 }

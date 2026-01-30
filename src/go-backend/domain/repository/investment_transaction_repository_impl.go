@@ -153,3 +153,27 @@ func (r *investmentTransactionRepository) GetLotByIDForInvestment(ctx context.Co
 	}
 	return &lot, nil
 }
+
+// DeleteByInvestmentID soft deletes all transactions for an investment.
+func (r *investmentTransactionRepository) DeleteByInvestmentID(ctx context.Context, investmentID int32) error {
+	result := r.db.DB.WithContext(ctx).
+		Where("investment_id = ?", investmentID).
+		Delete(&models.InvestmentTransaction{})
+
+	if result.Error != nil {
+		return apperrors.NewInternalErrorWithCause("failed to delete investment transactions", result.Error)
+	}
+	return nil
+}
+
+// DeleteLotsByInvestmentID soft deletes all lots for an investment.
+func (r *investmentTransactionRepository) DeleteLotsByInvestmentID(ctx context.Context, investmentID int32) error {
+	result := r.db.DB.WithContext(ctx).
+		Where("investment_id = ?", investmentID).
+		Delete(&models.InvestmentLot{})
+
+	if result.Error != nil {
+		return apperrors.NewInternalErrorWithCause("failed to delete investment lots", result.Error)
+	}
+	return nil
+}

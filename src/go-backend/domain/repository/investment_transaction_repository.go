@@ -41,4 +41,10 @@ type InvestmentTransactionRepository interface {
 
 	// GetLotByIDForInvestment retrieves a lot by ID, ensuring it belongs to the investment.
 	GetLotByIDForInvestment(ctx context.Context, lotID, investmentID int32) (*models.InvestmentLot, error)
+
+	// DeleteByInvestmentID soft deletes all transactions for an investment.
+	DeleteByInvestmentID(ctx context.Context, investmentID int32) error
+
+	// DeleteLotsByInvestmentID soft deletes all lots for an investment.
+	DeleteLotsByInvestmentID(ctx context.Context, investmentID int32) error
 }

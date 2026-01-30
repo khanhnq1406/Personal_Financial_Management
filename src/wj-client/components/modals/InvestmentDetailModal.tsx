@@ -14,8 +14,13 @@ import {
   useQueryGetInvestment,
   useQueryListInvestmentTransactions,
   useMutationUpdatePrices,
+  useMutationDeleteInvestmentTransaction,
+  useMutationDeleteInvestment,
   EVENT_InvestmentGetInvestment,
+  EVENT_InvestmentListInvestments,
+  EVENT_InvestmentGetPortfolioSummary,
 } from "@/utils/generated/hooks";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
 import { formatCurrency, formatQuantity } from "@/lib/utils/units";
@@ -69,6 +74,10 @@ export function InvestmentDetailModal({
   onSuccess,
 }: InvestmentDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [deletingTransactionId, setDeletingTransactionId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteInvestment, setShowDeleteInvestment] = useState(false);
+  const [deleteInvestmentError, setDeleteInvestmentError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch investment details
@@ -95,6 +104,55 @@ export function InvestmentDetailModal({
       console.error(`Failed to update price: ${error.message}`);
     },
   });
+
+  // Mutation for deleting investment transactions
+  const deleteTransactionMutation = useMutationDeleteInvestmentTransaction({
+    onSuccess: () => {
+      // Invalidate queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetInvestment] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+
+      // Refetch data
+      getInvestment.refetch();
+      getListInvestmentTransactions.refetch();
+
+      // Clear state
+      setDeletingTransactionId(null);
+      setDeleteError(null);
+    },
+    onError: (error: any) => {
+      setDeleteError(error.message || "Failed to delete transaction");
+    },
+  });
+
+  // Handle delete transaction
+  const handleDeleteTransaction = (transactionId: number) => {
+    setDeleteError(null);
+    deleteTransactionMutation.mutate({ id: transactionId });
+  };
+
+  // Mutation for deleting investment
+  const deleteInvestmentMutation = useMutationDeleteInvestment({
+    onSuccess: () => {
+      // Invalidate queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+
+      // Call success callback and close modal
+      onSuccess?.();
+      onClose();
+    },
+    onError: (error: any) => {
+      setDeleteInvestmentError(error.message || "Failed to delete investment");
+    },
+  });
+
+  // Handle delete investment
+  const handleDeleteInvestment = () => {
+    setDeleteInvestmentError(null);
+    deleteInvestmentMutation.mutate({ id: investmentId });
+  };
 
   // Fetch investment transactions
   const getListInvestmentTransactions = useQueryListInvestmentTransactions(
@@ -173,6 +231,25 @@ export function InvestmentDetailModal({
         header: "Date",
         cell: ({ row }) => formatDate(row.original.transactionDate || 0),
       },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeletingTransactionId(row.original.id);
+            }}
+            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+            title="Delete transaction"
+            aria-label="Delete transaction"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        ),
+      },
     ],
     [investment?.type],
   );
@@ -227,6 +304,22 @@ export function InvestmentDetailModal({
         id: "transactionDate",
         header: "Date",
         accessorFn: (row) => formatDate(row.transactionDate || 0),
+      },
+      {
+        id: "actions",
+        header: "",
+        accessorFn: (row) => (
+          <button
+            onClick={() => setDeletingTransactionId(row.id)}
+            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            title="Delete transaction"
+            aria-label="Delete transaction"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        ),
       },
     ],
     [investment?.type],
@@ -458,6 +551,19 @@ export function InvestmentDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* Delete Investment Section */}
+              <div className="border-t pt-4 mt-4">
+                <button
+                  onClick={() => setShowDeleteInvestment(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Investment
+                </button>
+              </div>
             </div>
           )}
 
@@ -520,6 +626,67 @@ export function InvestmentDetailModal({
         </div>
       ) : (
         <div className="text-center text-lred">Investment not found</div>
+      )}
+
+      {/* Delete Transaction Confirmation Dialog */}
+      {deletingTransactionId !== null && (
+        <ConfirmationDialog
+          title="Delete Transaction"
+          message={
+            <div>
+              <p>Are you sure you want to delete this transaction?</p>
+              <p className="text-sm text-gray-500 mt-2">
+                This will recalculate your investment&apos;s quantity and cost basis.
+              </p>
+              {deleteError && (
+                <p className="text-sm text-red-600 mt-2">{deleteError}</p>
+              )}
+            </div>
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={() => handleDeleteTransaction(deletingTransactionId)}
+          onCancel={() => {
+            setDeletingTransactionId(null);
+            setDeleteError(null);
+          }}
+          isLoading={deleteTransactionMutation.isPending}
+          variant="danger"
+        />
+      )}
+
+      {/* Delete Investment Confirmation Dialog */}
+      {showDeleteInvestment && (
+        <ConfirmationDialog
+          title="Delete Investment"
+          message={
+            <div>
+              <p>Are you sure you want to delete <strong>{investment?.symbol}</strong>?</p>
+              {(investment?.quantity || 0) > 0 ? (
+                <p className="text-sm text-red-600 mt-2">
+                  Warning: You still have {formatQuantity(investment?.quantity || 0, investment?.type || 0)} units.
+                  All holdings and transaction history will be permanently deleted.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">
+                  All transaction history for this investment will be deleted.
+                </p>
+              )}
+              {deleteInvestmentError && (
+                <p className="text-sm text-red-600 mt-2">{deleteInvestmentError}</p>
+              )}
+            </div>
+          }
+          confirmText="Delete Investment"
+          cancelText="Cancel"
+          onConfirm={handleDeleteInvestment}
+          onCancel={() => {
+            setShowDeleteInvestment(false);
+            setDeleteInvestmentError(null);
+          }}
+          isLoading={deleteInvestmentMutation.isPending}
+          variant="danger"
+        />
       )}
     </BaseModal>
   );
