@@ -68,9 +68,9 @@ func (rl *RateLimiter) allow(key string) bool {
 	bucket.mu.Lock()
 	defer bucket.mu.Unlock()
 
-	// Refill tokens based on time elapsed
+	// Refill tokens based on time elapsed (proportional refill every second)
 	elapsed := time.Since(bucket.lastRefill)
-	tokensToAdd := int(elapsed.Minutes()) * rl.config.RequestsPerMinute
+	tokensToAdd := int(elapsed.Seconds() * float64(rl.config.RequestsPerMinute) / 60.0)
 	if tokensToAdd > 0 {
 		bucket.tokens = min(bucket.tokens+tokensToAdd, rl.config.RequestsPerMinute)
 		bucket.lastRefill = time.Now()

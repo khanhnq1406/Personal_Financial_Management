@@ -106,8 +106,9 @@ export function CurrencySelector() {
         </button>
 
         {/* Dropdown menu - only show when not disabled */}
+        {/* Mobile: dropdown below (top-full mt-2), Desktop: dropdown above (sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0) */}
         {!isDisabled && (
-          <div className="absolute right-0 bottom-full mb-2 bg-white rounded-lg drop-shadow-round py-2 z-50 hidden group-hover:block min-w-[200px]">
+          <div className="absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2 bg-white rounded-lg drop-shadow-round py-2 z-50 hidden group-hover:block min-w-[200px]">
             {SUPPORTED_CURRENCIES.map((curr) => (
               <button
                 key={curr.code}
