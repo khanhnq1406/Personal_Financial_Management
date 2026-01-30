@@ -88,10 +88,22 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		return nil, apperrors.NewValidationError("investments can only be created in investment wallets")
 	}
 
-	// 3.5. Check wallet has sufficient balance for initial investment
-	if wallet.Balance < req.InitialCost {
+	// 3.5. Convert initial cost to wallet currency for balance check
+	// req.InitialCost is in investment currency (req.Currency), wallet.Balance is in wallet.Currency
+	initialCostInWalletCurrency := req.InitialCost
+	if req.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, req.InitialCost, req.Currency, wallet.Currency)
+		if err != nil {
+			return nil, apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for balance check", req.Currency, wallet.Currency), err)
+		}
+		initialCostInWalletCurrency = converted
+	}
+
+	// 3.6. Check wallet has sufficient balance for initial investment
+	if wallet.Balance < initialCostInWalletCurrency {
 		return nil, apperrors.NewValidationError(
-			fmt.Sprintf("Insufficient balance: have %d, need %d", wallet.Balance, req.InitialCost))
+			fmt.Sprintf("Insufficient balance: have %d %s, need %d %s", wallet.Balance, wallet.Currency, initialCostInWalletCurrency, wallet.Currency))
 	}
 
 	// 4. Check for duplicate symbol in wallet
@@ -170,8 +182,8 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		fmt.Printf("Warning: failed to update transaction with lot ID: %v\n", err)
 	}
 
-	// 11. Deduct initial cost from wallet balance
-	_, err = s.walletRepo.UpdateBalance(ctx, req.WalletId, -req.InitialCost)
+	// 11. Deduct initial cost from wallet balance (using converted amount in wallet currency)
+	_, err = s.walletRepo.UpdateBalance(ctx, req.WalletId, -initialCostInWalletCurrency)
 	if err != nil {
 		// Rollback: delete the investment, transaction, and lot
 		_ = s.txRepo.Delete(ctx, tx.ID)
@@ -498,9 +510,22 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	if err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
 	}
-	if wallet.Balance < totalCost {
+
+	// Convert totalCost from investment currency to wallet currency for balance operations
+	// totalCost is in investment.Currency, wallet.Balance is in wallet.Currency
+	totalCostInWalletCurrency := totalCost
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, totalCost, investment.Currency, wallet.Currency)
+		if err != nil {
+			return nil, apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for balance check", investment.Currency, wallet.Currency), err)
+		}
+		totalCostInWalletCurrency = converted
+	}
+
+	if wallet.Balance < totalCostInWalletCurrency {
 		return nil, apperrors.NewValidationError(
-			fmt.Sprintf("Insufficient balance: have %d, need %d", wallet.Balance, totalCost))
+			fmt.Sprintf("Insufficient balance: have %d %s, need %d %s", wallet.Balance, wallet.Currency, totalCostInWalletCurrency, wallet.Currency))
 	}
 
 	// Get open lots to see if we can update the most recent one
@@ -588,8 +613,8 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
 	}
 
-	// Deduct from wallet balance
-	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -totalCost)
+	// Deduct from wallet balance (using converted amount in wallet currency)
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -totalCostInWalletCurrency)
 	if err != nil {
 		// Rollback investment changes
 		investment.Quantity = originalQuantity
@@ -607,6 +632,12 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 	// Validate sufficient quantity
 	if investment.Quantity < req.Quantity {
 		return nil, apperrors.NewValidationError(fmt.Sprintf("insufficient quantity: owned %d, trying to sell %d", investment.Quantity, req.Quantity))
+	}
+
+	// Fetch wallet for currency conversion
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
 	}
 
 	// Get open lots (FIFO order by purchased_at ASC)
@@ -725,7 +756,19 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 
 	// Calculate net proceeds (sell value minus fees) and credit to wallet balance
 	proceeds := tx.Cost - tx.Fees
-	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, proceeds)
+
+	// Convert proceeds from investment currency to wallet currency
+	proceedsInWalletCurrency := proceeds
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, proceeds, investment.Currency, wallet.Currency)
+		if err != nil {
+			return nil, apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet credit", investment.Currency, wallet.Currency), err)
+		}
+		proceedsInWalletCurrency = converted
+	}
+
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, proceedsInWalletCurrency)
 	if err != nil {
 		// Rollback investment changes
 		investment.Quantity = originalQuantity
@@ -742,6 +785,12 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 // - quantity = number of shares at dividend date
 // - price = dividend per share (e.g., $0.50 per share)
 func (s *investmentService) processDividendTransaction(ctx context.Context, investment *models.Investment, req *investmentv1.AddTransactionRequest) (*models.Investment, *models.InvestmentTransaction, error) {
+	// Fetch wallet for currency conversion
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return nil, nil, apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+
 	// Calculate total dividend amount
 	totalDividend := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
 
@@ -773,8 +822,23 @@ func (s *investmentService) processDividendTransaction(ctx context.Context, inve
 		return nil, nil, apperrors.NewInternalErrorWithCause("failed to update investment dividends", err)
 	}
 
-	// Credit dividend amount to wallet balance
-	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, totalDividend)
+	// Convert dividend from investment currency to wallet currency
+	dividendInWalletCurrency := totalDividend
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, totalDividend, investment.Currency, wallet.Currency)
+		if err != nil {
+			// Rollback: restore investment and delete transaction
+			investment.TotalDividends = originalTotalDividends
+			_ = s.investmentRepo.Update(ctx, investment)
+			_ = s.txRepo.Delete(ctx, tx.ID)
+			return nil, nil, apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet credit", investment.Currency, wallet.Currency), err)
+		}
+		dividendInWalletCurrency = converted
+	}
+
+	// Credit dividend amount to wallet balance (in wallet currency)
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, dividendInWalletCurrency)
 	if err != nil {
 		// Rollback: restore investment and delete transaction
 		investment.TotalDividends = originalTotalDividends
@@ -933,6 +997,12 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 
 // reverseBuyTransaction reverses a buy transaction by updating the lot and investment.
 func (s *investmentService) reverseBuyTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
+	// Fetch wallet for currency conversion
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+
 	// If transaction has a LotID, update that specific lot
 	if tx.LotID != nil {
 		lot, err := s.txRepo.GetLotByID(ctx, *tx.LotID)
@@ -978,7 +1048,19 @@ func (s *investmentService) reverseBuyTransaction(ctx context.Context, investmen
 
 	// Refund the cost back to wallet (cost + fees = totalCost)
 	refundAmount := tx.Cost + tx.Fees
-	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, refundAmount)
+
+	// Convert refund from investment currency to wallet currency
+	refundInWalletCurrency := refundAmount
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, refundAmount, investment.Currency, wallet.Currency)
+		if err != nil {
+			return apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet refund", investment.Currency, wallet.Currency), err)
+		}
+		refundInWalletCurrency = converted
+	}
+
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, refundInWalletCurrency)
 	if err != nil {
 		return apperrors.NewInternalErrorWithCause("failed to refund wallet balance", err)
 	}
@@ -988,6 +1070,12 @@ func (s *investmentService) reverseBuyTransaction(ctx context.Context, investmen
 
 // reverseSellTransaction reverses a sell transaction by restoring the lot and investment.
 func (s *investmentService) reverseSellTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
+	// Fetch wallet for currency conversion
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+
 	// If transaction has a LotID, restore quantity to that lot
 	if tx.LotID != nil {
 		lot, err := s.txRepo.GetLotByID(ctx, *tx.LotID)
@@ -1040,7 +1128,19 @@ func (s *investmentService) reverseSellTransaction(ctx context.Context, investme
 
 	// Deduct the proceeds from wallet (undo the credit)
 	proceeds := tx.Cost - tx.Fees
-	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -proceeds)
+
+	// Convert proceeds from investment currency to wallet currency
+	proceedsInWalletCurrency := proceeds
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, proceeds, investment.Currency, wallet.Currency)
+		if err != nil {
+			return apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet deduction", investment.Currency, wallet.Currency), err)
+		}
+		proceedsInWalletCurrency = converted
+	}
+
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -proceedsInWalletCurrency)
 	if err != nil {
 		return apperrors.NewInternalErrorWithCause("failed to deduct from wallet balance", err)
 	}
@@ -1050,8 +1150,25 @@ func (s *investmentService) reverseSellTransaction(ctx context.Context, investme
 
 // reverseDividendTransaction reverses a dividend transaction when deleted
 func (s *investmentService) reverseDividendTransaction(ctx context.Context, investment *models.Investment, tx *models.InvestmentTransaction) error {
-	// Deduct dividend from wallet
-	_, err := s.walletRepo.UpdateBalance(ctx, investment.WalletID, -tx.Cost)
+	// Fetch wallet for currency conversion
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+
+	// Convert dividend from investment currency to wallet currency
+	dividendInWalletCurrency := tx.Cost
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, tx.Cost, investment.Currency, wallet.Currency)
+		if err != nil {
+			return apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet deduction", investment.Currency, wallet.Currency), err)
+		}
+		dividendInWalletCurrency = converted
+	}
+
+	// Deduct dividend from wallet (in wallet currency)
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, -dividendInWalletCurrency)
 	if err != nil {
 		return apperrors.NewInternalErrorWithCause("failed to deduct dividend from wallet", err)
 	}
@@ -1064,7 +1181,7 @@ func (s *investmentService) reverseDividendTransaction(ctx context.Context, inve
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		// Try to restore wallet balance
-		_, _ = s.walletRepo.UpdateBalance(ctx, investment.WalletID, tx.Cost)
+		_, _ = s.walletRepo.UpdateBalance(ctx, investment.WalletID, dividendInWalletCurrency)
 		return apperrors.NewInternalErrorWithCause("failed to update investment dividends", err)
 	}
 

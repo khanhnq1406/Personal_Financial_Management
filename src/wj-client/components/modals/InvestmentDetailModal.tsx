@@ -20,6 +20,8 @@ import {
   EVENT_InvestmentGetInvestment,
   EVENT_InvestmentListInvestments,
   EVENT_InvestmentGetPortfolioSummary,
+  EVENT_WalletListWallets,
+  EVENT_WalletGetWallet,
 } from "@/utils/generated/hooks";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
@@ -123,6 +125,9 @@ export function InvestmentDetailModal({
       queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetInvestment] });
       queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
       queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+      // Invalidate wallet queries to refresh balance after transaction deletion
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetWallet] });
 
       // Refetch data
       getInvestment.refetch();
@@ -149,6 +154,9 @@ export function InvestmentDetailModal({
       // Invalidate queries to refetch fresh data
       queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
       queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+      // Invalidate wallet queries to refresh balance after investment deletion
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetWallet] });
 
       // Call success callback and close modal
       onSuccess?.();

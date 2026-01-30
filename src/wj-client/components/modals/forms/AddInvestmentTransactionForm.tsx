@@ -10,7 +10,11 @@ import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
 import { FormInput } from "@/components/forms/FormInput";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
-import { useMutationAddInvestmentTransaction } from "@/utils/generated/hooks";
+import {
+  useMutationAddInvestmentTransaction,
+  EVENT_WalletListWallets,
+  EVENT_WalletGetWallet,
+} from "@/utils/generated/hooks";
 import {
   InvestmentTransactionType,
   InvestmentType,
@@ -79,13 +83,16 @@ export function AddInvestmentTransactionForm({
       setSuccessMessage(data.message || "Transaction added successfully");
       setShowSuccess(true);
       setErrorMessage("");
-      // Invalidate related queries
+      // Invalidate investment queries
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey[0] as string;
           return ["Investment", "investments"].some((k) => key.includes(k));
         },
       });
+      // Invalidate wallet queries to refresh balance after transaction
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
+      queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetWallet] });
     },
     onError: (error: any) => {
       setErrorMessage(
