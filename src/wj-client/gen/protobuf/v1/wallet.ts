@@ -234,6 +234,20 @@ export interface Wallet {
     | undefined;
   /** User's preferred currency code */
   displayCurrency: string;
+  /** Investment-related fields (only populated for INVESTMENT type wallets) */
+  investmentValue:
+    | Money
+    | undefined;
+  /** Investment value (user's preferred currency) */
+  displayInvestmentValue:
+    | Money
+    | undefined;
+  /** balance + investmentValue (native currency) */
+  totalValue:
+    | Money
+    | undefined;
+  /** Total value (user's preferred currency) */
+  displayTotalValue: Money | undefined;
 }
 
 /** GetWallet request */
@@ -398,6 +412,20 @@ export interface GetTotalBalanceResponse {
     | undefined;
   /** User's preferred currency code */
   displayCurrency: string;
+  /** Investment aggregation fields */
+  totalInvestments:
+    | Money
+    | undefined;
+  /** Converted investments */
+  displayTotalInvestments:
+    | Money
+    | undefined;
+  /** data + totalInvestments (base currency) */
+  netWorth:
+    | Money
+    | undefined;
+  /** Converted net worth */
+  displayNetWorth: Money | undefined;
 }
 
 /** GetBalanceHistory request */
@@ -467,6 +495,10 @@ function createBaseWallet(): Wallet {
     currency: "",
     displayBalance: undefined,
     displayCurrency: "",
+    investmentValue: undefined,
+    displayInvestmentValue: undefined,
+    totalValue: undefined,
+    displayTotalValue: undefined,
   };
 }
 
@@ -504,6 +536,18 @@ export const Wallet: MessageFns<Wallet> = {
     }
     if (message.displayCurrency !== "") {
       writer.uint32(90).string(message.displayCurrency);
+    }
+    if (message.investmentValue !== undefined) {
+      Money.encode(message.investmentValue, writer.uint32(98).fork()).join();
+    }
+    if (message.displayInvestmentValue !== undefined) {
+      Money.encode(message.displayInvestmentValue, writer.uint32(106).fork()).join();
+    }
+    if (message.totalValue !== undefined) {
+      Money.encode(message.totalValue, writer.uint32(114).fork()).join();
+    }
+    if (message.displayTotalValue !== undefined) {
+      Money.encode(message.displayTotalValue, writer.uint32(122).fork()).join();
     }
     return writer;
   },
@@ -603,6 +647,38 @@ export const Wallet: MessageFns<Wallet> = {
           message.displayCurrency = reader.string();
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.investmentValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.displayInvestmentValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.totalValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.displayTotalValue = Money.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -625,6 +701,12 @@ export const Wallet: MessageFns<Wallet> = {
       currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
       displayBalance: isSet(object.displayBalance) ? Money.fromJSON(object.displayBalance) : undefined,
       displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
+      investmentValue: isSet(object.investmentValue) ? Money.fromJSON(object.investmentValue) : undefined,
+      displayInvestmentValue: isSet(object.displayInvestmentValue)
+        ? Money.fromJSON(object.displayInvestmentValue)
+        : undefined,
+      totalValue: isSet(object.totalValue) ? Money.fromJSON(object.totalValue) : undefined,
+      displayTotalValue: isSet(object.displayTotalValue) ? Money.fromJSON(object.displayTotalValue) : undefined,
     };
   },
 
@@ -663,6 +745,18 @@ export const Wallet: MessageFns<Wallet> = {
     if (message.displayCurrency !== "") {
       obj.displayCurrency = message.displayCurrency;
     }
+    if (message.investmentValue !== undefined) {
+      obj.investmentValue = Money.toJSON(message.investmentValue);
+    }
+    if (message.displayInvestmentValue !== undefined) {
+      obj.displayInvestmentValue = Money.toJSON(message.displayInvestmentValue);
+    }
+    if (message.totalValue !== undefined) {
+      obj.totalValue = Money.toJSON(message.totalValue);
+    }
+    if (message.displayTotalValue !== undefined) {
+      obj.displayTotalValue = Money.toJSON(message.displayTotalValue);
+    }
     return obj;
   },
 
@@ -686,6 +780,19 @@ export const Wallet: MessageFns<Wallet> = {
       ? Money.fromPartial(object.displayBalance)
       : undefined;
     message.displayCurrency = object.displayCurrency ?? "";
+    message.investmentValue = (object.investmentValue !== undefined && object.investmentValue !== null)
+      ? Money.fromPartial(object.investmentValue)
+      : undefined;
+    message.displayInvestmentValue =
+      (object.displayInvestmentValue !== undefined && object.displayInvestmentValue !== null)
+        ? Money.fromPartial(object.displayInvestmentValue)
+        : undefined;
+    message.totalValue = (object.totalValue !== undefined && object.totalValue !== null)
+      ? Money.fromPartial(object.totalValue)
+      : undefined;
+    message.displayTotalValue = (object.displayTotalValue !== undefined && object.displayTotalValue !== null)
+      ? Money.fromPartial(object.displayTotalValue)
+      : undefined;
     return message;
   },
 };
@@ -2534,6 +2641,10 @@ function createBaseGetTotalBalanceResponse(): GetTotalBalanceResponse {
     currency: "",
     displayValue: undefined,
     displayCurrency: "",
+    totalInvestments: undefined,
+    displayTotalInvestments: undefined,
+    netWorth: undefined,
+    displayNetWorth: undefined,
   };
 }
 
@@ -2559,6 +2670,18 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     }
     if (message.displayCurrency !== "") {
       writer.uint32(58).string(message.displayCurrency);
+    }
+    if (message.totalInvestments !== undefined) {
+      Money.encode(message.totalInvestments, writer.uint32(66).fork()).join();
+    }
+    if (message.displayTotalInvestments !== undefined) {
+      Money.encode(message.displayTotalInvestments, writer.uint32(74).fork()).join();
+    }
+    if (message.netWorth !== undefined) {
+      Money.encode(message.netWorth, writer.uint32(82).fork()).join();
+    }
+    if (message.displayNetWorth !== undefined) {
+      Money.encode(message.displayNetWorth, writer.uint32(90).fork()).join();
     }
     return writer;
   },
@@ -2626,6 +2749,38 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
           message.displayCurrency = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.totalInvestments = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.displayTotalInvestments = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.netWorth = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.displayNetWorth = Money.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2644,6 +2799,12 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
       currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
       displayValue: isSet(object.displayValue) ? Money.fromJSON(object.displayValue) : undefined,
       displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
+      totalInvestments: isSet(object.totalInvestments) ? Money.fromJSON(object.totalInvestments) : undefined,
+      displayTotalInvestments: isSet(object.displayTotalInvestments)
+        ? Money.fromJSON(object.displayTotalInvestments)
+        : undefined,
+      netWorth: isSet(object.netWorth) ? Money.fromJSON(object.netWorth) : undefined,
+      displayNetWorth: isSet(object.displayNetWorth) ? Money.fromJSON(object.displayNetWorth) : undefined,
     };
   },
 
@@ -2670,6 +2831,18 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
     if (message.displayCurrency !== "") {
       obj.displayCurrency = message.displayCurrency;
     }
+    if (message.totalInvestments !== undefined) {
+      obj.totalInvestments = Money.toJSON(message.totalInvestments);
+    }
+    if (message.displayTotalInvestments !== undefined) {
+      obj.displayTotalInvestments = Money.toJSON(message.displayTotalInvestments);
+    }
+    if (message.netWorth !== undefined) {
+      obj.netWorth = Money.toJSON(message.netWorth);
+    }
+    if (message.displayNetWorth !== undefined) {
+      obj.displayNetWorth = Money.toJSON(message.displayNetWorth);
+    }
     return obj;
   },
 
@@ -2687,6 +2860,19 @@ export const GetTotalBalanceResponse: MessageFns<GetTotalBalanceResponse> = {
       ? Money.fromPartial(object.displayValue)
       : undefined;
     message.displayCurrency = object.displayCurrency ?? "";
+    message.totalInvestments = (object.totalInvestments !== undefined && object.totalInvestments !== null)
+      ? Money.fromPartial(object.totalInvestments)
+      : undefined;
+    message.displayTotalInvestments =
+      (object.displayTotalInvestments !== undefined && object.displayTotalInvestments !== null)
+        ? Money.fromPartial(object.displayTotalInvestments)
+        : undefined;
+    message.netWorth = (object.netWorth !== undefined && object.netWorth !== null)
+      ? Money.fromPartial(object.netWorth)
+      : undefined;
+    message.displayNetWorth = (object.displayNetWorth !== undefined && object.displayNetWorth !== null)
+      ? Money.fromPartial(object.displayNetWorth)
+      : undefined;
     return message;
   },
 };

@@ -144,6 +144,11 @@ message Wallet {
   // Conversion fields (populated when user's preferred currency differs from wallet currency)
   wealthjourney.common.v1.Money displayBalance = 10 [json_name = "displayBalance"];  // Balance in user's preferred currency
   string displayCurrency = 11 [json_name = "displayCurrency"];  // User's preferred currency code
+  // Investment-related fields (only populated for INVESTMENT type wallets)
+  wealthjourney.common.v1.Money investmentValue = 12 [json_name = "investmentValue"];         // Current value of all holdings (native currency)
+  wealthjourney.common.v1.Money displayInvestmentValue = 13 [json_name = "displayInvestmentValue"]; // Investment value (user's preferred currency)
+  wealthjourney.common.v1.Money totalValue = 14 [json_name = "totalValue"];                   // balance + investmentValue (native currency)
+  wealthjourney.common.v1.Money displayTotalValue = 15 [json_name = "displayTotalValue"];     // Total value (user's preferred currency)
 }
 
 // GetWallet request
@@ -294,6 +299,11 @@ message GetTotalBalanceResponse {
   string currency = 5 [json_name = "currency"];  // Base currency of the total (e.g., "VND")
   wealthjourney.common.v1.Money displayValue = 6 [json_name = "displayValue"];  // Value in user's preferred currency
   string displayCurrency = 7 [json_name = "displayCurrency"];  // User's preferred currency code
+  // Investment aggregation fields
+  wealthjourney.common.v1.Money totalInvestments = 8 [json_name = "totalInvestments"];           // Sum of all investment values (base currency)
+  wealthjourney.common.v1.Money displayTotalInvestments = 9 [json_name = "displayTotalInvestments"]; // Converted investments
+  wealthjourney.common.v1.Money netWorth = 10 [json_name = "netWorth"];                         // data + totalInvestments (base currency)
+  wealthjourney.common.v1.Money displayNetWorth = 11 [json_name = "displayNetWorth"];           // Converted net worth
 }
 
 // GetBalanceHistory request

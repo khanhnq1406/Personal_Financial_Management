@@ -27,6 +27,7 @@ type investmentService struct {
 	userRepo          repository.UserRepository
 	fxRateSvc         FXRateService
 	currencyCache     *cache.CurrencyCache
+	walletService     WalletService
 	mapper            *InvestmentMapper
 }
 
@@ -39,6 +40,7 @@ func NewInvestmentService(
 	userRepo repository.UserRepository,
 	fxRateSvc FXRateService,
 	currencyCache *cache.CurrencyCache,
+	walletService WalletService,
 ) InvestmentService {
 	return &investmentService{
 		investmentRepo:    investmentRepo,
@@ -48,6 +50,7 @@ func NewInvestmentService(
 		userRepo:          userRepo,
 		fxRateSvc:         fxRateSvc,
 		currencyCache:     currencyCache,
+		walletService:     walletService,
 		mapper:            NewInvestmentMapper(),
 	}
 }
@@ -196,6 +199,12 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	if err := s.populateInvestmentCache(ctx, userID, investment); err != nil {
 		// Log error but don't fail - cache population is not critical
 		fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", investment.ID, err)
+	}
+
+	// Invalidate wallet investment value cache
+	// (current_value was set by GORM BeforeCreate hook)
+	if ws, ok := s.walletService.(*walletService); ok {
+		ws.invalidateInvestmentValueCache(ctx, req.WalletId)
 	}
 
 	invProto := s.mapper.ModelToProto(investment)
@@ -384,6 +393,11 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", investmentID, err)
 	}
 
+	// Invalidate wallet investment value cache
+	if ws, ok := s.walletService.(*walletService); ok {
+		ws.invalidateInvestmentValueCache(ctx, investment.WalletID)
+	}
+
 	return &investmentv1.DeleteInvestmentResponse{
 		Success:   true,
 		Message:   fmt.Sprintf("Investment %s deleted successfully with all related data", investment.Symbol),
@@ -477,6 +491,11 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 		if err := s.populateInvestmentCache(ctx, userID, updatedInv); err != nil {
 			fmt.Printf("Warning: failed to populate currency cache for investment %d: %v\n", updatedInv.ID, err)
 		}
+	}
+
+	// Invalidate wallet investment value cache
+	if ws, ok := s.walletService.(*walletService); ok {
+		ws.invalidateInvestmentValueCache(ctx, investment.WalletID)
 	}
 
 	// Get the created transaction for response
@@ -988,6 +1007,11 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 		fmt.Printf("Warning: failed to invalidate currency cache for investment %d: %v\n", tx.InvestmentID, err)
 	}
 
+	// Invalidate wallet investment value cache
+	if ws, ok := s.walletService.(*walletService); ok {
+		ws.invalidateInvestmentValueCache(ctx, investment.WalletID)
+	}
+
 	return &investmentv1.DeleteInvestmentTransactionResponse{
 		Success:   true,
 		Message:   "Transaction deleted successfully",
@@ -1420,6 +1444,26 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 	// Batch update prices in repository
 	if err := s.investmentRepo.UpdatePrices(ctx, updates); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to save price updates", err)
+	}
+
+	// Invalidate wallet investment value cache for all affected wallets
+	// Collect unique wallet IDs
+	walletIDMap := make(map[int32]bool)
+	for investmentID := range priceUpdates {
+		// Get the investment to find its wallet
+		inv, err := s.investmentRepo.GetByID(ctx, investmentID)
+		if err != nil {
+			log.Printf("Warning: failed to fetch investment %d for cache invalidation: %v", investmentID, err)
+			continue
+		}
+		walletIDMap[inv.WalletID] = true
+	}
+
+	// Invalidate cache for each wallet
+	if ws, ok := s.walletService.(*walletService); ok {
+		for walletID := range walletIDMap {
+			ws.invalidateInvestmentValueCache(ctx, walletID)
+		}
 	}
 
 	// Get updated investments for response - fetch from database to get recalculated values

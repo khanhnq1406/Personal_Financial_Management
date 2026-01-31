@@ -2,7 +2,7 @@ import { resources } from "@/app/constants";
 import Image from "next/image";
 import { UseQueryResult } from "@tanstack/react-query";
 import { memo, useMemo } from "react";
-import { ListWalletsResponse } from "@/gen/protobuf/v1/wallet";
+import { ListWalletsResponse, Wallet } from "@/gen/protobuf/v1/wallet";
 import { ErrorType } from "@/utils/generated/hooks.types";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -14,26 +14,43 @@ type WalletsProps = {
 
 // Memoized wallet item component
 const WalletItem = memo(function WalletItem({
-  walletName,
-  balance,
+  wallet,
   currency,
 }: {
-  walletName: string;
-  balance: number;
+  wallet: Wallet;
   currency: string;
 }) {
+  const isInvestmentWallet = wallet.type === 1; // WALLET_TYPE_INVESTMENT
+
+  // For investment wallets, show total value; for basic wallets, show balance
+  const displayValue = isInvestmentWallet
+    ? (wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount ?? 0)
+    : (wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0);
+
+  const cashBalance =
+    wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
+
   return (
     <div className="flex flex-nowrap justify-between m-3">
-      <div className="flex flex-nowrap gap-3">
+      <div className="flex flex-nowrap gap-3 items-center">
         <Image
           width={25}
           height={25}
           alt="wallet-icon"
           src={`${resources}wallet.png`}
         />
-        <div className="font-semibold">{walletName}</div>
+        <div className="font-semibold">{wallet.walletName}</div>
       </div>
-      <div className="font-semibold">{formatCurrency(balance, currency)}</div>
+      <div className="text-right">
+        <div className="font-semibold">
+          {formatCurrency(displayValue, currency)}
+        </div>
+        {isInvestmentWallet && (
+          <div className="text-xs text-gray-500">
+            Cash: {formatCurrency(cashBalance, currency)}
+          </div>
+        )}
+      </div>
     </div>
   );
 });
@@ -60,12 +77,7 @@ const Wallets: React.FC<WalletsProps> = memo(function Wallets({
     }
 
     return data.wallets.map((wallet) => (
-      <WalletItem
-        key={wallet.id}
-        walletName={wallet.walletName}
-        balance={wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0}
-        currency={currency}
-      />
+      <WalletItem key={wallet.id} wallet={wallet} currency={currency} />
     ));
   }, [data, currency]);
 

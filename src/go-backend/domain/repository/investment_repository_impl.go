@@ -309,3 +309,67 @@ func (r *investmentRepository) GetAggregatedPortfolioSummary(ctx context.Context
 
 	return summary, nil
 }
+
+// GetInvestmentValue aggregates total current value of all investments in a wallet.
+//
+// IMPORTANT: We simply SUM the stored current_value field, which is auto-maintained by GORM hooks.
+// The Investment model's BeforeCreate and BeforeUpdate hooks call recalculate() which updates:
+//   CurrentValue = (Quantity / divisor) * CurrentPrice
+//
+// This means we don't need to recalculate on every query - just SUM the pre-calculated values.
+func (r *investmentRepository) GetInvestmentValue(ctx context.Context, walletID int32) (int64, error) {
+	var totalValue int64
+
+	// Simple SUM query - current_value is already calculated and stored
+	err := r.db.DB.WithContext(ctx).
+		Model(&models.Investment{}).
+		Where("wallet_id = ? AND deleted_at IS NULL", walletID).
+		Select("COALESCE(SUM(current_value), 0)").
+		Scan(&totalValue).Error
+
+	if err != nil {
+		return 0, r.handleDBError(err, "investment", "get investment value")
+	}
+
+	return totalValue, nil
+}
+
+// GetInvestmentValuesByWalletIDs batch fetches investment values for multiple wallets.
+// Uses a single GROUP BY query for efficiency.
+func (r *investmentRepository) GetInvestmentValuesByWalletIDs(ctx context.Context, walletIDs []int32) (map[int32]int64, error) {
+	if len(walletIDs) == 0 {
+		return make(map[int32]int64), nil
+	}
+
+	type Result struct {
+		WalletID int32
+		Total    int64
+	}
+
+	var results []Result
+	err := r.db.DB.WithContext(ctx).
+		Model(&models.Investment{}).
+		Where("wallet_id IN ? AND deleted_at IS NULL", walletIDs).
+		Select("wallet_id, COALESCE(SUM(current_value), 0) as total").
+		Group("wallet_id").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, r.handleDBError(err, "investment", "get investment values")
+	}
+
+	// Convert to map
+	valueMap := make(map[int32]int64, len(walletIDs))
+	for _, r := range results {
+		valueMap[r.WalletID] = r.Total
+	}
+
+	// Ensure all requested wallets have an entry (0 if no investments)
+	for _, walletID := range walletIDs {
+		if _, exists := valueMap[walletID]; !exists {
+			valueMap[walletID] = 0
+		}
+	}
+
+	return valueMap, nil
+}

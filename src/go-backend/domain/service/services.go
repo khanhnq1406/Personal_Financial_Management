@@ -42,13 +42,15 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 		us.SetRepositories(repos.Wallet, repos.Transaction, repos.Budget, repos.BudgetItem, repos.Investment, fxRateSvc, currencyCache)
 	}
 
+	walletSvc := NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc, fxRateSvc, currencyCache, repos.Investment, redisClient)
+
 	return &Services{
-		Wallet:      NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc, fxRateSvc, currencyCache),
+		Wallet:      walletSvc,
 		User:        userSvc,
 		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category, repos.User, fxRateSvc, currencyCache),
 		Category:    categorySvc,
 		Budget:      NewBudgetService(repos.Budget, repos.BudgetItem, repos.User, fxRateSvc, currencyCache),
-		Investment:  NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache),
+		Investment:  NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache, walletSvc),
 		FXRate:      fxRateSvc,
 	}
 }

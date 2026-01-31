@@ -41,6 +41,13 @@ type InvestmentRepository interface {
 
 	// GetAggregatedPortfolioSummary calculates summary stats across all user's investment wallets.
 	GetAggregatedPortfolioSummary(ctx context.Context, userID int32, typeFilter v1.InvestmentType) (*PortfolioSummary, error)
+
+	// GetInvestmentValue aggregates total current value of all investments in a wallet
+	// Note: current_value is already calculated and stored by GORM hooks (BeforeCreate/BeforeUpdate)
+	GetInvestmentValue(ctx context.Context, walletID int32) (int64, error)
+
+	// GetInvestmentValuesByWalletIDs batch fetches investment values for multiple wallets
+	GetInvestmentValuesByWalletIDs(ctx context.Context, walletIDs []int32) (map[int32]int64, error)
 }
 
 // PriceUpdate represents a price update for an investment.

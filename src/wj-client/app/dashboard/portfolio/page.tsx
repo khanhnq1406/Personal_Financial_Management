@@ -827,6 +827,38 @@ export default function PortfolioPage() {
             />
           ) : null}
 
+          {/* Wallet Cash Balance */}
+          {selectedWallet && selectedWallet !== "all" && (() => {
+            const wallet = investmentWallets.find(w => w.id === Number(selectedWallet));
+            if (!wallet) return null;
+            return (
+              <BaseCard className="p-4 mb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-gray-600">Available Cash</div>
+                    <div className="text-xl font-bold text-bg">
+                      {formatCurrency(
+                        wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
+                        wallet.displayCurrency || wallet.balance?.currency || currency
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Ready to invest</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600">Total Wallet Value</div>
+                    <div className="text-xl font-bold">
+                      {formatCurrency(
+                        wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount ?? 0,
+                        wallet.displayCurrency || wallet.totalValue?.currency || currency
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Cash + Investments</div>
+                  </div>
+                </div>
+              </BaseCard>
+            );
+          })()}
+
           {/* Holdings Table */}
           <BaseCard className="p-4">
             <div className="flex justify-between items-center mb-4">

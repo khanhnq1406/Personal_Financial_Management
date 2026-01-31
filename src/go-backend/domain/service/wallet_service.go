@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
@@ -12,6 +13,7 @@ import (
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
 	walletv1 "wealthjourney/protobuf/v1"
+	commonv1 "wealthjourney/protobuf/v1"
 )
 
 // walletService implements WalletService.
@@ -23,6 +25,8 @@ type walletService struct {
 	categoryService  CategoryService
 	fxRateSvc        FXRateService
 	currencyCache    *cache.CurrencyCache
+	investmentRepo   repository.InvestmentRepository
+	redisCache       *redis.Client
 	mapper           *WalletMapper
 }
 
@@ -35,6 +39,8 @@ func NewWalletService(
 	categoryService CategoryService,
 	fxRateSvc FXRateService,
 	currencyCache *cache.CurrencyCache,
+	investmentRepo repository.InvestmentRepository,
+	redisCache *redis.Client,
 ) WalletService {
 	return &walletService{
 		walletRepo:       walletRepo,
@@ -44,6 +50,8 @@ func NewWalletService(
 		categoryService:  categoryService,
 		fxRateSvc:        fxRateSvc,
 		currencyCache:    currencyCache,
+		investmentRepo:   investmentRepo,
+		redisCache:       redisCache,
 		mapper:           NewWalletMapper(),
 	}
 }
@@ -161,9 +169,40 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 		return nil, err
 	}
 
+	// Calculate investment value for INVESTMENT wallets
+	var investmentValue int64 = 0
+	if wallet.Type == walletv1.WalletType_INVESTMENT {
+		investmentValue, err = s.getInvestmentValueWithCache(ctx, walletID)
+		if err != nil {
+			// Log error but don't fail the request
+			// Return wallet with 0 investment value
+			investmentValue = 0
+		}
+	}
+
+	// Calculate total value
+	totalValue := wallet.Balance + investmentValue
+
+	// Get user for currency conversion
+	user, err := s.userRepo.GetByID(ctx, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+	userCurrency := user.PreferredCurrency
+
+	// Convert values to user's preferred currency
+	displayInvestmentValue := s.convertToUserCurrency(investmentValue, wallet.Currency, userCurrency)
+	displayTotalValue := s.convertToUserCurrency(totalValue, wallet.Currency, userCurrency)
+
 	walletProto := s.mapper.ModelToProto(wallet)
 	// Enrich with conversion fields
 	_ = s.enrichWalletProto(ctx, requestingUserID, walletProto, wallet)
+
+	// Set investment value fields
+	walletProto.InvestmentValue = &commonv1.Money{Amount: investmentValue, Currency: wallet.Currency}
+	walletProto.DisplayInvestmentValue = displayInvestmentValue
+	walletProto.TotalValue = &commonv1.Money{Amount: totalValue, Currency: wallet.Currency}
+	walletProto.DisplayTotalValue = displayTotalValue
 
 	return &walletv1.GetWalletResponse{
 		Success:   true,
@@ -193,9 +232,51 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 		return nil, err
 	}
 
-	protoWallets := s.mapper.ModelSliceToProto(wallets)
-	// Enrich with conversion fields
-	s.enrichWalletSliceProto(ctx, userID, protoWallets, wallets)
+	// Get user for currency conversion
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	userCurrency := user.PreferredCurrency
+
+	// Collect investment wallet IDs
+	investmentWalletIDs := []int32{}
+	for _, wallet := range wallets {
+		if wallet.Type == walletv1.WalletType_INVESTMENT {
+			investmentWalletIDs = append(investmentWalletIDs, wallet.ID)
+		}
+	}
+
+	// Batch fetch investment values
+	investmentValueMap := make(map[int32]int64)
+	if len(investmentWalletIDs) > 0 {
+		investmentValueMap, err = s.getInvestmentValuesForWallets(ctx, investmentWalletIDs)
+		if err != nil {
+			// Log error but continue with 0 values
+			investmentValueMap = make(map[int32]int64)
+		}
+	}
+
+	// Build response with investment values
+	protoWallets := make([]*walletv1.Wallet, len(wallets))
+	for i, wallet := range wallets {
+		investmentValue := investmentValueMap[wallet.ID]
+		totalValue := wallet.Balance + investmentValue
+
+		// Convert values
+		displayInvestmentValue := s.convertToUserCurrency(investmentValue, wallet.Currency, userCurrency)
+		displayTotalValue := s.convertToUserCurrency(totalValue, wallet.Currency, userCurrency)
+
+		protoWallets[i] = s.mapper.ModelToProto(wallet)
+		// Enrich with conversion fields
+		_ = s.enrichWalletProto(ctx, userID, protoWallets[i], wallet)
+
+		// Set investment value fields
+		protoWallets[i].InvestmentValue = &commonv1.Money{Amount: investmentValue, Currency: wallet.Currency}
+		protoWallets[i].DisplayInvestmentValue = displayInvestmentValue
+		protoWallets[i].TotalValue = &commonv1.Money{Amount: totalValue, Currency: wallet.Currency}
+		protoWallets[i].DisplayTotalValue = displayTotalValue
+	}
 
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
@@ -692,58 +773,88 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 		return nil, err
 	}
 
-	// Calculate total in user's preferred currency
-	var totalInPreferredCurrency int64
 	preferredCurrency := user.PreferredCurrency
 	if preferredCurrency == "" {
 		preferredCurrency = types.VND // Default to VND if not set
 	}
 
+	var totalCash int64 = 0
+	var totalInvestments int64 = 0
+	baseCurrency := types.VND // Default base currency
+
+	// Collect investment wallet IDs
+	investmentWalletIDs := []int32{}
 	for _, wallet := range wallets {
 		// Skip inactive wallets
 		if wallet.Status != walletv1.WalletStatus_WALLET_STATUS_ACTIVE {
 			continue
 		}
 
-		// Convert to user's preferred currency
-		if wallet.Currency == preferredCurrency {
-			totalInPreferredCurrency += wallet.Balance
+		// Convert to base currency if needed
+		if wallet.Currency == baseCurrency {
+			totalCash += wallet.Balance
 		} else {
-			// Try cache first
-			convertedBalance, err := s.currencyCache.GetConvertedValue(ctx, userID, "wallet", wallet.ID, preferredCurrency)
-			if err != nil || convertedBalance == 0 {
-				// Cache miss - convert on the fly using ConvertAmount which handles decimal places
-				if s.fxRateSvc != nil {
-					convertedBalance, err = s.fxRateSvc.ConvertAmount(ctx, wallet.Balance, wallet.Currency, preferredCurrency)
-					if err != nil {
-						fmt.Printf("Warning: failed to convert balance for %s->%s: %v\n", wallet.Currency, preferredCurrency, err)
-						continue
-					}
-				} else {
-					// No FX service available, skip this wallet
-					fmt.Printf("Warning: no FX service available for currency conversion\n")
-					continue
-				}
-			}
-			totalInPreferredCurrency += convertedBalance
+			converted := s.convertToUserCurrency(wallet.Balance, wallet.Currency, baseCurrency)
+			totalCash += converted.Amount
+		}
+
+		if wallet.Type == walletv1.WalletType_INVESTMENT {
+			investmentWalletIDs = append(investmentWalletIDs, wallet.ID)
 		}
 	}
+
+	// Fetch and aggregate investment values
+	if len(investmentWalletIDs) > 0 {
+		investmentValueMap, err := s.getInvestmentValuesForWallets(ctx, investmentWalletIDs)
+		if err != nil {
+			// Log error but continue
+			totalInvestments = 0
+		} else {
+			for _, value := range investmentValueMap {
+				totalInvestments += value
+			}
+		}
+	}
+
+	// Calculate net worth
+	netWorth := totalCash + totalInvestments
+
+	// Convert to user's preferred currency
+	displayCash := s.convertToUserCurrency(totalCash, baseCurrency, preferredCurrency)
+	displayInvestments := s.convertToUserCurrency(totalInvestments, baseCurrency, preferredCurrency)
+	displayNetWorth := s.convertToUserCurrency(netWorth, baseCurrency, preferredCurrency)
 
 	// Return response with display values
 	return &walletv1.GetTotalBalanceResponse{
 		Success:   true,
 		Message:   "Total balance retrieved successfully",
 		Data: &walletv1.Money{
-			Amount:   totalInPreferredCurrency,
-			Currency: preferredCurrency,
+			Amount:   totalCash,
+			Currency: baseCurrency,
 		},
+		Currency: baseCurrency,
 		DisplayValue: &walletv1.Money{
-			Amount:   totalInPreferredCurrency,
-			Currency: preferredCurrency,
+			Amount:   displayCash.Amount,
+			Currency: displayCash.Currency,
 		},
 		DisplayCurrency: preferredCurrency,
-		Currency:        preferredCurrency,
-		Timestamp:       time.Now().Format(time.RFC3339),
+		TotalInvestments: &walletv1.Money{
+			Amount:   totalInvestments,
+			Currency: baseCurrency,
+		},
+		DisplayTotalInvestments: &walletv1.Money{
+			Amount:   displayInvestments.Amount,
+			Currency: displayInvestments.Currency,
+		},
+		NetWorth: &walletv1.Money{
+			Amount:   netWorth,
+			Currency: baseCurrency,
+		},
+		DisplayNetWorth: &walletv1.Money{
+			Amount:   displayNetWorth.Amount,
+			Currency: displayNetWorth.Currency,
+		},
+		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
@@ -1129,4 +1240,86 @@ func (s *walletService) enrichWalletSliceProto(ctx context.Context, userID int32
 			_ = s.enrichWalletProto(ctx, userID, walletProto, walletModels[i])
 		}
 	}
+}
+
+// getInvestmentValueWithCache retrieves investment value from cache or database
+func (s *walletService) getInvestmentValueWithCache(ctx context.Context, walletID int32) (int64, error) {
+	// Try cache first
+	cacheKey := cache.GetInvestmentValueCacheKey(walletID)
+	cachedValue, err := s.redisCache.Get(ctx, cacheKey).Int64()
+	if err == nil {
+		return cachedValue, nil
+	}
+
+	// Cache miss - fetch from database
+	value, err := s.investmentRepo.GetInvestmentValue(ctx, walletID)
+	if err != nil {
+		return 0, err
+	}
+
+	// Store in cache
+	s.redisCache.Set(ctx, cacheKey, value, time.Duration(cache.InvestmentValueCacheTTL)*time.Second)
+
+	return value, nil
+}
+
+// invalidateInvestmentValueCache clears the cached investment value for a wallet
+func (s *walletService) invalidateInvestmentValueCache(ctx context.Context, walletID int32) {
+	cacheKey := cache.GetInvestmentValueCacheKey(walletID)
+	s.redisCache.Del(ctx, cacheKey)
+}
+
+// getInvestmentValuesForWallets batch fetches investment values for multiple wallets (with caching)
+func (s *walletService) getInvestmentValuesForWallets(ctx context.Context, walletIDs []int32) (map[int32]int64, error) {
+	if len(walletIDs) == 0 {
+		return make(map[int32]int64), nil
+	}
+
+	valueMap := make(map[int32]int64, len(walletIDs))
+	uncachedIDs := []int32{}
+
+	// Try to get values from cache
+	for _, walletID := range walletIDs {
+		cacheKey := cache.GetInvestmentValueCacheKey(walletID)
+		cachedValue, err := s.redisCache.Get(ctx, cacheKey).Int64()
+		if err == nil {
+			valueMap[walletID] = cachedValue
+		} else {
+			uncachedIDs = append(uncachedIDs, walletID)
+		}
+	}
+
+	// Fetch uncached values from database
+	if len(uncachedIDs) > 0 {
+		dbValues, err := s.investmentRepo.GetInvestmentValuesByWalletIDs(ctx, uncachedIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		// Merge and cache
+		for walletID, value := range dbValues {
+			valueMap[walletID] = value
+			cacheKey := cache.GetInvestmentValueCacheKey(walletID)
+			s.redisCache.Set(ctx, cacheKey, value, time.Duration(cache.InvestmentValueCacheTTL)*time.Second)
+		}
+	}
+
+	return valueMap, nil
+}
+
+// convertToUserCurrency converts an amount from wallet currency to user's preferred currency
+func (s *walletService) convertToUserCurrency(amount int64, fromCurrency, toCurrency string) *commonv1.Money {
+	if fromCurrency == toCurrency {
+		return &commonv1.Money{Amount: amount, Currency: toCurrency}
+	}
+
+	// Use existing FX rate service
+	rate, err := s.fxRateSvc.GetRate(context.Background(), fromCurrency, toCurrency)
+	if err != nil {
+		// Return original amount if conversion fails
+		return &commonv1.Money{Amount: amount, Currency: fromCurrency}
+	}
+
+	convertedAmount := int64(float64(amount) * rate)
+	return &commonv1.Money{Amount: convertedAmount, Currency: toCurrency}
 }

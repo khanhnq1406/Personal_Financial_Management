@@ -6,6 +6,7 @@ import { ButtonType, resources } from "@/app/constants";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { ProgressBar } from "@/components/ProgressBar";
 
 interface WalletCardProps {
   wallet: Wallet;
@@ -19,10 +20,26 @@ export const WalletCard = memo(function WalletCard({
   onDelete,
 }: WalletCardProps) {
   const { currency } = useCurrency();
+  const isInvestmentWallet = wallet.type === 1; // WALLET_TYPE_INVESTMENT
 
-  // Use displayBalance if available (converted), otherwise use original balance
+  // Use displayBalance/displayTotalValue if available (converted), otherwise use original
   const balance = wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
   const displayCurrency = wallet.displayCurrency || currency;
+
+  // For investment wallets, calculate total value and breakdown
+  let totalValue = balance;
+  let investmentValue = 0;
+  let cashPercentage = 100;
+
+  if (isInvestmentWallet) {
+    totalValue = wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount ?? balance;
+    investmentValue = wallet.displayInvestmentValue?.amount ?? wallet.investmentValue?.amount ?? 0;
+
+    // Calculate percentage of cash vs investments
+    if (totalValue > 0) {
+      cashPercentage = Math.round((balance / totalValue) * 100);
+    }
+  }
 
   return (
     <BaseCard className="p-4">
@@ -54,11 +71,27 @@ export const WalletCard = memo(function WalletCard({
 
         {/* Balance display */}
         <div className="text-right">
-          <div className="text-sm text-gray-500">Balance</div>
+          <div className="text-sm text-gray-500">
+            {isInvestmentWallet ? "Total Value" : "Balance"}
+          </div>
           <div className="text-2xl font-bold text-bg">
-            {formatCurrency(balance, displayCurrency)}
+            {formatCurrency(totalValue, displayCurrency)}
           </div>
         </div>
+
+        {/* Investment wallet breakdown with progress bar */}
+        {isInvestmentWallet && totalValue > 0 && (
+          <div className="mt-2">
+            <ProgressBar
+              percentage={cashPercentage}
+              label={`${cashPercentage}% cash`}
+            />
+            <div className="flex justify-between text-xs text-gray-600 mt-2">
+              <span>Cash: {formatCurrency(balance, displayCurrency)}</span>
+              <span>Investments: {formatCurrency(investmentValue, displayCurrency)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </BaseCard>
   );
