@@ -141,6 +141,8 @@ func RegisterRoutes(
 		investments.POST("/update-prices", h.Investment.UpdatePrices)
 		// Symbol search routes (must come before :id parameterized route)
 		investments.GET("/symbols/search", h.Investment.SearchSymbols)
+		// Gold type codes (must come before :id parameterized route)
+		investments.GET("/gold-types", h.Gold.GetGoldTypeCodes)
 		// Specific routes must come before :id parameterized route
 		// Investment transaction routes (use :id to be consistent with other routes)
 		investments.GET("/:id/transactions", h.Investment.ListTransactions)

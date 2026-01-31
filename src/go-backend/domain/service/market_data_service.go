@@ -9,14 +9,16 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/gold"
 	"wealthjourney/pkg/validator"
 	"wealthjourney/pkg/yahoo"
+	investmentv1 "wealthjourney/protobuf/v1"
 )
 
 // MarketDataService handles market data operations including price fetching and caching.
 type MarketDataService interface {
 	// GetPrice retrieves the current price for a symbol, using cache if fresh.
-	GetPrice(ctx context.Context, symbol, currency string, maxAge time.Duration) (*models.MarketData, error)
+	GetPrice(ctx context.Context, symbol, currency string, investmentType investmentv1.InvestmentType, maxAge time.Duration) (*models.MarketData, error)
 
 	// UpdatePricesForInvestments updates prices for multiple investments.
 	UpdatePricesForInvestments(ctx context.Context, investments []*models.Investment, forceRefresh bool) (map[int32]int64, error)
@@ -30,19 +32,23 @@ type MarketDataService interface {
 
 // marketDataService implements MarketDataService.
 type marketDataService struct {
-	marketDataRepo repository.MarketDataRepository
+	marketDataRepo    repository.MarketDataRepository
+	goldPriceService  GoldPriceService
+	goldConverter     *gold.Converter
 }
 
 // NewMarketDataService creates a new MarketDataService.
-func NewMarketDataService(marketDataRepo repository.MarketDataRepository) MarketDataService {
+func NewMarketDataService(marketDataRepo repository.MarketDataRepository, goldPriceService GoldPriceService) MarketDataService {
 	return &marketDataService{
-		marketDataRepo: marketDataRepo,
+		marketDataRepo:   marketDataRepo,
+		goldPriceService: goldPriceService,
+		goldConverter:    gold.NewGoldConverter(nil), // Will be injected later if needed
 	}
 }
 
 // GetPrice retrieves the current price for a symbol, using cache if fresh.
 // If cached data is older than maxAge or doesn't exist, fetches from external API.
-func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency string, maxAge time.Duration) (*models.MarketData, error) {
+func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency string, investmentType investmentv1.InvestmentType, maxAge time.Duration) (*models.MarketData, error) {
 	// Validate inputs
 	if symbol == "" {
 		return nil, apperrors.NewValidationError("symbol is required")
@@ -59,7 +65,15 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 	}
 
 	// Cache miss or expired data - fetch from API
-	priceData, err := s.fetchPriceFromAPI(ctx, symbol, currency)
+	var priceData *models.MarketData
+
+	// Check if this is a gold investment
+	if gold.IsGoldType(investmentType) {
+		priceData, err = s.fetchGoldPriceFromAPI(ctx, symbol, currency, investmentType)
+	} else {
+		priceData, err = s.fetchPriceFromAPI(ctx, symbol, currency)
+	}
+
 	if err != nil {
 		// If we have expired cached data, return it as fallback
 		if cached != nil {
@@ -107,7 +121,7 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 			}()
 
 			// Get price for this investment
-			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, maxAge)
+			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, investment.Type, maxAge)
 			if err != nil {
 				// Log error but continue with other investments
 				log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
@@ -149,6 +163,30 @@ func (s *marketDataService) fetchPriceFromAPI(ctx context.Context, symbol, curre
 		Change24h: quote.RegularMarketChangePercent,
 		Volume24h: 0,
 		Timestamp: time.Now(),
+	}, nil
+}
+
+// fetchGoldPriceFromAPI fetches gold price from vang.today API.
+// Used for Vietnamese gold (GOLD_VND) and world gold (GOLD_USD) investments.
+func (s *marketDataService) fetchGoldPriceFromAPI(ctx context.Context, symbol, currency string, investmentType investmentv1.InvestmentType) (*models.MarketData, error) {
+	// Fetch price from vang.today API
+	price, err := s.goldPriceService.FetchPriceForSymbol(ctx, symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch gold price from vang.today: %w", err)
+	}
+
+	// Convert market price to storage format
+	// Market price for VND gold is per tael, need to convert to per gram for storage
+	// Market price for USD gold is already per ounce
+	normalizedPrice := s.goldConverter.ProcessMarketPrice(price.Buy, currency, investmentType)
+
+	return &models.MarketData{
+		Symbol:    symbol,
+		Currency:  currency,
+		Price:     normalizedPrice,
+		Change24h: 0, // vang.today provides change in absolute value, not percent
+		Volume24h: 0,
+		Timestamp: price.UpdateTime,
 	}, nil
 }
 

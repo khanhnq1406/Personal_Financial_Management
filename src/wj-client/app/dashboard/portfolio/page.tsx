@@ -540,6 +540,8 @@ const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
     value: String(InvestmentType.INVESTMENT_TYPE_COMMODITY),
     label: "Commodity",
   },
+  { value: String(InvestmentType.INVESTMENT_TYPE_GOLD_VND), label: "Gold (Vietnam)" },
+  { value: String(InvestmentType.INVESTMENT_TYPE_GOLD_USD), label: "Gold (World)" },
   { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 

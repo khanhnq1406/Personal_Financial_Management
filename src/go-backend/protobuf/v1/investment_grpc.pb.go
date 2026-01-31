@@ -33,6 +33,7 @@ const (
 	InvestmentService_SearchSymbols_FullMethodName                 = "/wealthjourney.investment.v1.InvestmentService/SearchSymbols"
 	InvestmentService_ListUserInvestments_FullMethodName           = "/wealthjourney.investment.v1.InvestmentService/ListUserInvestments"
 	InvestmentService_GetAggregatedPortfolioSummary_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/GetAggregatedPortfolioSummary"
+	InvestmentService_GetGoldTypeCodes_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/GetGoldTypeCodes"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -67,6 +68,9 @@ type InvestmentServiceClient interface {
 	ListUserInvestments(ctx context.Context, in *ListUserInvestmentsRequest, opts ...grpc.CallOption) (*ListUserInvestmentsResponse, error)
 	// Get aggregated portfolio summary across all wallets (or for specific wallet)
 	GetAggregatedPortfolioSummary(ctx context.Context, in *GetAggregatedPortfolioSummaryRequest, opts ...grpc.CallOption) (*GetPortfolioSummaryResponse, error)
+	// GetGoldTypeCodes returns available gold type codes for investment creation
+	// Used for frontend dropdown selection of gold investments
+	GetGoldTypeCodes(ctx context.Context, in *GetGoldTypeCodesRequest, opts ...grpc.CallOption) (*GetGoldTypeCodesResponse, error)
 }
 
 type investmentServiceClient struct {
@@ -203,6 +207,15 @@ func (c *investmentServiceClient) GetAggregatedPortfolioSummary(ctx context.Cont
 	return out, nil
 }
 
+func (c *investmentServiceClient) GetGoldTypeCodes(ctx context.Context, in *GetGoldTypeCodesRequest, opts ...grpc.CallOption) (*GetGoldTypeCodesResponse, error) {
+	out := new(GetGoldTypeCodesResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_GetGoldTypeCodes_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvestmentServiceServer is the server API for InvestmentService service.
 // All implementations must embed UnimplementedInvestmentServiceServer
 // for forward compatibility
@@ -235,6 +248,9 @@ type InvestmentServiceServer interface {
 	ListUserInvestments(context.Context, *ListUserInvestmentsRequest) (*ListUserInvestmentsResponse, error)
 	// Get aggregated portfolio summary across all wallets (or for specific wallet)
 	GetAggregatedPortfolioSummary(context.Context, *GetAggregatedPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error)
+	// GetGoldTypeCodes returns available gold type codes for investment creation
+	// Used for frontend dropdown selection of gold investments
+	GetGoldTypeCodes(context.Context, *GetGoldTypeCodesRequest) (*GetGoldTypeCodesResponse, error)
 	mustEmbedUnimplementedInvestmentServiceServer()
 }
 
@@ -283,6 +299,9 @@ func (UnimplementedInvestmentServiceServer) ListUserInvestments(context.Context,
 }
 func (UnimplementedInvestmentServiceServer) GetAggregatedPortfolioSummary(context.Context, *GetAggregatedPortfolioSummaryRequest) (*GetPortfolioSummaryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAggregatedPortfolioSummary not implemented")
+}
+func (UnimplementedInvestmentServiceServer) GetGoldTypeCodes(context.Context, *GetGoldTypeCodesRequest) (*GetGoldTypeCodesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGoldTypeCodes not implemented")
 }
 func (UnimplementedInvestmentServiceServer) mustEmbedUnimplementedInvestmentServiceServer() {}
 
@@ -549,6 +568,24 @@ func _InvestmentService_GetAggregatedPortfolioSummary_Handler(srv interface{}, c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InvestmentService_GetGoldTypeCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGoldTypeCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).GetGoldTypeCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_GetGoldTypeCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).GetGoldTypeCodes(ctx, req.(*GetGoldTypeCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InvestmentService_ServiceDesc is the grpc.ServiceDesc for InvestmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -611,6 +648,10 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAggregatedPortfolioSummary",
 			Handler:    _InvestmentService_GetAggregatedPortfolioSummary_Handler,
+		},
+		{
+			MethodName: "GetGoldTypeCodes",
+			Handler:    _InvestmentService_GetGoldTypeCodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

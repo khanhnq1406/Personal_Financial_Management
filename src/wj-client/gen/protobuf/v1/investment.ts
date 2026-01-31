@@ -19,6 +19,10 @@ export const InvestmentType = {
   INVESTMENT_TYPE_BOND: 5,
   INVESTMENT_TYPE_COMMODITY: 6,
   INVESTMENT_TYPE_OTHER: 7,
+  /** INVESTMENT_TYPE_GOLD_VND - Gold-specific types for dual conversion (unit + currency) */
+  INVESTMENT_TYPE_GOLD_VND: 8,
+  /** INVESTMENT_TYPE_GOLD_USD - World gold (XAU/USD) - priced in USD, stored in ounces */
+  INVESTMENT_TYPE_GOLD_USD: 9,
   UNRECOGNIZED: -1,
 } as const;
 
@@ -33,6 +37,8 @@ export namespace InvestmentType {
   export type INVESTMENT_TYPE_BOND = typeof InvestmentType.INVESTMENT_TYPE_BOND;
   export type INVESTMENT_TYPE_COMMODITY = typeof InvestmentType.INVESTMENT_TYPE_COMMODITY;
   export type INVESTMENT_TYPE_OTHER = typeof InvestmentType.INVESTMENT_TYPE_OTHER;
+  export type INVESTMENT_TYPE_GOLD_VND = typeof InvestmentType.INVESTMENT_TYPE_GOLD_VND;
+  export type INVESTMENT_TYPE_GOLD_USD = typeof InvestmentType.INVESTMENT_TYPE_GOLD_USD;
   export type UNRECOGNIZED = typeof InvestmentType.UNRECOGNIZED;
 }
 
@@ -62,6 +68,12 @@ export function investmentTypeFromJSON(object: any): InvestmentType {
     case 7:
     case "INVESTMENT_TYPE_OTHER":
       return InvestmentType.INVESTMENT_TYPE_OTHER;
+    case 8:
+    case "INVESTMENT_TYPE_GOLD_VND":
+      return InvestmentType.INVESTMENT_TYPE_GOLD_VND;
+    case 9:
+    case "INVESTMENT_TYPE_GOLD_USD":
+      return InvestmentType.INVESTMENT_TYPE_GOLD_USD;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -87,6 +99,10 @@ export function investmentTypeToJSON(object: InvestmentType): string {
       return "INVESTMENT_TYPE_COMMODITY";
     case InvestmentType.INVESTMENT_TYPE_OTHER:
       return "INVESTMENT_TYPE_OTHER";
+    case InvestmentType.INVESTMENT_TYPE_GOLD_VND:
+      return "INVESTMENT_TYPE_GOLD_VND";
+    case InvestmentType.INVESTMENT_TYPE_GOLD_USD:
+      return "INVESTMENT_TYPE_GOLD_USD";
     case InvestmentType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -275,6 +291,38 @@ export interface InvestmentByType {
   type: InvestmentType;
   totalValue: number;
   count: number;
+}
+
+/**
+ * GoldTypeCode represents a gold type available for investment
+ * Used for frontend selection of gold investments
+ */
+export interface GoldTypeCode {
+  /** e.g., "SJL1L10", "XAU" */
+  code: string;
+  /** Display name (e.g., "SJC 1L-10L", "Gold World") */
+  name: string;
+  /** "VND" or "USD" */
+  currency: string;
+  /** "tael", "gram", or "oz" */
+  unit: string;
+  /** Weight in grams */
+  unitWeight: number;
+  /** InvestmentType enum value */
+  type: number;
+}
+
+/** GetGoldTypeCodesRequest for fetching available gold types */
+export interface GetGoldTypeCodesRequest {
+  /** Optional filter: "VND", "USD", or empty for all */
+  currency: string;
+}
+
+/** GetGoldTypeCodesResponse for gold type codes */
+export interface GetGoldTypeCodesResponse {
+  success: boolean;
+  data: GoldTypeCode[];
+  timestamp: string;
 }
 
 /** Request/Response messages */
@@ -1625,6 +1673,296 @@ export const InvestmentByType: MessageFns<InvestmentByType> = {
     message.type = object.type ?? 0;
     message.totalValue = object.totalValue ?? 0;
     message.count = object.count ?? 0;
+    return message;
+  },
+};
+
+function createBaseGoldTypeCode(): GoldTypeCode {
+  return { code: "", name: "", currency: "", unit: "", unitWeight: 0, type: 0 };
+}
+
+export const GoldTypeCode: MessageFns<GoldTypeCode> = {
+  encode(message: GoldTypeCode, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.currency !== "") {
+      writer.uint32(26).string(message.currency);
+    }
+    if (message.unit !== "") {
+      writer.uint32(34).string(message.unit);
+    }
+    if (message.unitWeight !== 0) {
+      writer.uint32(41).double(message.unitWeight);
+    }
+    if (message.type !== 0) {
+      writer.uint32(48).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GoldTypeCode {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGoldTypeCode();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.unit = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 41) {
+            break;
+          }
+
+          message.unitWeight = reader.double();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.type = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GoldTypeCode {
+    return {
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      unit: isSet(object.unit) ? globalThis.String(object.unit) : "",
+      unitWeight: isSet(object.unitWeight) ? globalThis.Number(object.unitWeight) : 0,
+      type: isSet(object.type) ? globalThis.Number(object.type) : 0,
+    };
+  },
+
+  toJSON(message: GoldTypeCode): unknown {
+    const obj: any = {};
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.unit !== "") {
+      obj.unit = message.unit;
+    }
+    if (message.unitWeight !== 0) {
+      obj.unitWeight = message.unitWeight;
+    }
+    if (message.type !== 0) {
+      obj.type = Math.round(message.type);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GoldTypeCode>): GoldTypeCode {
+    return GoldTypeCode.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GoldTypeCode>): GoldTypeCode {
+    const message = createBaseGoldTypeCode();
+    message.code = object.code ?? "";
+    message.name = object.name ?? "";
+    message.currency = object.currency ?? "";
+    message.unit = object.unit ?? "";
+    message.unitWeight = object.unitWeight ?? 0;
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetGoldTypeCodesRequest(): GetGoldTypeCodesRequest {
+  return { currency: "" };
+}
+
+export const GetGoldTypeCodesRequest: MessageFns<GetGoldTypeCodesRequest> = {
+  encode(message: GetGoldTypeCodesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.currency !== "") {
+      writer.uint32(10).string(message.currency);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGoldTypeCodesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGoldTypeCodesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGoldTypeCodesRequest {
+    return { currency: isSet(object.currency) ? globalThis.String(object.currency) : "" };
+  },
+
+  toJSON(message: GetGoldTypeCodesRequest): unknown {
+    const obj: any = {};
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetGoldTypeCodesRequest>): GetGoldTypeCodesRequest {
+    return GetGoldTypeCodesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetGoldTypeCodesRequest>): GetGoldTypeCodesRequest {
+    const message = createBaseGetGoldTypeCodesRequest();
+    message.currency = object.currency ?? "";
+    return message;
+  },
+};
+
+function createBaseGetGoldTypeCodesResponse(): GetGoldTypeCodesResponse {
+  return { success: false, data: [], timestamp: "" };
+}
+
+export const GetGoldTypeCodesResponse: MessageFns<GetGoldTypeCodesResponse> = {
+  encode(message: GetGoldTypeCodesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    for (const v of message.data) {
+      GoldTypeCode.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGoldTypeCodesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGoldTypeCodesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(GoldTypeCode.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGoldTypeCodesResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => GoldTypeCode.fromJSON(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetGoldTypeCodesResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => GoldTypeCode.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetGoldTypeCodesResponse>): GetGoldTypeCodesResponse {
+    return GetGoldTypeCodesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetGoldTypeCodesResponse>): GetGoldTypeCodesResponse {
+    const message = createBaseGetGoldTypeCodesResponse();
+    message.success = object.success ?? false;
+    message.data = object.data?.map((e) => GoldTypeCode.fromPartial(e)) || [];
+    message.timestamp = object.timestamp ?? "";
     return message;
   },
 };

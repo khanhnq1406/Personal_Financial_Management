@@ -1558,8 +1558,10 @@ func (s *investmentService) convertInvestmentValues(ctx context.Context, userID 
 
 	// Store total cost in cache (non-blocking, log errors only)
 	go func() {
-		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "investment", investment.ID, user.PreferredCurrency, convertedTotalCost); err != nil {
-			fmt.Printf("Warning: failed to cache converted values for investment %d: %v\n", investment.ID, err)
+		if s.currencyCache != nil {
+			if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "investment", investment.ID, user.PreferredCurrency, convertedTotalCost); err != nil {
+				fmt.Printf("Warning: failed to cache converted values for investment %d: %v\n", investment.ID, err)
+			}
 		}
 	}()
 
@@ -1592,6 +1594,9 @@ func (s *investmentService) populateInvestmentCache(ctx context.Context, userID 
 // invalidateInvestmentCache removes cached conversions for an investment
 // Called when investment is updated or deleted
 func (s *investmentService) invalidateInvestmentCache(ctx context.Context, userID int32, investmentID int32) error {
+	if s.currencyCache == nil {
+		return nil
+	}
 	return s.currencyCache.DeleteEntityCache(ctx, userID, "investment", investmentID)
 }
 

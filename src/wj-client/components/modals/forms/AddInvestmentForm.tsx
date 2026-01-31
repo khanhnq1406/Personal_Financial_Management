@@ -39,6 +39,13 @@ import { Label } from "@/components/forms/Label";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
 import { CurrencyBadge } from "@/components/forms/CurrencyBadge";
 import { useExchangeRate, convertAmount, formatExchangeRate } from "@/hooks/useExchangeRate";
+import {
+  isGoldType,
+  getGoldTypeOptions,
+  type GoldTypeOption,
+  type GoldUnit,
+  calculateGoldFromUserInput,
+} from "@/lib/utils/gold-calculator";
 
 interface AddInvestmentFormProps {
   walletId?: number; // Optional: if not provided, user must select from dropdown
@@ -60,6 +67,8 @@ const investmentTypeOptions: SelectOption[] = [
   },
   { value: InvestmentType.INVESTMENT_TYPE_BOND, label: "Bond" },
   { value: InvestmentType.INVESTMENT_TYPE_COMMODITY, label: "Commodity" },
+  { value: InvestmentType.INVESTMENT_TYPE_GOLD_VND, label: "Gold (Vietnam)" },
+  { value: InvestmentType.INVESTMENT_TYPE_GOLD_USD, label: "Gold (World)" },
   { value: InvestmentType.INVESTMENT_TYPE_OTHER, label: "Other" },
 ];
 
@@ -76,6 +85,9 @@ export function AddInvestmentForm({
   const [insufficientBalance, setInsufficientBalance] = useState(false);
   // Local wallet selection state (used when walletId not provided)
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(propWalletId ?? null);
+  // Gold-specific state
+  const [selectedGoldType, setSelectedGoldType] = useState<GoldTypeOption | null>(null);
+  const [goldQuantityUnit, setGoldQuantityUnit] = useState<GoldUnit>("tael");
 
   // Fetch user's wallets if walletId not provided
   const getListWallets = useQueryListWallets(
@@ -169,6 +181,29 @@ export function AddInvestmentForm({
   const initialCost = watch("initialCost");
   const quantityConfig = getQuantityInputConfig(investmentType);
 
+  // Check if current investment type is gold
+  const isGoldInvestment = isGoldType(investmentType);
+
+  // Get gold type options based on selected currency
+  const goldTypeOptions = useMemo(() => {
+    if (!isGoldInvestment) return [];
+    return getGoldTypeOptions(currency);
+  }, [isGoldInvestment, currency]);
+
+  // Update gold quantity unit based on selected gold type
+  useEffect(() => {
+    if (selectedGoldType) {
+      setGoldQuantityUnit(selectedGoldType.unit);
+    }
+  }, [selectedGoldType]);
+
+  // Reset gold type when investment type changes
+  useEffect(() => {
+    if (!isGoldInvestment) {
+      setSelectedGoldType(null);
+    }
+  }, [isGoldInvestment]);
+
   // Fetch exchange rate when currencies differ
   const currenciesMatch = currency === walletCurrency;
   const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
@@ -226,16 +261,46 @@ export function AddInvestmentForm({
       return;
     }
 
-    // Convert to API format using utility functions
-    createInvestmentMutation.mutate({
-      walletId,
-      symbol: data.symbol.toUpperCase(),
-      name: data.name,
-      type: data.type,
-      initialQuantity: quantityToStorage(data.initialQuantity, data.type),
-      initialCost: amountToSmallestUnit(data.initialCost, data.currency),
-      currency: data.currency,
-    });
+    // Validate gold type is selected for gold investments
+    if (isGoldInvestment && !selectedGoldType) {
+      setErrorMessage("Please select a gold type");
+      return;
+    }
+
+    if (isGoldInvestment && selectedGoldType) {
+      // Use gold calculator for gold investments
+      const goldCalculation = calculateGoldFromUserInput({
+        quantity: data.initialQuantity,
+        quantityUnit: goldQuantityUnit,
+        pricePerUnit: data.initialCost / data.initialQuantity, // Calculate price per unit
+        priceCurrency: data.currency,
+        priceUnit: goldQuantityUnit,
+        investmentType: data.type,
+        walletCurrency: walletCurrency,
+        fxRate: exchangeRate || 1,
+      });
+
+      createInvestmentMutation.mutate({
+        walletId,
+        symbol: selectedGoldType.value,
+        name: selectedGoldType.label,
+        type: data.type,
+        initialQuantity: goldCalculation.storedQuantity,
+        initialCost: goldCalculation.totalCostWallet,
+        currency: walletCurrency, // Store in wallet currency
+      });
+    } else {
+      // Convert to API format using utility functions for non-gold
+      createInvestmentMutation.mutate({
+        walletId,
+        symbol: data.symbol.toUpperCase(),
+        name: data.name,
+        type: data.type,
+        initialQuantity: quantityToStorage(data.initialQuantity, data.type),
+        initialCost: amountToSmallestUnit(data.initialCost, data.currency),
+        currency: data.currency,
+      });
+    }
   };
 
   // Build wallet options for selector
@@ -276,33 +341,37 @@ export function AddInvestmentForm({
         </div>
       )}
 
-      {/* Symbol */}
-      <div className="mb-4">
-        <Label htmlFor="symbol" required>
-          Symbol
-        </Label>
-        <SymbolAutocomplete
-          value={watch("symbol")}
-          onChange={handleSymbolChange}
-          placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
-          disabled={isSubmitting}
-          className="mt-1"
-        />
-        {errors.symbol && (
-          <ErrorMessage id="symbol-error">{errors.symbol.message}</ErrorMessage>
-        )}
-      </div>
+      {/* Symbol - hidden for gold investments (auto-populated from gold type) */}
+      {!isGoldInvestment && (
+        <div className="mb-4">
+          <Label htmlFor="symbol" required>
+            Symbol
+          </Label>
+          <SymbolAutocomplete
+            value={watch("symbol")}
+            onChange={handleSymbolChange}
+            placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
+            disabled={isSubmitting}
+            className="mt-1"
+          />
+          {errors.symbol && (
+            <ErrorMessage id="symbol-error">{errors.symbol.message}</ErrorMessage>
+          )}
+        </div>
+      )}
 
-      {/* Name */}
-      <FormInput
-        name="name"
-        control={control}
-        label="Name"
-        placeholder="Apple Inc., Bitcoin, Vanguard Total Stock Market ETF..."
-        required
-        disabled={isSubmitting}
-        className="mb-4"
-      />
+      {/* Name - hidden for gold investments (auto-populated from gold type) */}
+      {!isGoldInvestment && (
+        <FormInput
+          name="name"
+          control={control}
+          label="Name"
+          placeholder="Apple Inc., Bitcoin, Vanguard Total Stock Market ETF..."
+          required
+          disabled={isSubmitting}
+          className="mb-4"
+        />
+      )}
 
       {/* Type */}
       <FormSelect
@@ -316,21 +385,92 @@ export function AddInvestmentForm({
         className="mb-4"
       />
 
+      {/* Gold Type Selector - shown only for gold investments */}
+      {isGoldInvestment && (
+        <div className="mb-4">
+          <Label htmlFor="goldType" required>
+            Gold Type
+          </Label>
+          <Select
+            options={goldTypeOptions.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
+            value={selectedGoldType?.value}
+            onChange={(value) => {
+              const selected = goldTypeOptions.find((opt) => opt.value === value);
+              if (selected) {
+                setSelectedGoldType(selected);
+                setValue("symbol", selected.value);
+                setValue("name", selected.label);
+                // Set currency based on gold type
+                setValue("currency", selected.currency);
+              }
+            }}
+            placeholder="Select gold type (SJC, XAU, etc.)"
+            disabled={isSubmitting}
+            className="mt-1"
+          />
+          {selectedGoldType && (
+            <p className="text-xs text-gray-500 mt-1 ml-1">
+              Unit: {selectedGoldType.unit} | Currency: {selectedGoldType.currency}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Initial Quantity */}
       <div>
-        <FormNumberInput
-          name="initialQuantity"
-          control={control}
-          label="Initial Quantity"
-          placeholder={quantityConfig.placeholder}
-          required
-          disabled={isSubmitting}
-          min={0}
-          step={quantityConfig.step}
-        />
-        <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
-          Number of shares, coins, or units you hold
-        </p>
+        {isGoldInvestment ? (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <Label htmlFor="initialQuantity" required>
+                Quantity
+              </Label>
+              {selectedGoldType?.currency === "VND" && (
+                <Select
+                  options={[
+                    { value: "tael", label: "Tael (lượng)" },
+                    { value: "gram", label: "Gram (g)" },
+                  ]}
+                  value={goldQuantityUnit}
+                  onChange={(value) => setGoldQuantityUnit(value as GoldUnit)}
+                  disabled={isSubmitting}
+                  className="w-40"
+                />
+              )}
+            </div>
+            <FormNumberInput
+              name="initialQuantity"
+              control={control}
+              label=""
+              placeholder={`e.g., ${goldQuantityUnit === "tael" ? "2.5" : "100"}`}
+              required
+              disabled={isSubmitting}
+              min={0}
+              step="0.01"
+            />
+            <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
+              Amount of gold in {goldQuantityUnit === "tael" ? "taels (lượng)" : "grams"}
+            </p>
+          </>
+        ) : (
+          <>
+            <FormNumberInput
+              name="initialQuantity"
+              control={control}
+              label="Initial Quantity"
+              placeholder={quantityConfig.placeholder}
+              required
+              disabled={isSubmitting}
+              min={0}
+              step={quantityConfig.step}
+            />
+            <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
+              Number of shares, coins, or units you hold
+            </p>
+          </>
+        )}
       </div>
 
       {/* Initial Cost */}

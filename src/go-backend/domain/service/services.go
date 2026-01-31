@@ -28,11 +28,14 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 		us.SetCategoryService(categorySvc)
 	}
 
-	// Create market data service
-	marketDataSvc := NewMarketDataService(repos.MarketData)
-
-	// Create FX rate service
+	// Create FX rate service first (needed by other services)
 	fxRateSvc := NewFXRateService(repos.FXRate, redisClient)
+
+	// Create gold price service (needed by market data service)
+	goldPriceSvc := NewGoldPriceService(redisClient)
+
+	// Create market data service
+	marketDataSvc := NewMarketDataService(repos.MarketData, goldPriceSvc)
 
 	// Create currency cache
 	currencyCache := cache.NewCurrencyCache(redisClient)

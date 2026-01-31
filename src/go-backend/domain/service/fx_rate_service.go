@@ -102,6 +102,13 @@ func (s *fxRateService) ConvertAmount(ctx context.Context, amount int64, fromCur
 	return s.converter.ConvertAmountWithRateAndCurrencies(amount, rate, fromCurrency, toCurrency), nil
 }
 
+// ConvertAmountWithRate converts an amount using a provided FX rate (avoids fetching the rate)
+// Accounts for different decimal places between currencies (e.g., USD has 2, VND has 0)
+func (s *fxRateService) ConvertAmountWithRate(ctx context.Context, amount int64, rate float64, fromCurrency, toCurrency string) (int64, error) {
+	// Convert using the provided rate with proper decimal handling
+	return s.converter.ConvertAmountWithRateAndCurrencies(amount, rate, fromCurrency, toCurrency), nil
+}
+
 // BatchGetRates retrieves multiple FX rates in parallel for efficiency
 func (s *fxRateService) BatchGetRates(ctx context.Context, pairs []CurrencyPair) (map[CurrencyPair]float64, error) {
 	results := make(map[CurrencyPair]float64)

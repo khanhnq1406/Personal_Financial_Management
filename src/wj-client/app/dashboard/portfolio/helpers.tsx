@@ -1,5 +1,12 @@
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
 import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
+import {
+  isGoldType,
+  getGoldTypeLabel as getGoldTypeLabelUtil,
+  formatGoldQuantityDisplay,
+  formatGoldPriceDisplay,
+  getGoldUnitLabel,
+} from "@/lib/utils/gold-calculator";
 
 // Formatting helpers
 export const formatCurrency = (amount: number, currency: string = "VND"): string => {
@@ -36,6 +43,11 @@ export const formatPrice = (price: number, type: InvestmentType, currency: strin
 };
 
 export const getInvestmentTypeLabel = (type: InvestmentType): string => {
+  // Use gold calculator utility for gold types
+  if (isGoldType(type)) {
+    return getGoldTypeLabelUtil(type);
+  }
+
   switch (type) {
     case InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY:
       return "Crypto";
@@ -93,3 +105,87 @@ export const formatTimeAgo = (timestamp: number): { text: string; colorClass: st
 
   return { text, colorClass };
 };
+
+// Gold-specific formatting functions
+
+/**
+ * Format gold quantity for display with appropriate unit
+ * @param storedQuantity - Quantity in storage format (base unit × 10000)
+ * @param investmentType - The investment type
+ * @returns Formatted quantity string (e.g., "2.0000 lượng" for VND gold)
+ */
+export function formatGoldQuantity(storedQuantity: number, investmentType: InvestmentType): string {
+  if (!isGoldType(investmentType)) {
+    // Use default formatting for non-gold investments
+    const decimals = getDecimalsForType(investmentType);
+    return (storedQuantity / Math.pow(10, decimals)).toFixed(decimals);
+  }
+
+  const { value, unit } = formatGoldQuantityDisplay(storedQuantity, investmentType, '');
+  const unitLabel = getGoldUnitLabel(unit);
+
+  return `${value.toFixed(4)} ${unitLabel}`;
+}
+
+/**
+ * Format gold price for display with appropriate unit
+ * @param price - Price in smallest currency unit
+ * @param currency - Currency code
+ * @param priceUnit - Unit of the price (if different from market default)
+ * @returns Formatted price string (e.g., "85,000,000 ₫/lượng" for VND gold)
+ */
+export function formatGoldPrice(
+  price: number,
+  currency: string,
+  priceUnit?: string,
+  investmentType?: InvestmentType
+): string {
+  // For gold, we know the market price unit
+  let unit: 'tael' | 'oz' = 'tael';
+
+  if (investmentType === 9) { // GOLD_USD
+    unit = 'oz';
+  } else if (currency === 'USD') {
+    unit = 'oz';
+  }
+
+  // Use provided priceUnit if available
+  if (priceUnit) {
+    unit = priceUnit as 'tael' | 'oz';
+  }
+
+  const unitLabel = getGoldUnitLabel(unit);
+
+  // Format price with currency
+  const formattedPrice = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price / (currency === 'VND' ? 1 : 100));
+
+  return `${formattedPrice}/${unitLabel}`;
+}
+
+/**
+ * Get decimal precision for an investment type (for non-gold)
+ */
+function getDecimalsForType(type: InvestmentType): number {
+  if (type === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY) {
+    return 8;
+  } else if (
+    type === InvestmentType.INVESTMENT_TYPE_STOCK ||
+    type === InvestmentType.INVESTMENT_TYPE_ETF ||
+    type === InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND
+  ) {
+    return 4;
+  }
+  return 2;
+}
+
+/**
+ * Check if an investment is gold type
+ */
+export function isGoldInvestment(type: InvestmentType): boolean {
+  return isGoldType(type);
+}

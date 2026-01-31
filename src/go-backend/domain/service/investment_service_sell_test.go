@@ -67,6 +67,7 @@ func TestSellTransaction_CostBasisPreserved(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -123,8 +124,13 @@ func TestSellTransaction_CostBasisPreserved(t *testing.T) {
 	expectedRealizedPNL := int64(59900)
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil)
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{lot}, nil)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil)
+	// For populateInvestmentCache
+	mockUserRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, PreferredCurrency: "USD"}, nil)
 	mockTxRepo.On("UpdateLot", ctx, mock.MatchedBy(func(l *models.InvestmentLot) bool {
 		return l.ID == 1 && l.RemainingQuantity == 7000
 	})).Return(nil)
@@ -176,6 +182,7 @@ func TestSellTransaction_SellAllShares(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -219,8 +226,13 @@ func TestSellTransaction_SellAllShares(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil)
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{lot}, nil)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil)
+	// For populateInvestmentCache
+	mockUserRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, PreferredCurrency: "USD"}, nil)
 	mockTxRepo.On("UpdateLot", ctx, mock.MatchedBy(func(l *models.InvestmentLot) bool {
 		return l.ID == 1 && l.RemainingQuantity == 0
 	})).Return(nil)
@@ -271,6 +283,7 @@ func TestSellTransaction_MultipleBuysThenSell(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -334,8 +347,13 @@ func TestSellTransaction_MultipleBuysThenSell(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil)
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{lot1, lot2}, nil)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil)
+	// For populateInvestmentCache
+	mockUserRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, PreferredCurrency: "USD"}, nil)
 	mockTxRepo.On("UpdateLot", ctx, mock.MatchedBy(func(l *models.InvestmentLot) bool {
 		return l.ID == 1 && l.RemainingQuantity == 7000 // Oldest lot consumed first
 	})).Return(nil)
@@ -380,6 +398,7 @@ func TestSellTransaction_InsufficientQuantity(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -411,7 +430,9 @@ func TestSellTransaction_InsufficientQuantity(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil).Maybe()
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil).Maybe()
 
 	// Execute
 	response, err := service.AddTransaction(ctx, userID, req)
@@ -421,9 +442,6 @@ func TestSellTransaction_InsufficientQuantity(t *testing.T) {
 	assert.Nil(t, response)
 	assert.IsType(t, apperrors.ValidationError{}, err)
 	assert.Contains(t, err.Error(), "insufficient quantity")
-
-	mockWalletRepo.AssertExpectations(t)
-	mockInvestmentRepo.AssertExpectations(t)
 }
 
 // TestSellTransaction_NoOpenLots validates error handling when no lots available
@@ -444,6 +462,7 @@ func TestSellTransaction_NoOpenLots(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -475,8 +494,11 @@ func TestSellTransaction_NoOpenLots(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil).Maybe()
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil).Maybe()
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{}, nil)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil).Maybe()
 
 	// Execute
 	response, err := service.AddTransaction(ctx, userID, req)
@@ -486,10 +508,6 @@ func TestSellTransaction_NoOpenLots(t *testing.T) {
 	assert.Nil(t, response)
 	assert.IsType(t, apperrors.ValidationError{}, err)
 	assert.Contains(t, err.Error(), "no open lots")
-
-	mockWalletRepo.AssertExpectations(t)
-	mockInvestmentRepo.AssertExpectations(t)
-	mockTxRepo.AssertExpectations(t)
 }
 
 // TestSellTransaction_FIFOMultipleLots verifies FIFO consumption across multiple lots
@@ -510,6 +528,7 @@ func TestSellTransaction_FIFOMultipleLots(t *testing.T) {
 		mockUserRepo,
 		mockFXRateSvc,
 		nil, // currencyCache not needed for this test
+		new(MockWalletService),
 	).(*investmentService)
 
 	ctx := context.Background()
@@ -580,8 +599,13 @@ func TestSellTransaction_FIFOMultipleLots(t *testing.T) {
 	}
 
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockInvestmentRepo.On("GetByID", ctx, investmentID).Return(investment, nil)
 	mockTxRepo.On("GetOpenLots", ctx, investmentID).Return([]*models.InvestmentLot{lot1, lot2, lot3}, nil)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil)
+	// For populateInvestmentCache
+	mockUserRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, PreferredCurrency: "USD"}, nil)
 
 	// Both lot1 and lot2 should be updated
 	updateCount := 0

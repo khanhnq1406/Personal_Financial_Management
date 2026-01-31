@@ -44,6 +44,9 @@ enum InvestmentType {
   INVESTMENT_TYPE_BOND = 5;
   INVESTMENT_TYPE_COMMODITY = 6;
   INVESTMENT_TYPE_OTHER = 7;
+  // Gold-specific types for dual conversion (unit + currency)
+  INVESTMENT_TYPE_GOLD_VND = 8;      // Vietnamese gold (SJC) - priced in VND, stored in grams
+  INVESTMENT_TYPE_GOLD_USD = 9;      // World gold (XAU/USD) - priced in USD, stored in ounces
 }
 
 // InvestmentTransaction represents a buy or sell transaction
@@ -97,6 +100,29 @@ message InvestmentByType {
   InvestmentType type = 1 [json_name = "type"];
   int64 totalValue = 2 [json_name = "totalValue"];
   int32 count = 3 [json_name = "count"];
+}
+
+// GoldTypeCode represents a gold type available for investment
+// Used for frontend selection of gold investments
+message GoldTypeCode {
+  string code = 1 [json_name = "code"];           // e.g., "SJL1L10", "XAU"
+  string name = 2 [json_name = "name"];           // Display name (e.g., "SJC 1L-10L", "Gold World")
+  string currency = 3 [json_name = "currency"];   // "VND" or "USD"
+  string unit = 4 [json_name = "unit"];           // "tael", "gram", or "oz"
+  double unitWeight = 5 [json_name = "unitWeight"]; // Weight in grams
+  int32 type = 6 [json_name = "type"];            // InvestmentType enum value
+}
+
+// GetGoldTypeCodesRequest for fetching available gold types
+message GetGoldTypeCodesRequest {
+  string currency = 1 [json_name = "currency"];  // Optional filter: "VND", "USD", or empty for all
+}
+
+// GetGoldTypeCodesResponse for gold type codes
+message GetGoldTypeCodesResponse {
+  bool success = 1 [json_name = "success"];
+  repeated GoldTypeCode data = 2 [json_name = "data"];
+  string timestamp = 3 [json_name = "timestamp"];
 }
 
 // Service definition
@@ -201,6 +227,14 @@ service InvestmentService {
   rpc GetAggregatedPortfolioSummary(GetAggregatedPortfolioSummaryRequest) returns (GetPortfolioSummaryResponse) {
     option (google.api.http) = {
       get: "/api/v1/portfolio-summary"
+    };
+  }
+
+  // GetGoldTypeCodes returns available gold type codes for investment creation
+  // Used for frontend dropdown selection of gold investments
+  rpc GetGoldTypeCodes(GetGoldTypeCodesRequest) returns (GetGoldTypeCodesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/gold-types"
     };
   }
 }
