@@ -1241,6 +1241,7 @@ func (s *walletService) invalidateWalletCache(ctx context.Context, userID int32,
 
 // enrichWalletProto adds conversion fields to a wallet proto response
 // This fetches the user's preferred currency and gets the converted balance from cache
+// If cache is empty, performs on-the-fly conversion
 func (s *walletService) enrichWalletProto(ctx context.Context, userID int32, walletProto *walletv1.Wallet, walletModel *models.Wallet) error {
 	if s.currencyCache == nil {
 		return nil
@@ -1259,13 +1260,22 @@ func (s *walletService) enrichWalletProto(ctx context.Context, userID int32, wal
 
 	// Try to get from cache first
 	convertedBalance, err := s.currencyCache.GetConvertedValue(ctx, userID, "wallet", walletModel.ID, user.PreferredCurrency)
-	if err == nil && convertedBalance > 0 {
-		walletProto.DisplayBalance = &walletv1.Money{
-			Amount:   convertedBalance,
-			Currency: user.PreferredCurrency,
+	if err != nil || convertedBalance == 0 {
+		// Cache miss - perform on-the-fly conversion
+		convertedBalance, err = s.fxRateSvc.ConvertAmount(ctx, walletModel.Balance, walletModel.Currency, user.PreferredCurrency)
+		if err != nil {
+			// Still don't fail - just skip the conversion
+			return nil
 		}
-		walletProto.DisplayCurrency = user.PreferredCurrency
+		// Cache the converted value for future requests
+		_ = s.currencyCache.SetConvertedValue(ctx, userID, "wallet", walletModel.ID, user.PreferredCurrency, convertedBalance)
 	}
+
+	walletProto.DisplayBalance = &walletv1.Money{
+		Amount:   convertedBalance,
+		Currency: user.PreferredCurrency,
+	}
+	walletProto.DisplayCurrency = user.PreferredCurrency
 
 	return nil
 }
