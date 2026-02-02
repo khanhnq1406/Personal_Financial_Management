@@ -480,15 +480,24 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 		return nil, err
 	}
 
+	// Get user's preferred currency for aggregation
+	user, _ := s.userRepo.GetByID(ctx, userID)
+	preferredCurrency := types.VND // Default
+	if user != nil && user.PreferredCurrency != "" {
+		preferredCurrency = user.PreferredCurrency
+	}
+
 	// Create monthly data structure for each wallet
 	walletDataMap := make(map[int32]*v1.WalletFinancialData)
 	for _, wallet := range targetWallets {
 		monthlyData := make([]*v1.MonthlyFinancialData, 12)
 		for month := 0; month < 12; month++ {
 			monthlyData[month] = &v1.MonthlyFinancialData{
-				Month:   int32(month),
-				Income:  &v1.Money{Amount: 0, Currency: wallet.Currency},
-				Expense: &v1.Money{Amount: 0, Currency: wallet.Currency},
+				Month:         int32(month),
+				Income:        &v1.Money{Amount: 0, Currency: wallet.Currency},
+				Expense:       &v1.Money{Amount: 0, Currency: wallet.Currency},
+				DisplayIncome: &v1.Money{Amount: 0, Currency: preferredCurrency},
+				DisplayExpense: &v1.Money{Amount: 0, Currency: preferredCurrency},
 			}
 		}
 		walletDataMap[wallet.ID] = &v1.WalletFinancialData{
@@ -496,6 +505,12 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 			WalletName:  wallet.WalletName,
 			MonthlyData: monthlyData,
 		}
+	}
+
+	// Build wallet currency lookup map for O(1) access
+	walletCurrencyMap := make(map[int32]string)
+	for _, wallet := range targetWallets {
+		walletCurrencyMap[wallet.ID] = wallet.Currency
 	}
 
 	// Process transactions and aggregate by wallet and month
@@ -513,12 +528,33 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 
 		monthlyEntry := walletData.MonthlyData[month]
 
+		// Get wallet currency from map (O(1) lookup)
+		walletCurrency := walletCurrencyMap[tx.WalletID]
+		if walletCurrency == "" {
+			// Should not happen given DB constraints, but defensive programming
+			walletCurrency = types.VND
+		}
+
+		// Convert amount to preferred currency for display
+		convertedAmount := tx.Amount
+		if walletCurrency != preferredCurrency {
+			converted, err := s.fxRateSvc.ConvertAmount(ctx, tx.Amount, walletCurrency, preferredCurrency)
+			if err != nil {
+				// Log error but continue with original amount as fallback
+				fmt.Printf("Warning: failed to convert amount for transaction %d: %v\n", tx.ID, err)
+			} else {
+				convertedAmount = converted
+			}
+		}
+
 		// Add to income or expense based on signed amount
 		// Amounts are signed: positive for income, negative for expense
 		if tx.Amount > 0 {
 			monthlyEntry.Income.Amount += tx.Amount
+			monthlyEntry.DisplayIncome.Amount += convertedAmount
 		} else {
 			monthlyEntry.Expense.Amount += -tx.Amount  // Convert to positive for display
+			monthlyEntry.DisplayExpense.Amount += -convertedAmount  // Convert to positive for display
 		}
 	}
 
@@ -528,34 +564,30 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 		walletDataList = append(walletDataList, data)
 	}
 
-	// Get user's preferred currency for aggregation
-	user, _ := s.userRepo.GetByID(ctx, userID)
-	preferredCurrency := types.VND // Default
-	if user != nil && user.PreferredCurrency != "" {
-		preferredCurrency = user.PreferredCurrency
-	}
-
-	// Calculate totals across all wallets for each month
-	// NOTE: This is a simplified aggregation that assumes all transactions are in the same currency
-	// or have been converted to the user's preferred currency in the cache.
-	// For accurate multi-currency aggregation, each transaction amount should be converted
-	// to the user's preferred currency before summing.
+	// Calculate totals across all wallets for each month using converted amounts
 	totals := make([]*v1.MonthlyFinancialData, 12)
 	for month := 0; month < 12; month++ {
 		var totalIncome, totalExpense int64
+		var displayIncome, displayExpense int64
 
 		for _, walletData := range walletDataList {
 			if len(walletData.MonthlyData) > month {
 				monthlyData := walletData.MonthlyData[month]
+				// Use native amounts for totals (may be multi-currency, shown for reference)
 				totalIncome += monthlyData.Income.Amount
 				totalExpense += monthlyData.Expense.Amount
+				// Use converted amounts for display totals
+				displayIncome += monthlyData.DisplayIncome.Amount
+				displayExpense += monthlyData.DisplayExpense.Amount
 			}
 		}
 
 		totals[month] = &v1.MonthlyFinancialData{
-			Month:   int32(month),
-			Income:  &v1.Money{Amount: totalIncome, Currency: preferredCurrency},
-			Expense: &v1.Money{Amount: totalExpense, Currency: preferredCurrency},
+			Month:          int32(month),
+			Income:         &v1.Money{Amount: totalIncome, Currency: preferredCurrency},
+			Expense:        &v1.Money{Amount: totalExpense, Currency: preferredCurrency},
+			DisplayIncome:  &v1.Money{Amount: displayIncome, Currency: preferredCurrency},
+			DisplayExpense: &v1.Money{Amount: displayExpense, Currency: preferredCurrency},
 		}
 	}
 

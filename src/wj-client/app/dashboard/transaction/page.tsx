@@ -175,7 +175,7 @@ export default function TransactionPage() {
     sortOrder,
   ]);
 
-  const totalBalance = totalBalanceData?.displayValue?.amount ?? totalBalanceData?.data?.amount ?? 0;
+  const totalBalance = totalBalanceData?.displayNetWorth?.amount ?? totalBalanceData?.displayValue?.amount ?? totalBalanceData?.data?.amount ?? 0;
   const formattedBalance = useMemo(() => {
     return formatCurrency(totalBalance, currency);
   }, [totalBalance, currency]);
@@ -241,8 +241,14 @@ export default function TransactionPage() {
       {
         id: "amount",
         header: "Amount",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          formatCurrency(row.displayAmount?.amount ?? row.amount?.amount ?? 0, currency),
+        accessorFn: (row: (typeof transactions)[number]) => {
+          const amountValue = row.displayAmount?.amount ?? row.amount?.amount ?? 0;
+          const numericAmount = typeof amountValue === 'number' ? amountValue : Number(amountValue) || 0;
+          return formatCurrency(
+            numericAmount,
+            row.displayAmount ? currency : row.currency
+          );
+        },
       },
       {
         id: "date",

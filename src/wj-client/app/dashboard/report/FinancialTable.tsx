@@ -77,8 +77,9 @@ export const FinancialTable = memo(function FinancialTable({
     const wallets = reportData.walletData.map((wallet) => {
       let runningBalance = 0;
       const monthlyDataWithBalance = wallet.monthlyData.map((monthData) => {
-        const income = monthData.income?.amount ?? 0;
-        const expense = monthData.expense?.amount ?? 0;
+        // Use display amounts (in user's preferred currency) if available
+        const income = monthData.displayIncome?.amount ?? monthData.income?.amount ?? 0;
+        const expense = monthData.displayExpense?.amount ?? monthData.expense?.amount ?? 0;
         runningBalance += income - expense;
         return {
           income,
@@ -101,8 +102,9 @@ export const FinancialTable = memo(function FinancialTable({
     // Transform totals from API to display format and calculate balance
     let runningTotalBalance = 0;
     const totals = reportData.totals.map((monthData) => {
-      const income = monthData.income?.amount ?? 0;
-      const expense = monthData.expense?.amount ?? 0;
+      // Use display amounts (in user's preferred currency) if available
+      const income = monthData.displayIncome?.amount ?? monthData.income?.amount ?? 0;
+      const expense = monthData.displayExpense?.amount ?? monthData.expense?.amount ?? 0;
       runningTotalBalance += income - expense;
       return {
         income,

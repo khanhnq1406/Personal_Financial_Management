@@ -114,7 +114,10 @@ export const TransactionTable = memo(function TransactionTable({
           const amountValue = row.displayAmount?.amount ?? row.amount?.amount ?? 0;
           // Ensure we have a valid number
           const numericAmount = typeof amountValue === 'number' ? amountValue : Number(amountValue) || 0;
-          return formatCurrency(numericAmount, currency);
+          return formatCurrency(
+            numericAmount,
+            row.displayAmount ? currency : row.currency
+          );
         },
       }),
       columnHelper.accessor("date", {

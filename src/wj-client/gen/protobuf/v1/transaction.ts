@@ -379,7 +379,12 @@ export interface MonthlyFinancialData {
   /** 0-11 (Jan-Dec) */
   month: number;
   income: Money | undefined;
-  expense: Money | undefined;
+  expense:
+    | Money
+    | undefined;
+  /** Display fields for user's preferred currency */
+  displayIncome: Money | undefined;
+  displayExpense: Money | undefined;
 }
 
 /** Wallet financial data for a year */
@@ -3142,7 +3147,7 @@ export const GetAvailableYearsResponse: MessageFns<GetAvailableYearsResponse> = 
 };
 
 function createBaseMonthlyFinancialData(): MonthlyFinancialData {
-  return { month: 0, income: undefined, expense: undefined };
+  return { month: 0, income: undefined, expense: undefined, displayIncome: undefined, displayExpense: undefined };
 }
 
 export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
@@ -3155,6 +3160,12 @@ export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
     }
     if (message.expense !== undefined) {
       Money.encode(message.expense, writer.uint32(26).fork()).join();
+    }
+    if (message.displayIncome !== undefined) {
+      Money.encode(message.displayIncome, writer.uint32(34).fork()).join();
+    }
+    if (message.displayExpense !== undefined) {
+      Money.encode(message.displayExpense, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -3190,6 +3201,22 @@ export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
           message.expense = Money.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.displayIncome = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.displayExpense = Money.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3204,6 +3231,8 @@ export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
       month: isSet(object.month) ? globalThis.Number(object.month) : 0,
       income: isSet(object.income) ? Money.fromJSON(object.income) : undefined,
       expense: isSet(object.expense) ? Money.fromJSON(object.expense) : undefined,
+      displayIncome: isSet(object.displayIncome) ? Money.fromJSON(object.displayIncome) : undefined,
+      displayExpense: isSet(object.displayExpense) ? Money.fromJSON(object.displayExpense) : undefined,
     };
   },
 
@@ -3217,6 +3246,12 @@ export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
     }
     if (message.expense !== undefined) {
       obj.expense = Money.toJSON(message.expense);
+    }
+    if (message.displayIncome !== undefined) {
+      obj.displayIncome = Money.toJSON(message.displayIncome);
+    }
+    if (message.displayExpense !== undefined) {
+      obj.displayExpense = Money.toJSON(message.displayExpense);
     }
     return obj;
   },
@@ -3232,6 +3267,12 @@ export const MonthlyFinancialData: MessageFns<MonthlyFinancialData> = {
       : undefined;
     message.expense = (object.expense !== undefined && object.expense !== null)
       ? Money.fromPartial(object.expense)
+      : undefined;
+    message.displayIncome = (object.displayIncome !== undefined && object.displayIncome !== null)
+      ? Money.fromPartial(object.displayIncome)
+      : undefined;
+    message.displayExpense = (object.displayExpense !== undefined && object.displayExpense !== null)
+      ? Money.fromPartial(object.displayExpense)
       : undefined;
     return message;
   },

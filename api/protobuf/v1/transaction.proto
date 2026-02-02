@@ -325,6 +325,9 @@ message MonthlyFinancialData {
   int32 month = 1 [json_name = "month"]; // 0-11 (Jan-Dec)
   wealthjourney.common.v1.Money income = 2 [json_name = "income"];
   wealthjourney.common.v1.Money expense = 3 [json_name = "expense"];
+  // Display fields for user's preferred currency
+  wealthjourney.common.v1.Money displayIncome = 4 [json_name = "displayIncome"];
+  wealthjourney.common.v1.Money displayExpense = 5 [json_name = "displayExpense"];
 }
 
 // Wallet financial data for a year
