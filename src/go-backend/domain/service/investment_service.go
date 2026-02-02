@@ -11,6 +11,7 @@ import (
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/cache"
+	"wealthjourney/pkg/gold"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/units"
 	"wealthjourney/pkg/validator"
@@ -29,6 +30,7 @@ type investmentService struct {
 	currencyCache     *cache.CurrencyCache
 	walletService     WalletService
 	mapper            *InvestmentMapper
+	goldConverter     *gold.Converter
 }
 
 // NewInvestmentService creates a new InvestmentService.
@@ -52,7 +54,20 @@ func NewInvestmentService(
 		currencyCache:     currencyCache,
 		walletService:     walletService,
 		mapper:            NewInvestmentMapper(),
+		goldConverter:     gold.NewGoldConverter(fxRateSvc),
 	}
+}
+
+// Helper methods for gold investment handling
+
+// isGoldInvestment checks if an investment is a gold type
+func (s *investmentService) isGoldInvestment(invType investmentv1.InvestmentType) bool {
+	return gold.IsGoldType(invType)
+}
+
+// getGoldStorageInfo returns the storage unit and native currency for a gold investment
+func (s *investmentService) getGoldStorageInfo(invType investmentv1.InvestmentType) (gold.GoldUnit, string) {
+	return gold.GetNativeStorageInfo(invType)
 }
 
 // CreateInvestment creates a new investment holding in a wallet.
@@ -603,6 +618,10 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 			PurchasedAt:  time.Unix(req.TransactionDate, 0),
 		}
 		// Calculate average cost using utility function
+		// This works correctly for all investment types including gold:
+		// - Gold (VND): totalCost in VND, quantity in grams×10000, returns VND per gram
+		// - Gold (USD): totalCost in cents, quantity in oz×10000, returns cents per oz
+		// - Stocks: totalCost in cents, quantity in shares×100, returns cents per share
 		lot.AverageCost = units.CalculateAverageCost(totalCost, req.Quantity, investmentv1.InvestmentType(investment.Type))
 		lot.RemainingQuantity = req.Quantity
 	} else {

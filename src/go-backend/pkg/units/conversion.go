@@ -46,7 +46,19 @@ func DollarsToCents(dollars float64) int64 {
 
 // CalculateAverageCost calculates the average cost per unit in cents
 // Formula: (totalCostCents * decimalMultiplier) / quantity
+//
+// For gold investments:
+// - GOLD_VND: Returns cost per gram in VND (smallest unit)
+// - GOLD_USD: Returns cost per ounce in USD cents
+//
+// For other investments:
+// - Returns cost per whole unit in cents (e.g., cents per share)
 func CalculateAverageCost(totalCostCents int64, quantity int64, investmentType v1.InvestmentType) int64 {
+	// For gold, the average cost is already in the correct format (cost per storage unit)
+	// The quantity is stored as storage_unit × 10000
+	// So average_cost = total_cost / (quantity / 10000) = total_cost * 10000 / quantity
+	//
+	// This matches the standard formula, so no special handling needed for gold
 	precision := GetPrecisionForInvestmentType(investmentType)
 	return totalCostCents * int64(precision) / quantity
 }
@@ -54,6 +66,13 @@ func CalculateAverageCost(totalCostCents int64, quantity int64, investmentType v
 // CalculateTransactionCost calculates the total cost of a transaction in cents
 // Formula: (quantity / decimalMultiplier) * priceCents
 // Uses float64 to avoid integer division truncation with fractional quantities
+//
+// For gold investments:
+// - GOLD_VND: quantity in grams × 10000, price in VND per gram → cost in VND
+// - GOLD_USD: quantity in ounces × 10000, price in USD cents per ounce → cost in USD cents
+//
+// For other investments:
+// - quantity in smallest units, price in cents per unit → cost in cents
 func CalculateTransactionCost(quantity int64, priceCents int64, investmentType v1.InvestmentType) int64 {
 	precision := GetPrecisionForInvestmentType(investmentType)
 	quantityWholeUnits := float64(quantity) / float64(precision)

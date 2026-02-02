@@ -6,6 +6,8 @@ const PRECISION_CONFIG: Record<number, number> = {
   [InvestmentType.INVESTMENT_TYPE_STOCK]: 4,
   [InvestmentType.INVESTMENT_TYPE_ETF]: 4,
   [InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND]: 4,
+  [InvestmentType.INVESTMENT_TYPE_GOLD_VND]: 4, // Stored in grams × 10000
+  [InvestmentType.INVESTMENT_TYPE_GOLD_USD]: 4, // Stored in ounces × 10000
 };
 
 /**

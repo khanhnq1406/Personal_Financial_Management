@@ -38,6 +38,12 @@ import {
   convertAmount,
   formatExchangeRate,
 } from "@/hooks/useExchangeRate";
+import {
+  getGoldStorageInfo,
+  convertGoldQuantity,
+  convertGoldPricePerUnit,
+  getGoldUnitLabel,
+} from "@/lib/utils/gold-calculator";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
@@ -133,6 +139,22 @@ export function AddInvestmentTransactionForm({
   // Check if currencies match
   const currenciesMatch = investmentCurrency === walletCurrency;
 
+  // Check if this is a gold investment
+  const isGoldInvestment =
+    investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ||
+    investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_USD;
+
+  // Get gold display unit for quantity input label
+  const goldDisplayUnit = useMemo(() => {
+    if (!isGoldInvestment) return null;
+    const { unit } = getGoldStorageInfo(investmentType);
+    // For VND gold, user enters quantity in taels (display convention)
+    // For USD gold, user enters quantity in ounces (storage convention)
+    return investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND
+      ? ("tael" as const)
+      : ("oz" as const);
+  }, [investmentType, isGoldInvestment]);
+
   // Fetch exchange rate when currencies differ
   const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
     walletCurrency,
@@ -146,14 +168,50 @@ export function AddInvestmentTransactionForm({
       InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
     )
       return 0;
-    const quantityInStorage = quantityToStorage(
-      Number(quantity) || 0,
-      investmentType,
-    );
-    const priceInCents = amountToSmallestUnit(
-      Number(price) || 0,
-      investmentCurrency,
-    );
+
+    let quantityInStorage: number;
+    let priceInCents: number;
+
+    if (isGoldInvestment && goldDisplayUnit) {
+      // For gold: user enters quantity in display units, price in display units
+      const { unit: storageUnit } = getGoldStorageInfo(investmentType);
+
+      // Convert quantity to storage units (grams for VND gold, ounces for USD gold)
+      const quantityInStorageUnits = convertGoldQuantity(
+        Number(quantity) || 0,
+        goldDisplayUnit,
+        storageUnit,
+      );
+      quantityInStorage = Math.round(quantityInStorageUnits * 10000);
+
+      // Convert price from display units to storage units
+      // VND gold: price per tael → price per gram (using price conversion function)
+      // USD gold: price per ounce (already in storage units)
+      let priceInStorageUnits = Number(price) || 0;
+      if (investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND) {
+        // User enters price per tael, convert to price per gram
+        // IMPORTANT: Use convertGoldPricePerUnit, not convertGoldQuantity!
+        priceInStorageUnits = convertGoldPricePerUnit(
+          priceInStorageUnits,
+          goldDisplayUnit, // tael
+          storageUnit,     // gram
+        );
+      }
+      // For USD gold, price is already per ounce, no conversion needed
+
+      priceInCents = amountToSmallestUnit(priceInStorageUnits, investmentCurrency);
+    } else {
+      // For non-gold: use standard conversions
+      quantityInStorage = quantityToStorage(
+        Number(quantity) || 0,
+        investmentType,
+      );
+      priceInCents = amountToSmallestUnit(
+        Number(price) || 0,
+        investmentCurrency,
+      );
+    }
+
     const feesInCents = amountToSmallestUnit(
       Number(fees) || 0,
       investmentCurrency,
@@ -172,6 +230,8 @@ export function AddInvestmentTransactionForm({
     transactionType,
     investmentType,
     investmentCurrency,
+    isGoldInvestment,
+    goldDisplayUnit,
   ]);
 
   // Convert wallet balance to investment currency for comparison
@@ -223,12 +283,46 @@ export function AddInvestmentTransactionForm({
   const onSubmit = (data: AddTransactionFormInput) => {
     setErrorMessage(undefined);
 
+    // Convert quantity to storage format
+    let quantityInStorage: number;
+    let priceInStorage: number;
+
+    if (isGoldInvestment && goldDisplayUnit) {
+      // For gold: user enters quantity in display units, price in display units
+      const { unit: storageUnit } = getGoldStorageInfo(investmentType);
+
+      // Convert quantity to storage units
+      const quantityInStorageUnits = convertGoldQuantity(
+        data.quantity,
+        goldDisplayUnit,
+        storageUnit,
+      );
+      quantityInStorage = Math.round(quantityInStorageUnits * 10000);
+
+      // Convert price from display units to storage units
+      priceInStorage = data.price;
+      if (investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND) {
+        // User enters price per tael, convert to price per gram
+        // IMPORTANT: Use convertGoldPricePerUnit, not convertGoldQuantity!
+        priceInStorage = convertGoldPricePerUnit(
+          data.price,
+          goldDisplayUnit, // tael
+          storageUnit,     // gram
+        );
+      }
+      // For USD gold, price is already per ounce, no conversion needed
+    } else {
+      // For non-gold: use standard quantity conversion
+      quantityInStorage = quantityToStorage(data.quantity, investmentType);
+      priceInStorage = data.price;
+    }
+
     // Convert to API format using utility functions
     const request: AddTransactionRequest = {
       investmentId: investmentId,
       type: data.type,
-      quantity: quantityToStorage(data.quantity, investmentType),
-      price: amountToSmallestUnit(data.price, investmentCurrency),
+      quantity: quantityInStorage,
+      price: amountToSmallestUnit(priceInStorage, investmentCurrency),
       fees: amountToSmallestUnit(data.fees, investmentCurrency),
       transactionDate: Math.floor(
         new Date(data.transactionDate).getTime() / 1000,
@@ -274,19 +368,35 @@ export function AddInvestmentTransactionForm({
       <FormNumberInput
         name="quantity"
         control={control}
-        label="Quantity"
-        placeholder={quantityConfig.placeholder}
+        label={
+          isGoldInvestment && goldDisplayUnit
+            ? `Quantity (${getGoldUnitLabel(goldDisplayUnit)})`
+            : "Quantity"
+        }
+        placeholder={
+          isGoldInvestment && goldDisplayUnit === "tael"
+            ? "0.0000"
+            : quantityConfig.placeholder
+        }
         required
         disabled={isSubmitting}
         min={0}
-        step={quantityConfig.step}
+        step={
+          isGoldInvestment && goldDisplayUnit === "tael"
+            ? "0.0001"
+            : quantityConfig.step
+        }
       />
 
       {/* Price */}
       <FormNumberInput
         name="price"
         control={control}
-        label={`Price per Unit (${investmentCurrency})`}
+        label={
+          isGoldInvestment
+            ? `Price per ${investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? "Tael (lượng)" : "Ounce"} (${investmentCurrency})`
+            : `Price per Unit (${investmentCurrency})`
+        }
         placeholder="0.00"
         required
         disabled={isSubmitting}
