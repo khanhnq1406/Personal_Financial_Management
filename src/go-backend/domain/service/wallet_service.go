@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -14,6 +15,7 @@ import (
 	"wealthjourney/pkg/validator"
 	walletv1 "wealthjourney/protobuf/v1"
 	commonv1 "wealthjourney/protobuf/v1"
+	v1 "wealthjourney/protobuf/v1"
 )
 
 // walletService implements WalletService.
@@ -172,15 +174,17 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 	// Calculate investment value for INVESTMENT wallets
 	var investmentValue int64 = 0
 	if wallet.Type == walletv1.WalletType_INVESTMENT {
-		investmentValue, err = s.getInvestmentValueWithCache(ctx, walletID)
+		// Use the new function that properly converts investment values to wallet currency
+		investmentValue, err = s.getInvestmentValueInWalletCurrency(ctx, walletID, wallet.Currency)
 		if err != nil {
 			// Log error but don't fail the request
+			log.Printf("Error calculating investment value for wallet %d: %v", walletID, err)
 			// Return wallet with 0 investment value
 			investmentValue = 0
 		}
 	}
 
-	// Calculate total value
+	// Calculate total value (both are now in wallet.Currency)
 	totalValue := wallet.Balance + investmentValue
 
 	// Get user for currency conversion
@@ -247,14 +251,28 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 		}
 	}
 
-	// Batch fetch investment values
+	// Calculate investment values for each wallet (with proper currency conversion)
 	investmentValueMap := make(map[int32]int64)
-	if len(investmentWalletIDs) > 0 {
-		investmentValueMap, err = s.getInvestmentValuesForWallets(ctx, investmentWalletIDs)
-		if err != nil {
-			// Log error but continue with 0 values
-			investmentValueMap = make(map[int32]int64)
+	for _, walletID := range investmentWalletIDs {
+		// Find the wallet to get its currency
+		var walletCurrency string
+		for _, w := range wallets {
+			if w.ID == walletID {
+				walletCurrency = w.Currency
+				break
+			}
 		}
+		if walletCurrency == "" {
+			walletCurrency = "USD" // Default fallback
+		}
+
+		// Calculate investment value in the wallet's currency
+		value, err := s.getInvestmentValueInWalletCurrency(ctx, walletID, walletCurrency)
+		if err != nil {
+			log.Printf("Error calculating investment value for wallet %d: %v", walletID, err)
+			value = 0
+		}
+		investmentValueMap[walletID] = value
 	}
 
 	// Build response with investment values
@@ -263,7 +281,7 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 		investmentValue := investmentValueMap[wallet.ID]
 		totalValue := wallet.Balance + investmentValue
 
-		// Convert values
+		// Convert values to user's preferred currency
 		displayInvestmentValue := s.convertToUserCurrency(investmentValue, wallet.Currency, userCurrency)
 		displayTotalValue := s.convertToUserCurrency(totalValue, wallet.Currency, userCurrency)
 
@@ -803,15 +821,34 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 		}
 	}
 
-	// Fetch and aggregate investment values
+	// Fetch and aggregate investment values, converting to base currency
 	if len(investmentWalletIDs) > 0 {
-		investmentValueMap, err := s.getInvestmentValuesForWallets(ctx, investmentWalletIDs)
-		if err != nil {
-			// Log error but continue
-			totalInvestments = 0
-		} else {
-			for _, value := range investmentValueMap {
-				totalInvestments += value
+		for _, walletID := range investmentWalletIDs {
+			// Find the wallet to get its currency
+			var walletCurrency string
+			for _, w := range wallets {
+				if w.ID == walletID {
+					walletCurrency = w.Currency
+					break
+				}
+			}
+			if walletCurrency == "" {
+				walletCurrency = "USD" // Default fallback
+			}
+
+			// Get investment value in the wallet's currency
+			investmentValueInWalletCurrency, err := s.getInvestmentValueInWalletCurrency(ctx, walletID, walletCurrency)
+			if err != nil {
+				log.Printf("Error calculating investment value for wallet %d: %v", walletID, err)
+				continue
+			}
+
+			// Convert to base currency before summing
+			if walletCurrency == baseCurrency {
+				totalInvestments += investmentValueInWalletCurrency
+			} else {
+				converted := s.convertToUserCurrency(investmentValueInWalletCurrency, walletCurrency, baseCurrency)
+				totalInvestments += converted.Amount
 			}
 		}
 	}
@@ -1263,6 +1300,48 @@ func (s *walletService) getInvestmentValueWithCache(ctx context.Context, walletI
 	return value, nil
 }
 
+// getInvestmentValueInWalletCurrency calculates the total investment value for a wallet,
+// converting each investment's value to the wallet's currency before summing.
+// This ensures that the returned value is in a consistent currency matching the wallet.
+func (s *walletService) getInvestmentValueInWalletCurrency(ctx context.Context, walletID int32, walletCurrency string) (int64, error) {
+	// Fetch all investments for the wallet
+	investments, _, err := s.investmentRepo.ListByWalletID(ctx, walletID, repository.ListOptions{
+		Limit:  1000, // Get all investments
+		Offset: 0,
+	}, v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
+	if err != nil {
+		return 0, err
+	}
+
+	var totalValueInWalletCurrency int64 = 0
+
+	// Sum each investment's value, converting to wallet currency if needed
+	for _, inv := range investments {
+		invValue := inv.CurrentValue
+		invCurrency := inv.Currency
+		if invCurrency == "" {
+			invCurrency = "USD" // Default fallback
+		}
+
+		// Convert to wallet currency if different
+		if invCurrency != walletCurrency {
+			convertedValue, convErr := s.fxRateSvc.ConvertAmount(ctx, invValue, invCurrency, walletCurrency)
+			if convErr != nil {
+				// Log error but use original value to avoid losing data
+				log.Printf("Warning: Failed to convert investment %d value from %s to %s: %v",
+					inv.ID, invCurrency, walletCurrency, convErr)
+				// Use original value (this will cause incorrect totals, but better than 0)
+			} else {
+				invValue = convertedValue
+			}
+		}
+
+		totalValueInWalletCurrency += invValue
+	}
+
+	return totalValueInWalletCurrency, nil
+}
+
 // invalidateInvestmentValueCache clears the cached investment value for a wallet
 func (s *walletService) invalidateInvestmentValueCache(ctx context.Context, walletID int32) {
 	cacheKey := cache.GetInvestmentValueCacheKey(walletID)
@@ -1308,18 +1387,19 @@ func (s *walletService) getInvestmentValuesForWallets(ctx context.Context, walle
 }
 
 // convertToUserCurrency converts an amount from wallet currency to user's preferred currency
+// Uses the FXRateService which properly handles decimal differences between currencies
 func (s *walletService) convertToUserCurrency(amount int64, fromCurrency, toCurrency string) *commonv1.Money {
 	if fromCurrency == toCurrency {
 		return &commonv1.Money{Amount: amount, Currency: toCurrency}
 	}
 
-	// Use existing FX rate service
-	rate, err := s.fxRateSvc.GetRate(context.Background(), fromCurrency, toCurrency)
+	// Use FXRateService.ConvertAmount which properly handles decimal multipliers
+	// Example: VND (0 decimals) to USD (2 decimals) - rate is applied with proper scaling
+	convertedAmount, err := s.fxRateSvc.ConvertAmount(context.Background(), amount, fromCurrency, toCurrency)
 	if err != nil {
 		// Return original amount if conversion fails
 		return &commonv1.Money{Amount: amount, Currency: fromCurrency}
 	}
 
-	convertedAmount := int64(float64(amount) * rate)
 	return &commonv1.Money{Amount: convertedAmount, Currency: toCurrency}
 }

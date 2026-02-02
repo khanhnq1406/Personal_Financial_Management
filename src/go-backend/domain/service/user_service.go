@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
@@ -34,6 +35,7 @@ type userService struct {
 	investmentRepo   repository.InvestmentRepository
 	fxRateSvc        FXRateService
 	currencyCache    *cache.CurrencyCache
+	redisCache       *redis.Client
 	mapper           *UserMapper
 }
 
@@ -49,6 +51,7 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 		investmentRepo:  nil, // Set later via SetRepositories
 		fxRateSvc:       nil, // Set later via SetRepositories
 		currencyCache:   nil, // Set later via SetRepositories
+		redisCache:      nil, // Set later via SetRepositories
 		mapper:          NewUserMapper(),
 	}
 }
@@ -63,6 +66,7 @@ func (s *userService) SetRepositories(
 	investmentRepo repository.InvestmentRepository,
 	fxRateSvc FXRateService,
 	currencyCache *cache.CurrencyCache,
+	redisCache *redis.Client,
 ) {
 	s.walletRepo = walletRepo
 	s.transactionRepo = transactionRepo
@@ -71,6 +75,7 @@ func (s *userService) SetRepositories(
 	s.investmentRepo = investmentRepo
 	s.fxRateSvc = fxRateSvc
 	s.currencyCache = currencyCache
+	s.redisCache = redisCache
 }
 
 // SetCategoryService sets the category service (called after initialization to avoid circular dependency).
@@ -405,6 +410,18 @@ func (s *userService) convertWalletCurrencies(ctx context.Context, userID int32,
 		return fmt.Errorf("wallet repository not available")
 	}
 
+	// IMPORTANT: Invalidate investment value caches BEFORE converting wallet currencies
+	// This ensures that cached values (calculated in old wallet currency) are not used
+	// after the wallet currency changes. The cache will be repopulated on next access.
+	if s.redisCache != nil {
+		if err := s.invalidateInvestmentValueCachesForUser(ctx, userID); err != nil {
+			log.Printf("Error invalidating investment value caches for user %d: %v", userID, err)
+			// Don't fail - this is just cache invalidation
+		} else {
+			log.Printf("Invalidated investment value caches for user %d before currency conversion", userID)
+		}
+	}
+
 	offset := 0
 	totalProcessed := 0
 
@@ -448,6 +465,33 @@ func (s *userService) convertWalletCurrencies(ctx context.Context, userID int32,
 	}
 
 	log.Printf("Converted %d wallet(s) for user %d", totalProcessed, userID)
+
+	return nil
+}
+
+// invalidateInvestmentValueCachesForUser clears all investment value caches for a user's wallets
+func (s *userService) invalidateInvestmentValueCachesForUser(ctx context.Context, userID int32) error {
+	if s.walletRepo == nil || s.redisCache == nil {
+		return nil // Nothing to do if dependencies not available
+	}
+
+	// Get all wallets for the user
+	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit:  1000,
+		Offset: 0,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list wallets: %w", err)
+	}
+
+	// Clear investment value cache for each investment wallet
+	for _, wallet := range wallets {
+		if wallet.Type == v1.WalletType_INVESTMENT {
+			cacheKey := cache.GetInvestmentValueCacheKey(wallet.ID)
+			s.redisCache.Del(ctx, cacheKey)
+		}
+	}
+
 	return nil
 }
 

@@ -42,7 +42,7 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 
 	// Wire up repositories for currency conversion after fxRateSvc and currencyCache are created
 	if us, ok := userSvc.(*userService); ok {
-		us.SetRepositories(repos.Wallet, repos.Transaction, repos.Budget, repos.BudgetItem, repos.Investment, fxRateSvc, currencyCache)
+		us.SetRepositories(repos.Wallet, repos.Transaction, repos.Budget, repos.BudgetItem, repos.Investment, fxRateSvc, currencyCache, redisClient)
 	}
 
 	walletSvc := NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc, fxRateSvc, currencyCache, repos.Investment, redisClient)
