@@ -1130,3 +1130,119 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 	mockInvestmentRepo.AssertExpectations(t)
 	mockMarketDataService.AssertExpectations(t)
 }
+
+func TestInvestmentService_DeleteInvestment_RefundsWalletBalance(t *testing.T) {
+	// Setup
+	mockWalletRepo := new(MockWalletRepository)
+	mockInvestmentRepo := new(MockInvestmentRepository)
+	mockTxRepo := new(MockInvestmentTransactionRepository)
+	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
+
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+		new(MockWalletService),
+	).(*investmentService)
+
+	ctx := context.Background()
+	userID := int32(1)
+	walletID := int32(1)
+	investmentID := int32(1)
+
+	// Create test wallet and investment with same currency (no conversion needed)
+	wallet := createTestWallet(walletID, userID, walletv1.WalletType_INVESTMENT)
+	wallet.Currency = "USD"
+	wallet.Balance = 5000000000 // $50,000 in cents
+
+	investment := createTestInvestment(investmentID, walletID, "AAPL", 10000, 1500000, 15000000000)
+	investment.Currency = "USD"
+
+	// Mock expectations
+	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
+	mockTxRepo.On("DeleteByInvestmentID", ctx, investmentID).Return(nil)
+	mockTxRepo.On("DeleteLotsByInvestmentID", ctx, investmentID).Return(nil)
+	mockInvestmentRepo.On("Delete", ctx, investmentID).Return(nil)
+	// Expect UpdateBalance to be called with positive amount (refund)
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, int64(15000000000)).Return(wallet, nil)
+
+	// Execute
+	response, err := service.DeleteInvestment(ctx, investmentID, userID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.True(t, response.Success)
+	assert.Contains(t, response.Message, "deleted successfully")
+
+	mockWalletRepo.AssertExpectations(t)
+	mockInvestmentRepo.AssertExpectations(t)
+	mockTxRepo.AssertExpectations(t)
+}
+
+func TestInvestmentService_DeleteInvestment_RefundsWithCurrencyConversion(t *testing.T) {
+	// Setup
+	mockWalletRepo := new(MockWalletRepository)
+	mockInvestmentRepo := new(MockInvestmentRepository)
+	mockTxRepo := new(MockInvestmentTransactionRepository)
+	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockFXRateSvc := new(MockFXRateService)
+
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+		new(MockWalletService),
+	).(*investmentService)
+
+	ctx := context.Background()
+	userID := int32(1)
+	walletID := int32(1)
+	investmentID := int32(1)
+
+	// Create test wallet in VND and investment in USD
+	wallet := createTestWallet(walletID, userID, walletv1.WalletType_INVESTMENT)
+	wallet.Currency = "VND"
+	wallet.Balance = 500000000 // 5M VND
+
+	investment := createTestInvestment(investmentID, walletID, "AAPL", 10000, 1500000, 15000000000)
+	investment.Currency = "USD"
+
+	// Mock expectations
+	mockInvestmentRepo.On("GetByIDForUser", ctx, investmentID, userID).Return(investment, nil)
+	mockWalletRepo.On("GetByID", ctx, walletID).Return(wallet, nil)
+	mockTxRepo.On("DeleteByInvestmentID", ctx, investmentID).Return(nil)
+	mockTxRepo.On("DeleteLotsByInvestmentID", ctx, investmentID).Return(nil)
+	mockInvestmentRepo.On("Delete", ctx, investmentID).Return(nil)
+	// Expect FX rate conversion to be called (USD to VND)
+	convertedAmount := int64(375000000000) // $15,000 * 25,000 = 375M VND
+	mockFXRateSvc.On("ConvertAmount", ctx, int64(15000000000), "USD", "VND").Return(convertedAmount, nil)
+	// Expect UpdateBalance to be called with converted amount
+	mockWalletRepo.On("UpdateBalance", ctx, walletID, convertedAmount).Return(wallet, nil)
+
+	// Execute
+	response, err := service.DeleteInvestment(ctx, investmentID, userID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, response)
+	assert.True(t, response.Success)
+	assert.Contains(t, response.Message, "deleted successfully")
+
+	mockWalletRepo.AssertExpectations(t)
+	mockInvestmentRepo.AssertExpectations(t)
+	mockTxRepo.AssertExpectations(t)
+	mockFXRateSvc.AssertExpectations(t)
+}

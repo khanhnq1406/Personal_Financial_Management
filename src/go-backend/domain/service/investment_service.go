@@ -373,6 +373,12 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 		return nil, err
 	}
 
+	// Fetch wallet for currency conversion and refund
+	wallet, err := s.walletRepo.GetByID(ctx, investment.WalletID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to fetch wallet", err)
+	}
+
 	// Delete all related transactions first (cascade)
 	if err := s.txRepo.DeleteByInvestmentID(ctx, investmentID); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to delete transactions", err)
@@ -383,9 +389,30 @@ func (s *investmentService) DeleteInvestment(ctx context.Context, investmentID i
 		return nil, apperrors.NewInternalErrorWithCause("failed to delete lots", err)
 	}
 
+	// Calculate refund amount (total cost in investment currency)
+	// This matches what was deducted during investment creation
+	refundAmount := investment.TotalCost
+
+	// Convert refund amount to wallet currency if needed
+	refundInWalletCurrency := refundAmount
+	if investment.Currency != wallet.Currency {
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, refundAmount, investment.Currency, wallet.Currency)
+		if err != nil {
+			return nil, apperrors.NewInternalErrorWithCause(
+				fmt.Sprintf("failed to convert %s to %s for wallet refund", investment.Currency, wallet.Currency), err)
+		}
+		refundInWalletCurrency = converted
+	}
+
 	// Delete investment
 	if err := s.investmentRepo.Delete(ctx, investmentID); err != nil {
 		return nil, err
+	}
+
+	// Refund the amount to wallet balance
+	_, err = s.walletRepo.UpdateBalance(ctx, investment.WalletID, refundInWalletCurrency)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to refund wallet balance", err)
 	}
 
 	// Invalidate currency cache

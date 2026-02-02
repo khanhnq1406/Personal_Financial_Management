@@ -33,14 +33,18 @@ import {
   AddTransactionFormInput,
   addTransactionSchema,
 } from "@/lib/validation/investment.schema";
-import { useExchangeRate, convertAmount, formatExchangeRate } from "@/hooks/useExchangeRate";
+import {
+  useExchangeRate,
+  convertAmount,
+  formatExchangeRate,
+} from "@/hooks/useExchangeRate";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
   investmentType: InvestmentType;
-  investmentCurrency?: string;  // Currency of the parent investment (ISO 4217)
-  walletBalance?: number;  // Wallet balance in smallest currency unit
-  walletCurrency?: string;  // Currency of the wallet (ISO 4217)
+  investmentCurrency?: string; // Currency of the parent investment (ISO 4217)
+  walletBalance?: number; // Wallet balance in smallest currency unit
+  walletCurrency?: string; // Currency of the wallet (ISO 4217)
   onSuccess?: () => void;
 }
 
@@ -132,29 +136,68 @@ export function AddInvestmentTransactionForm({
   // Fetch exchange rate when currencies differ
   const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
     walletCurrency,
-    investmentCurrency
+    investmentCurrency,
   );
 
   // Calculate total cost for BUY transactions
   const totalCost = useMemo(() => {
-    if (transactionType !== InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY) return 0;
-    const quantityInStorage = quantityToStorage(Number(quantity) || 0, investmentType);
-    const priceInCents = amountToSmallestUnit(Number(price) || 0, investmentCurrency);
-    const feesInCents = amountToSmallestUnit(Number(fees) || 0, investmentCurrency);
-    return calculateTransactionCost(quantityInStorage, priceInCents, investmentType) + feesInCents;
-  }, [quantity, price, fees, transactionType, investmentType, investmentCurrency]);
+    if (
+      transactionType !==
+      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
+    )
+      return 0;
+    const quantityInStorage = quantityToStorage(
+      Number(quantity) || 0,
+      investmentType,
+    );
+    const priceInCents = amountToSmallestUnit(
+      Number(price) || 0,
+      investmentCurrency,
+    );
+    const feesInCents = amountToSmallestUnit(
+      Number(fees) || 0,
+      investmentCurrency,
+    );
+    return (
+      calculateTransactionCost(
+        quantityInStorage,
+        priceInCents,
+        investmentType,
+      ) + feesInCents
+    );
+  }, [
+    quantity,
+    price,
+    fees,
+    transactionType,
+    investmentType,
+    investmentCurrency,
+  ]);
 
   // Convert wallet balance to investment currency for comparison
   const walletBalanceInInvestmentCurrency = useMemo(() => {
     if (currenciesMatch || !exchangeRate) {
       return walletBalance;
     }
-    return convertAmount(walletBalance, exchangeRate, walletCurrency, investmentCurrency);
-  }, [walletBalance, exchangeRate, walletCurrency, investmentCurrency, currenciesMatch]);
+    return convertAmount(
+      walletBalance,
+      exchangeRate,
+      walletCurrency,
+      investmentCurrency,
+    );
+  }, [
+    walletBalance,
+    exchangeRate,
+    walletCurrency,
+    investmentCurrency,
+    currenciesMatch,
+  ]);
 
   // Check for insufficient balance (with currency conversion when needed)
   useEffect(() => {
-    const isBuyTransaction = transactionType === InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY;
+    const isBuyTransaction =
+      transactionType ===
+      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY;
     if (!isBuyTransaction || walletBalance <= 0) {
       setInsufficientBalance(false);
       return;
@@ -168,7 +211,14 @@ export function AddInvestmentTransactionForm({
       // No rate available yet, don't block submission
       setInsufficientBalance(false);
     }
-  }, [totalCost, walletBalance, walletBalanceInInvestmentCurrency, transactionType, currenciesMatch, exchangeRate]);
+  }, [
+    totalCost,
+    walletBalance,
+    walletBalanceInInvestmentCurrency,
+    transactionType,
+    currenciesMatch,
+    exchangeRate,
+  ]);
 
   const onSubmit = (data: AddTransactionFormInput) => {
     setErrorMessage(undefined);
@@ -217,6 +267,7 @@ export function AddInvestmentTransactionForm({
         placeholder="Select transaction type"
         required
         disabled={isSubmitting}
+        disableFilter
       />
 
       {/* Quantity */}
@@ -274,78 +325,108 @@ export function AddInvestmentTransactionForm({
       </div>
 
       {/* Balance Preview for BUY transactions - same currency */}
-      {transactionType === InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY &&
-       walletBalance > 0 &&
-       currenciesMatch && (
-        <div className="mt-4 p-3 bg-gray-50 rounded-md">
-          <div className="flex justify-between text-sm">
-            <span>Wallet Balance:</span>
-            <span>{formatCurrency(walletBalance, walletCurrency)}</span>
+      {transactionType ===
+        InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY &&
+        walletBalance > 0 &&
+        currenciesMatch && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+            <div className="flex justify-between text-sm">
+              <span>Wallet Balance:</span>
+              <span>{formatCurrency(walletBalance, walletCurrency)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Transaction Cost:</span>
+              <span className="text-red-600">
+                -{formatCurrency(totalCost, investmentCurrency)}
+              </span>
+            </div>
+            <hr className="my-2" />
+            <div className="flex justify-between font-medium">
+              <span>Remaining:</span>
+              <span
+                className={
+                  walletBalance - totalCost < 0
+                    ? "text-red-600"
+                    : "text-green-600"
+                }
+              >
+                {formatCurrency(walletBalance - totalCost, investmentCurrency)}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between text-sm">
-            <span>Transaction Cost:</span>
-            <span className="text-red-600">-{formatCurrency(totalCost, investmentCurrency)}</span>
-          </div>
-          <hr className="my-2" />
-          <div className="flex justify-between font-medium">
-            <span>Remaining:</span>
-            <span className={walletBalance - totalCost < 0 ? "text-red-600" : "text-green-600"}>
-              {formatCurrency(walletBalance - totalCost, investmentCurrency)}
-            </span>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* Balance Preview for BUY transactions - different currencies with conversion */}
-      {transactionType === InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY &&
-       walletBalance > 0 &&
-       !currenciesMatch && (
-        <div className="mt-4 p-3 bg-gray-50 rounded-md">
-          <div className="flex justify-between text-sm">
-            <span>Wallet Balance:</span>
-            <span>
-              {formatCurrency(walletBalance, walletCurrency)}
-              {exchangeRate && (
-                <span className="text-gray-500 ml-1">
-                  (≈ {formatCurrency(walletBalanceInInvestmentCurrency, investmentCurrency)})
-                </span>
-              )}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>Transaction Cost:</span>
-            <span className="text-red-600">-{formatCurrency(totalCost, investmentCurrency)}</span>
-          </div>
-          <hr className="my-2" />
-          <div className="flex justify-between font-medium">
-            <span>Remaining:</span>
-            {isLoadingRate ? (
-              <span className="text-gray-400">Loading rate...</span>
-            ) : exchangeRate ? (
-              <span className={walletBalanceInInvestmentCurrency - totalCost < 0 ? "text-red-600" : "text-green-600"}>
-                ≈ {formatCurrency(walletBalanceInInvestmentCurrency - totalCost, investmentCurrency)}
+      {transactionType ===
+        InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY &&
+        walletBalance > 0 &&
+        !currenciesMatch && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+            <div className="flex justify-between text-sm">
+              <span>Wallet Balance:</span>
+              <span>
+                {formatCurrency(walletBalance, walletCurrency)}
+                {exchangeRate && (
+                  <span className="text-gray-500 ml-1">
+                    (≈{" "}
+                    {formatCurrency(
+                      walletBalanceInInvestmentCurrency,
+                      investmentCurrency,
+                    )}
+                    )
+                  </span>
+                )}
               </span>
-            ) : (
-              <span className="text-gray-400">Rate unavailable</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Transaction Cost:</span>
+              <span className="text-red-600">
+                -{formatCurrency(totalCost, investmentCurrency)}
+              </span>
+            </div>
+            <hr className="my-2" />
+            <div className="flex justify-between font-medium">
+              <span>Remaining:</span>
+              {isLoadingRate ? (
+                <span className="text-gray-400">Loading rate...</span>
+              ) : exchangeRate ? (
+                <span
+                  className={
+                    walletBalanceInInvestmentCurrency - totalCost < 0
+                      ? "text-red-600"
+                      : "text-green-600"
+                  }
+                >
+                  ≈{" "}
+                  {formatCurrency(
+                    walletBalanceInInvestmentCurrency - totalCost,
+                    investmentCurrency,
+                  )}
+                </span>
+              ) : (
+                <span className="text-gray-400">Rate unavailable</span>
+              )}
+            </div>
+            {exchangeRate && (
+              <p className="text-xs text-gray-500 mt-2">
+                Exchange rate: 1 {walletCurrency} ≈{" "}
+                {formatExchangeRate(exchangeRate)} {investmentCurrency}
+              </p>
             )}
           </div>
-          {exchangeRate && (
-            <p className="text-xs text-gray-500 mt-2">
-              Exchange rate: 1 {walletCurrency} ≈ {formatExchangeRate(exchangeRate)} {investmentCurrency}
-            </p>
-          )}
-        </div>
-      )}
+        )}
 
       {/* Insufficient balance error */}
       {insufficientBalance && (
         <p className="text-red-600 text-sm mt-2">
-          Insufficient wallet balance. You need {formatCurrency(
+          Insufficient wallet balance. You need{" "}
+          {formatCurrency(
             currenciesMatch
               ? totalCost - walletBalance
               : totalCost - walletBalanceInInvestmentCurrency,
-            investmentCurrency
-          )} more.
+            investmentCurrency,
+          )}{" "}
+          more.
         </p>
       )}
 
