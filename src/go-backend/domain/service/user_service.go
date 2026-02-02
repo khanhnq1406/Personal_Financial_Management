@@ -363,13 +363,12 @@ func (s *userService) convertUserCurrency(ctx context.Context, userID int32, fro
 		conversionErrors = append(conversionErrors, fmt.Errorf("budgets: %w", err))
 	}
 
-	// Step 4: Convert all investments
-	if err := s.convertInvestmentCurrencies(timeoutCtx, userID, fromCurrency, toCurrency); err != nil {
-		log.Printf("Error converting investment currencies for user %d: %v", userID, err)
-		conversionErrors = append(conversionErrors, fmt.Errorf("investments: %w", err))
-	}
+	// NOTE: We do NOT convert investments to user's preferred currency
+	// Investments should maintain their native currency (e.g., AAPL in USD, VCB in VND)
+	// The enrichInvestmentProto() and GetAggregatedPortfolioSummary() functions
+	// handle on-the-fly conversion for display purposes only.
 
-	// Step 5: Clear all currency cache for this user
+	// Step 4: Clear all currency cache for this user
 	if s.currencyCache != nil {
 		if err := s.currencyCache.DeleteUserCache(timeoutCtx, userID); err != nil {
 			log.Printf("Error clearing currency cache for user %d: %v", userID, err)
@@ -590,86 +589,6 @@ func (s *userService) convertBudgetCurrencies(ctx context.Context, userID int32,
 	}
 
 	log.Printf("Converted %d budget(s) and %d budget item(s) for user %d", totalBudgetsProcessed, totalItemsProcessed, userID)
-	return nil
-}
-
-// convertInvestmentCurrencies converts all investment values for a user in batches.
-func (s *userService) convertInvestmentCurrencies(ctx context.Context, userID int32, fromCurrency, toCurrency string) error {
-	if s.investmentRepo == nil {
-		return fmt.Errorf("investment repository not available")
-	}
-
-	// Get all wallet IDs for the user
-	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
-		Limit:  1000,
-		Offset: 0,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to list wallets: %w", err)
-	}
-
-	totalProcessed := 0
-
-	// Process investments for each wallet
-	for _, wallet := range wallets {
-		offset := 0
-
-		for {
-			investments, _, err := s.investmentRepo.ListByWalletID(ctx, wallet.ID, repository.ListOptions{
-				Limit:  batchSize,
-				Offset: offset,
-			}, v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
-			if err != nil {
-				log.Printf("Error listing investments for wallet %d: %v", wallet.ID, err)
-				break
-			}
-
-			if len(investments) == 0 {
-				break
-			}
-
-			// Convert each investment in the batch
-			for _, investment := range investments {
-				// Convert TotalCost
-				convertedTotalCost, err := s.fxRateSvc.ConvertAmount(ctx, investment.TotalCost, fromCurrency, toCurrency)
-				if err != nil {
-					log.Printf("Error converting investment %d total cost: %v", investment.ID, err)
-					continue
-				}
-
-				// Convert CurrentValue
-				convertedCurrentValue, err := s.fxRateSvc.ConvertAmount(ctx, investment.CurrentValue, fromCurrency, toCurrency)
-				if err != nil {
-					log.Printf("Error converting investment %d current value: %v", investment.ID, err)
-					continue
-				}
-
-				// Convert RealizedPNL
-				convertedRealizedPNL, err := s.fxRateSvc.ConvertAmount(ctx, investment.RealizedPNL, fromCurrency, toCurrency)
-				if err != nil {
-					log.Printf("Error converting investment %d realized PNL: %v", investment.ID, err)
-					continue
-				}
-
-				// Update investment
-				investment.TotalCost = convertedTotalCost
-				investment.CurrentValue = convertedCurrentValue
-				investment.RealizedPNL = convertedRealizedPNL
-				investment.Currency = toCurrency
-
-				if err := s.investmentRepo.Update(ctx, investment); err != nil {
-					log.Printf("Error updating investment %d: %v", investment.ID, err)
-					continue
-				}
-
-				totalProcessed++
-			}
-
-			offset += len(investments)
-		}
-	}
-
-	log.Printf("Converted %d investment(s) for user %d", totalProcessed, userID)
 	return nil
 }
 
