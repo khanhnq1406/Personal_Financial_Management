@@ -36,25 +36,49 @@ func NewClient(timeout time.Duration) *Client {
 	}
 }
 
-// GoldPriceResponse represents the vang.today API response
+// GoldPriceResponse represents the vang.today API response (all prices)
 type GoldPriceResponse struct {
-	Success     bool        `json:"success"`
-	CurrentTime int64       `json:"current_time"`
-	Data        []GoldPrice  `json:"data"`
+	Success bool              `json:"success"`
+	Prices  map[string]Price  `json:"prices"`
 }
 
-// GoldPrice represents a single gold type price
+// Price represents a single gold price in the response
+type Price struct {
+	Name       string  `json:"name"`
+	Buy        float64 `json:"buy"`
+	Sell       float64 `json:"sell"`
+	ChangeBuy  float64 `json:"change_buy"`
+	ChangeSell float64 `json:"change_sell"`
+	Currency   string  `json:"currency"`
+}
+
+// SinglePriceResponse represents the vang.today API response for a single type
+type SinglePriceResponse struct {
+	Success    bool    `json:"success"`
+	Timestamp  int64   `json:"timestamp"`
+	Time       string  `json:"time"`
+	Date       string  `json:"date"`
+	Type       string  `json:"type"`
+	Name       string  `json:"name"`
+	Buy        float64 `json:"buy"`
+	Sell       float64 `json:"sell"`
+	ChangeBuy  float64 `json:"change_buy"`
+	ChangeSell float64 `json:"change_sell"`
+}
+
+// GoldPrice represents a single gold type price (internal format)
 type GoldPrice struct {
-	TypeCode   string `json:"type_code"`    // e.g., "SJL1L10", "XAU"
-	Buy        int64  `json:"buy"`           // Buy price in VND/USD (smallest unit)
-	Sell       int64  `json:"sell"`          // Sell price
-	ChangeBuy  int64  `json:"change_buy"`    // Change from previous
-	ChangeSell int64  `json:"change_sell"`   // Change from previous
-	UpdateTime int64  `json:"update_time"`   // Unix timestamp
+	TypeCode   string  // e.g., "SJL1L10", "XAU"
+	Name       string  // e.g., "SJC 9999"
+	Buy        float64 // Buy price in VND/USD
+	Sell       float64 // Sell price
+	ChangeBuy  float64 // Change from previous
+	ChangeSell float64 // Change from previous
+	Currency   string  // "VND" or "USD"
 }
 
 // FetchPrices fetches all gold prices from vang.today
-func (c *Client) FetchPrices(ctx context.Context) (*GoldPriceResponse, error) {
+func (c *Client) FetchPrices(ctx context.Context) (map[string]GoldPrice, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -81,7 +105,25 @@ func (c *Client) FetchPrices(ctx context.Context) (*GoldPriceResponse, error) {
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
-	return &result, nil
+	if !result.Success {
+		return nil, fmt.Errorf("API returned unsuccessful response")
+	}
+
+	// Convert map[string]Price to map[string]GoldPrice
+	prices := make(map[string]GoldPrice)
+	for typeCode, price := range result.Prices {
+		prices[typeCode] = GoldPrice{
+			TypeCode:   typeCode,
+			Name:       price.Name,
+			Buy:        price.Buy,
+			Sell:       price.Sell,
+			ChangeBuy:  price.ChangeBuy,
+			ChangeSell: price.ChangeSell,
+			Currency:   price.Currency,
+		}
+	}
+
+	return prices, nil
 }
 
 // FetchPriceByType fetches price for a specific gold type
@@ -108,14 +150,29 @@ func (c *Client) FetchPriceByType(ctx context.Context, typeCode string) (*GoldPr
 		return nil, fmt.Errorf("read response: %w", err)
 	}
 
-	var result GoldPriceResponse
+	var result SinglePriceResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
-	if !result.Success || len(result.Data) == 0 {
+	if !result.Success {
 		return nil, fmt.Errorf("no data found for type: %s", typeCode)
 	}
 
-	return &result.Data[0], nil
+	// Get currency from gold types registry
+	goldType := GetGoldTypeByCode(typeCode)
+	currency := "VND" // default
+	if goldType != nil {
+		currency = goldType.Currency
+	}
+
+	return &GoldPrice{
+		TypeCode:   result.Type,
+		Name:       result.Name,
+		Buy:        result.Buy,
+		Sell:       result.Sell,
+		ChangeBuy:  result.ChangeBuy,
+		ChangeSell: result.ChangeSell,
+		Currency:   currency,
+	}, nil
 }

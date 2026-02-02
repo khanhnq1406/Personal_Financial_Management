@@ -271,8 +271,13 @@ message CreateInvestmentRequest {
   string name = 3 [json_name = "name"];
   InvestmentType type = 4 [json_name = "type"];
   int64 initialQuantity = 5 [json_name = "initialQuantity"];
-  int64 initialCost = 6 [json_name = "initialCost"];
+  int64 initialCost = 6 [json_name = "initialCost"];  // Total cost in smallest currency unit (cents for USD, dong for VND)
   string currency = 7 [json_name = "currency"];
+
+  // Optional: Provide decimal values for convenience (server converts to int64)
+  // If provided, these take precedence over initialQuantity/initialCost
+  double initialQuantityDecimal = 8 [json_name = "initialQuantityDecimal"];
+  double initialCostDecimal = 9 [json_name = "initialCostDecimal"];  // Total cost as decimal (e.g., 1500.50 for $1,500.50)
 }
 
 message CreateInvestmentResponse {

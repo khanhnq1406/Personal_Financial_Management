@@ -79,7 +79,7 @@ func (r *investmentRepository) ListByUserID(ctx context.Context, userID int32, o
 	var walletIDs []int32
 	err := r.db.DB.WithContext(ctx).
 		Model(&models.Wallet{}).
-		Where("user_id = ? AND status = 1 AND type = ?", userID, v1.WalletType_INVESTMENT).
+		Where("user_id = ? AND status = 1 AND type = ?", userID, int32(v1.WalletType_INVESTMENT)).
 		Pluck("id", &walletIDs).Error
 	if err != nil {
 		return nil, 0, apperrors.NewInternalErrorWithCause("failed to get user wallets", err)
@@ -95,7 +95,7 @@ func (r *investmentRepository) ListByUserID(ctx context.Context, userID int32, o
 
 	// Apply type filter if specified
 	if typeFilter != v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED && typeFilter != 0 {
-		query = query.Where("type = ?", typeFilter)
+		query = query.Where("type = ?", int32(typeFilter))
 	}
 
 	// Get total count
@@ -151,7 +151,22 @@ func (r *investmentRepository) ListByWalletID(ctx context.Context, walletID int3
 
 // Update updates an investment.
 func (r *investmentRepository) Update(ctx context.Context, investment *models.Investment) error {
-	result := r.db.DB.WithContext(ctx).Save(investment)
+	// Use Select to specify which fields to update, avoiding enum serialization issues
+	// Include all updatable fields except the Type enum which causes serialization errors
+	result := r.db.DB.WithContext(ctx).Select(
+		"symbol",
+		"name",
+		"quantity",
+		"average_cost",
+		"total_cost",
+		"currency",
+		"current_price",
+		"current_value",
+		"unrealized_pnl",
+		"unrealized_pnl_percent",
+		"realized_pnl",
+		"total_dividends",
+	).Save(investment)
 	if result.Error != nil {
 		return apperrors.NewInternalErrorWithCause("failed to update investment", result.Error)
 	}
@@ -184,8 +199,18 @@ func (r *investmentRepository) UpdatePrices(ctx context.Context, updates []Price
 			// Update the current_price field
 			investment.CurrentPrice = update.Price
 
-			// Save the investment - this triggers BeforeUpdate hook which calls recalculate()
-			if err := tx.Save(&investment).Error; err != nil {
+			// Manually trigger recalculation to set derived fields
+			investment.Recalculate()
+
+			// Update only the specific fields we need to change (avoid enum serialization)
+			if err := tx.Model(&models.Investment{}).
+				Where("id = ?", update.InvestmentID).
+				Updates(map[string]interface{}{
+					"current_price":          investment.CurrentPrice,
+					"current_value":          investment.CurrentValue,
+					"unrealized_pnl":         investment.UnrealizedPNL,
+					"unrealized_pnl_percent": investment.UnrealizedPNLPercent,
+				}).Error; err != nil {
 				return apperrors.NewInternalErrorWithCause("failed to update investment price", err)
 			}
 		}
@@ -232,14 +257,15 @@ func (r *investmentRepository) GetPortfolioSummary(ctx context.Context, walletID
 		summary.RealizedPNL += inv.RealizedPNL
 
 		// Update type-specific totals
-		if _, exists := summary.InvestmentsByType[inv.Type]; !exists {
-			summary.InvestmentsByType[inv.Type] = &TypeSummary{
+		typeEnum := v1.InvestmentType(inv.Type)
+		if _, exists := summary.InvestmentsByType[typeEnum]; !exists {
+			summary.InvestmentsByType[typeEnum] = &TypeSummary{
 				TotalValue: 0,
 				Count:      0,
 			}
 		}
-		summary.InvestmentsByType[inv.Type].TotalValue += inv.CurrentValue
-		summary.InvestmentsByType[inv.Type].Count++
+		summary.InvestmentsByType[typeEnum].TotalValue += inv.CurrentValue
+		summary.InvestmentsByType[typeEnum].Count++
 	}
 
 	// Calculate total PNL
@@ -289,14 +315,15 @@ func (r *investmentRepository) GetAggregatedPortfolioSummary(ctx context.Context
 		summary.RealizedPNL += inv.RealizedPNL
 
 		// Update type-specific totals
-		if _, exists := summary.InvestmentsByType[inv.Type]; !exists {
-			summary.InvestmentsByType[inv.Type] = &TypeSummary{
+		typeEnum := v1.InvestmentType(inv.Type)
+		if _, exists := summary.InvestmentsByType[typeEnum]; !exists {
+			summary.InvestmentsByType[typeEnum] = &TypeSummary{
 				TotalValue: 0,
 				Count:      0,
 			}
 		}
-		summary.InvestmentsByType[inv.Type].TotalValue += inv.CurrentValue
-		summary.InvestmentsByType[inv.Type].Count++
+		summary.InvestmentsByType[typeEnum].TotalValue += inv.CurrentValue
+		summary.InvestmentsByType[typeEnum].Count++
 	}
 
 	// Calculate total PNL

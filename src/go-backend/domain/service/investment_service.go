@@ -127,7 +127,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		WalletID:     req.WalletId,
 		Symbol:       req.Symbol,
 		Name:         req.Name,
-		Type:         req.Type,
+		Type:         int32(req.Type), // Convert enum to int32 for database storage
 		Quantity:     req.InitialQuantity,
 		AverageCost:  averageCost,
 		TotalCost:    req.InitialCost,
@@ -145,7 +145,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
 		WalletID:        req.WalletId,
-		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY,
+		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
 		Quantity:        req.InitialQuantity,
 		Price:           averageCost,
 		Cost:            req.InitialCost,
@@ -444,7 +444,7 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 	}
 
 	// 4. Calculate transaction cost using utility function
-	cost := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
+	cost := units.CalculateTransactionCost(req.Quantity, req.Price, investmentv1.InvestmentType(investment.Type))
 	totalCost := cost + req.Fees
 
 	// 5. Handle transaction type
@@ -576,14 +576,14 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 			PurchasedAt:  time.Unix(req.TransactionDate, 0),
 		}
 		// Calculate average cost using utility function
-		lot.AverageCost = units.CalculateAverageCost(totalCost, req.Quantity, investment.Type)
+		lot.AverageCost = units.CalculateAverageCost(totalCost, req.Quantity, investmentv1.InvestmentType(investment.Type))
 		lot.RemainingQuantity = req.Quantity
 	} else {
 		// Update existing lot
 		lot.Quantity += req.Quantity
 		lot.TotalCost += totalCost
 		// Recalculate average cost using utility function
-		lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investment.Type)
+		lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investmentv1.InvestmentType(investment.Type))
 		lot.RemainingQuantity = lot.Quantity
 	}
 
@@ -602,7 +602,7 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	tx := &models.InvestmentTransaction{
 		InvestmentID:      investment.ID,
 		WalletID:          investment.WalletID,
-		Type:              investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY,
+		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
 		Quantity:          req.Quantity,
 		Price:             req.Price,
 		Cost:              cost,
@@ -626,7 +626,7 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	investment.Quantity += req.Quantity
 	investment.TotalCost += totalCost
 	// Calculate average cost using utility function
-	investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investment.Type)
+	investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investmentv1.InvestmentType(investment.Type))
 
 	if err := s.investmentRepo.Update(ctx, investment); err != nil {
 		return nil, apperrors.NewInternalErrorWithCause("failed to update investment", err)
@@ -701,7 +701,7 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 
 		// Calculate realized PNL for this lot using utility function
 		// Convert consumeFromLot from smallest units to whole units
-		precision := units.GetPrecisionForInvestmentType(investment.Type)
+		precision := units.GetPrecisionForInvestmentType(investmentv1.InvestmentType(investment.Type))
 		consumeFromLotWholeUnits := float64(consumeFromLot) / float64(precision)
 		lotCostBasis := float64(lot.AverageCost) * consumeFromLotWholeUnits
 		lotSellValue := float64(sellPrice) * consumeFromLotWholeUnits
@@ -722,13 +722,13 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 
 	// Calculate total proceeds (sale value) for the transaction record
 	// Cost for a sell transaction represents the total sale proceeds
-	totalProceeds := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
+	totalProceeds := units.CalculateTransactionCost(req.Quantity, req.Price, investmentv1.InvestmentType(investment.Type))
 
 	// Create transaction record
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
 		WalletID:        investment.WalletID,
-		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL,
+		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL),
 		Quantity:        req.Quantity,
 		Price:           req.Price,
 		Cost:            totalProceeds,
@@ -811,13 +811,13 @@ func (s *investmentService) processDividendTransaction(ctx context.Context, inve
 	}
 
 	// Calculate total dividend amount
-	totalDividend := units.CalculateTransactionCost(req.Quantity, req.Price, investment.Type)
+	totalDividend := units.CalculateTransactionCost(req.Quantity, req.Price, investmentv1.InvestmentType(investment.Type))
 
 	// Create dividend transaction record
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
 		WalletID:        investment.WalletID,
-		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
 		Quantity:        req.Quantity,
 		Price:           req.Price,
 		Cost:            totalDividend,
@@ -980,7 +980,7 @@ func (s *investmentService) DeleteTransaction(ctx context.Context, transactionID
 	}
 
 	// Handle based on transaction type
-	switch tx.Type {
+	switch investmentv1.InvestmentTransactionType(tx.Type) {
 	case investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY:
 		if err := s.reverseBuyTransaction(ctx, investment, tx); err != nil {
 			return nil, err
@@ -1044,7 +1044,7 @@ func (s *investmentService) reverseBuyTransaction(ctx context.Context, investmen
 
 		// Recalculate average cost if still has quantity
 		if lot.Quantity > 0 {
-			lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investment.Type)
+			lot.AverageCost = units.CalculateAverageCost(lot.TotalCost, lot.Quantity, investmentv1.InvestmentType(investment.Type))
 		} else {
 			lot.AverageCost = 0
 		}
@@ -1060,7 +1060,7 @@ func (s *investmentService) reverseBuyTransaction(ctx context.Context, investmen
 
 	// Recalculate average cost if still has quantity
 	if investment.Quantity > 0 {
-		investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investment.Type)
+		investment.AverageCost = units.CalculateAverageCost(investment.TotalCost, investment.Quantity, investmentv1.InvestmentType(investment.Type))
 	} else {
 		investment.AverageCost = 0
 		investment.TotalCost = 0
@@ -1131,7 +1131,7 @@ func (s *investmentService) reverseSellTransaction(ctx context.Context, investme
 	if err == nil && len(openLots) > 0 {
 		totalCost := int64(0)
 		totalQty := int64(0)
-		precision := int64(units.GetPrecisionForInvestmentType(investment.Type))
+		precision := int64(units.GetPrecisionForInvestmentType(investmentv1.InvestmentType(investment.Type)))
 		for _, lot := range openLots {
 			if lot.RemainingQuantity > 0 {
 				// Calculate cost for remaining quantity in this lot
@@ -1142,7 +1142,7 @@ func (s *investmentService) reverseSellTransaction(ctx context.Context, investme
 		}
 		if totalQty > 0 {
 			investment.TotalCost = totalCost
-			investment.AverageCost = units.CalculateAverageCost(totalCost, totalQty, investment.Type)
+			investment.AverageCost = units.CalculateAverageCost(totalCost, totalQty, investmentv1.InvestmentType(investment.Type))
 		}
 	}
 
@@ -1327,15 +1327,16 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 		unrealizedPNLInPreferred += unrealizedPNL
 
 		// Update type-specific totals (in preferred currency)
-		if _, exists := investmentsByType[inv.Type]; !exists {
-			investmentsByType[inv.Type] = &investmentv1.InvestmentByType{
-				Type:       inv.Type,
+		invType := investmentv1.InvestmentType(inv.Type)
+		if _, exists := investmentsByType[invType]; !exists {
+			investmentsByType[invType] = &investmentv1.InvestmentByType{
+				Type: invType,
 				TotalValue: 0,
 				Count:      0,
 			}
 		}
-		investmentsByType[inv.Type].TotalValue += currentValue
-		investmentsByType[inv.Type].Count++
+		investmentsByType[invType].TotalValue += currentValue
+		investmentsByType[invType].Count++
 	}
 
 	// Calculate total PNL
@@ -1863,15 +1864,16 @@ func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, u
 		unrealizedPNLInPreferred += unrealizedPNL
 
 		// Update type-specific totals (in preferred currency)
-		if _, exists := investmentsByType[inv.Type]; !exists {
-			investmentsByType[inv.Type] = &investmentv1.InvestmentByType{
-				Type:       inv.Type,
+		invType := investmentv1.InvestmentType(inv.Type)
+		if _, exists := investmentsByType[invType]; !exists {
+			investmentsByType[invType] = &investmentv1.InvestmentByType{
+				Type: invType,
 				TotalValue: 0,
 				Count:      0,
 			}
 		}
-		investmentsByType[inv.Type].TotalValue += currentValue
-		investmentsByType[inv.Type].Count++
+		investmentsByType[invType].TotalValue += currentValue
+		investmentsByType[invType].Count++
 	}
 
 	// Calculate total PNL

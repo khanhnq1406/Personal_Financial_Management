@@ -25,6 +25,7 @@ interface FormSelectProps extends Omit<UseControllerProps, "control"> {
   className?: string;
   loading?: boolean;
   formatOption?: (option: SelectOption) => string;
+  disableFilter?: boolean;
 }
 
 export const FormSelect = memo(function FormSelect({
@@ -36,6 +37,7 @@ export const FormSelect = memo(function FormSelect({
   className = "",
   loading = false,
   formatOption,
+  disableFilter,
   ...props
 }: FormSelectProps) {
   const {
@@ -83,6 +85,7 @@ export const FormSelect = memo(function FormSelect({
           "mt-1",
           error && "[&_input]:border-2 [&_input]:border-lred",
         )}
+        disableFilter={disableFilter}
       />
       {error && (
         <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>

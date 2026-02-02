@@ -29,23 +29,24 @@ export interface GoldTypeOption {
   type: number;      // InvestmentType enum value
 }
 
-// Vietnamese gold type options
+// Vietnamese gold type options (from backend pkg/gold/types.go)
 export const GOLD_VND_OPTIONS: GoldTypeOption[] = [
-  { value: "SJL1L10", label: "SJC 1L-10L (Vàng miếng)", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "SJL1L2", label: "SJC 1L-2L (Vàng miếng)", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "SJL5C", label: "SJC 5 chỉ (Vàng miếng)", unit: "tael" as GoldUnit, currency: "VND", unitWeight: 3.75, type: 8 },
-  { value: "SJL1C", label: "SJC 1 chỉ (Vàng miếng)", unit: "tael" as GoldUnit, currency: "VND", unitWeight: 1.875, type: 8 },
-  { value: "SJL0_5C", label: "SJC 0.5 chỉ (Vàng miếng)", unit: "tael" as GoldUnit, currency: "VND", unitWeight: 0.9375, type: 8 },
-  { value: "SJR2", label: "SJC Nhẫn 2-5 chỉ", unit: "gram" as GoldUnit, currency: "VND", unitWeight: 1, type: 8 },
-  { value: "SJR1", label: "SJC Nhẫn 1 chỉ", unit: "gram" as GoldUnit, currency: "VND", unitWeight: 1, type: 8 },
-  { value: "SJT99", label: "SJC Trang sức 99.99", unit: "gram" as GoldUnit, currency: "VND", unitWeight: 1, type: 8 },
-  { value: "SJT98", label: "SJC Trang sức 99.98", unit: "gram" as GoldUnit, currency: "VND", unitWeight: 1, type: 8 },
-  { value: "SJT97", label: "SJC Trang sức 99.97", unit: "gram" as GoldUnit, currency: "VND", unitWeight: 1, type: 8 },
+  { value: "SJL1L10", label: "SJC 9999", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "SJ9999", label: "Nhẫn SJC", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "DOHNL", label: "DOJI Hà Nội", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "DOHCML", label: "DOJI HCM", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "DOJINHTV", label: "DOJI Nữ Trang", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "BTSJC", label: "Bảo Tín SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "BT9999NTT", label: "Bảo Tín 9999", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "PQHNVM", label: "PNJ Hà Nội", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "PQHN24NTT", label: "PNJ 24K", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "VNGSJC", label: "VN Gold SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "VIETTINMSJC", label: "Viettin SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
 ];
 
-// World gold type options
+// World gold type options (from backend pkg/gold/types.go)
 export const GOLD_USD_OPTIONS: GoldTypeOption[] = [
-  { value: "XAU", label: "Gold World (XAU/USD)", unit: "oz" as GoldUnit, currency: "USD", unitWeight: GRAMS_PER_OUNCE, type: 9 },
+  { value: "XAUUSD", label: "Gold World (XAU/USD)", unit: "oz" as GoldUnit, currency: "USD", unitWeight: GRAMS_PER_OUNCE, type: 9 },
 ];
 
 /**
@@ -239,9 +240,14 @@ export function calculateGoldFromUserInput(input: GoldCalculationInput): GoldCal
   const averageCostNative = Math.round(averageCostInNativeCurrency * nativeMultiplier);
 
   // LAYER 2: Convert to wallet currency for balance
+  // Convert from native currency smallest units to wallet currency smallest units
   let totalCostWallet = totalCostNative;
   if (nativeCurrency !== walletCurrency && fxRate !== undefined && fxRate !== 1) {
-    totalCostWallet = totalCostNative * fxRate;
+    // Convert: native smallest units → native main units → wallet main units → wallet smallest units
+    const nativeMainUnits = totalCostNative / nativeMultiplier;
+    const walletMainUnits = nativeMainUnits * fxRate;
+    const walletMultiplier = walletCurrency === 'VND' ? 1 : 100;
+    totalCostWallet = Math.round(walletMainUnits * walletMultiplier);
   }
 
   // Storage quantity (base unit × 10000)

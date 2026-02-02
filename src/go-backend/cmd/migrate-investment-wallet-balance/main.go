@@ -30,7 +30,7 @@ func main() {
 
 	// Get all INVESTMENT type wallets
 	var wallets []models.Wallet
-	if err := db.DB.WithContext(ctx).Where("type = ?", v1.WalletType_INVESTMENT).Find(&wallets).Error; err != nil {
+	if err := db.DB.WithContext(ctx).Where("type = ?", int32(v1.WalletType_INVESTMENT)).Find(&wallets).Error; err != nil {
 		log.Fatalf("Failed to fetch investment wallets: %v", err)
 	}
 

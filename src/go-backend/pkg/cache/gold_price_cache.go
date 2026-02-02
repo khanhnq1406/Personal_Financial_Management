@@ -31,10 +31,12 @@ func NewGoldPriceCache(client *redis.Client) *GoldPriceCache {
 // CachedGoldPrice represents a cached gold price
 type CachedGoldPrice struct {
 	TypeCode   string `json:"type_code"`
+	Name       string `json:"name"`
 	Buy        int64  `json:"buy"`
 	Sell       int64  `json:"sell"`
 	ChangeBuy  int64  `json:"change_buy"`
 	ChangeSell int64  `json:"change_sell"`
+	Currency   string `json:"currency"`
 	UpdateTime int64  `json:"update_time"`
 }
 

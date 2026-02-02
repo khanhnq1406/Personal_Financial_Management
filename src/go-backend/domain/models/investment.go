@@ -14,7 +14,7 @@ type Investment struct {
 	WalletID             int32                        `gorm:"not null;index:idx_investment_wallet" json:"walletId"`
 	Symbol               string                       `gorm:"size:20;not null;index" json:"symbol"`
 	Name                 string                       `gorm:"size:100;not null" json:"name"`
-	Type                 v1.InvestmentType            `gorm:"type:int;not null;default:0;index" json:"type"`
+	Type                 int32                        `gorm:"type:int;not null;default:0;index" json:"type"`
 	Quantity             int64                        `gorm:"type:bigint;not null;default:0" json:"quantity"`
 	AverageCost          int64                        `gorm:"type:bigint;not null;default:0" json:"averageCost"`
 	TotalCost            int64                        `gorm:"type:bigint;not null;default:0" json:"totalCost"`
@@ -40,29 +40,32 @@ func (Investment) TableName() string {
 
 // BeforeCreate GORM hook to recalculate derived fields before creation
 func (i *Investment) BeforeCreate(tx *gorm.DB) error {
-	i.recalculate()
+	i.Recalculate()
 	return nil
 }
 
 // BeforeUpdate GORM hook to recalculate derived fields before update
 func (i *Investment) BeforeUpdate(tx *gorm.DB) error {
-	i.recalculate()
+	i.Recalculate()
 	return nil
 }
 
-// recalculate updates CurrentValue, UnrealizedPNL, UnrealizedPNLPercent based on investment type
+// Recalculate updates CurrentValue, UnrealizedPNL, UnrealizedPNLPercent based on investment type
 // Both CurrentPrice and CurrentValue are stored in cents (currency's smallest unit)
-func (i *Investment) recalculate() {
+func (i *Investment) Recalculate() {
 	if i.Quantity > 0 && i.CurrentPrice > 0 {
 		// Determine divisor based on investment type
 		var divisor int64 = 100 // Default: 2 decimals
-		switch i.Type {
+		switch v1.InvestmentType(i.Type) {
 		case v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY:
 			divisor = 100000000 // 8 decimals for satoshis
 		case v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			v1.InvestmentType_INVESTMENT_TYPE_ETF,
 			v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND:
 			divisor = 10000 // 4 decimals for stocks
+		case v1.InvestmentType_INVESTMENT_TYPE_GOLD_VND,
+			v1.InvestmentType_INVESTMENT_TYPE_GOLD_USD:
+			divisor = 10000 // 4 decimals for gold (grams × 10000 or ounces × 10000)
 		}
 
 		// Current Value = (Quantity / divisor) * CurrentPrice
@@ -98,7 +101,7 @@ func (i *Investment) ToProto() *v1.Investment {
 		WalletId:             i.WalletID,
 		Symbol:               i.Symbol,
 		Name:                 i.Name,
-		Type:                 i.Type,
+		Type:                 v1.InvestmentType(i.Type), // Convert int32 to enum
 		Quantity:             i.Quantity,
 		AverageCost:          i.AverageCost,
 		TotalCost:            i.TotalCost,

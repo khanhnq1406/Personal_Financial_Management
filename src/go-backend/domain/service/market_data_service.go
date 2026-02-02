@@ -121,7 +121,7 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 			}()
 
 			// Get price for this investment
-			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, investment.Type, maxAge)
+			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, investmentv1.InvestmentType(investment.Type), maxAge)
 			if err != nil {
 				// Log error but continue with other investments
 				log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)

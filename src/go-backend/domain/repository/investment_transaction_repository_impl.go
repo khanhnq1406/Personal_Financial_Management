@@ -64,7 +64,7 @@ func (r *investmentTransactionRepository) ListByInvestmentID(ctx context.Context
 
 	// Apply type filter if specified
 	if typeFilter != nil {
-		query = query.Where("type = ?", *typeFilter)
+		query = query.Where("type = ?", int32(*typeFilter))
 	}
 
 	// Get total count

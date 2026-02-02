@@ -360,8 +360,16 @@ export interface CreateInvestmentRequest {
   name: string;
   type: InvestmentType;
   initialQuantity: number;
+  /** Total cost in smallest currency unit (cents for USD, dong for VND) */
   initialCost: number;
   currency: string;
+  /**
+   * Optional: Provide decimal values for convenience (server converts to int64)
+   * If provided, these take precedence over initialQuantity/initialCost
+   */
+  initialQuantityDecimal: number;
+  /** Total cost as decimal (e.g., 1500.50 for $1,500.50) */
+  initialCostDecimal: number;
 }
 
 export interface CreateInvestmentResponse {
@@ -2356,7 +2364,17 @@ export const GetInvestmentResponse: MessageFns<GetInvestmentResponse> = {
 };
 
 function createBaseCreateInvestmentRequest(): CreateInvestmentRequest {
-  return { walletId: 0, symbol: "", name: "", type: 0, initialQuantity: 0, initialCost: 0, currency: "" };
+  return {
+    walletId: 0,
+    symbol: "",
+    name: "",
+    type: 0,
+    initialQuantity: 0,
+    initialCost: 0,
+    currency: "",
+    initialQuantityDecimal: 0,
+    initialCostDecimal: 0,
+  };
 }
 
 export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
@@ -2381,6 +2399,12 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     }
     if (message.currency !== "") {
       writer.uint32(58).string(message.currency);
+    }
+    if (message.initialQuantityDecimal !== 0) {
+      writer.uint32(65).double(message.initialQuantityDecimal);
+    }
+    if (message.initialCostDecimal !== 0) {
+      writer.uint32(73).double(message.initialCostDecimal);
     }
     return writer;
   },
@@ -2448,6 +2472,22 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
           message.currency = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 65) {
+            break;
+          }
+
+          message.initialQuantityDecimal = reader.double();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.initialCostDecimal = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2466,6 +2506,10 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
       initialQuantity: isSet(object.initialQuantity) ? globalThis.Number(object.initialQuantity) : 0,
       initialCost: isSet(object.initialCost) ? globalThis.Number(object.initialCost) : 0,
       currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      initialQuantityDecimal: isSet(object.initialQuantityDecimal)
+        ? globalThis.Number(object.initialQuantityDecimal)
+        : 0,
+      initialCostDecimal: isSet(object.initialCostDecimal) ? globalThis.Number(object.initialCostDecimal) : 0,
     };
   },
 
@@ -2492,6 +2536,12 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     if (message.currency !== "") {
       obj.currency = message.currency;
     }
+    if (message.initialQuantityDecimal !== 0) {
+      obj.initialQuantityDecimal = message.initialQuantityDecimal;
+    }
+    if (message.initialCostDecimal !== 0) {
+      obj.initialCostDecimal = message.initialCostDecimal;
+    }
     return obj;
   },
 
@@ -2507,6 +2557,8 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     message.initialQuantity = object.initialQuantity ?? 0;
     message.initialCost = object.initialCost ?? 0;
     message.currency = object.currency ?? "";
+    message.initialQuantityDecimal = object.initialQuantityDecimal ?? 0;
+    message.initialCostDecimal = object.initialCostDecimal ?? 0;
     return message;
   },
 };

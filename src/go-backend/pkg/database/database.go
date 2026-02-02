@@ -28,10 +28,14 @@ func New(cfg *config.Config) (*Database, error) {
 		cfg.Database.Name,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true, // Disable implicit prepared statement usage
+	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
-		// Enable prepared statements for better performance
-		PrepareStmt: true,
+		// Disable prepared statements for Supabase compatibility
+		// Supabase uses PgBouncer which can have issues with prepared statements
+		PrepareStmt: false,
 		// Skip default transaction for better performance
 		SkipDefaultTransaction: true,
 	})

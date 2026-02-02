@@ -184,11 +184,13 @@ export function AddInvestmentForm({
   // Check if current investment type is gold
   const isGoldInvestment = isGoldType(investmentType);
 
-  // Get gold type options based on selected currency
+  // Get gold type options based on investment type (not currency field)
   const goldTypeOptions = useMemo(() => {
     if (!isGoldInvestment) return [];
-    return getGoldTypeOptions(currency);
-  }, [isGoldInvestment, currency]);
+    // Determine currency from investment type: GOLD_VND → VND, GOLD_USD → USD
+    const goldCurrency = investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? 'VND' : 'USD';
+    return getGoldTypeOptions(goldCurrency);
+  }, [isGoldInvestment, investmentType]);
 
   // Update gold quantity unit based on selected gold type
   useEffect(() => {
@@ -201,8 +203,12 @@ export function AddInvestmentForm({
   useEffect(() => {
     if (!isGoldInvestment) {
       setSelectedGoldType(null);
+    } else {
+      // Auto-set currency based on gold investment type
+      const targetCurrency = investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? 'VND' : 'USD';
+      setValue("currency", targetCurrency);
     }
-  }, [isGoldInvestment]);
+  }, [isGoldInvestment, investmentType, setValue]);
 
   // Fetch exchange rate when currencies differ
   const currenciesMatch = currency === walletCurrency;
@@ -285,9 +291,12 @@ export function AddInvestmentForm({
         symbol: selectedGoldType.value,
         name: selectedGoldType.label,
         type: data.type,
-        initialQuantity: goldCalculation.storedQuantity,
-        initialCost: goldCalculation.totalCostWallet,
-        currency: walletCurrency, // Store in wallet currency
+        initialQuantityDecimal: data.initialQuantity, // Send decimal value
+        initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
+        currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
+        // Set int64 fields to 0 (decimal fields take precedence)
+        initialQuantity: 0,
+        initialCost: 0,
       });
     } else {
       // Convert to API format using utility functions for non-gold
@@ -296,9 +305,12 @@ export function AddInvestmentForm({
         symbol: data.symbol.toUpperCase(),
         name: data.name,
         type: data.type,
-        initialQuantity: quantityToStorage(data.initialQuantity, data.type),
-        initialCost: amountToSmallestUnit(data.initialCost, data.currency),
+        initialQuantityDecimal: data.initialQuantity, // Send decimal value
+        initialCostDecimal: data.initialCost, // Send decimal value
         currency: data.currency,
+        // Set int64 fields to 0 (decimal fields take precedence)
+        initialQuantity: 0,
+        initialCost: 0,
       });
     }
   };
@@ -403,8 +415,7 @@ export function AddInvestmentForm({
                 setSelectedGoldType(selected);
                 setValue("symbol", selected.value);
                 setValue("name", selected.label);
-                // Set currency based on gold type
-                setValue("currency", selected.currency);
+                // Currency is already set based on investment type, no need to override
               }
             }}
             placeholder="Select gold type (SJC, XAU, etc.)"
@@ -482,7 +493,7 @@ export function AddInvestmentForm({
           <CurrencyBadge
             value={currency}
             onChange={(newCurrency) => setValue("currency", newCurrency)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isGoldInvestment}
           />
         </div>
         <FormNumberInput

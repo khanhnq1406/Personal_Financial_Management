@@ -33,7 +33,10 @@ interface CreateWalletFormProps {
  * Owns its mutation logic, error handling, and loading state.
  * After successful creation, calls onSuccess() callback (caller handles refetch + modal close).
  */
-export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormProps) {
+export function CreateWalletForm({
+  onSuccess,
+  defaultType,
+}: CreateWalletFormProps) {
   const createWallet = useMutationCreateWallet();
   const { currency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -78,7 +81,8 @@ export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormPro
       {
         onSuccess: (data) => {
           const message =
-            data?.message || `Wallet "${data?.data?.walletName || ""}" has been created successfully`;
+            data?.message ||
+            `Wallet "${data?.data?.walletName || ""}" has been created successfully`;
           setSuccessMessage(message);
           setShowSuccess(true);
           setErrorMessage("");
@@ -126,6 +130,7 @@ export function CreateWalletForm({ onSuccess, defaultType }: CreateWalletFormPro
         label="Wallet Type"
         options={walletTypeOptions}
         placeholder="Select wallet type"
+        disableFilter
       />
 
       <div className="mt-4">

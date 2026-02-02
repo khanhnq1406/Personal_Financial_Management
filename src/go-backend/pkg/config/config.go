@@ -84,10 +84,13 @@ func Load() (*Config, error) {
 	}
 
 	// Database pool settings
-	maxOpenConns, _ := strconv.Atoi(getEnv("DB_MAX_OPEN_CONNS", "25"))
+	// Supabase recommends: max 15 connections for Pro tier, 60 for Enterprise
+	maxOpenConns, _ := strconv.Atoi(getEnv("DB_MAX_OPEN_CONNS", "15"))
 	maxIdleConns, _ := strconv.Atoi(getEnv("DB_MAX_IDLE_CONNS", "5"))
-	connMaxLifetime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_LIFETIME", "5m"))
-	connMaxIdleTime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_IDLE_TIME", "1m"))
+	// Longer lifetime for Supabase to reduce connection churn
+	connMaxLifetime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_LIFETIME", "1h"))
+	// Keep idle connections available but not too long
+	connMaxIdleTime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_IDLE_TIME", "10m"))
 
 	// Rate limit settings
 	requestsPerMinute, _ := strconv.Atoi(getEnv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))
