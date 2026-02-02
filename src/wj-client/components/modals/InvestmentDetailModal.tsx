@@ -26,7 +26,8 @@ import {
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
-import { formatCurrency, formatQuantity } from "@/lib/utils/units";
+import { formatCurrency } from "@/lib/utils/units";
+import { formatQuantity } from "@/app/dashboard/portfolio/helpers";
 
 export interface InvestmentDetailModalProps {
   isOpen: boolean;

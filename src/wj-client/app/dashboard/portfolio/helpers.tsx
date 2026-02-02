@@ -17,6 +17,11 @@ export const formatQuantity = (
   quantity: number,
   type: InvestmentType,
 ): string => {
+  // Gold types have special formatting with unit display (tael/oz)
+  if (isGoldType(type)) {
+    return formatGoldQuantity(quantity, type);
+  }
+
   // Crypto: 8 decimals, Stocks/ETFs/Mutual Funds: 4 decimals, Bonds/Commodities: 2 decimals
   let decimals = 2;
   if (type === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY) {
@@ -38,7 +43,11 @@ export const formatPercent = (value: number): string => {
 
 // Format prices with appropriate decimals based on investment type
 export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND"): string => {
-  // Use the multi-currency formatter from utils
+  // Gold types: show price per unit (₫/lượng for VND gold, $/oz for USD gold)
+  if (isGoldType(type)) {
+    return formatGoldPrice(price, currency, undefined, type);
+  }
+  // Use the multi-currency formatter from utils for other types
   return formatCurrencyUtil(price, currency);
 };
 
@@ -129,7 +138,16 @@ export function formatGoldQuantity(storedQuantity: number, investmentType: Inves
 
 /**
  * Format gold price for display with appropriate unit
- * @param price - Price in smallest currency unit
+ *
+ * Backend storage format:
+ * - VND gold: Price per gram in VND (not in cents, just main units)
+ * - USD gold: Price per ounce in USD cents
+ *
+ * Display format:
+ * - VND gold: Price per tael (multiply per-gram by 37.5)
+ * - USD gold: Price per ounce (divide cents by 100)
+ *
+ * @param price - Price from backend (VND: per gram, USD: cents per ounce)
  * @param currency - Currency code
  * @param priceUnit - Unit of the price (if different from market default)
  * @returns Formatted price string (e.g., "85,000,000 ₫/lượng" for VND gold)
@@ -156,13 +174,26 @@ export function formatGoldPrice(
 
   const unitLabel = getGoldUnitLabel(unit);
 
+  // Convert price from storage format to display format
+  let priceForDisplay: number;
+
+  if (currency === 'VND') {
+    // VND gold: Backend stores price per gram in VND
+    // Display as price per tael: multiply by 37.5 (grams per tael)
+    priceForDisplay = price * 37.5;
+  } else {
+    // USD gold: Backend stores price per ounce in USD cents
+    // Display as price per ounce: divide by 100 to get dollars
+    priceForDisplay = price / 100;
+  }
+
   // Format price with currency
   const formattedPrice = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(price / (currency === 'VND' ? 1 : 100));
+  }).format(priceForDisplay);
 
   return `${formattedPrice}/${unitLabel}`;
 }

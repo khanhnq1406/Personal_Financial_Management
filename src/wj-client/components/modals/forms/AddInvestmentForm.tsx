@@ -9,7 +9,10 @@ import { FormInput } from "@/components/forms/FormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
-import { Select, SelectOption as SelectComponentOption } from "@/components/select/Select";
+import {
+  Select,
+  SelectOption as SelectComponentOption,
+} from "@/components/select/Select";
 import { Success } from "@/components/modals/Success";
 import { SymbolAutocomplete } from "@/components/forms/SymbolAutocomplete";
 import {
@@ -38,7 +41,11 @@ import {
 import { Label } from "@/components/forms/Label";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
 import { CurrencyBadge } from "@/components/forms/CurrencyBadge";
-import { useExchangeRate, convertAmount, formatExchangeRate } from "@/hooks/useExchangeRate";
+import {
+  useExchangeRate,
+  convertAmount,
+  formatExchangeRate,
+} from "@/hooks/useExchangeRate";
 import {
   isGoldType,
   getGoldTypeOptions,
@@ -50,7 +57,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface AddInvestmentFormProps {
   walletId?: number; // Optional: if not provided, user must select from dropdown
-  walletBalance?: number;  // Wallet balance in smallest currency unit
+  walletBalance?: number; // Wallet balance in smallest currency unit
   walletCurrency?: string; // Currency of the wallet (ISO 4217)
   onSuccess?: () => void;
 }
@@ -86,9 +93,12 @@ export function AddInvestmentForm({
   const [showSuccess, setShowSuccess] = useState(false);
   const [insufficientBalance, setInsufficientBalance] = useState(false);
   // Local wallet selection state (used when walletId not provided)
-  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(propWalletId ?? null);
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(
+    propWalletId ?? null,
+  );
   // Gold-specific state
-  const [selectedGoldType, setSelectedGoldType] = useState<GoldTypeOption | null>(null);
+  const [selectedGoldType, setSelectedGoldType] =
+    useState<GoldTypeOption | null>(null);
   const [goldQuantityUnit, setGoldQuantityUnit] = useState<GoldUnit>("tael");
 
   // Fetch user's wallets if walletId not provided
@@ -190,7 +200,10 @@ export function AddInvestmentForm({
   const goldTypeOptions = useMemo(() => {
     if (!isGoldInvestment) return [];
     // Determine currency from investment type: GOLD_VND → VND, GOLD_USD → USD
-    const goldCurrency = investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? 'VND' : 'USD';
+    const goldCurrency =
+      investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND
+        ? "VND"
+        : "USD";
     return getGoldTypeOptions(goldCurrency);
   }, [isGoldInvestment, investmentType]);
 
@@ -207,7 +220,10 @@ export function AddInvestmentForm({
       setSelectedGoldType(null);
     } else {
       // Auto-set currency based on gold investment type
-      const targetCurrency = investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? 'VND' : 'USD';
+      const targetCurrency =
+        investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND
+          ? "VND"
+          : "USD";
       setValue("currency", targetCurrency);
     }
   }, [isGoldInvestment, investmentType, setValue]);
@@ -216,21 +232,24 @@ export function AddInvestmentForm({
   const currenciesMatch = currency === walletCurrency;
   const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
     walletCurrency,
-    currency
+    currency,
   );
 
   // Fetch exchange rate from wallet currency to preferred currency for display
-  const { rate: walletToPreferredRate, isLoading: isLoadingPreferredRate } = useExchangeRate(
-    walletCurrency,
-    preferredCurrency
-  );
+  const { rate: walletToPreferredRate, isLoading: isLoadingPreferredRate } =
+    useExchangeRate(walletCurrency, preferredCurrency);
 
   // Convert wallet balance to preferred currency for display
   const walletBalanceInPreferredCurrency = useMemo(() => {
     if (walletCurrency === preferredCurrency || !walletToPreferredRate) {
       return walletBalance;
     }
-    return convertAmount(walletBalance, walletToPreferredRate, walletCurrency, preferredCurrency);
+    return convertAmount(
+      walletBalance,
+      walletToPreferredRate,
+      walletCurrency,
+      preferredCurrency,
+    );
   }, [walletBalance, walletToPreferredRate, walletCurrency, preferredCurrency]);
 
   // Calculate initial cost in smallest unit for balance validation
@@ -250,18 +269,25 @@ export function AddInvestmentForm({
   useEffect(() => {
     if (currenciesMatch) {
       setInsufficientBalance(
-        initialCostInSmallestUnit > walletBalance && walletBalance > 0
+        initialCostInSmallestUnit > walletBalance && walletBalance > 0,
       );
     } else if (exchangeRate) {
       // Compare in investment currency
       setInsufficientBalance(
-        initialCostInSmallestUnit > walletBalanceInInvestmentCurrency && walletBalance > 0
+        initialCostInSmallestUnit > walletBalanceInInvestmentCurrency &&
+          walletBalance > 0,
       );
     } else {
       // No rate available yet, don't block submission
       setInsufficientBalance(false);
     }
-  }, [initialCostInSmallestUnit, walletBalance, walletBalanceInInvestmentCurrency, currenciesMatch, exchangeRate]);
+  }, [
+    initialCostInSmallestUnit,
+    walletBalance,
+    walletBalanceInInvestmentCurrency,
+    currenciesMatch,
+    exchangeRate,
+  ]);
 
   // Handle symbol selection - auto-fill name and currency from search result
   const handleSymbolChange = (symbol: string, result?: SearchResult) => {
@@ -307,7 +333,7 @@ export function AddInvestmentForm({
         symbol: selectedGoldType.value,
         name: selectedGoldType.label,
         type: data.type,
-        initialQuantityDecimal: data.initialQuantity, // Send decimal value
+        initialQuantityDecimal: goldCalculation.storedQuantity / 10000, // Convert storage format (grams×10000) to decimal (grams)
         initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
         currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
         // Set int64 fields to 0 (decimal fields take precedence)
@@ -364,7 +390,9 @@ export function AddInvestmentForm({
             className="mt-1"
           />
           {!walletId && (
-            <ErrorMessage id="wallet-error">Please select a wallet</ErrorMessage>
+            <ErrorMessage id="wallet-error">
+              Please select a wallet
+            </ErrorMessage>
           )}
         </div>
       )}
@@ -383,7 +411,9 @@ export function AddInvestmentForm({
             className="mt-1"
           />
           {errors.symbol && (
-            <ErrorMessage id="symbol-error">{errors.symbol.message}</ErrorMessage>
+            <ErrorMessage id="symbol-error">
+              {errors.symbol.message}
+            </ErrorMessage>
           )}
         </div>
       )}
@@ -426,7 +456,9 @@ export function AddInvestmentForm({
             }))}
             value={selectedGoldType?.value}
             onChange={(value) => {
-              const selected = goldTypeOptions.find((opt) => opt.value === value);
+              const selected = goldTypeOptions.find(
+                (opt) => opt.value === value,
+              );
               if (selected) {
                 setSelectedGoldType(selected);
                 setValue("symbol", selected.value);
@@ -440,7 +472,8 @@ export function AddInvestmentForm({
           />
           {selectedGoldType && (
             <p className="text-xs text-gray-500 mt-1 ml-1">
-              Unit: {selectedGoldType.unit} | Currency: {selectedGoldType.currency}
+              Unit: {selectedGoldType.unit} | Currency:{" "}
+              {selectedGoldType.currency}
             </p>
           )}
         </div>
@@ -454,7 +487,7 @@ export function AddInvestmentForm({
               <Label htmlFor="initialQuantity" required>
                 Quantity
               </Label>
-              {selectedGoldType?.currency === "VND" && (
+              {/* {selectedGoldType?.currency === "VND" && (
                 <Select
                   options={[
                     { value: "tael", label: "Tael (lượng)" },
@@ -465,7 +498,7 @@ export function AddInvestmentForm({
                   disabled={isSubmitting}
                   className="w-40"
                 />
-              )}
+              )} */}
             </div>
             <FormNumberInput
               name="initialQuantity"
@@ -478,7 +511,12 @@ export function AddInvestmentForm({
               step="0.01"
             />
             <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
-              Amount of gold in {goldQuantityUnit === "tael" ? "taels (lượng)" : "grams"}
+              Amount of gold in{" "}
+              {goldQuantityUnit === "tael"
+                ? "taels (lượng)"
+                : goldQuantityUnit === "oz"
+                  ? "oz"
+                  : "grams"}
             </p>
           </>
         ) : (
@@ -532,23 +570,38 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Wallet Balance:</span>
             <span>
-              {formatCurrency(walletBalanceInPreferredCurrency, preferredCurrency)}
-              {walletCurrency !== preferredCurrency && walletToPreferredRate && (
-                <span className="text-gray-500 ml-1">
-                  ({formatCurrency(walletBalance, walletCurrency)})
-                </span>
+              {formatCurrency(
+                walletBalanceInPreferredCurrency,
+                preferredCurrency,
               )}
+              {walletCurrency !== preferredCurrency &&
+                walletToPreferredRate && (
+                  <span className="text-gray-500 ml-1">
+                    ({formatCurrency(walletBalance, walletCurrency)})
+                  </span>
+                )}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
-            <span className="text-red-600">-{formatCurrency(initialCostInSmallestUnit, currency)}</span>
+            <span className="text-red-600">
+              -{formatCurrency(initialCostInSmallestUnit, currency)}
+            </span>
           </div>
           <hr className="my-2" />
           <div className="flex justify-between font-medium">
             <span>Remaining:</span>
-            <span className={walletBalance - initialCostInSmallestUnit < 0 ? "text-red-600" : "text-green-600"}>
-              {formatCurrency(walletBalance - initialCostInSmallestUnit, currency)}
+            <span
+              className={
+                walletBalance - initialCostInSmallestUnit < 0
+                  ? "text-red-600"
+                  : "text-green-600"
+              }
+            >
+              {formatCurrency(
+                walletBalance - initialCostInSmallestUnit,
+                currency,
+              )}
             </span>
           </div>
         </div>
@@ -560,22 +613,29 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Wallet Balance:</span>
             <span>
-              {formatCurrency(walletBalanceInPreferredCurrency, preferredCurrency)}
-              {walletCurrency !== preferredCurrency && walletToPreferredRate && (
-                <span className="text-gray-500 ml-1">
-                  ({formatCurrency(walletBalance, walletCurrency)})
-                </span>
+              {formatCurrency(
+                walletBalanceInPreferredCurrency,
+                preferredCurrency,
               )}
+              {walletCurrency !== preferredCurrency &&
+                walletToPreferredRate && (
+                  <span className="text-gray-500 ml-1">
+                    ({formatCurrency(walletBalance, walletCurrency)})
+                  </span>
+                )}
               {exchangeRate && (
                 <span className="text-gray-500 ml-1">
-                  ≈ {formatCurrency(walletBalanceInInvestmentCurrency, currency)}
+                  ≈{" "}
+                  {formatCurrency(walletBalanceInInvestmentCurrency, currency)}
                 </span>
               )}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
-            <span className="text-red-600">-{formatCurrency(initialCostInSmallestUnit, currency)}</span>
+            <span className="text-red-600">
+              -{formatCurrency(initialCostInSmallestUnit, currency)}
+            </span>
           </div>
           <hr className="my-2" />
           <div className="flex justify-between font-medium">
@@ -583,8 +643,20 @@ export function AddInvestmentForm({
             {isLoadingRate ? (
               <span className="text-gray-400">Loading rate...</span>
             ) : exchangeRate ? (
-              <span className={walletBalanceInInvestmentCurrency - initialCostInSmallestUnit < 0 ? "text-red-600" : "text-green-600"}>
-                ≈ {formatCurrency(walletBalanceInInvestmentCurrency - initialCostInSmallestUnit, currency)}
+              <span
+                className={
+                  walletBalanceInInvestmentCurrency -
+                    initialCostInSmallestUnit <
+                  0
+                    ? "text-red-600"
+                    : "text-green-600"
+                }
+              >
+                ≈{" "}
+                {formatCurrency(
+                  walletBalanceInInvestmentCurrency - initialCostInSmallestUnit,
+                  currency,
+                )}
               </span>
             ) : (
               <span className="text-gray-400">Rate unavailable</span>
@@ -592,7 +664,8 @@ export function AddInvestmentForm({
           </div>
           {exchangeRate && (
             <p className="text-xs text-gray-500 mt-2">
-              Exchange rate: 1 {walletCurrency} ≈ {formatExchangeRate(exchangeRate)} {currency}
+              Exchange rate: 1 {walletCurrency} ≈{" "}
+              {formatExchangeRate(exchangeRate)} {currency}
             </p>
           )}
         </div>

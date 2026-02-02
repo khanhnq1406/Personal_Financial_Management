@@ -282,34 +282,25 @@ export function formatGoldQuantityDisplay(
   investmentType: number,
   userCurrency: string
 ): { value: number; unit: GoldUnit } {
-  const { unit: defaultDisplayUnit } = getGoldDisplayUnit(investmentType);
+  // Get storage unit (what we store in) and display unit (what we show to user)
+  const { unit: storageUnit } = getGoldStorageInfo(investmentType);
+  let displayUnit: GoldUnit;
 
   // For VND gold: display in taels (Vietnamese convention)
   // For USD gold: display in ounces (international convention)
-  let displayUnit = defaultDisplayUnit;
-
   if (investmentType === 8) { // GOLD_VND
     displayUnit = 'tael' as GoldUnit;
   } else if (investmentType === 9) { // GOLD_USD
     displayUnit = 'oz' as GoldUnit;
+  } else {
+    displayUnit = storageUnit; // Fallback to storage unit
   }
 
+  // Convert from storage unit to display unit
   const inStorageUnits = storedQuantity / 10000;
-  const value = convertGoldQuantity(inStorageUnits, displayUnit, displayUnit);
+  const value = convertGoldQuantity(inStorageUnits, storageUnit, displayUnit);
 
   return { value, unit: displayUnit };
-}
-
-/**
- * Get the display unit for gold investments
- */
-function getGoldDisplayUnit(investmentType: number): { unit: GoldUnit } {
-  if (investmentType === 8) { // GOLD_VND
-    return { unit: 'tael' as GoldUnit };
-  } else if (investmentType === 9) { // GOLD_USD
-    return { unit: 'oz' as GoldUnit };
-  }
-  return { unit: 'gram' as GoldUnit };
 }
 
 /**
