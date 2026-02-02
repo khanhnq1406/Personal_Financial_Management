@@ -46,6 +46,7 @@ import {
   type GoldUnit,
   calculateGoldFromUserInput,
 } from "@/lib/utils/gold-calculator";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface AddInvestmentFormProps {
   walletId?: number; // Optional: if not provided, user must select from dropdown
@@ -79,6 +80,7 @@ export function AddInvestmentForm({
   onSuccess,
 }: AddInvestmentFormProps) {
   const queryClient = useQueryClient();
+  const { currency: preferredCurrency } = useCurrency();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -216,6 +218,20 @@ export function AddInvestmentForm({
     walletCurrency,
     currency
   );
+
+  // Fetch exchange rate from wallet currency to preferred currency for display
+  const { rate: walletToPreferredRate, isLoading: isLoadingPreferredRate } = useExchangeRate(
+    walletCurrency,
+    preferredCurrency
+  );
+
+  // Convert wallet balance to preferred currency for display
+  const walletBalanceInPreferredCurrency = useMemo(() => {
+    if (walletCurrency === preferredCurrency || !walletToPreferredRate) {
+      return walletBalance;
+    }
+    return convertAmount(walletBalance, walletToPreferredRate, walletCurrency, preferredCurrency);
+  }, [walletBalance, walletToPreferredRate, walletCurrency, preferredCurrency]);
 
   // Calculate initial cost in smallest unit for balance validation
   const initialCostInSmallestUnit = useMemo(() => {
@@ -515,7 +531,14 @@ export function AddInvestmentForm({
         <div className="mt-4 p-3 bg-gray-50 rounded-md">
           <div className="flex justify-between text-sm">
             <span>Wallet Balance:</span>
-            <span>{formatCurrency(walletBalance, walletCurrency)}</span>
+            <span>
+              {formatCurrency(walletBalanceInPreferredCurrency, preferredCurrency)}
+              {walletCurrency !== preferredCurrency && walletToPreferredRate && (
+                <span className="text-gray-500 ml-1">
+                  ({formatCurrency(walletBalance, walletCurrency)})
+                </span>
+              )}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
@@ -537,10 +560,15 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Wallet Balance:</span>
             <span>
-              {formatCurrency(walletBalance, walletCurrency)}
+              {formatCurrency(walletBalanceInPreferredCurrency, preferredCurrency)}
+              {walletCurrency !== preferredCurrency && walletToPreferredRate && (
+                <span className="text-gray-500 ml-1">
+                  ({formatCurrency(walletBalance, walletCurrency)})
+                </span>
+              )}
               {exchangeRate && (
                 <span className="text-gray-500 ml-1">
-                  (≈ {formatCurrency(walletBalanceInInvestmentCurrency, currency)})
+                  ≈ {formatCurrency(walletBalanceInInvestmentCurrency, currency)}
                 </span>
               )}
             </span>

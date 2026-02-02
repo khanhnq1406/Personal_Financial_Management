@@ -15,6 +15,7 @@ import (
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/units"
 	"wealthjourney/pkg/validator"
+	"wealthjourney/pkg/yahoo"
 	investmentv1 "wealthjourney/protobuf/v1"
 	walletv1 "wealthjourney/protobuf/v1"
 )
@@ -85,14 +86,29 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	if req.Name == "" {
 		return nil, apperrors.NewValidationError("name is required")
 	}
-	if req.InitialQuantity <= 0 {
-		return nil, apperrors.NewValidationError("initialQuantity must be positive")
-	}
-	if req.InitialCost <= 0 {
-		return nil, apperrors.NewValidationError("initialCost must be positive")
-	}
 	if err := validator.Currency(req.Currency); err != nil {
 		return nil, err
+	}
+
+	// Convert decimal inputs to integer format if provided
+	// initialQuantityDecimal and initialCostDecimal take precedence over initialQuantity/initialCost
+	initialQuantity := req.InitialQuantity
+	initialCost := req.InitialCost
+
+	if req.InitialQuantityDecimal > 0 {
+		initialQuantity = units.QuantityToStorage(req.InitialQuantityDecimal, req.Type)
+	}
+	if req.InitialCostDecimal > 0 {
+		// Use currency-aware conversion: VND has no cents, USD/EUR have 2 decimals
+		initialCost = yahoo.ToSmallestCurrencyUnitByCurrency(req.InitialCostDecimal, req.Currency)
+	}
+
+	// Validate the converted values
+	if initialQuantity <= 0 {
+		return nil, apperrors.NewValidationError("initialQuantity must be positive")
+	}
+	if initialCost <= 0 {
+		return nil, apperrors.NewValidationError("initialCost must be positive")
 	}
 
 	// 2. Verify wallet exists and belongs to user
@@ -107,10 +123,10 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	}
 
 	// 3.5. Convert initial cost to wallet currency for balance check
-	// req.InitialCost is in investment currency (req.Currency), wallet.Balance is in wallet.Currency
-	initialCostInWalletCurrency := req.InitialCost
+	// initialCost is in investment currency (req.Currency), wallet.Balance is in wallet.Currency
+	initialCostInWalletCurrency := initialCost
 	if req.Currency != wallet.Currency {
-		converted, err := s.fxRateSvc.ConvertAmount(ctx, req.InitialCost, req.Currency, wallet.Currency)
+		converted, err := s.fxRateSvc.ConvertAmount(ctx, initialCost, req.Currency, wallet.Currency)
 		if err != nil {
 			return nil, apperrors.NewInternalErrorWithCause(
 				fmt.Sprintf("failed to convert %s to %s for balance check", req.Currency, wallet.Currency), err)
@@ -133,8 +149,8 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	// 5. Calculate initial average cost using utility function
 	// Average cost is stored as "cents per whole unit" (e.g., cents per BTC, cents per share)
 	var averageCost int64 = 0
-	if req.InitialQuantity > 0 {
-		averageCost = units.CalculateAverageCost(req.InitialCost, req.InitialQuantity, req.Type)
+	if initialQuantity > 0 {
+		averageCost = units.CalculateAverageCost(initialCost, initialQuantity, req.Type)
 	}
 
 	// 6. Create investment model
@@ -143,9 +159,9 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		Symbol:       req.Symbol,
 		Name:         req.Name,
 		Type:         int32(req.Type), // Convert enum to int32 for database storage
-		Quantity:     req.InitialQuantity,
+		Quantity:     initialQuantity,
 		AverageCost:  averageCost,
-		TotalCost:    req.InitialCost,
+		TotalCost:    initialCost,
 		Currency:     req.Currency,
 		CurrentPrice: averageCost, // Set to average cost initially
 		RealizedPNL:  0,
@@ -161,9 +177,9 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		InvestmentID:    investment.ID,
 		WalletID:        req.WalletId,
 		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
-		Quantity:        req.InitialQuantity,
+		Quantity:        initialQuantity,
 		Price:           averageCost,
-		Cost:            req.InitialCost,
+		Cost:            initialCost,
 		Fees:            0,
 		TransactionDate: time.Now(),
 		Notes:           "Initial investment",
@@ -178,10 +194,10 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	// 9. Create initial lot for FIFO tracking
 	lot := &models.InvestmentLot{
 		InvestmentID:      investment.ID,
-		Quantity:          req.InitialQuantity,
-		RemainingQuantity: req.InitialQuantity,
+		Quantity:          initialQuantity,
+		RemainingQuantity: initialQuantity,
 		AverageCost:       averageCost,
-		TotalCost:         req.InitialCost,
+		TotalCost:         initialCost,
 		PurchasedAt:       time.Now(),
 	}
 
@@ -194,7 +210,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 
 	// 10. Update transaction with lot ID
 	tx.LotID = &lot.ID
-	tx.RemainingQuantity = req.InitialQuantity
+	tx.RemainingQuantity = initialQuantity
 	if err := s.txRepo.Update(ctx, tx); err != nil {
 		// Log error but don't fail - transaction is created
 		fmt.Printf("Warning: failed to update transaction with lot ID: %v\n", err)
