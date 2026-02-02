@@ -243,6 +243,12 @@ func main() {
 
 	// Initialize and start gRPC server
 	authSrv := auth.NewServer(db, rdb, cfg)
+	// Wire up user and category services to auth server for default category creation
+	authSrv.SetServices(services.User, services.Category)
+
+	// Make the auth server available to REST handlers
+	handlers.SetAuthServer(authSrv)
+
 	grpcSrv := grpcserver.NewServer(authSrv, services)
 	grpcPort := os.Getenv("GRPC_PORT")
 	if grpcPort == "" {

@@ -95,7 +95,7 @@ func (s *walletService) CreateWallet(ctx context.Context, userID int32, req *wal
 		WalletName: req.WalletName,
 		Balance:    0,
 		Currency:   currency,
-		Type:       req.Type,
+		Type:       int32(req.Type),
 	}
 
 	if err := s.walletRepo.Create(ctx, wallet); err != nil {
@@ -173,7 +173,7 @@ func (s *walletService) GetWallet(ctx context.Context, walletID int32, requestin
 
 	// Calculate investment value for INVESTMENT wallets
 	var investmentValue int64 = 0
-	if wallet.Type == walletv1.WalletType_INVESTMENT {
+	if v1.WalletType(wallet.Type) == walletv1.WalletType_INVESTMENT {
 		// Use the new function that properly converts investment values to wallet currency
 		investmentValue, err = s.getInvestmentValueInWalletCurrency(ctx, walletID, wallet.Currency)
 		if err != nil {
@@ -246,7 +246,7 @@ func (s *walletService) ListWallets(ctx context.Context, userID int32, params ty
 	// Collect investment wallet IDs
 	investmentWalletIDs := []int32{}
 	for _, wallet := range wallets {
-		if wallet.Type == walletv1.WalletType_INVESTMENT {
+		if v1.WalletType(wallet.Type) == walletv1.WalletType_INVESTMENT {
 			investmentWalletIDs = append(investmentWalletIDs, wallet.ID)
 		}
 	}
@@ -377,7 +377,7 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 	switch req.Option {
 	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_ARCHIVE:
 		// Archive wallet - set status to ARCHIVED
-		wallet.Status = walletv1.WalletStatus_WALLET_STATUS_ARCHIVED
+		wallet.Status = int32(walletv1.WalletStatus_WALLET_STATUS_ARCHIVED)
 		if err := s.walletRepo.Update(ctx, wallet); err != nil {
 			return nil, err
 		}
@@ -804,7 +804,7 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 	investmentWalletIDs := []int32{}
 	for _, wallet := range wallets {
 		// Skip inactive wallets
-		if wallet.Status != walletv1.WalletStatus_WALLET_STATUS_ACTIVE {
+		if v1.WalletStatus(wallet.Status) != walletv1.WalletStatus_WALLET_STATUS_ACTIVE {
 			continue
 		}
 
@@ -816,7 +816,7 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 			totalCash += converted.Amount
 		}
 
-		if wallet.Type == walletv1.WalletType_INVESTMENT {
+		if v1.WalletType(wallet.Type) == walletv1.WalletType_INVESTMENT {
 			investmentWalletIDs = append(investmentWalletIDs, wallet.ID)
 		}
 	}

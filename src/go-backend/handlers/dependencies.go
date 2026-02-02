@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"wealthjourney/domain/auth"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/redis"
@@ -13,9 +14,10 @@ import (
 
 // Dependencies holds shared dependencies for handlers
 type Dependencies struct {
-	DB  *database.Database
-	RDB *redis.RedisClient
-	Cfg *config.Config
+	DB      *database.Database
+	RDB     *redis.RedisClient
+	Cfg     *config.Config
+	AuthSrv *auth.Server
 }
 
 var deps *Dependencies
@@ -23,8 +25,16 @@ var deps *Dependencies
 // SetDependencies sets the dependencies for handlers
 func SetDependencies(db *database.Database, cfg *config.Config) {
 	deps = &Dependencies{
-		DB:  db,
-		Cfg: cfg,
+		DB:      db,
+		Cfg:     cfg,
+		AuthSrv: nil, // Set later via SetAuthServer
+	}
+}
+
+// SetAuthServer sets the auth server instance
+func SetAuthServer(authSrv *auth.Server) {
+	if deps != nil {
+		deps.AuthSrv = authSrv
 	}
 }
 

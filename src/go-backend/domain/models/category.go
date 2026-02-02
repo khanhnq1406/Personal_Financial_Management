@@ -13,7 +13,7 @@ type Category struct {
 	ID        int32          `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserID    int32          `gorm:"not null;index" json:"userId"`
 	Name      string         `gorm:"size:100;not null" json:"name"`
-	Type      v1.CategoryType `gorm:"type:int;not null;index" json:"type"`
+	Type      int32          `gorm:"type:int;not null;index" json:"type"` // Stored as int32, converted to/from v1.CategoryType
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
@@ -30,15 +30,15 @@ func (Category) TableName() string {
 // BeforeCreate hook validates the category type
 func (c *Category) BeforeCreate(tx *gorm.DB) error {
 	// Ensure type is set to a valid value
-	if c.Type == v1.CategoryType_CATEGORY_TYPE_UNSPECIFIED {
-		c.Type = v1.CategoryType_CATEGORY_TYPE_EXPENSE // Default to expense
+	if c.Type == int32(v1.CategoryType_CATEGORY_TYPE_UNSPECIFIED) {
+		c.Type = int32(v1.CategoryType_CATEGORY_TYPE_EXPENSE) // Default to expense
 	}
 	return nil
 }
 
 // IsValidType checks if the category type is valid
 func (c *Category) IsValidType() bool {
-	switch c.Type {
+	switch v1.CategoryType(c.Type) {
 	case v1.CategoryType_CATEGORY_TYPE_INCOME, v1.CategoryType_CATEGORY_TYPE_EXPENSE:
 		return true
 	default:
@@ -48,7 +48,7 @@ func (c *Category) IsValidType() bool {
 
 // GetTypeString returns the string representation of the category type
 func (c *Category) GetTypeString() string {
-	switch c.Type {
+	switch v1.CategoryType(c.Type) {
 	case v1.CategoryType_CATEGORY_TYPE_INCOME:
 		return "Income"
 	case v1.CategoryType_CATEGORY_TYPE_EXPENSE:
@@ -56,4 +56,14 @@ func (c *Category) GetTypeString() string {
 	default:
 		return "Unknown"
 	}
+}
+
+// GetCategoryType returns the protobuf CategoryType enum value
+func (c *Category) GetCategoryType() v1.CategoryType {
+	return v1.CategoryType(c.Type)
+}
+
+// SetCategoryType sets the category type from protobuf enum
+func (c *Category) SetCategoryType(categoryType v1.CategoryType) {
+	c.Type = int32(categoryType)
 }

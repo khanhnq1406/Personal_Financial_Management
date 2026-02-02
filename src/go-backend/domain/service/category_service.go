@@ -40,7 +40,7 @@ func (s *categoryService) CreateCategory(ctx context.Context, userID int32, req 
 	category := &models.Category{
 		UserID: userID,
 		Name:   strings.TrimSpace(req.Name),
-		Type:   req.Type,
+		Type:   int32(req.Type),
 	}
 
 	err := s.categoryRepo.Create(ctx, category)
@@ -188,7 +188,7 @@ func (s *categoryService) GetOrCreateBalanceAdjustmentCategory(ctx context.Conte
 	newCategory := &models.Category{
 		UserID: userID,
 		Name:   categoryName,
-		Type:   categoryType,
+		Type:   int32(categoryType),
 	}
 
 	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
@@ -213,7 +213,7 @@ func (s *categoryService) GetOrCreateInitialBalanceCategory(ctx context.Context,
 	newCategory := &models.Category{
 		UserID: userID,
 		Name:   categoryName,
-		Type:   categoryType,
+		Type:   int32(categoryType),
 	}
 
 	if err := s.categoryRepo.Create(ctx, newCategory); err != nil {
@@ -268,7 +268,7 @@ func (s *categoryService) modelToProto(category *models.Category) *v1.Category {
 		Id:        category.ID,
 		UserId:    category.UserID,
 		Name:      category.Name,
-		Type:      category.Type,
+		Type:      v1.CategoryType(category.Type),
 		CreatedAt: category.CreatedAt.Unix(),
 		UpdatedAt: category.UpdatedAt.Unix(),
 	}

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"google.golang.org/api/idtoken"
@@ -17,11 +18,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserService interface for user operations
+type UserService interface {
+	CreateUser(ctx context.Context, email, name, picture string) (*authv1.CreateUserResponse, error)
+}
+
+// CategoryService interface for category operations
+type CategoryService interface {
+	CreateDefaultCategories(ctx context.Context, userID int32) error
+}
+
 // Server provides authentication operations
 type Server struct {
-	db  *database.Database
-	rdb *redis.RedisClient
-	cfg *config.Config
+	db          *database.Database
+	rdb         *redis.RedisClient
+	cfg         *config.Config
+	userSvc     UserService
+	categorySvc CategoryService
 }
 
 // JWTClaims represents JWT token claims
@@ -34,10 +47,18 @@ type JWTClaims struct {
 // NewServer creates a new auth server
 func NewServer(db *database.Database, rdb *redis.RedisClient, cfg *config.Config) *Server {
 	return &Server{
-		db:  db,
-		rdb: rdb,
-		cfg: cfg,
+		db:          db,
+		rdb:         rdb,
+		cfg:         cfg,
+		userSvc:     nil, // Set later via SetServices
+		categorySvc: nil, // Set later via SetServices
 	}
+}
+
+// SetServices sets the user and category services after initialization
+func (s *Server) SetServices(userSvc UserService, categorySvc CategoryService) {
+	s.userSvc = userSvc
+	s.categorySvc = categorySvc
 }
 
 // UserData represents user information
@@ -106,7 +127,23 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
-	// Create new user
+	// Create new user using UserService if available (includes default categories creation)
+	if s.userSvc != nil {
+		createResp, err := s.userSvc.CreateUser(ctx, email, name, picture)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user via UserService: %w", err)
+		}
+
+		// Convert CreateUserResponse to RegisterResponse
+		return &authv1.RegisterResponse{
+			Success:   createResp.Success,
+			Message:   "User registered successfully",
+			Data:      createResp.Data,
+			Timestamp: createResp.Timestamp,
+		}, nil
+	}
+
+	// Fallback: Create user directly in database (without default categories)
 	user := models.User{
 		Email:   email,
 		Name:    name,
@@ -115,6 +152,13 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 
 	if err := s.db.DB.Create(&user).Error; err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Try to create default categories manually if CategoryService is available
+	if s.categorySvc != nil {
+		if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
+			log.Printf("Warning: Failed to create default categories for user %d (%s): %v", user.ID, email, err)
+		}
 	}
 
 	return &authv1.RegisterResponse{

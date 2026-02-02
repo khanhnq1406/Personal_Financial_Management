@@ -185,6 +185,7 @@ func (s *userService) CreateUser(ctx context.Context, email, name, picture strin
 		if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
 			// Log the error but don't fail the user creation
 			// The categories can be created manually later
+			log.Printf("Warning: Failed to create default categories for user %d: %v", user.ID, err)
 		}
 	}
 
@@ -486,7 +487,7 @@ func (s *userService) invalidateInvestmentValueCachesForUser(ctx context.Context
 
 	// Clear investment value cache for each investment wallet
 	for _, wallet := range wallets {
-		if wallet.Type == v1.WalletType_INVESTMENT {
+		if v1.WalletType(wallet.Type) == v1.WalletType_INVESTMENT {
 			cacheKey := cache.GetInvestmentValueCacheKey(wallet.ID)
 			s.redisCache.Del(ctx, cacheKey)
 		}

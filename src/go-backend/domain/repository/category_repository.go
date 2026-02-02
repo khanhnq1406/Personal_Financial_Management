@@ -193,7 +193,7 @@ func (r *categoryRepository) CreateDefaultCategories(ctx context.Context, userID
 		category := &models.Category{
 			UserID: userID,
 			Name:   name,
-			Type:   v1.CategoryType_CATEGORY_TYPE_EXPENSE,
+			Type:   int32(v1.CategoryType_CATEGORY_TYPE_EXPENSE),
 		}
 		if err := r.Create(ctx, category); err != nil {
 			return apperrors.NewInternalErrorWithCause("failed to create default expense category", err)
@@ -205,7 +205,7 @@ func (r *categoryRepository) CreateDefaultCategories(ctx context.Context, userID
 		category := &models.Category{
 			UserID: userID,
 			Name:   name,
-			Type:   v1.CategoryType_CATEGORY_TYPE_INCOME,
+			Type:   int32(v1.CategoryType_CATEGORY_TYPE_INCOME),
 		}
 		if err := r.Create(ctx, category); err != nil {
 			return apperrors.NewInternalErrorWithCause("failed to create default income category", err)
@@ -232,7 +232,7 @@ func (r *categoryRepository) GetByNameAndType(ctx context.Context, userID int32,
 	newCategory := &models.Category{
 		UserID: userID,
 		Name:   name,
-		Type:   categoryType,
+		Type:   int32(categoryType),
 	}
 
 	if err := r.Create(ctx, newCategory); err != nil {

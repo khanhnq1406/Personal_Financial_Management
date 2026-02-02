@@ -23,7 +23,15 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	// Use the shared auth server instance (with services wired up)
+	// If not available, fall back to creating a new instance
+	var authServer *auth.Server
+	if deps.AuthSrv != nil {
+		authServer = deps.AuthSrv
+	} else {
+		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	}
+
 	result, err := authServer.Register(c.Request.Context(), req.Token)
 
 	if err != nil {
@@ -51,7 +59,13 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	// Use the shared auth server instance if available
+	var authServer *auth.Server
+	if deps.AuthSrv != nil {
+		authServer = deps.AuthSrv
+	} else {
+		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	}
 	result, err := authServer.Login(c.Request.Context(), req.Token)
 
 	if err != nil {
@@ -88,7 +102,13 @@ func Logout(c *gin.Context) {
 		token = extractedToken
 	}
 
-	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	// Use the shared auth server instance if available
+	var authServer *auth.Server
+	if deps.AuthSrv != nil {
+		authServer = deps.AuthSrv
+	} else {
+		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	}
 	result, err := authServer.Logout(token)
 
 	if err != nil {
@@ -113,7 +133,13 @@ func VerifyAuth(c *gin.Context) {
 		return
 	}
 
-	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	// Use the shared auth server instance if available
+	var authServer *auth.Server
+	if deps.AuthSrv != nil {
+		authServer = deps.AuthSrv
+	} else {
+		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	}
 	result, err := authServer.VerifyAuth(token)
 
 	if err != nil {
@@ -140,7 +166,13 @@ func GetAuth(c *gin.Context) {
 
 	email := userEmail.(string)
 
-	authServer := auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	// Use the shared auth server instance if available
+	var authServer *auth.Server
+	if deps.AuthSrv != nil {
+		authServer = deps.AuthSrv
+	} else {
+		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
+	}
 	userData, err := authServer.GetAuth(c.Request.Context(), email)
 
 	if err != nil {

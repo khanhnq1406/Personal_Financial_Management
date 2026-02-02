@@ -31,8 +31,8 @@ func (m *WalletMapper) ModelToProto(wallet *models.Wallet) *protobufv1.Wallet {
 		},
 		CreatedAt: wallet.CreatedAt.Unix(),
 		UpdatedAt: wallet.UpdatedAt.Unix(),
-		Type:      wallet.Type,
-		Status:    wallet.Status,
+		Type:      protobufv1.WalletType(wallet.Type),
+		Status:    protobufv1.WalletStatus(wallet.Status),
 		Currency:  wallet.Currency,
 	}
 }

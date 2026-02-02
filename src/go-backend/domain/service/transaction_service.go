@@ -730,7 +730,7 @@ func deriveTransactionType(category *models.Category) v1.TransactionType {
 	if category == nil {
 		return v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
 	}
-	switch category.Type {
+	switch v1.CategoryType(category.Type) {
 	case v1.CategoryType_CATEGORY_TYPE_INCOME:
 		return v1.TransactionType_TRANSACTION_TYPE_INCOME
 	case v1.CategoryType_CATEGORY_TYPE_EXPENSE:

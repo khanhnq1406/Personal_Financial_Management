@@ -118,7 +118,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 	}
 
 	// 3. Validate wallet type - must be INVESTMENT
-	if wallet.Type != walletv1.WalletType_INVESTMENT {
+	if walletv1.WalletType(wallet.Type) != walletv1.WalletType_INVESTMENT {
 		return nil, apperrors.NewValidationError("investments can only be created in investment wallets")
 	}
 
@@ -292,7 +292,7 @@ func (s *investmentService) ListInvestments(ctx context.Context, userID int32, r
 	}
 
 	// Validate wallet type
-	if wallet.Type != walletv1.WalletType_INVESTMENT {
+	if walletv1.WalletType(wallet.Type) != walletv1.WalletType_INVESTMENT {
 		return nil, apperrors.NewValidationError("investments can only be listed in investment wallets")
 	}
 
@@ -497,7 +497,7 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 	}
 	_ = wallet // Used for ownership verification
 
-	if wallet.Type != walletv1.WalletType_INVESTMENT {
+	if walletv1.WalletType(wallet.Type) != walletv1.WalletType_INVESTMENT {
 		return nil, apperrors.NewValidationError("transactions can only be added to investments in investment wallets")
 	}
 
@@ -1452,7 +1452,7 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 
 	var allInvestments []*models.Investment
 	for _, wallet := range wallets {
-		if wallet.Type == walletv1.WalletType_INVESTMENT {
+		if walletv1.WalletType(wallet.Type) == walletv1.WalletType_INVESTMENT {
 			investments, _, err := s.investmentRepo.ListByWalletID(ctx, wallet.ID, repository.ListOptions{
 				Limit: 1000,
 			}, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED)
@@ -1768,7 +1768,7 @@ func (s *investmentService) ListUserInvestments(ctx context.Context, userID int3
 		if err != nil {
 			return nil, err
 		}
-		if wallet.Type != walletv1.WalletType_INVESTMENT {
+		if walletv1.WalletType(wallet.Type) != walletv1.WalletType_INVESTMENT {
 			return nil, apperrors.NewValidationError("investments can only be listed in investment wallets")
 		}
 		investments, total, err = s.investmentRepo.ListByWalletID(ctx, req.WalletId, opts, typeFilter)
