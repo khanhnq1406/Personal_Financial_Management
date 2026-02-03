@@ -111,6 +111,7 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 
 // UpdatePricesForInvestments updates prices for multiple investments.
 // Returns a map of investment ID to updated price.
+// Uses batch API calls for better performance when possible.
 func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, investments []*models.Investment, forceRefresh bool) (map[int32]int64, error) {
 	updates := make(map[int32]int64)
 	maxAge := 15 * time.Minute // Default cache age
@@ -118,28 +119,102 @@ func (s *marketDataService) UpdatePricesForInvestments(ctx context.Context, inve
 		maxAge = 0 // Force refresh
 	}
 
-	for _, investment := range investments {
-		// Add defensive programming to handle individual investment failures
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("Warning: panic while getting price for %s: %v\n", investment.Symbol, r)
-				}
-			}()
+	// Group investments by type for batch processing
+	var regularInvestments []*models.Investment    // Stocks, ETFs, crypto via Yahoo Finance
+	var goldInvestments []*models.Investment       // Gold investments
+	var silverInvestments []*models.Investment     // Silver investments
 
-			// Get price for this investment
-			priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, investmentv1.InvestmentType(investment.Type), maxAge)
-			if err != nil {
-				// Log error but continue with other investments
-				log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
-				return
+	for _, inv := range investments {
+		invType := investmentv1.InvestmentType(inv.Type)
+		if gold.IsGoldType(invType) {
+			goldInvestments = append(goldInvestments, inv)
+		} else if silver.IsSilverType(invType) {
+			silverInvestments = append(silverInvestments, inv)
+		} else {
+			regularInvestments = append(regularInvestments, inv)
+		}
+	}
+
+	// Process regular investments with batch API (10 symbols per batch)
+	if len(regularInvestments) > 0 {
+		const batchSize = 10
+		for i := 0; i < len(regularInvestments); i += batchSize {
+			end := i + batchSize
+			if end > len(regularInvestments) {
+				end = len(regularInvestments)
+			}
+			batch := regularInvestments[i:end]
+
+			// Extract symbols for batch fetch
+			symbols := make([]string, len(batch))
+			for j, inv := range batch {
+				symbols[j] = inv.Symbol
 			}
 
-			updates[investment.ID] = priceData.Price
-		}()
+			// Fetch prices in batch
+			batchResults, err := s.GetPriceBatch(ctx, symbols)
+			if err != nil {
+				log.Printf("Warning: batch fetch failed for symbols %v: %v, falling back to individual fetch", symbols, err)
+				// Fall back to individual fetches
+				for _, inv := range batch {
+					s.fetchAndUpdateSingle(ctx, inv, maxAge, updates)
+				}
+				continue
+			}
+
+			// Map batch results to investments
+			for _, inv := range batch {
+				if priceData, found := batchResults[inv.Symbol]; found {
+					updates[inv.ID] = priceData.Price
+
+					// Update cache
+					cached, _ := s.marketDataRepo.GetBySymbolAndCurrency(ctx, inv.Symbol, inv.Currency)
+					priceData.Timestamp = time.Now()
+					if cached != nil && cached.ID > 0 {
+						priceData.ID = cached.ID
+						_ = s.marketDataRepo.Update(ctx, priceData)
+					} else {
+						_ = s.marketDataRepo.Create(ctx, priceData)
+					}
+				} else {
+					log.Printf("Warning: no price data in batch for %s", inv.Symbol)
+					// Try individual fetch as fallback
+					s.fetchAndUpdateSingle(ctx, inv, maxAge, updates)
+				}
+			}
+		}
+	}
+
+	// Process gold investments sequentially (specialized API)
+	for _, inv := range goldInvestments {
+		s.fetchAndUpdateSingle(ctx, inv, maxAge, updates)
+	}
+
+	// Process silver investments sequentially (specialized API)
+	for _, inv := range silverInvestments {
+		s.fetchAndUpdateSingle(ctx, inv, maxAge, updates)
 	}
 
 	return updates, nil
+}
+
+// fetchAndUpdateSingle is a helper to fetch and update a single investment price
+func (s *marketDataService) fetchAndUpdateSingle(ctx context.Context, investment *models.Investment, maxAge time.Duration, updates map[int32]int64) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Warning: panic while getting price for %s: %v\n", investment.Symbol, r)
+		}
+	}()
+
+	// Get price for this investment
+	priceData, err := s.GetPrice(ctx, investment.Symbol, investment.Currency, investmentv1.InvestmentType(investment.Type), maxAge)
+	if err != nil {
+		// Log error but continue with other investments
+		log.Printf("Warning: failed to get price for %s: %v\n", investment.Symbol, err)
+		return
+	}
+
+	updates[investment.ID] = priceData.Price
 }
 
 // fetchPriceFromAPI fetches price data from Yahoo Finance API.

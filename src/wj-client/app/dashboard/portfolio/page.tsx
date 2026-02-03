@@ -610,6 +610,9 @@ export default function PortfolioPage() {
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     number | null
   >(null);
+  // UI state for price update feedback
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   // Fetch user's wallets
   const getListWallets = useQueryListWallets(
@@ -708,20 +711,57 @@ export default function PortfolioPage() {
   // Update prices mutation
   const updatePricesMutation = useMutationUpdatePrices({
     onSuccess: (data) => {
-      // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries({
-        queryKey: [EVENT_InvestmentListUserInvestments],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
-      });
+      // Show update in progress banner
+      setShowUpdateBanner(true);
+      console.log(`Price update started: ${data.message}`);
 
-      // Show success message
-      console.log(
-        `Updated prices for ${data.updatedInvestments?.length || 0} investments`,
-      );
+      // Polling mechanism to check for updated prices
+      // We'll check every 2 seconds for up to 15 seconds (max 7 attempts)
+      let pollAttempts = 0;
+      const maxPollAttempts = 7;
+      const pollInterval = 2000; // 2 seconds
+
+      const pollForUpdates = () => {
+        pollAttempts++;
+        console.log(
+          `Checking for price updates (attempt ${pollAttempts}/${maxPollAttempts})...`,
+        );
+
+        // Refetch data
+        queryClient
+          .invalidateQueries({
+            queryKey: [EVENT_InvestmentListUserInvestments],
+          })
+          .then(() => {
+            return queryClient.invalidateQueries({
+              queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
+            });
+          });
+
+        // Check if we should continue polling or show success
+        if (pollAttempts >= maxPollAttempts) {
+          // Max attempts reached, assume complete
+          setShowUpdateBanner(false);
+          setShowSuccessBanner(true);
+          console.log(
+            "Price update polling complete (max attempts reached). Showing success.",
+          );
+
+          // Auto-hide success banner after 4 seconds
+          setTimeout(() => {
+            setShowSuccessBanner(false);
+          }, 4000);
+        } else {
+          // Continue polling
+          setTimeout(pollForUpdates, pollInterval);
+        }
+      };
+
+      // Start polling after initial delay (give backend time to start processing)
+      setTimeout(pollForUpdates, 2000);
     },
     onError: (error: any) => {
+      setShowUpdateBanner(false);
       console.error(`Failed to update prices: ${error.message}`);
     },
   });
@@ -881,6 +921,67 @@ export default function PortfolioPage() {
             />
           ) : null}
 
+          {/* Update Banner - Shows during price update */}
+          {showUpdateBanner && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+              <svg
+                className="animate-spin h-5 w-5 text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900">
+                  Fetching latest prices from market...
+                </p>
+                <p className="text-xs text-blue-700">
+                  This may take 5-15 seconds. We're checking for updates every 2
+                  seconds.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Banner - Shows after successful update */}
+          {showSuccessBanner && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+              <svg
+                className="h-5 w-5 text-green-600"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-900">
+                  Prices updated successfully!
+                </p>
+                <p className="text-xs text-green-700">
+                  Your portfolio is now showing the latest market prices.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Wallet Cash Balance */}
           {selectedWallet &&
             selectedWallet !== "all" &&
@@ -946,15 +1047,19 @@ export default function PortfolioPage() {
                       forceRefresh: true, // Bypass cache for fresh data
                     })
                   }
-                  loading={updatePricesMutation.isPending}
                   disabled={
                     updatePricesMutation.isPending ||
+                    showUpdateBanner ||
                     investmentWallets.length === 0
                   }
                   className="w-auto px-4"
                 >
                   <svg
-                    className="w-4 h-4 mr-2"
+                    className={`w-4 h-4 mr-2 ${
+                      updatePricesMutation.isPending || showUpdateBanner
+                        ? "animate-spin"
+                        : ""
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -966,7 +1071,9 @@ export default function PortfolioPage() {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Refresh Prices
+                  {updatePricesMutation.isPending || showUpdateBanner
+                    ? "Updating..."
+                    : "Refresh Prices"}
                 </Button>
                 <Button
                   type={ButtonType.PRIMARY}

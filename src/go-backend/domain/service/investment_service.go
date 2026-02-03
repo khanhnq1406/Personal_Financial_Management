@@ -1475,6 +1475,7 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 }
 
 // UpdatePrices updates current prices for investments.
+// This operation runs asynchronously to avoid frontend timeouts.
 func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req *investmentv1.UpdatePricesRequest) (*investmentv1.UpdatePricesResponse, error) {
 	if err := validator.ID(userID); err != nil {
 		return nil, err
@@ -1526,63 +1527,66 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 		}, nil
 	}
 
-	// Update prices using market data service
-	priceUpdates, err := s.marketDataService.UpdatePricesForInvestments(ctx, investmentsToUpdate, req.ForceRefresh)
-	if err != nil {
-		return nil, apperrors.NewInternalErrorWithCause("failed to update prices", err)
-	}
+	// Run price updates asynchronously in background
+	// This prevents frontend timeout for large portfolios
+	go func() {
+		// Create a new context with timeout for background operation
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
 
-	// Prepare updates for repository
-	updates := make([]repository.PriceUpdate, 0, len(priceUpdates))
-	for investmentID, price := range priceUpdates {
-		updates = append(updates, repository.PriceUpdate{
-			InvestmentID: investmentID,
-			Price:        price,
-			Timestamp:    time.Now().Unix(),
-		})
-	}
+		log.Printf("Starting async price update for %d investments (user %d)", len(investmentsToUpdate), userID)
 
-	// Batch update prices in repository
-	if err := s.investmentRepo.UpdatePrices(ctx, updates); err != nil {
-		return nil, apperrors.NewInternalErrorWithCause("failed to save price updates", err)
-	}
-
-	// Invalidate wallet investment value cache for all affected wallets
-	// Collect unique wallet IDs
-	walletIDMap := make(map[int32]bool)
-	for investmentID := range priceUpdates {
-		// Get the investment to find its wallet
-		inv, err := s.investmentRepo.GetByID(ctx, investmentID)
+		// Update prices using market data service
+		priceUpdates, err := s.marketDataService.UpdatePricesForInvestments(bgCtx, investmentsToUpdate, req.ForceRefresh)
 		if err != nil {
-			log.Printf("Warning: failed to fetch investment %d for cache invalidation: %v", investmentID, err)
-			continue
+			log.Printf("Error updating prices: %v", err)
+			return
 		}
-		walletIDMap[inv.WalletID] = true
-	}
 
-	// Invalidate cache for each wallet
-	if ws, ok := s.walletService.(*walletService); ok {
-		for walletID := range walletIDMap {
-			ws.invalidateInvestmentValueCache(ctx, walletID)
+		// Prepare updates for repository
+		updates := make([]repository.PriceUpdate, 0, len(priceUpdates))
+		for investmentID, price := range priceUpdates {
+			updates = append(updates, repository.PriceUpdate{
+				InvestmentID: investmentID,
+				Price:        price,
+				Timestamp:    time.Now().Unix(),
+			})
 		}
-	}
 
-	// Get updated investments for response - fetch from database to get recalculated values
-	var updatedInvestments []*investmentv1.Investment
-	for investmentID := range priceUpdates {
-		// Fetch the updated investment from database to get recalculated current_value and PNL
-		updatedInv, err := s.investmentRepo.GetByID(ctx, investmentID)
-		if err != nil {
-			log.Printf("Warning: failed to fetch updated investment %d: %v", investmentID, err)
-			continue
+		// Batch update prices in repository
+		if err := s.investmentRepo.UpdatePrices(bgCtx, updates); err != nil {
+			log.Printf("Error saving price updates: %v", err)
+			return
 		}
-		updatedInvestments = append(updatedInvestments, s.mapper.ModelToProto(updatedInv))
-	}
 
+		// Invalidate wallet investment value cache for all affected wallets
+		// Collect unique wallet IDs
+		walletIDMap := make(map[int32]bool)
+		for investmentID := range priceUpdates {
+			// Get the investment to find its wallet
+			inv, err := s.investmentRepo.GetByID(bgCtx, investmentID)
+			if err != nil {
+				log.Printf("Warning: failed to fetch investment %d for cache invalidation: %v", investmentID, err)
+				continue
+			}
+			walletIDMap[inv.WalletID] = true
+		}
+
+		// Invalidate cache for each wallet
+		if ws, ok := s.walletService.(*walletService); ok {
+			for walletID := range walletIDMap {
+				ws.invalidateInvestmentValueCache(bgCtx, walletID)
+			}
+		}
+
+		log.Printf("Completed async price update: %d/%d investments updated successfully", len(priceUpdates), len(investmentsToUpdate))
+	}()
+
+	// Return immediately with accepted status
 	return &investmentv1.UpdatePricesResponse{
 		Success:            true,
-		Message:            fmt.Sprintf("Updated prices for %d investments", len(priceUpdates)),
-		UpdatedInvestments: updatedInvestments,
+		Message:            fmt.Sprintf("Price update started for %d investments. Refresh the page in a few seconds to see updated prices.", len(investmentsToUpdate)),
+		UpdatedInvestments: []*investmentv1.Investment{},
 		Timestamp:          time.Now().Format(time.RFC3339),
 	}, nil
 }
