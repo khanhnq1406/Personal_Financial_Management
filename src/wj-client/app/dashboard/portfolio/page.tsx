@@ -171,6 +171,8 @@ type InvestmentData = {
   // Display fields (converted to user's preferred currency)
   displayCurrentValue?: { amount: number; currency: string };
   displayUnrealizedPnl?: { amount: number; currency: string };
+  displayCurrentPrice?: { amount: number; currency: string };
+  displayAverageCost?: { amount: number; currency: string };
   displayCurrency?: string;
   // Wallet name for "All Wallets" view
   walletName?: string;
@@ -226,11 +228,24 @@ const useInvestmentColumns = (
         cell: (info) => {
           const row = info.row.original;
           const nativeCurrency = row.currency || "USD";
-          return formatPrice(
-            (info.getValue() as number | undefined) || 0,
-            row.type as any,
-            nativeCurrency,
-            row.purchaseUnit,
+          const price = (info.getValue() as number | undefined) || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatPrice(price, row.type as any, nativeCurrency, row.purchaseUnit)}
+              </span>
+              {row.displayAverageCost && row.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈{" "}
+                  {formatPrice(
+                    row.displayAverageCost.amount || 0,
+                    row.type as any,
+                    row.displayCurrency,
+                    row.purchaseUnit,
+                  )}
+                </span>
+              )}
+            </div>
           );
         },
       },
@@ -240,11 +255,24 @@ const useInvestmentColumns = (
         cell: (info) => {
           const row = info.row.original;
           const nativeCurrency = row.currency || "USD";
-          return formatPrice(
-            (info.getValue() as number | undefined) || 0,
-            row.type as any,
-            nativeCurrency,
-            row.purchaseUnit,
+          const price = (info.getValue() as number | undefined) || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatPrice(price, row.type as any, nativeCurrency, row.purchaseUnit)}
+              </span>
+              {row.displayCurrentPrice && row.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈{" "}
+                  {formatPrice(
+                    row.displayCurrentPrice.amount || 0,
+                    row.type as any,
+                    row.displayCurrency,
+                    row.purchaseUnit,
+                  )}
+                </span>
+              )}
+            </div>
           );
         },
       },

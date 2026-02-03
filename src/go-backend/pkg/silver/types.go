@@ -57,15 +57,22 @@ func GetNativeStorageInfo(investmentType investmentv1.InvestmentType) (SilverUni
 	}
 }
 
-// GetPriceUnitForMarketData returns what unit market prices are in
-func GetPriceUnitForMarketData(investmentType investmentv1.InvestmentType) SilverUnit {
-	switch investmentType {
-	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
-		return UnitTael // ancarat API price is per tael
-	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
+// GetPriceUnitForMarketData returns what unit market prices are in based on the symbol
+// For VND silver, the unit depends on the specific symbol:
+// - AG_VND_Tael: price per tael (from ancaraat API type "A4")
+// - AG_VND_Kg: price per kg (from ancaraat API type "K4")
+// - AG_VND (legacy): defaults to per tael
+// For USD silver (XAG): price per ounce
+func GetPriceUnitForMarketData(symbol string) SilverUnit {
+	switch symbol {
+	case "AG_VND_Tael", "AG_VND":
+		return UnitTael // ancarat API A4 price is per tael
+	case "AG_VND_Kg":
+		return UnitKg // ancarat API K4 price is per kg
+	case "XAG", "SI=F":
 		return UnitOunce // Yahoo Finance XAG is per ounce
 	default:
-		return UnitOunce
+		return UnitOunce // default to ounce for unknown symbols
 	}
 }
 

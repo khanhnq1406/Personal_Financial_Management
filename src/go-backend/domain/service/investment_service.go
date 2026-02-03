@@ -1724,6 +1724,24 @@ func (s *investmentService) enrichInvestmentProto(ctx context.Context, userID in
 		Currency: user.PreferredCurrency,
 	}
 
+	// Convert current price for display (important for gold/silver when currency differs)
+	if invModel.CurrentPrice > 0 {
+		convertedCurrentPrice, _ := s.fxRateSvc.ConvertAmount(ctx, invModel.CurrentPrice, invModel.Currency, user.PreferredCurrency)
+		invProto.DisplayCurrentPrice = &investmentv1.Money{
+			Amount:   convertedCurrentPrice,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
+	// Convert average cost for display (for consistency with current price)
+	if invModel.AverageCost > 0 {
+		convertedAverageCost, _ := s.fxRateSvc.ConvertAmount(ctx, invModel.AverageCost, invModel.Currency, user.PreferredCurrency)
+		invProto.DisplayAverageCost = &investmentv1.Money{
+			Amount:   convertedAverageCost,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
 	invProto.DisplayCurrency = user.PreferredCurrency
 }
 

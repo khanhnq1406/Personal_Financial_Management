@@ -182,16 +182,16 @@ export function formatGoldPrice(
   priceUnit?: string,
   investmentType?: InvestmentType
 ): string {
-  // For gold, we know the market price unit
+  // Determine the display unit
+  // For VND gold (type 8): use tael (lượng) regardless of display currency
+  // For USD gold (type 9): use oz
   let unit: 'tael' | 'oz' = 'tael';
 
   if (investmentType === 9) { // GOLD_USD
     unit = 'oz';
-  } else if (currency === 'USD') {
-    unit = 'oz';
   }
 
-  // Use provided priceUnit if available
+  // Use provided priceUnit if available (overrides default)
   if (priceUnit) {
     unit = priceUnit as 'tael' | 'oz';
   }
@@ -202,13 +202,19 @@ export function formatGoldPrice(
   let priceForDisplay: number;
 
   if (currency === 'VND') {
-    // VND gold: Backend stores price per gram in VND
-    // Display as price per tael: multiply by 37.5 (grams per tael)
+    // Case 1: Native VND gold (price per gram in VND)
+    // Convert to price per tael: multiply by 37.5
     priceForDisplay = price * 37.5;
-  } else {
-    // USD gold: Backend stores price per ounce in USD cents
-    // Display as price per ounce: divide by 100 to get dollars
+  } else if (investmentType === 9) {
+    // Case 2: Native USD gold (XAU) - price per ounce in cents
+    // Convert cents to dollars
     priceForDisplay = price / 100;
+  } else {
+    // Case 3: VND gold with backend currency conversion to USD
+    // Backend returns price per gram in USD cents
+    // Convert cents to dollars, then gram to tael
+    const pricePerGramInDollars = price / 100;
+    priceForDisplay = pricePerGramInDollars * 37.5;
   }
 
   // Format price with currency

@@ -197,14 +197,18 @@ func (c *Converter) CalculateTotalCostFromUserInput(
 }
 
 // ProcessMarketPrice processes market price from API
-// Market prices: VND silver = per tael, USD silver = per ounce
+// Market prices:
+// - AG_VND_Tael (A4): VND silver per tael, need to convert to per gram for storage
+// - AG_VND_Kg (K4): VND silver per kg, need to convert to per gram for storage
+// - XAG: USD silver per ounce, already in storage format
 // Storage needs: VND silver = per gram, USD silver = per ounce
 func (c *Converter) ProcessMarketPrice(
 	marketPrice int64,
 	marketCurrency string,
 	investmentType investmentv1.InvestmentType,
+	symbol string,
 ) int64 {
-	priceUnit := GetPriceUnitForMarketData(investmentType)
+	priceUnit := GetPriceUnitForMarketData(symbol)
 	storageUnit, _ := GetNativeStorageInfo(investmentType)
 
 	// If market price unit equals storage unit, no conversion needed
@@ -212,7 +216,7 @@ func (c *Converter) ProcessMarketPrice(
 		return marketPrice
 	}
 
-	// Need unit conversion (VND: per tael → per gram)
+	// Need unit conversion (VND: per tael or per kg → per gram)
 	priceInBaseUnits := float64(marketPrice) / float64(fx.GetDecimalMultiplier(marketCurrency))
 	pricePerStorageUnit := ConvertPricePerUnit(priceInBaseUnits, priceUnit, storageUnit)
 

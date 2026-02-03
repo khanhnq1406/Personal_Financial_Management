@@ -242,6 +242,12 @@ export interface Investment {
   walletName: string;
   /** User's purchase unit for display ("tael", "kg", "oz", "gram") */
   purchaseUnit: string;
+  /** Current price in user's preferred currency */
+  displayCurrentPrice:
+    | Money
+    | undefined;
+  /** Average cost in user's preferred currency */
+  displayAverageCost: Money | undefined;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -624,6 +630,8 @@ function createBaseInvestment(): Investment {
     totalDividends: 0,
     walletName: "",
     purchaseUnit: "",
+    displayCurrentPrice: undefined,
+    displayAverageCost: undefined,
   };
 }
 
@@ -700,6 +708,12 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.purchaseUnit !== "") {
       writer.uint32(194).string(message.purchaseUnit);
+    }
+    if (message.displayCurrentPrice !== undefined) {
+      Money.encode(message.displayCurrentPrice, writer.uint32(202).fork()).join();
+    }
+    if (message.displayAverageCost !== undefined) {
+      Money.encode(message.displayAverageCost, writer.uint32(210).fork()).join();
     }
     return writer;
   },
@@ -903,6 +917,22 @@ export const Investment: MessageFns<Investment> = {
           message.purchaseUnit = reader.string();
           continue;
         }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.displayCurrentPrice = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.displayAverageCost = Money.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -940,6 +970,8 @@ export const Investment: MessageFns<Investment> = {
       totalDividends: isSet(object.totalDividends) ? globalThis.Number(object.totalDividends) : 0,
       walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
       purchaseUnit: isSet(object.purchaseUnit) ? globalThis.String(object.purchaseUnit) : "",
+      displayCurrentPrice: isSet(object.displayCurrentPrice) ? Money.fromJSON(object.displayCurrentPrice) : undefined,
+      displayAverageCost: isSet(object.displayAverageCost) ? Money.fromJSON(object.displayAverageCost) : undefined,
     };
   },
 
@@ -1017,6 +1049,12 @@ export const Investment: MessageFns<Investment> = {
     if (message.purchaseUnit !== "") {
       obj.purchaseUnit = message.purchaseUnit;
     }
+    if (message.displayCurrentPrice !== undefined) {
+      obj.displayCurrentPrice = Money.toJSON(message.displayCurrentPrice);
+    }
+    if (message.displayAverageCost !== undefined) {
+      obj.displayAverageCost = Money.toJSON(message.displayAverageCost);
+    }
     return obj;
   },
 
@@ -1057,6 +1095,12 @@ export const Investment: MessageFns<Investment> = {
     message.totalDividends = object.totalDividends ?? 0;
     message.walletName = object.walletName ?? "";
     message.purchaseUnit = object.purchaseUnit ?? "";
+    message.displayCurrentPrice = (object.displayCurrentPrice !== undefined && object.displayCurrentPrice !== null)
+      ? Money.fromPartial(object.displayCurrentPrice)
+      : undefined;
+    message.displayAverageCost = (object.displayAverageCost !== undefined && object.displayAverageCost !== null)
+      ? Money.fromPartial(object.displayAverageCost)
+      : undefined;
     return message;
   },
 };

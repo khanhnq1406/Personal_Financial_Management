@@ -207,9 +207,11 @@ func (s *marketDataService) fetchSilverPriceFromAPI(ctx context.Context, symbol,
 	}
 
 	// Convert market price to storage format
-	// Market price for VND silver is per tael, need to convert to per gram for storage
-	// Market price for USD silver is already per ounce
-	normalizedPrice := s.silverConverter.ProcessMarketPrice(price.Buy, currency, investmentType)
+	// Market prices depend on symbol:
+	// - AG_VND_Tael: price per tael, need to convert to per gram for storage
+	// - AG_VND_Kg: price per kg, need to convert to per gram for storage
+	// - XAG: price per ounce, already in storage format
+	normalizedPrice := s.silverConverter.ProcessMarketPrice(price.Buy, currency, investmentType, symbol)
 
 	return &models.MarketData{
 		Symbol:    symbol,

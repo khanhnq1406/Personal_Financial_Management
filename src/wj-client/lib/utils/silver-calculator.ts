@@ -339,6 +339,10 @@ export function formatSilverQuantity(
 
 /**
  * Format silver price for display with unit label
+ * Handles three cases:
+ * 1. VND silver in native VND currency (price per gram in VND)
+ * 2. USD silver (XAG) in native USD currency (price per ounce in cents)
+ * 3. VND silver converted to USD by backend (price per gram in cents)
  */
 export function formatSilverPrice(
   price: number,
@@ -352,14 +356,21 @@ export function formatSilverPrice(
   let priceForDisplay: number;
 
   if (currency === 'VND') {
-    // VND silver: Backend stores price per gram in VND
+    // Case 1: Native VND silver (price per gram in VND)
     // Convert to price per priceUnit (tael or kg)
     const pricePerGram = price;
     priceForDisplay = convertSilverPricePerUnit(pricePerGram, 'gram', priceUnit);
-  } else {
-    // USD silver: Backend stores price per ounce in USD cents
+  } else if (investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_USD) {
+    // Case 2: Native USD silver (XAG)
+    // Backend stores price per ounce in USD cents
     // Display as price per ounce in dollars
     priceForDisplay = price / 100;
+  } else {
+    // Case 3: VND silver with backend currency conversion to USD
+    // Backend returns price per gram in USD cents
+    // Convert cents to dollars, then apply unit conversion
+    const pricePerGramInDollars = price / 100;
+    priceForDisplay = convertSilverPricePerUnit(pricePerGramInDollars, 'gram', priceUnit);
   }
 
   const unitLabel = getSilverUnitLabel(priceUnit);
