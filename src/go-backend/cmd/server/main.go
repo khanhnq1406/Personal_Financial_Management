@@ -66,18 +66,18 @@ func main() {
 		FXRate:                repository.NewFXRateRepository(db),
 	}
 
-	// Initialize redis
+	// Initialize redis (single instance for both handlers and auth server)
 	redisClient, err := redis.New(cfg)
 	if err != nil {
 		log.Printf("Warning: Redis connection failed: %v", err)
-	} else {
-		handlers.SetRedis(redisClient)
 	}
 
 	// Get the underlying redis.Client for services
 	var underlyingRedisClient *redisv8.Client = nil
 	if redisClient != nil {
 		underlyingRedisClient = redisClient.GetClient()
+		// Set Redis in handlers for auth middleware
+		handlers.SetRedis(redisClient)
 	}
 
 	// Initialize services
@@ -166,14 +166,6 @@ func main() {
 		}
 	}()
 
-	// Initialize redis
-	rdb, err := redis.New(cfg)
-	if err != nil {
-		log.Printf("Warning: Redis connection failed: %v", err)
-	} else {
-		handlers.SetRedis(rdb)
-	}
-
 	// Initialize rate limiter
 	rateLimiter := appmiddleware.NewRateLimiter(appmiddleware.RateLimiterConfig{
 		RequestsPerMinute: cfg.RateLimit.RequestsPerMinute,
@@ -242,7 +234,7 @@ func main() {
 	}()
 
 	// Initialize and start gRPC server
-	authSrv := auth.NewServer(db, rdb, cfg)
+	authSrv := auth.NewServer(db, redisClient, cfg)
 	// Wire up user and category services to auth server for default category creation
 	authSrv.SetServices(services.User, services.Category)
 

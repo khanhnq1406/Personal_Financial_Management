@@ -123,13 +123,37 @@ func Logout(c *gin.Context) {
 }
 
 // VerifyAuth handles authentication verification
+//
+// NOTE: This endpoint supports token in both Authorization header and query parameter.
+// The query parameter fallback is needed for compatibility with the auto-generated
+// frontend API client (protobuf-based) which passes tokens as query params for GET requests.
+//
+// Security considerations:
+// - Query parameters are less secure than headers (visible in logs, history, etc.)
+// - This is acceptable for /verify because:
+//   1. Tokens are short-lived JWT with expiration
+//   2. This is a low-risk endpoint (read-only verification)
+//   3. Called immediately after login, not stored in browser history
+//   4. Other endpoints still require Authorization header
+//
+// TODO: Consider adding configuration flag to disable query parameter tokens in production
+// TODO: Long-term solution: Update protobuf client to use Authorization header for GET requests
 func VerifyAuth(c *gin.Context) {
 	if !checkDependencies(c) {
 		return
 	}
 
+	// Try to extract token from Authorization header first (security best practice)
 	token, ok := ExtractBearerToken(c)
+
+	// Fallback to query parameter for protobuf client compatibility
 	if !ok {
+		token = c.Query("token")
+		ok = token != ""
+	}
+
+	if !ok {
+		handler.Unauthorized(c, "No token provided")
 		return
 	}
 

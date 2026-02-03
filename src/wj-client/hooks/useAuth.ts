@@ -13,6 +13,7 @@ import {
   useMutationVerifyAuth,
 } from "@/utils/generated/hooks";
 import { LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
+import { updateAuthTokenCache } from "@/utils/api-client";
 import type { User } from "@/gen/protobuf/v1/auth";
 
 export interface AuthState {
@@ -97,7 +98,10 @@ export function useAuth(): AuthState & AuthActions {
   const loginMutation = useMutationLogin({
     onSuccess: (data) => {
       const { user, token } = extractAuthFromResponse(data.data);
-      if (token) setStoredToken(token);
+      if (token) {
+        setStoredToken(token);
+        updateAuthTokenCache(token);
+      }
       setState({
         user,
         token,
@@ -120,7 +124,10 @@ export function useAuth(): AuthState & AuthActions {
   const registerMutation = useMutationRegister({
     onSuccess: (data) => {
       const { user, token } = extractAuthFromResponse(data.data);
-      if (token) setStoredToken(token);
+      if (token) {
+        setStoredToken(token);
+        updateAuthTokenCache(token);
+      }
       setState({
         user,
         token,
@@ -143,6 +150,7 @@ export function useAuth(): AuthState & AuthActions {
   const logoutMutation = useMutationLogout({
     onSuccess: () => {
       clearStoredToken();
+      updateAuthTokenCache(null);
       setState({
         user: null,
         token: null,
@@ -154,6 +162,7 @@ export function useAuth(): AuthState & AuthActions {
     onError: () => {
       // Clear local state even if logout fails on server
       clearStoredToken();
+      updateAuthTokenCache(null);
       setState({
         user: null,
         token: null,

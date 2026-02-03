@@ -8,6 +8,7 @@ import { setAuth } from "@/redux/actions";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMutationLogin } from "@/utils/generated/hooks";
+import { updateAuthTokenCache } from "@/utils/api-client";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
 export default function Login() {
@@ -26,7 +27,9 @@ export default function Login() {
     },
     onSuccess(data) {
       if (data.data) {
-        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, data.data.accessToken);
+        const token = data.data.accessToken;
+        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, token);
+        updateAuthTokenCache(token); // Update in-memory cache
         store.dispatch(
           setAuth({
             isAuthenticated: true,
