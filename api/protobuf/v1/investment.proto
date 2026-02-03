@@ -33,6 +33,7 @@ message Investment {
   string displayCurrency = 21 [json_name = "displayCurrency"];  // User's preferred currency code
   int64 totalDividends = 22 [json_name = "totalDividends"];  // Total dividends received
   string walletName = 23 [json_name = "walletName"];  // Name of the wallet (for display in "All Wallets" view)
+  string purchaseUnit = 24 [json_name = "purchaseUnit"];  // User's purchase unit for display ("tael", "kg", "oz", "gram")
 }
 
 enum InvestmentType {
@@ -47,6 +48,9 @@ enum InvestmentType {
   // Gold-specific types for dual conversion (unit + currency)
   INVESTMENT_TYPE_GOLD_VND = 8;      // Vietnamese gold (SJC) - priced in VND, stored in grams
   INVESTMENT_TYPE_GOLD_USD = 9;      // World gold (XAU/USD) - priced in USD, stored in ounces
+  // Silver-specific types for dual conversion (unit + currency)
+  INVESTMENT_TYPE_SILVER_VND = 10;   // Vietnamese silver - priced in VND, stored in grams
+  INVESTMENT_TYPE_SILVER_USD = 11;   // World silver (XAG/USD) - priced in USD, stored in ounces
 }
 
 // InvestmentTransaction represents a buy or sell transaction
@@ -122,6 +126,27 @@ message GetGoldTypeCodesRequest {
 message GetGoldTypeCodesResponse {
   bool success = 1 [json_name = "success"];
   repeated GoldTypeCode data = 2 [json_name = "data"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+// SilverTypeCode represents a silver type available for investment
+// Used for frontend selection of silver investments
+message SilverTypeCode {
+  string code = 1 [json_name = "code"];           // e.g., "AG_VND", "XAG"
+  string name = 2 [json_name = "name"];           // Display name (e.g., "Bạc Việt Nam 999", "Silver World")
+  string currency = 3 [json_name = "currency"];   // "VND" or "USD"
+  int32 type = 4 [json_name = "type"];            // InvestmentType enum value
+}
+
+// GetSilverTypeCodesRequest for fetching available silver types
+message GetSilverTypeCodesRequest {
+  string currency = 1 [json_name = "currency"];  // Optional filter: "VND", "USD", or empty for all
+}
+
+// GetSilverTypeCodesResponse for silver type codes
+message GetSilverTypeCodesResponse {
+  bool success = 1 [json_name = "success"];
+  repeated SilverTypeCode data = 2 [json_name = "data"];
   string timestamp = 3 [json_name = "timestamp"];
 }
 
@@ -237,6 +262,14 @@ service InvestmentService {
       get: "/api/v1/investments/gold-types"
     };
   }
+
+  // GetSilverTypeCodes returns available silver type codes for investment creation
+  // Used for frontend dropdown selection of silver investments
+  rpc GetSilverTypeCodes(GetSilverTypeCodesRequest) returns (GetSilverTypeCodesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/silver-types"
+    };
+  }
 }
 
 // Request/Response messages
@@ -278,6 +311,7 @@ message CreateInvestmentRequest {
   // If provided, these take precedence over initialQuantity/initialCost
   double initialQuantityDecimal = 8 [json_name = "initialQuantityDecimal"];
   double initialCostDecimal = 9 [json_name = "initialCostDecimal"];  // Total cost as decimal (e.g., 1500.50 for $1,500.50)
+  string purchaseUnit = 13 [json_name = "purchaseUnit"];  // User's input unit ("tael", "kg", "oz", "gram")
 }
 
 message CreateInvestmentResponse {

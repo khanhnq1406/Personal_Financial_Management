@@ -23,6 +23,10 @@ export const InvestmentType = {
   INVESTMENT_TYPE_GOLD_VND: 8,
   /** INVESTMENT_TYPE_GOLD_USD - World gold (XAU/USD) - priced in USD, stored in ounces */
   INVESTMENT_TYPE_GOLD_USD: 9,
+  /** INVESTMENT_TYPE_SILVER_VND - Silver-specific types for dual conversion (unit + currency) */
+  INVESTMENT_TYPE_SILVER_VND: 10,
+  /** INVESTMENT_TYPE_SILVER_USD - World silver (XAG/USD) - priced in USD, stored in ounces */
+  INVESTMENT_TYPE_SILVER_USD: 11,
   UNRECOGNIZED: -1,
 } as const;
 
@@ -39,6 +43,8 @@ export namespace InvestmentType {
   export type INVESTMENT_TYPE_OTHER = typeof InvestmentType.INVESTMENT_TYPE_OTHER;
   export type INVESTMENT_TYPE_GOLD_VND = typeof InvestmentType.INVESTMENT_TYPE_GOLD_VND;
   export type INVESTMENT_TYPE_GOLD_USD = typeof InvestmentType.INVESTMENT_TYPE_GOLD_USD;
+  export type INVESTMENT_TYPE_SILVER_VND = typeof InvestmentType.INVESTMENT_TYPE_SILVER_VND;
+  export type INVESTMENT_TYPE_SILVER_USD = typeof InvestmentType.INVESTMENT_TYPE_SILVER_USD;
   export type UNRECOGNIZED = typeof InvestmentType.UNRECOGNIZED;
 }
 
@@ -74,6 +80,12 @@ export function investmentTypeFromJSON(object: any): InvestmentType {
     case 9:
     case "INVESTMENT_TYPE_GOLD_USD":
       return InvestmentType.INVESTMENT_TYPE_GOLD_USD;
+    case 10:
+    case "INVESTMENT_TYPE_SILVER_VND":
+      return InvestmentType.INVESTMENT_TYPE_SILVER_VND;
+    case 11:
+    case "INVESTMENT_TYPE_SILVER_USD":
+      return InvestmentType.INVESTMENT_TYPE_SILVER_USD;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -103,6 +115,10 @@ export function investmentTypeToJSON(object: InvestmentType): string {
       return "INVESTMENT_TYPE_GOLD_VND";
     case InvestmentType.INVESTMENT_TYPE_GOLD_USD:
       return "INVESTMENT_TYPE_GOLD_USD";
+    case InvestmentType.INVESTMENT_TYPE_SILVER_VND:
+      return "INVESTMENT_TYPE_SILVER_VND";
+    case InvestmentType.INVESTMENT_TYPE_SILVER_USD:
+      return "INVESTMENT_TYPE_SILVER_USD";
     case InvestmentType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -224,6 +240,8 @@ export interface Investment {
   totalDividends: number;
   /** Name of the wallet (for display in "All Wallets" view) */
   walletName: string;
+  /** User's purchase unit for display ("tael", "kg", "oz", "gram") */
+  purchaseUnit: string;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -325,6 +343,34 @@ export interface GetGoldTypeCodesResponse {
   timestamp: string;
 }
 
+/**
+ * SilverTypeCode represents a silver type available for investment
+ * Used for frontend selection of silver investments
+ */
+export interface SilverTypeCode {
+  /** e.g., "AG_VND", "XAG" */
+  code: string;
+  /** Display name (e.g., "Bạc Việt Nam 999", "Silver World") */
+  name: string;
+  /** "VND" or "USD" */
+  currency: string;
+  /** InvestmentType enum value */
+  type: number;
+}
+
+/** GetSilverTypeCodesRequest for fetching available silver types */
+export interface GetSilverTypeCodesRequest {
+  /** Optional filter: "VND", "USD", or empty for all */
+  currency: string;
+}
+
+/** GetSilverTypeCodesResponse for silver type codes */
+export interface GetSilverTypeCodesResponse {
+  success: boolean;
+  data: SilverTypeCode[];
+  timestamp: string;
+}
+
 /** Request/Response messages */
 export interface ListInvestmentsRequest {
   walletId: number;
@@ -370,6 +416,8 @@ export interface CreateInvestmentRequest {
   initialQuantityDecimal: number;
   /** Total cost as decimal (e.g., 1500.50 for $1,500.50) */
   initialCostDecimal: number;
+  /** User's input unit ("tael", "kg", "oz", "gram") */
+  purchaseUnit: string;
 }
 
 export interface CreateInvestmentResponse {
@@ -575,6 +623,7 @@ function createBaseInvestment(): Investment {
     displayCurrency: "",
     totalDividends: 0,
     walletName: "",
+    purchaseUnit: "",
   };
 }
 
@@ -648,6 +697,9 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.walletName !== "") {
       writer.uint32(186).string(message.walletName);
+    }
+    if (message.purchaseUnit !== "") {
+      writer.uint32(194).string(message.purchaseUnit);
     }
     return writer;
   },
@@ -843,6 +895,14 @@ export const Investment: MessageFns<Investment> = {
           message.walletName = reader.string();
           continue;
         }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.purchaseUnit = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -879,6 +939,7 @@ export const Investment: MessageFns<Investment> = {
       displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
       totalDividends: isSet(object.totalDividends) ? globalThis.Number(object.totalDividends) : 0,
       walletName: isSet(object.walletName) ? globalThis.String(object.walletName) : "",
+      purchaseUnit: isSet(object.purchaseUnit) ? globalThis.String(object.purchaseUnit) : "",
     };
   },
 
@@ -953,6 +1014,9 @@ export const Investment: MessageFns<Investment> = {
     if (message.walletName !== "") {
       obj.walletName = message.walletName;
     }
+    if (message.purchaseUnit !== "") {
+      obj.purchaseUnit = message.purchaseUnit;
+    }
     return obj;
   },
 
@@ -992,6 +1056,7 @@ export const Investment: MessageFns<Investment> = {
     message.displayCurrency = object.displayCurrency ?? "";
     message.totalDividends = object.totalDividends ?? 0;
     message.walletName = object.walletName ?? "";
+    message.purchaseUnit = object.purchaseUnit ?? "";
     return message;
   },
 };
@@ -1975,6 +2040,264 @@ export const GetGoldTypeCodesResponse: MessageFns<GetGoldTypeCodesResponse> = {
   },
 };
 
+function createBaseSilverTypeCode(): SilverTypeCode {
+  return { code: "", name: "", currency: "", type: 0 };
+}
+
+export const SilverTypeCode: MessageFns<SilverTypeCode> = {
+  encode(message: SilverTypeCode, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.currency !== "") {
+      writer.uint32(26).string(message.currency);
+    }
+    if (message.type !== 0) {
+      writer.uint32(32).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SilverTypeCode {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSilverTypeCode();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.type = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SilverTypeCode {
+    return {
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      type: isSet(object.type) ? globalThis.Number(object.type) : 0,
+    };
+  },
+
+  toJSON(message: SilverTypeCode): unknown {
+    const obj: any = {};
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.type !== 0) {
+      obj.type = Math.round(message.type);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SilverTypeCode>): SilverTypeCode {
+    return SilverTypeCode.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SilverTypeCode>): SilverTypeCode {
+    const message = createBaseSilverTypeCode();
+    message.code = object.code ?? "";
+    message.name = object.name ?? "";
+    message.currency = object.currency ?? "";
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetSilverTypeCodesRequest(): GetSilverTypeCodesRequest {
+  return { currency: "" };
+}
+
+export const GetSilverTypeCodesRequest: MessageFns<GetSilverTypeCodesRequest> = {
+  encode(message: GetSilverTypeCodesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.currency !== "") {
+      writer.uint32(10).string(message.currency);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSilverTypeCodesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSilverTypeCodesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSilverTypeCodesRequest {
+    return { currency: isSet(object.currency) ? globalThis.String(object.currency) : "" };
+  },
+
+  toJSON(message: GetSilverTypeCodesRequest): unknown {
+    const obj: any = {};
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetSilverTypeCodesRequest>): GetSilverTypeCodesRequest {
+    return GetSilverTypeCodesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetSilverTypeCodesRequest>): GetSilverTypeCodesRequest {
+    const message = createBaseGetSilverTypeCodesRequest();
+    message.currency = object.currency ?? "";
+    return message;
+  },
+};
+
+function createBaseGetSilverTypeCodesResponse(): GetSilverTypeCodesResponse {
+  return { success: false, data: [], timestamp: "" };
+}
+
+export const GetSilverTypeCodesResponse: MessageFns<GetSilverTypeCodesResponse> = {
+  encode(message: GetSilverTypeCodesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    for (const v of message.data) {
+      SilverTypeCode.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSilverTypeCodesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSilverTypeCodesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(SilverTypeCode.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSilverTypeCodesResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => SilverTypeCode.fromJSON(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetSilverTypeCodesResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => SilverTypeCode.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetSilverTypeCodesResponse>): GetSilverTypeCodesResponse {
+    return GetSilverTypeCodesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetSilverTypeCodesResponse>): GetSilverTypeCodesResponse {
+    const message = createBaseGetSilverTypeCodesResponse();
+    message.success = object.success ?? false;
+    message.data = object.data?.map((e) => SilverTypeCode.fromPartial(e)) || [];
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
 function createBaseListInvestmentsRequest(): ListInvestmentsRequest {
   return { walletId: 0, pagination: undefined, typeFilter: 0 };
 }
@@ -2374,6 +2697,7 @@ function createBaseCreateInvestmentRequest(): CreateInvestmentRequest {
     currency: "",
     initialQuantityDecimal: 0,
     initialCostDecimal: 0,
+    purchaseUnit: "",
   };
 }
 
@@ -2405,6 +2729,9 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     }
     if (message.initialCostDecimal !== 0) {
       writer.uint32(73).double(message.initialCostDecimal);
+    }
+    if (message.purchaseUnit !== "") {
+      writer.uint32(106).string(message.purchaseUnit);
     }
     return writer;
   },
@@ -2488,6 +2815,14 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
           message.initialCostDecimal = reader.double();
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.purchaseUnit = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2510,6 +2845,7 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
         ? globalThis.Number(object.initialQuantityDecimal)
         : 0,
       initialCostDecimal: isSet(object.initialCostDecimal) ? globalThis.Number(object.initialCostDecimal) : 0,
+      purchaseUnit: isSet(object.purchaseUnit) ? globalThis.String(object.purchaseUnit) : "",
     };
   },
 
@@ -2542,6 +2878,9 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     if (message.initialCostDecimal !== 0) {
       obj.initialCostDecimal = message.initialCostDecimal;
     }
+    if (message.purchaseUnit !== "") {
+      obj.purchaseUnit = message.purchaseUnit;
+    }
     return obj;
   },
 
@@ -2559,6 +2898,7 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     message.currency = object.currency ?? "";
     message.initialQuantityDecimal = object.initialQuantityDecimal ?? 0;
     message.initialCostDecimal = object.initialCostDecimal ?? 0;
+    message.purchaseUnit = object.purchaseUnit ?? "";
     return message;
   },
 };

@@ -53,6 +53,13 @@ import {
   type GoldUnit,
   calculateGoldFromUserInput,
 } from "@/lib/utils/gold-calculator";
+import {
+  isSilverType,
+  getSilverTypeOptions,
+  type SilverTypeOption,
+  type SilverUnit,
+  calculateSilverFromUserInput,
+} from "@/lib/utils/silver-calculator";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface AddInvestmentFormProps {
@@ -77,6 +84,11 @@ const investmentTypeOptions: SelectOption[] = [
   { value: InvestmentType.INVESTMENT_TYPE_COMMODITY, label: "Commodity" },
   { value: InvestmentType.INVESTMENT_TYPE_GOLD_VND, label: "Gold (Vietnam)" },
   { value: InvestmentType.INVESTMENT_TYPE_GOLD_USD, label: "Gold (World)" },
+  {
+    value: InvestmentType.INVESTMENT_TYPE_SILVER_VND,
+    label: "Silver (Vietnam)",
+  },
+  { value: InvestmentType.INVESTMENT_TYPE_SILVER_USD, label: "Silver (World)" },
   { value: InvestmentType.INVESTMENT_TYPE_OTHER, label: "Other" },
 ];
 
@@ -100,6 +112,12 @@ export function AddInvestmentForm({
   const [selectedGoldType, setSelectedGoldType] =
     useState<GoldTypeOption | null>(null);
   const [goldQuantityUnit, setGoldQuantityUnit] = useState<GoldUnit>("tael");
+
+  // Silver-specific state
+  const [selectedSilverType, setSelectedSilverType] =
+    useState<SilverTypeOption | null>(null);
+  const [silverQuantityUnit, setSilverQuantityUnit] =
+    useState<SilverUnit>("tael");
 
   // Fetch user's wallets if walletId not provided
   const getListWallets = useQueryListWallets(
@@ -196,6 +214,9 @@ export function AddInvestmentForm({
   // Check if current investment type is gold
   const isGoldInvestment = isGoldType(investmentType);
 
+  // Check if current investment type is silver
+  const isSilverInvestment = isSilverType(investmentType);
+
   // Get gold type options based on investment type (not currency field)
   const goldTypeOptions = useMemo(() => {
     if (!isGoldInvestment) return [];
@@ -227,6 +248,38 @@ export function AddInvestmentForm({
       setValue("currency", targetCurrency);
     }
   }, [isGoldInvestment, investmentType, setValue]);
+
+  // Get silver type options based on investment type
+  const silverTypeOptions = useMemo(() => {
+    if (!isSilverInvestment) return [];
+    // Determine currency from investment type: SILVER_VND → VND, SILVER_USD → USD
+    const silverCurrency =
+      investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+        ? "VND"
+        : "USD";
+    return getSilverTypeOptions(silverCurrency);
+  }, [isSilverInvestment, investmentType]);
+
+  // Update silver quantity unit based on selected silver type
+  useEffect(() => {
+    if (selectedSilverType && selectedSilverType.availableUnits.length > 0) {
+      setSilverQuantityUnit(selectedSilverType.availableUnits[0]);
+    }
+  }, [selectedSilverType]);
+
+  // Reset silver type when investment type changes
+  useEffect(() => {
+    if (!isSilverInvestment) {
+      setSelectedSilverType(null);
+    } else {
+      // Auto-set currency based on silver investment type
+      const targetCurrency =
+        investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+          ? "VND"
+          : "USD";
+      setValue("currency", targetCurrency);
+    }
+  }, [isSilverInvestment, investmentType, setValue]);
 
   // Fetch exchange rate when currencies differ
   const currenciesMatch = currency === walletCurrency;
@@ -315,6 +368,12 @@ export function AddInvestmentForm({
       return;
     }
 
+    // Validate silver type is selected for silver investments
+    if (isSilverInvestment && !selectedSilverType) {
+      setErrorMessage("Please select a silver type");
+      return;
+    }
+
     if (isGoldInvestment && selectedGoldType) {
       // Use gold calculator for gold investments
       const goldCalculation = calculateGoldFromUserInput({
@@ -336,12 +395,40 @@ export function AddInvestmentForm({
         initialQuantityDecimal: goldCalculation.storedQuantity / 10000, // Convert storage format (grams×10000) to decimal (grams)
         initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
         currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
+        purchaseUnit: goldQuantityUnit, // Store user's purchase unit for display
+        // Set int64 fields to 0 (decimal fields take precedence)
+        initialQuantity: 0,
+        initialCost: 0,
+      });
+    } else if (isSilverInvestment && selectedSilverType) {
+      // Use silver calculator for silver investments
+      const silverCalculation = calculateSilverFromUserInput({
+        quantity: data.initialQuantity,
+        quantityUnit: silverQuantityUnit,
+        pricePerUnit: data.initialCost / data.initialQuantity, // Calculate price per unit
+        priceCurrency: data.currency,
+        priceUnit: silverQuantityUnit,
+        investmentType: data.type,
+        walletCurrency: walletCurrency,
+        fxRate: exchangeRate || 1,
+      });
+
+      // Use full symbol with unit suffix to allow multiple VND silver investments (tael and kg)
+      createInvestmentMutation.mutate({
+        walletId,
+        symbol: selectedSilverType.value, // Keep unit suffix: AG_VND_Tael or AG_VND_Kg
+        name: selectedSilverType.label,
+        type: data.type,
+        initialQuantityDecimal: silverCalculation.storedQuantity / 10000, // Convert storage format (grams×10000 or oz×10000) to decimal
+        initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
+        currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
+        purchaseUnit: silverCalculation.purchaseUnit, // Store user's purchase unit for display
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
         initialCost: 0,
       });
     } else {
-      // Convert to API format using utility functions for non-gold
+      // Convert to API format using utility functions for non-gold, non-silver investments
       createInvestmentMutation.mutate({
         walletId,
         symbol: data.symbol.toUpperCase(),
@@ -350,6 +437,7 @@ export function AddInvestmentForm({
         initialQuantityDecimal: data.initialQuantity, // Send decimal value
         initialCostDecimal: data.initialCost, // Send decimal value
         currency: data.currency,
+        purchaseUnit: "gram", // Default unit for non-gold, non-silver investments
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
         initialCost: 0,
@@ -397,8 +485,8 @@ export function AddInvestmentForm({
         </div>
       )}
 
-      {/* Symbol - hidden for gold investments (auto-populated from gold type) */}
-      {!isGoldInvestment && (
+      {/* Symbol - hidden for gold and silver investments (auto-populated from type) */}
+      {!isGoldInvestment && !isSilverInvestment && (
         <div className="mb-4">
           <Label htmlFor="symbol" required>
             Symbol
@@ -418,8 +506,8 @@ export function AddInvestmentForm({
         </div>
       )}
 
-      {/* Name - hidden for gold investments (auto-populated from gold type) */}
-      {!isGoldInvestment && (
+      {/* Name - hidden for gold and silver investments (auto-populated from type) */}
+      {!isGoldInvestment && !isSilverInvestment && (
         <FormInput
           name="name"
           control={control}
@@ -479,6 +567,44 @@ export function AddInvestmentForm({
         </div>
       )}
 
+      {/* Silver Type Selector - shown only for silver investments */}
+      {isSilverInvestment && (
+        <div className="mb-4">
+          <Label htmlFor="silverType" required>
+            Silver Type
+          </Label>
+          <Select
+            options={silverTypeOptions.map((opt: SilverTypeOption) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
+            value={selectedSilverType?.value}
+            onChange={(value) => {
+              const selected = silverTypeOptions.find(
+                (opt: SilverTypeOption) => opt.value === value,
+              );
+              if (selected) {
+                setSelectedSilverType(selected);
+                setValue("symbol", selected.value);
+                setValue("name", selected.label);
+                // Reset quantity unit to first available unit for this type
+                if (selected.availableUnits.length > 0) {
+                  setSilverQuantityUnit(selected.availableUnits[0]);
+                }
+              }
+            }}
+            placeholder="Select silver type (AG_VND, XAG, etc.)"
+            disabled={isSubmitting}
+            className="mt-1"
+          />
+          {selectedSilverType && (
+            <p className="text-xs text-gray-500 mt-1 ml-1">
+              Currency: {selectedSilverType.currency}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Initial Quantity */}
       <div>
         {isGoldInvestment ? (
@@ -519,6 +645,65 @@ export function AddInvestmentForm({
                   : "grams"}
             </p>
           </>
+        ) : isSilverInvestment ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col">
+              <Label htmlFor="initialQuantity" required>
+                Quantity
+              </Label>
+              <FormNumberInput
+                name="initialQuantity"
+                control={control}
+                label=""
+                placeholder={`e.g., ${silverQuantityUnit === "tael" ? "2.5" : silverQuantityUnit === "kg" ? "1" : "10"}`}
+                required
+                disabled={isSubmitting}
+                min={0}
+                step="0.01"
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 ml-1">
+                Amount of silver in{" "}
+                {silverQuantityUnit === "tael"
+                  ? "taels (lượng)"
+                  : silverQuantityUnit === "kg"
+                    ? "kg"
+                    : silverQuantityUnit === "oz"
+                      ? "oz"
+                      : "grams"}
+              </p>
+            </div>
+
+            {/* Unit selector for silver - only show for VND silver which has multiple units */}
+            {selectedSilverType?.currency === "VND" &&
+              selectedSilverType?.availableUnits &&
+              selectedSilverType.availableUnits.length > 1 && (
+                <div>
+                  <Label htmlFor="initialQuantity" required>
+                    Unit
+                  </Label>
+                  <Select
+                    options={selectedSilverType.availableUnits.map(
+                      (unit: SilverUnit) => ({
+                        value: unit,
+                        label:
+                          unit === "tael"
+                            ? "Tael (lượng)"
+                            : unit === "kg"
+                              ? "Kg"
+                              : unit,
+                      }),
+                    )}
+                    value={silverQuantityUnit}
+                    onChange={(value) =>
+                      setSilverQuantityUnit(value as SilverUnit)
+                    }
+                    disabled={isSubmitting}
+                    className="w-40 mt-1"
+                  />
+                </div>
+              )}
+          </div>
         ) : (
           <>
             <FormNumberInput
@@ -547,7 +732,7 @@ export function AddInvestmentForm({
           <CurrencyBadge
             value={currency}
             onChange={(newCurrency) => setValue("currency", newCurrency)}
-            disabled={isSubmitting || isGoldInvestment}
+            disabled={isSubmitting || isGoldInvestment || isSilverInvestment}
           />
         </div>
         <FormNumberInput

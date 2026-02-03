@@ -320,6 +320,23 @@ export function getGoldUnitLabel(unit: GoldUnit): string {
 }
 
 /**
+ * Get gold display unit label for forms (with full name)
+ * Returns user-friendly labels like "Tael (lượng)", "Ounce"
+ */
+export function getGoldUnitLabelFull(unit: GoldUnit): string {
+  switch (unit) {
+    case 'tael':
+      return 'Tael (lượng)';
+    case 'gram':
+      return 'Gram';
+    case 'oz':
+      return 'Ounce';
+    default:
+      return '';
+  }
+}
+
+/**
  * Format gold price for display
  * @param price - Price in smallest currency unit
  * @param currency - Currency code (VND or USD)

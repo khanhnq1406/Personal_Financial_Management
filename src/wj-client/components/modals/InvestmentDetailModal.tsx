@@ -27,7 +27,9 @@ import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
 import { formatCurrency } from "@/lib/utils/units";
-import { formatQuantity } from "@/app/dashboard/portfolio/helpers";
+import { formatQuantity, formatPrice } from "@/app/dashboard/portfolio/helpers";
+import { isGoldType } from "@/lib/utils/gold-calculator";
+import { isSilverType } from "@/lib/utils/silver-calculator";
 
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
@@ -220,13 +222,13 @@ export function InvestmentDetailModal({
         accessorKey: "quantity",
         header: "Quantity",
         cell: ({ row }) =>
-          formatQuantity(row.original.quantity, investment?.type || 0),
+          formatQuantity(row.original.quantity, investment?.type || 0, investment?.purchaseUnit),
       },
       {
         id: "price",
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }) => formatCurrency(row.original.price || 0, investment?.currency || "USD"),
+        cell: ({ row }) => formatPrice(row.original.price || 0, investment?.type || 0, investment?.currency || "USD", investment?.purchaseUnit),
       },
       {
         id: "fees",
@@ -270,7 +272,7 @@ export function InvestmentDetailModal({
         ),
       },
     ],
-    [investment?.type],
+    [investment?.type, investment?.currency, investment?.purchaseUnit],
   );
 
   // Define mobile table columns
@@ -302,12 +304,12 @@ export function InvestmentDetailModal({
         id: "quantity",
         header: "Quantity",
         accessorFn: (row) =>
-          formatQuantity(row.quantity, investment?.type || 0),
+          formatQuantity(row.quantity, investment?.type || 0, investment?.purchaseUnit),
       },
       {
         id: "price",
         header: "Price",
-        accessorFn: (row) => formatCurrency(row.price || 0, investment?.currency || "USD"),
+        accessorFn: (row) => formatPrice(row.price || 0, investment?.type || 0, investment?.currency || "USD", investment?.purchaseUnit),
       },
       {
         id: "fees",
@@ -341,7 +343,7 @@ export function InvestmentDetailModal({
         ),
       },
     ],
-    [investment?.type],
+    [investment?.type, investment?.currency, investment?.purchaseUnit],
   );
 
   // Handle successful transaction addition
@@ -418,12 +420,12 @@ export function InvestmentDetailModal({
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Quantity</span>
                 <span className="font-medium">
-                  {formatQuantity(investment.quantity, investment.type)}
+                  {formatQuantity(investment.quantity, investment.type, investment.purchaseUnit)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Avg Cost</span>
-                <span>{formatCurrency(investment.averageCost || 0, investment.currency || "USD")}</span>
+                <span>{formatPrice(investment.averageCost || 0, investment.type, investment.currency || "USD", investment.purchaseUnit)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -453,7 +455,7 @@ export function InvestmentDetailModal({
                   </button>
                 </div>
                 <div className="text-right">
-                  <span>{formatCurrency(investment.currentPrice || 0, investment.currency || "USD")}</span>
+                  <span>{formatPrice(investment.currentPrice || 0, investment.type, investment.currency || "USD", investment.purchaseUnit)}</span>
                   <div className="mt-1">
                     {(() => {
                       const date = new Date(investment.updatedAt * 1000);
@@ -636,6 +638,7 @@ export function InvestmentDetailModal({
               investmentId={investmentId}
               investmentType={investment.type}
               investmentCurrency={investment.currency || "USD"}
+              purchaseUnit={investment.purchaseUnit}
               walletBalance={walletBalance}
               walletCurrency={walletCurrency}
               onSuccess={handleTransactionSuccess}
@@ -691,7 +694,7 @@ export function InvestmentDetailModal({
               <p>Are you sure you want to delete <strong>{investment?.symbol}</strong>?</p>
               {(investment?.quantity || 0) > 0 ? (
                 <p className="text-sm text-red-600 mt-2">
-                  Warning: You still have {formatQuantity(investment?.quantity || 0, investment?.type || 0)} units.
+                  Warning: You still have {formatQuantity(investment?.quantity || 0, investment?.type || 0, investment?.purchaseUnit)} units.
                   All holdings and transaction history will be permanently deleted.
                 </p>
               ) : (

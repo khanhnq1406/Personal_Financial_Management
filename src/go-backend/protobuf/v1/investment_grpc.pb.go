@@ -34,6 +34,7 @@ const (
 	InvestmentService_ListUserInvestments_FullMethodName           = "/wealthjourney.investment.v1.InvestmentService/ListUserInvestments"
 	InvestmentService_GetAggregatedPortfolioSummary_FullMethodName = "/wealthjourney.investment.v1.InvestmentService/GetAggregatedPortfolioSummary"
 	InvestmentService_GetGoldTypeCodes_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/GetGoldTypeCodes"
+	InvestmentService_GetSilverTypeCodes_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/GetSilverTypeCodes"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -71,6 +72,9 @@ type InvestmentServiceClient interface {
 	// GetGoldTypeCodes returns available gold type codes for investment creation
 	// Used for frontend dropdown selection of gold investments
 	GetGoldTypeCodes(ctx context.Context, in *GetGoldTypeCodesRequest, opts ...grpc.CallOption) (*GetGoldTypeCodesResponse, error)
+	// GetSilverTypeCodes returns available silver type codes for investment creation
+	// Used for frontend dropdown selection of silver investments
+	GetSilverTypeCodes(ctx context.Context, in *GetSilverTypeCodesRequest, opts ...grpc.CallOption) (*GetSilverTypeCodesResponse, error)
 }
 
 type investmentServiceClient struct {
@@ -216,6 +220,15 @@ func (c *investmentServiceClient) GetGoldTypeCodes(ctx context.Context, in *GetG
 	return out, nil
 }
 
+func (c *investmentServiceClient) GetSilverTypeCodes(ctx context.Context, in *GetSilverTypeCodesRequest, opts ...grpc.CallOption) (*GetSilverTypeCodesResponse, error) {
+	out := new(GetSilverTypeCodesResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_GetSilverTypeCodes_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvestmentServiceServer is the server API for InvestmentService service.
 // All implementations must embed UnimplementedInvestmentServiceServer
 // for forward compatibility
@@ -251,6 +264,9 @@ type InvestmentServiceServer interface {
 	// GetGoldTypeCodes returns available gold type codes for investment creation
 	// Used for frontend dropdown selection of gold investments
 	GetGoldTypeCodes(context.Context, *GetGoldTypeCodesRequest) (*GetGoldTypeCodesResponse, error)
+	// GetSilverTypeCodes returns available silver type codes for investment creation
+	// Used for frontend dropdown selection of silver investments
+	GetSilverTypeCodes(context.Context, *GetSilverTypeCodesRequest) (*GetSilverTypeCodesResponse, error)
 	mustEmbedUnimplementedInvestmentServiceServer()
 }
 
@@ -302,6 +318,9 @@ func (UnimplementedInvestmentServiceServer) GetAggregatedPortfolioSummary(contex
 }
 func (UnimplementedInvestmentServiceServer) GetGoldTypeCodes(context.Context, *GetGoldTypeCodesRequest) (*GetGoldTypeCodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGoldTypeCodes not implemented")
+}
+func (UnimplementedInvestmentServiceServer) GetSilverTypeCodes(context.Context, *GetSilverTypeCodesRequest) (*GetSilverTypeCodesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSilverTypeCodes not implemented")
 }
 func (UnimplementedInvestmentServiceServer) mustEmbedUnimplementedInvestmentServiceServer() {}
 
@@ -586,6 +605,24 @@ func _InvestmentService_GetGoldTypeCodes_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InvestmentService_GetSilverTypeCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSilverTypeCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).GetSilverTypeCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_GetSilverTypeCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).GetSilverTypeCodes(ctx, req.(*GetSilverTypeCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InvestmentService_ServiceDesc is the grpc.ServiceDesc for InvestmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -652,6 +689,10 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGoldTypeCodes",
 			Handler:    _InvestmentService_GetGoldTypeCodes_Handler,
+		},
+		{
+			MethodName: "GetSilverTypeCodes",
+			Handler:    _InvestmentService_GetSilverTypeCodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

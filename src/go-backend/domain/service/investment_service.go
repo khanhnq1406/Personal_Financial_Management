@@ -12,6 +12,7 @@ import (
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/cache"
 	"wealthjourney/pkg/gold"
+	"wealthjourney/pkg/silver"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/units"
 	"wealthjourney/pkg/validator"
@@ -32,6 +33,7 @@ type investmentService struct {
 	walletService     WalletService
 	mapper            *InvestmentMapper
 	goldConverter     *gold.Converter
+	silverConverter   *silver.Converter
 }
 
 // NewInvestmentService creates a new InvestmentService.
@@ -56,6 +58,7 @@ func NewInvestmentService(
 		walletService:     walletService,
 		mapper:            NewInvestmentMapper(),
 		goldConverter:     gold.NewGoldConverter(fxRateSvc),
+		silverConverter:   silver.NewSilverConverter(fxRateSvc),
 	}
 }
 
@@ -69,6 +72,18 @@ func (s *investmentService) isGoldInvestment(invType investmentv1.InvestmentType
 // getGoldStorageInfo returns the storage unit and native currency for a gold investment
 func (s *investmentService) getGoldStorageInfo(invType investmentv1.InvestmentType) (gold.GoldUnit, string) {
 	return gold.GetNativeStorageInfo(invType)
+}
+
+// Helper methods for silver investment handling
+
+// isSilverInvestment checks if an investment is a silver type
+func (s *investmentService) isSilverInvestment(invType investmentv1.InvestmentType) bool {
+	return silver.IsSilverType(invType)
+}
+
+// getSilverStorageInfo returns the storage unit and native currency for a silver investment
+func (s *investmentService) getSilverStorageInfo(invType investmentv1.InvestmentType) (silver.SilverUnit, string) {
+	return silver.GetNativeStorageInfo(invType)
 }
 
 // CreateInvestment creates a new investment holding in a wallet.
@@ -165,6 +180,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		Currency:     req.Currency,
 		CurrentPrice: averageCost, // Set to average cost initially
 		RealizedPNL:  0,
+		PurchaseUnit: req.PurchaseUnit, // Store user's purchase unit for display
 	}
 
 	// 7. Persist investment

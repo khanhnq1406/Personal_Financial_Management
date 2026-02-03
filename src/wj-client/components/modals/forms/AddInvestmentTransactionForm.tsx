@@ -29,6 +29,7 @@ import {
   calculateTransactionCost,
   formatCurrency,
 } from "@/lib/utils/units";
+import { getInvestmentUnitLabelFull } from "@/app/dashboard/portfolio/helpers";
 import {
   AddTransactionFormInput,
   addTransactionSchema,
@@ -44,11 +45,21 @@ import {
   convertGoldPricePerUnit,
   getGoldUnitLabel,
 } from "@/lib/utils/gold-calculator";
+import {
+  isSilverType,
+  getSilverStorageInfo,
+  convertSilverQuantity,
+  convertSilverPricePerUnit,
+  getSilverUnitLabel,
+  type SilverUnit,
+} from "@/lib/utils/silver-calculator";
+import { SuccessAnimation } from "@/components/success/SuccessAnimation";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
   investmentType: InvestmentType;
   investmentCurrency?: string; // Currency of the parent investment (ISO 4217)
+  purchaseUnit?: string; // User's purchase unit for display ("tael", "kg", "oz", "gram")
   walletBalance?: number; // Wallet balance in smallest currency unit
   walletCurrency?: string; // Currency of the wallet (ISO 4217)
   onSuccess?: () => void;
@@ -78,6 +89,7 @@ export function AddInvestmentTransactionForm({
   investmentId,
   investmentType,
   investmentCurrency = "USD",
+  purchaseUnit,
   walletBalance = 0,
   walletCurrency = "USD",
   onSuccess,
@@ -144,6 +156,9 @@ export function AddInvestmentTransactionForm({
     investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ||
     investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_USD;
 
+  // Check if this is a silver investment
+  const isSilverInvestment = isSilverType(investmentType);
+
   // Get gold display unit for quantity input label
   const goldDisplayUnit = useMemo(() => {
     if (!isGoldInvestment) return null;
@@ -154,6 +169,20 @@ export function AddInvestmentTransactionForm({
       ? ("tael" as const)
       : ("oz" as const);
   }, [investmentType, isGoldInvestment]);
+
+  // Get silver display unit for quantity input label
+  // Use purchaseUnit from investment if available, otherwise fall back to market default
+  const silverDisplayUnit = useMemo(() => {
+    if (!isSilverInvestment) return null;
+    // If user has a purchase unit preference, use it
+    if (purchaseUnit && ['tael', 'kg', 'gram', 'oz'].includes(purchaseUnit)) {
+      return purchaseUnit as SilverUnit;
+    }
+    // Default to market convention: tael for VND, oz for USD
+    return investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+      ? ("tael" as const)
+      : ("oz" as const);
+  }, [investmentType, isSilverInvestment, purchaseUnit]);
 
   // Fetch exchange rate when currencies differ
   const { rate: exchangeRate, isLoading: isLoadingRate } = useExchangeRate(
@@ -194,14 +223,47 @@ export function AddInvestmentTransactionForm({
         priceInStorageUnits = convertGoldPricePerUnit(
           priceInStorageUnits,
           goldDisplayUnit, // tael
-          storageUnit,     // gram
+          storageUnit, // gram
         );
       }
       // For USD gold, price is already per ounce, no conversion needed
 
-      priceInCents = amountToSmallestUnit(priceInStorageUnits, investmentCurrency);
+      priceInCents = amountToSmallestUnit(
+        priceInStorageUnits,
+        investmentCurrency,
+      );
+    } else if (isSilverInvestment && silverDisplayUnit) {
+      // For silver: user enters quantity in display units, price in display units
+      const { unit: storageUnit } = getSilverStorageInfo(investmentType);
+
+      // Convert quantity to storage units (grams for VND silver, ounces for USD silver)
+      const quantityInStorageUnits = convertSilverQuantity(
+        Number(quantity) || 0,
+        silverDisplayUnit,
+        storageUnit,
+      );
+      quantityInStorage = Math.round(quantityInStorageUnits * 10000);
+
+      // Convert price from display units to storage units
+      // VND silver: price per tael → price per gram (using price conversion function)
+      // USD silver: price per ounce (already in storage units)
+      let priceInStorageUnits = Number(price) || 0;
+      if (investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND) {
+        // User enters price per tael, convert to price per gram
+        priceInStorageUnits = convertSilverPricePerUnit(
+          priceInStorageUnits,
+          silverDisplayUnit, // tael
+          storageUnit, // gram
+        );
+      }
+      // For USD silver, price is already per ounce, no conversion needed
+
+      priceInCents = amountToSmallestUnit(
+        priceInStorageUnits,
+        investmentCurrency,
+      );
     } else {
-      // For non-gold: use standard conversions
+      // For non-gold, non-silver: use standard conversions
       quantityInStorage = quantityToStorage(
         Number(quantity) || 0,
         investmentType,
@@ -232,6 +294,8 @@ export function AddInvestmentTransactionForm({
     investmentCurrency,
     isGoldInvestment,
     goldDisplayUnit,
+    isSilverInvestment,
+    silverDisplayUnit,
   ]);
 
   // Convert wallet balance to investment currency for comparison
@@ -307,12 +371,35 @@ export function AddInvestmentTransactionForm({
         priceInStorage = convertGoldPricePerUnit(
           data.price,
           goldDisplayUnit, // tael
-          storageUnit,     // gram
+          storageUnit, // gram
         );
       }
       // For USD gold, price is already per ounce, no conversion needed
+    } else if (isSilverInvestment && silverDisplayUnit) {
+      // For silver: user enters quantity in display units, price in display units
+      const { unit: storageUnit } = getSilverStorageInfo(investmentType);
+
+      // Convert quantity to storage units
+      const quantityInStorageUnits = convertSilverQuantity(
+        data.quantity,
+        silverDisplayUnit,
+        storageUnit,
+      );
+      quantityInStorage = Math.round(quantityInStorageUnits * 10000);
+
+      // Convert price from display units to storage units
+      priceInStorage = data.price;
+      if (investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND) {
+        // User enters price per tael, convert to price per gram
+        priceInStorage = convertSilverPricePerUnit(
+          data.price,
+          silverDisplayUnit, // tael
+          storageUnit, // gram
+        );
+      }
+      // For USD silver, price is already per ounce, no conversion needed
     } else {
-      // For non-gold: use standard quantity conversion
+      // For non-gold, non-silver: use standard quantity conversion
       quantityInStorage = quantityToStorage(data.quantity, investmentType);
       priceInStorage = data.price;
     }
@@ -336,9 +423,9 @@ export function AddInvestmentTransactionForm({
   // Show success state
   if (showSuccess) {
     return (
-      <div className="text-center py-8">
-        <div className="text-hgreen text-6xl mb-4">✓</div>
-        <h3 className="text-lg font-semibold mb-2">Transaction Added!</h3>
+      <div className="text-center py-8 flex flex-col gap-2">
+        <SuccessAnimation />
+        <h3 className="text-lg font-semibold">Transaction Added!</h3>
         <p className="text-gray-600 mb-6">{successMessage}</p>
         <Button type={ButtonType.PRIMARY} onClick={onSuccess}>
           Done
@@ -371,19 +458,27 @@ export function AddInvestmentTransactionForm({
         label={
           isGoldInvestment && goldDisplayUnit
             ? `Quantity (${getGoldUnitLabel(goldDisplayUnit)})`
+            : isSilverInvestment && silverDisplayUnit
+            ? `Quantity (${getSilverUnitLabel(silverDisplayUnit)})`
             : "Quantity"
         }
         placeholder={
-          isGoldInvestment && goldDisplayUnit === "tael"
+          (isGoldInvestment && goldDisplayUnit === "tael") ||
+          (isSilverInvestment && silverDisplayUnit === "tael")
             ? "0.0000"
+            : (isSilverInvestment && silverDisplayUnit === "kg")
+            ? "0.00"
             : quantityConfig.placeholder
         }
         required
         disabled={isSubmitting}
         min={0}
         step={
-          isGoldInvestment && goldDisplayUnit === "tael"
+          (isGoldInvestment && goldDisplayUnit === "tael") ||
+          (isSilverInvestment && silverDisplayUnit === "tael")
             ? "0.0001"
+            : (isSilverInvestment && silverDisplayUnit === "kg")
+            ? "0.01"
             : quantityConfig.step
         }
       />
@@ -394,7 +489,9 @@ export function AddInvestmentTransactionForm({
         control={control}
         label={
           isGoldInvestment
-            ? `Price per ${investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND ? "Tael (lượng)" : "Ounce"} (${investmentCurrency})`
+            ? `Price per ${getInvestmentUnitLabelFull(goldDisplayUnit || "oz", investmentType)} (${investmentCurrency})`
+            : isSilverInvestment && silverDisplayUnit
+            ? `Price per ${getInvestmentUnitLabelFull(silverDisplayUnit, investmentType)} (${investmentCurrency})`
             : `Price per Unit (${investmentCurrency})`
         }
         placeholder="0.00"

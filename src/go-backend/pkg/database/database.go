@@ -72,10 +72,60 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	// Run post-migration data backfills (idempotent)
+	if err := runPostMigrations(db); err != nil {
+		log.Printf("Warning: post-migration failed: %v", err)
+		// Don't fail startup, just log the warning
+	}
+
 	log.Printf("Database connected and migrated successfully (pool: maxOpen=%d, maxIdle=%d)",
 		cfg.Database.MaxOpenConns, cfg.Database.MaxIdleConns)
 
 	return &Database{DB: db}, nil
+}
+
+// runPostMigrations executes data backfills and index creations after schema migration
+// These are idempotent and safe to run on every startup
+func runPostMigrations(db *gorm.DB) error {
+	// 1. Create performance indexes (idempotent with IF NOT EXISTS)
+
+	// Category composite index for type lookups
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_category_user_type
+		ON category(user_id, type)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_category_user_type: %w", err)
+	}
+
+	// User email index for faster auth lookups (partial index on non-deleted records)
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_user_email
+		ON "user"(email)
+		WHERE deleted_at IS NULL
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_user_email: %w", err)
+	}
+
+	// 2. Backfill gold investment purchase_unit values
+	// Gold VND (type 8): default to tael display
+	if err := db.Exec(`
+		UPDATE investment
+		SET purchase_unit = 'tael'
+		WHERE type = 8 AND (purchase_unit IS NULL OR purchase_unit = 'gram')
+	`).Error; err != nil {
+		return fmt.Errorf("failed to backfill gold VND: %w", err)
+	}
+
+	// Gold USD (type 9): default to oz display
+	if err := db.Exec(`
+		UPDATE investment
+		SET purchase_unit = 'oz'
+		WHERE type = 9 AND (purchase_unit IS NULL OR purchase_unit = 'gram')
+	`).Error; err != nil {
+		return fmt.Errorf("failed to backfill gold USD: %w", err)
+	}
+
+	return nil
 }
 
 // Close closes the database connection

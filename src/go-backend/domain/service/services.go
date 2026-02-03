@@ -34,8 +34,11 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 	// Create gold price service (needed by market data service)
 	goldPriceSvc := NewGoldPriceService(redisClient)
 
+	// Create silver price service (needed by market data service)
+	silverPriceSvc := NewSilverPriceService(redisClient)
+
 	// Create market data service
-	marketDataSvc := NewMarketDataService(repos.MarketData, goldPriceSvc)
+	marketDataSvc := NewMarketDataService(repos.MarketData, goldPriceSvc, silverPriceSvc)
 
 	// Create currency cache
 	currencyCache := cache.NewCurrencyCache(redisClient)

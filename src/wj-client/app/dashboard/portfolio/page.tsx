@@ -166,6 +166,8 @@ type InvestmentData = {
   updatedAt?: number;
   // Native currency of the investment
   currency?: string;
+  // Purchase unit for display (gold/silver)
+  purchaseUnit?: string;
   // Display fields (converted to user's preferred currency)
   displayCurrentValue?: { amount: number; currency: string };
   displayUnrealizedPnl?: { amount: number; currency: string };
@@ -215,7 +217,7 @@ const useInvestmentColumns = (
         header: "Quantity",
         cell: (info) => {
           const row = info.row.original;
-          return formatQuantity(row.quantity, row.type as any);
+          return formatQuantity(row.quantity, row.type as any, row.purchaseUnit);
         },
       },
       {
@@ -228,6 +230,7 @@ const useInvestmentColumns = (
             (info.getValue() as number | undefined) || 0,
             row.type as any,
             nativeCurrency,
+            row.purchaseUnit,
           );
         },
       },
@@ -241,6 +244,7 @@ const useInvestmentColumns = (
             (info.getValue() as number | undefined) || 0,
             row.type as any,
             nativeCurrency,
+            row.purchaseUnit,
           );
         },
       },

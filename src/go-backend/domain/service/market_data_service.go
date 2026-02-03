@@ -10,6 +10,7 @@ import (
 	"wealthjourney/domain/repository"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/gold"
+	"wealthjourney/pkg/silver"
 	"wealthjourney/pkg/validator"
 	"wealthjourney/pkg/yahoo"
 	investmentv1 "wealthjourney/protobuf/v1"
@@ -32,17 +33,21 @@ type MarketDataService interface {
 
 // marketDataService implements MarketDataService.
 type marketDataService struct {
-	marketDataRepo    repository.MarketDataRepository
-	goldPriceService  GoldPriceService
-	goldConverter     *gold.Converter
+	marketDataRepo     repository.MarketDataRepository
+	goldPriceService   GoldPriceService
+	silverPriceService SilverPriceService
+	goldConverter      *gold.Converter
+	silverConverter    *silver.Converter
 }
 
 // NewMarketDataService creates a new MarketDataService.
-func NewMarketDataService(marketDataRepo repository.MarketDataRepository, goldPriceService GoldPriceService) MarketDataService {
+func NewMarketDataService(marketDataRepo repository.MarketDataRepository, goldPriceService GoldPriceService, silverPriceService SilverPriceService) MarketDataService {
 	return &marketDataService{
-		marketDataRepo:   marketDataRepo,
-		goldPriceService: goldPriceService,
-		goldConverter:    gold.NewGoldConverter(nil), // Will be injected later if needed
+		marketDataRepo:     marketDataRepo,
+		goldPriceService:   goldPriceService,
+		silverPriceService: silverPriceService,
+		goldConverter:      gold.NewGoldConverter(nil),   // Will be injected later if needed
+		silverConverter:    silver.NewSilverConverter(nil), // Will be injected later if needed
 	}
 }
 
@@ -70,6 +75,8 @@ func (s *marketDataService) GetPrice(ctx context.Context, symbol, currency strin
 	// Check if this is a gold investment
 	if gold.IsGoldType(investmentType) {
 		priceData, err = s.fetchGoldPriceFromAPI(ctx, symbol, currency, investmentType)
+	} else if silver.IsSilverType(investmentType) {
+		priceData, err = s.fetchSilverPriceFromAPI(ctx, symbol, currency, investmentType)
 	} else {
 		priceData, err = s.fetchPriceFromAPI(ctx, symbol, currency)
 	}
@@ -185,6 +192,30 @@ func (s *marketDataService) fetchGoldPriceFromAPI(ctx context.Context, symbol, c
 		Currency:  currency,
 		Price:     normalizedPrice,
 		Change24h: 0, // vang.today provides change in absolute value, not percent
+		Volume24h: 0,
+		Timestamp: price.UpdateTime,
+	}, nil
+}
+
+// fetchSilverPriceFromAPI fetches silver price from ancarat API.
+// Used for Vietnamese silver (SILVER_VND) and world silver (SILVER_USD) investments.
+func (s *marketDataService) fetchSilverPriceFromAPI(ctx context.Context, symbol, currency string, investmentType investmentv1.InvestmentType) (*models.MarketData, error) {
+	// Fetch price from ancarat API
+	price, err := s.silverPriceService.FetchPriceForSymbol(ctx, symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch silver price from ancarat: %w", err)
+	}
+
+	// Convert market price to storage format
+	// Market price for VND silver is per tael, need to convert to per gram for storage
+	// Market price for USD silver is already per ounce
+	normalizedPrice := s.silverConverter.ProcessMarketPrice(price.Buy, currency, investmentType)
+
+	return &models.MarketData{
+		Symbol:    symbol,
+		Currency:  currency,
+		Price:     normalizedPrice,
+		Change24h: 0, // ancarat API doesn't provide change percent
 		Volume24h: 0,
 		Timestamp: price.UpdateTime,
 	}, nil

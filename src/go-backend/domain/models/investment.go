@@ -25,6 +25,7 @@ type Investment struct {
 	UnrealizedPNLPercent float64                      `gorm:"type:double precision;default:0" json:"unrealizedPnlPercent"`
 	RealizedPNL          int64                        `gorm:"type:bigint;default:0" json:"realizedPnl"`
 	TotalDividends       int64                        `gorm:"type:bigint;default:0" json:"totalDividends"`
+	PurchaseUnit         string                       `gorm:"size:10;default:'gram'" json:"purchaseUnit"`
 	CreatedAt            time.Time                    `json:"createdAt"`
 	UpdatedAt            time.Time                    `json:"updatedAt"`
 	DeletedAt            gorm.DeletedAt               `gorm:"index" json:"-"`
@@ -64,8 +65,10 @@ func (i *Investment) Recalculate() {
 			v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND:
 			divisor = 10000 // 4 decimals for stocks
 		case v1.InvestmentType_INVESTMENT_TYPE_GOLD_VND,
-			v1.InvestmentType_INVESTMENT_TYPE_GOLD_USD:
-			divisor = 10000 // 4 decimals for gold (grams × 10000 or ounces × 10000)
+			v1.InvestmentType_INVESTMENT_TYPE_GOLD_USD,
+			v1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+			v1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
+			divisor = 10000 // 4 decimals for gold/silver (grams × 10000 or ounces × 10000)
 		}
 
 		// Current Value = (Quantity / divisor) * CurrentPrice
@@ -112,6 +115,7 @@ func (i *Investment) ToProto() *v1.Investment {
 		UnrealizedPnlPercent: i.UnrealizedPNLPercent,
 		RealizedPnl:          i.RealizedPNL,
 		TotalDividends:       i.TotalDividends,
+		PurchaseUnit:         i.PurchaseUnit,
 		CreatedAt:            i.CreatedAt.Unix(),
 		UpdatedAt:            i.UpdatedAt.Unix(),
 	}

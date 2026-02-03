@@ -7,6 +7,13 @@ import {
   formatGoldPriceDisplay,
   getGoldUnitLabel,
 } from "@/lib/utils/gold-calculator";
+import {
+  isSilverType,
+  getSilverTypeLabel,
+  formatSilverQuantity as formatSilverQuantityUtil,
+  formatSilverPrice as formatSilverPriceUtil,
+  SilverUnit,
+} from "@/lib/utils/silver-calculator";
 
 // Formatting helpers
 export const formatCurrency = (amount: number, currency: string = "VND"): string => {
@@ -16,10 +23,16 @@ export const formatCurrency = (amount: number, currency: string = "VND"): string
 export const formatQuantity = (
   quantity: number,
   type: InvestmentType,
+  purchaseUnit?: string,
 ): string => {
   // Gold types have special formatting with unit display (tael/oz)
   if (isGoldType(type)) {
     return formatGoldQuantity(quantity, type);
+  }
+
+  // Silver types have special formatting with unit display (lượng/kg/oz)
+  if (isSilverType(type) && purchaseUnit) {
+    return formatSilverQuantityUtil(quantity, type, purchaseUnit as SilverUnit);
   }
 
   // Crypto: 8 decimals, Stocks/ETFs/Mutual Funds: 4 decimals, Bonds/Commodities: 2 decimals
@@ -42,11 +55,17 @@ export const formatPercent = (value: number): string => {
 };
 
 // Format prices with appropriate decimals based on investment type
-export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND"): string => {
+export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND", priceUnit?: string): string => {
   // Gold types: show price per unit (₫/lượng for VND gold, $/oz for USD gold)
   if (isGoldType(type)) {
     return formatGoldPrice(price, currency, undefined, type);
   }
+
+  // Silver types: show price per unit (₫/lượng for VND silver, $/oz for USD silver)
+  if (isSilverType(type) && priceUnit) {
+    return formatSilverPriceUtil(price, currency, priceUnit as SilverUnit, type);
+  }
+
   // Use the multi-currency formatter from utils for other types
   return formatCurrencyUtil(price, currency);
 };
@@ -55,6 +74,11 @@ export const getInvestmentTypeLabel = (type: InvestmentType): string => {
   // Use gold calculator utility for gold types
   if (isGoldType(type)) {
     return getGoldTypeLabelUtil(type);
+  }
+
+  // Use silver calculator utility for silver types
+  if (isSilverType(type)) {
+    return getSilverTypeLabel(type);
   }
 
   switch (type) {
@@ -220,3 +244,25 @@ function getDecimalsForType(type: InvestmentType): number {
 export function isGoldInvestment(type: InvestmentType): boolean {
   return isGoldType(type);
 }
+
+/**
+ * Get display unit label for investment forms (full name)
+ * Returns user-friendly labels like "Tael (lượng)", "Kg", "Ounce"
+ * @param unit - The unit string ("tael", "kg", "oz", "gram")
+ * @param investmentType - The investment type enum (optional, for context)
+ */
+export function getInvestmentUnitLabelFull(unit: string, investmentType?: InvestmentType): string {
+  switch (unit) {
+    case 'tael':
+      return 'Tael (lượng)';
+    case 'kg':
+      return 'Kg';
+    case 'oz':
+      return 'Ounce';
+    case 'gram':
+      return 'Gram';
+    default:
+      return unit;
+  }
+}
+

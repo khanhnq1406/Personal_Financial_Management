@@ -235,6 +235,7 @@ func (m *InvestmentMapper) ModelToProto(investment *models.Investment) *investme
 		UnrealizedPnl:        investment.UnrealizedPNL,
 		UnrealizedPnlPercent: investment.UnrealizedPNLPercent,
 		RealizedPnl:          investment.RealizedPNL,
+		PurchaseUnit:         investment.PurchaseUnit,
 		CreatedAt:            investment.CreatedAt.Unix(),
 		UpdatedAt:            investment.UpdatedAt.Unix(),
 	}

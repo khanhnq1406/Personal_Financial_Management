@@ -14,6 +14,7 @@ type AllHandlers struct {
 	Budget      *BudgetHandlers
 	Investment  *InvestmentHandlers
 	Gold        *GoldHandler
+	Silver      *SilverHandler
 }
 
 // NewHandlers creates all handler instances with proper dependency injection.
@@ -27,6 +28,7 @@ func NewHandlers(services *service.Services) *AllHandlers {
 		Budget:      NewBudgetHandlers(services.Budget),
 		Investment:  NewInvestmentHandlers(services.Investment),
 		Gold:        NewGoldHandler(),
+		Silver:      NewSilverHandler(),
 	}
 }
 
