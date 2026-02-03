@@ -407,7 +407,7 @@ export function AddInvestmentForm({
             value={watch("symbol")}
             onChange={handleSymbolChange}
             placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
-            disabled={isSubmitting}
+            // disabled={isSubmitting}
             className="mt-1"
           />
           {errors.symbol && (

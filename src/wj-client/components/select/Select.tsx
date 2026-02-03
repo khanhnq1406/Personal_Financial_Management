@@ -84,6 +84,11 @@ export interface SelectProps<T extends string = string> {
  * - Filter options based on input
  * - Highlight states
  * - ARIA attributes for accessibility
+ * - Smart blur handling: option selection works correctly after typing to filter
+ *
+ * The component uses `relatedTarget` on blur events to detect when the user is
+ * clicking an option versus clicking outside the component. This ensures that
+ * option selection works correctly even after typing to filter the dropdown.
  *
  * @example
  * ```tsx
@@ -178,6 +183,7 @@ export function Select<T extends string = string>({
       onChange(selectedValue);
       setIsOpen(false);
       setHighlightedIndex(-1);
+      setIsFocused(false); // Clear focused state when option is selected
       setInputValue(
         options.find((opt) => opt.value === selectedValue)?.label || "",
       );
@@ -258,8 +264,21 @@ export function Select<T extends string = string>({
     }
   };
 
-  const handleBlur = () => {
-    setIsFocused(false);
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Check if the new focus target is within our container
+    // This prevents blur from interfering with option clicks
+    const relatedTarget = e.relatedTarget as Node;
+    const isClickingInside = containerRef.current?.contains(relatedTarget);
+
+    // Also handle the case where relatedTarget is null (e.g., clicking non-focusable elements)
+    // In this case, check if the current document active element is within our container
+    const activeElementInContainer = containerRef.current?.contains(
+      document.activeElement,
+    );
+
+    if (!isClickingInside && !activeElementInContainer) {
+      setIsFocused(false);
+    }
   };
 
   const dropdownClassName =
@@ -281,6 +300,8 @@ export function Select<T extends string = string>({
       <div
         key={option.value}
         onClick={onSelect}
+        onMouseDown={(e) => e.preventDefault()}
+        tabIndex={-1}
         className={cn(
           "px-3 py-2 cursor-pointer text-sm",
           isHighlighted
@@ -335,7 +356,7 @@ export function Select<T extends string = string>({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          disabled={disabled || isLoading}
+          disabled={disabled}
           placeholder={
             placeholder && placeholder.length > 0 ? `${placeholder}…` : ""
           }

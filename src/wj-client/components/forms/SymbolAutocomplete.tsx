@@ -215,7 +215,13 @@ export function SymbolAutocomplete({
       // Default dropdown with options
       return <div className={props.className}>{props.children}</div>;
     },
-    [inputValue.length, debouncedQuery.length, searchQuery.isLoading, options.length, searchError],
+    [
+      inputValue.length,
+      debouncedQuery.length,
+      searchQuery.isLoading,
+      options.length,
+      searchError,
+    ],
   );
 
   return (
