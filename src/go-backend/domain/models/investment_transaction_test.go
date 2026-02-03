@@ -41,7 +41,7 @@ func TestInvestmentTransaction_BuyUpdatesLot(t *testing.T) {
 	// Cost: 27,500,000,000 = 0.5 * $55,000 = $27,500
 	tx := &models.InvestmentTransaction{
 		InvestmentID: 1,
-		Type:         investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY,
+		Type:         int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
 		Quantity:     50000000, // 0.50000000
 		Price:        55000000000, // $55,000 per BTC
 		Cost:         27500000000, // $27,500
@@ -134,7 +134,7 @@ func TestInvestmentTransaction_ToProto(t *testing.T) {
 		ID:              1,
 		InvestmentID:    10,
 		WalletID:        5,
-		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY,
+		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
 		Quantity:        100000000,
 		Price:           50000000000,
 		Cost:            5000000000000,
@@ -179,7 +179,7 @@ func TestInvestmentTransaction_ToProto_NilLotID(t *testing.T) {
 		ID:              1,
 		InvestmentID:    10,
 		WalletID:        5,
-		Type:            investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
 		Quantity:        0,
 		Price:           0,
 		Cost:            100000000, // Dividend amount

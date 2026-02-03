@@ -22,7 +22,7 @@ func TestInvestment_Fields(t *testing.T) {
 		WalletID:             10,
 		Symbol:               "BTC",
 		Name:                 "Bitcoin",
-		Type:                 v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+		Type:                 int32(v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY),
 		Quantity:             100000000,  // 1 BTC in satoshis
 		AverageCost:          50000,      // $50.00 in cents (per unit average cost)
 		TotalCost:            5000000,    // $50,000 in cents (total cost basis)
@@ -44,7 +44,7 @@ func TestInvestment_Fields(t *testing.T) {
 		t.Errorf("Expected name 'Bitcoin', got '%s'", inv.Name)
 	}
 
-	if inv.Type != v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY {
+	if inv.Type != int32(v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY) {
 		t.Errorf("Expected type CRYPTOCURRENCY, got '%v'", inv.Type)
 	}
 
@@ -92,7 +92,7 @@ func TestInvestment_ToProto(t *testing.T) {
 		WalletID:             10,
 		Symbol:               "AAPL",
 		Name:                 "Apple Inc.",
-		Type:                 v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:                 int32(v1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:             10000, // 1 share in 4 decimal places
 		AverageCost:          15000, // $150.00 in cents (per unit average cost)
 		TotalCost:            15000, // $150.00 in cents (total cost basis)
@@ -274,7 +274,7 @@ func TestInvestment_TypeAwareRecalculation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := &models.Investment{
-				Type:         tt.investmentType,
+				Type:         int32(tt.investmentType),
 				Quantity:     tt.quantity,
 				TotalCost:    tt.totalCost,
 				CurrentPrice: tt.currentPrice,
@@ -356,7 +356,7 @@ func TestInvestment_ZeroValueEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := &models.Investment{
-				Type:         tt.typeValue,
+				Type:         int32(tt.typeValue),
 				Quantity:     tt.quantity,
 				TotalCost:    tt.totalCost,
 				CurrentPrice: tt.currentPrice,
@@ -411,7 +411,7 @@ func TestInvestment_GORMHooks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := &models.Investment{
-				Type:         v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+				Type:         int32(v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY),
 				Quantity:     100000000, // 1 BTC
 				TotalCost:    5000000,   // $50,000 in cents
 				CurrentValue: tt.initialValue,
@@ -521,7 +521,7 @@ func TestInvestmentRecalculate_CorrectedTests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := &models.Investment{
-				Type:         tt.investmentType,
+				Type:         int32(tt.investmentType),
 				Quantity:     tt.quantity,
 				TotalCost:    tt.totalCost,
 				CurrentPrice: tt.currentPrice,
@@ -609,7 +609,7 @@ func TestInvestmentRecalculate_CorrectedEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inv := &models.Investment{
-				Type:         tt.investmentType,
+				Type:         int32(tt.investmentType),
 				Quantity:     tt.quantity,
 				TotalCost:    tt.totalCost,
 				CurrentPrice: tt.currentPrice,

@@ -146,7 +146,7 @@ func MockInvestmentsForTesting() []*models.Investment {
 			WalletID:     1,
 			Symbol:       "BTC",
 			Name:         "Bitcoin",
-			Type:         v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			Type:         int32(v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY),
 			Quantity:     100000000, // 1 BTC in satoshis
 			TotalCost:    450000000, // $45,000 in sub-units (need to verify currency unit)
 			AverageCost:  450000000,
@@ -158,7 +158,7 @@ func MockInvestmentsForTesting() []*models.Investment {
 			WalletID:     1,
 			Symbol:       "ETH",
 			Name:         "Ethereum",
-			Type:         v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY,
+			Type:         int32(v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY),
 			Quantity:     1000000000, // 10 ETH in wei/finney
 			TotalCost:    250000000,  // $25,000
 			AverageCost:  25000000,
@@ -170,7 +170,7 @@ func MockInvestmentsForTesting() []*models.Investment {
 			WalletID:     1,
 			Symbol:       "AAPL",
 			Name:         "Apple Inc.",
-			Type:         v1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			Type:         int32(v1.InvestmentType_INVESTMENT_TYPE_STOCK),
 			Quantity:     10000, // 100 shares (assuming 2 decimal places)
 			TotalCost:    1200000, // $12,000
 			AverageCost:  12000,

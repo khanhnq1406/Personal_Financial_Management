@@ -83,7 +83,7 @@ func TestSellTransaction_CostBasisPreserved(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    10000,  // 1 share (4 decimal places)
 		AverageCost: 1500000, // $150.00
 		TotalCost:   15000000000, // $15,000.00
@@ -197,7 +197,7 @@ func TestSellTransaction_SellAllShares(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    10000,
 		AverageCost: 1500000,
 		TotalCost:   15000000000,
@@ -308,7 +308,7 @@ func TestSellTransaction_MultipleBuysThenSell(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    15000, // 150 shares (4 decimals)
 		AverageCost: 1533333, // ~$153.33
 		TotalCost:   23000000000, // $23,000.00
@@ -412,7 +412,7 @@ func TestSellTransaction_InsufficientQuantity(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    5000, // Only 0.5 shares
 		AverageCost: 1500000,
 		TotalCost:   7500000000,
@@ -476,7 +476,7 @@ func TestSellTransaction_NoOpenLots(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    10000,
 		AverageCost: 1500000,
 		TotalCost:   15000000000,
@@ -551,7 +551,7 @@ func TestSellTransaction_FIFOMultipleLots(t *testing.T) {
 		WalletID:    walletID,
 		Symbol:      "AAPL",
 		Name:        "Apple Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    10000, // 100 shares
 		AverageCost: 1630000, // Weighted average: ($3,000 + $4,800 + $8,500) / 100 = $163
 		TotalCost:   16300000000, // $16,300

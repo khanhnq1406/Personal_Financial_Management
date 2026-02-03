@@ -65,7 +65,7 @@ func main() {
 			var investmentDividends int64 = 0
 
 			for _, tx := range transactions {
-				switch tx.Type {
+				switch v1.InvestmentTransactionType(tx.Type) {
 				case v1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY:
 					// BUY: -(cost + fees)
 					delta := -(tx.Cost + tx.Fees)

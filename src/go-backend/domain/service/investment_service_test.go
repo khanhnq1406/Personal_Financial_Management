@@ -471,7 +471,7 @@ func createTestWallet(id int32, userID int32, walletType walletv1.WalletType) *m
 		ID:       id,
 		UserID:   userID,
 		WalletName: "Test Investment Wallet",
-		Type:     walletType,
+		Type:     int32(walletType),
 		Currency: "USD",
 		Balance:  100000000000, // $1,000,000 in cents - enough for most tests
 	}
@@ -483,7 +483,7 @@ func createTestInvestment(id int32, walletID int32, symbol string, quantity, ave
 		WalletID:    walletID,
 		Symbol:      symbol,
 		Name:        symbol + " Inc.",
-		Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+		Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 		Quantity:    quantity,
 		AverageCost: averageCost,
 		TotalCost:   totalCost,
@@ -531,11 +531,11 @@ func TestInvestmentService_CreateInvestment_Success(t *testing.T) {
 	mockWalletRepo.On("GetByIDForUser", ctx, walletID, userID).Return(wallet, nil)
 	mockInvestmentRepo.On("GetByWalletAndSymbol", ctx, walletID, "AAPL").Return(nil, nil)
 	mockWalletRepo.On("UpdateBalance", ctx, walletID, mock.AnythingOfType("int64")).Return(wallet, nil)
-	mockInvestmentRepo.On("Create", ctx, mock.AnythingOfType("*models.Investment")).Return(nil).Return(
-		func(ctx context.Context, inv *models.Investment) error {
+	mockInvestmentRepo.On("Create", ctx, mock.AnythingOfType("*models.Investment")).Return(nil).Run(
+		func(args mock.Arguments) {
 			// Set the ID after creation
+			inv := args.Get(1).(*models.Investment)
 			inv.ID = 1
-			return nil
 		},
 	)
 	mockTxRepo.On("Create", ctx, mock.AnythingOfType("*models.InvestmentTransaction")).Return(nil)
@@ -546,7 +546,7 @@ func TestInvestmentService_CreateInvestment_Success(t *testing.T) {
 			WalletID:    walletID,
 			Symbol:      "AAPL",
 			Name:        "Apple Inc.",
-			Type:        investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK,
+			Type:        int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK),
 			Quantity:    10000,
 			AverageCost: 1500000,
 			TotalCost:   15000000000,
@@ -1098,7 +1098,7 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 	}
 
 	mockWalletRepo.On("ListByUserID", ctx, userID, mock.Anything).Return([]*models.Wallet{
-		{ID: 1, UserID: userID, Type: walletv1.WalletType_INVESTMENT},
+		{ID: 1, UserID: userID, Type: int32(walletv1.WalletType_INVESTMENT)},
 	}, 1, nil)
 	mockInvestmentRepo.On("ListByWalletID", ctx, int32(1), mock.Anything, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED).Return([]*models.Investment{investment1, investment2}, 2, nil)
 	mockMarketDataService.On("UpdatePricesForInvestments", ctx, mock.Anything, false).Return(map[int32]int64{

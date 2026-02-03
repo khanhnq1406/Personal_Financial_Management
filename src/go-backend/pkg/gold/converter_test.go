@@ -42,6 +42,27 @@ func (m *mockFXRateService) ConvertAmountWithRate(ctx context.Context, amount in
 	return int64(converted * float64(toMultiplier)), nil
 }
 
+func (m *mockFXRateService) BatchGetRates(ctx context.Context, pairs []fx.CurrencyPair) (map[fx.CurrencyPair]float64, error) {
+	result := make(map[fx.CurrencyPair]float64)
+	for _, pair := range pairs {
+		rate, _ := m.GetRate(ctx, pair.From, pair.To)
+		result[pair] = rate
+	}
+	return result, nil
+}
+
+func (m *mockFXRateService) UpdateRate(ctx context.Context, fromCurrency, toCurrency string) error {
+	return nil
+}
+
+func (m *mockFXRateService) IsSupportedCurrency(currency string) bool {
+	return currency == "USD" || currency == "VND"
+}
+
+func (m *mockFXRateService) GetSupportedCurrencies() []string {
+	return []string{"USD", "VND"}
+}
+
 // TestConvertQuantity tests unit conversion
 func TestConvertQuantity(t *testing.T) {
 	tests := []struct {
