@@ -543,11 +543,15 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 			return nil, err
 		}
 		// Return early with the transaction for dividend
+		txProto := s.mapper.TransactionToProto(tx)
+		s.enrichTransactionProto(ctx, userID, txProto, investment.Currency)
+		updatedInvProto := s.mapper.ModelToProto(updatedInvestment)
+		s.enrichInvestmentProto(ctx, userID, updatedInvProto, updatedInvestment)
 		return &investmentv1.AddTransactionResponse{
 			Success:           true,
 			Message:           "Dividend transaction added successfully",
-			Data:              s.mapper.TransactionToProto(tx),
-			UpdatedInvestment: s.mapper.ModelToProto(updatedInvestment),
+			Data:              txProto,
+			UpdatedInvestment: updatedInvProto,
 			Timestamp:         time.Now().Format(time.RFC3339),
 		}, nil
 
@@ -579,19 +583,26 @@ func (s *investmentService) AddTransaction(ctx context.Context, userID int32, re
 		Order:   "desc",
 	})
 	if err != nil || len(transactions) == 0 {
+		updatedInvProto := s.mapper.ModelToProto(updatedInvestment)
+		s.enrichInvestmentProto(ctx, userID, updatedInvProto, updatedInvestment)
 		return &investmentv1.AddTransactionResponse{
 			Success:           true,
 			Message:           "Transaction added successfully",
-			UpdatedInvestment: s.mapper.ModelToProto(updatedInvestment),
+			UpdatedInvestment: updatedInvProto,
 			Timestamp:         time.Now().Format(time.RFC3339),
 		}, nil
 	}
 
+	txProto := s.mapper.TransactionToProto(transactions[0])
+	s.enrichTransactionProto(ctx, userID, txProto, investment.Currency)
+	updatedInvProto := s.mapper.ModelToProto(updatedInvestment)
+	s.enrichInvestmentProto(ctx, userID, updatedInvProto, updatedInvestment)
+
 	return &investmentv1.AddTransactionResponse{
 		Success:           true,
 		Message:           "Transaction added successfully",
-		Data:              s.mapper.TransactionToProto(transactions[0]),
-		UpdatedInvestment: s.mapper.ModelToProto(updatedInvestment),
+		Data:              txProto,
+		UpdatedInvestment: updatedInvProto,
 		Timestamp:         time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -992,6 +1003,8 @@ func (s *investmentService) ListTransactions(ctx context.Context, userID int32, 
 	}
 
 	protoTransactions := s.mapper.TransactionSliceToProto(transactions)
+	// Enrich with conversion fields
+	s.enrichTransactionSliceProto(ctx, userID, protoTransactions, investment.Currency)
 	paginationResult := types.NewPaginationResult(params.Page, params.PageSize, total)
 
 	return &investmentv1.ListInvestmentTransactionsResponse{
@@ -1018,6 +1031,12 @@ func (s *investmentService) EditTransaction(ctx context.Context, transactionID i
 		return nil, err
 	}
 
+	// Get the parent investment for currency information
+	investment, err := s.investmentRepo.GetByID(ctx, tx.InvestmentID)
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to get parent investment", err)
+	}
+
 	// Note: Editing transactions is complex with FIFO tracking
 	// For now, we only allow editing notes
 	if req.Notes != "" {
@@ -1028,10 +1047,13 @@ func (s *investmentService) EditTransaction(ctx context.Context, transactionID i
 		return nil, err
 	}
 
+	txProto := s.mapper.TransactionToProto(tx)
+	s.enrichTransactionProto(ctx, userID, txProto, investment.Currency)
+
 	return &investmentv1.EditInvestmentTransactionResponse{
 		Success:   true,
 		Message:   "Transaction updated successfully",
-		Data:      s.mapper.TransactionToProto(tx),
+		Data:      txProto,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -1751,6 +1773,54 @@ func (s *investmentService) enrichInvestmentSliceProto(ctx context.Context, user
 		if i < len(invModels) {
 			s.enrichInvestmentProto(ctx, userID, invProto, invModels[i])
 		}
+	}
+}
+
+// enrichTransactionProto adds conversion fields to an investment transaction proto response
+func (s *investmentService) enrichTransactionProto(ctx context.Context, userID int32, txProto *investmentv1.InvestmentTransaction, investmentCurrency string) {
+	// Get user's preferred currency
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	// If same currency, no conversion needed
+	if investmentCurrency == user.PreferredCurrency {
+		return
+	}
+
+	// Convert price, cost, and fees to user's preferred currency
+	if txProto.Price > 0 {
+		convertedPrice, _ := s.fxRateSvc.ConvertAmount(ctx, txProto.Price, investmentCurrency, user.PreferredCurrency)
+		txProto.DisplayPrice = &investmentv1.Money{
+			Amount:   convertedPrice,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
+	if txProto.Cost > 0 {
+		convertedCost, _ := s.fxRateSvc.ConvertAmount(ctx, txProto.Cost, investmentCurrency, user.PreferredCurrency)
+		txProto.DisplayCost = &investmentv1.Money{
+			Amount:   convertedCost,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
+	if txProto.Fees > 0 {
+		convertedFees, _ := s.fxRateSvc.ConvertAmount(ctx, txProto.Fees, investmentCurrency, user.PreferredCurrency)
+		txProto.DisplayFees = &investmentv1.Money{
+			Amount:   convertedFees,
+			Currency: user.PreferredCurrency,
+		}
+	}
+
+	txProto.DisplayCurrency = user.PreferredCurrency
+}
+
+// enrichTransactionSliceProto adds conversion fields to a slice of transaction proto responses
+func (s *investmentService) enrichTransactionSliceProto(ctx context.Context, userID int32, txProtos []*investmentv1.InvestmentTransaction, investmentCurrency string) {
+	for _, txProto := range txProtos {
+		s.enrichTransactionProto(ctx, userID, txProto, investmentCurrency)
 	}
 }
 

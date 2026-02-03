@@ -273,6 +273,20 @@ export interface InvestmentTransaction {
   lotId: number;
   /** For buy lots: how much is left to sell */
   remainingQuantity: number;
+  /** Display fields (populated when user's preferred currency differs from investment currency) */
+  displayPrice:
+    | Money
+    | undefined;
+  /** Total cost in user's preferred currency */
+  displayCost:
+    | Money
+    | undefined;
+  /** Fees in user's preferred currency */
+  displayFees:
+    | Money
+    | undefined;
+  /** User's preferred currency code */
+  displayCurrency: string;
 }
 
 /** Portfolio summary for dashboard */
@@ -1121,6 +1135,10 @@ function createBaseInvestmentTransaction(): InvestmentTransaction {
     updatedAt: 0,
     lotId: 0,
     remainingQuantity: 0,
+    displayPrice: undefined,
+    displayCost: undefined,
+    displayFees: undefined,
+    displayCurrency: "",
   };
 }
 
@@ -1167,6 +1185,18 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
     }
     if (message.remainingQuantity !== 0) {
       writer.uint32(112).int32(message.remainingQuantity);
+    }
+    if (message.displayPrice !== undefined) {
+      Money.encode(message.displayPrice, writer.uint32(122).fork()).join();
+    }
+    if (message.displayCost !== undefined) {
+      Money.encode(message.displayCost, writer.uint32(130).fork()).join();
+    }
+    if (message.displayFees !== undefined) {
+      Money.encode(message.displayFees, writer.uint32(138).fork()).join();
+    }
+    if (message.displayCurrency !== "") {
+      writer.uint32(146).string(message.displayCurrency);
     }
     return writer;
   },
@@ -1290,6 +1320,38 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
           message.remainingQuantity = reader.int32();
           continue;
         }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.displayPrice = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.displayCost = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.displayFees = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.displayCurrency = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1315,6 +1377,10 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
       updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
       lotId: isSet(object.lotId) ? globalThis.Number(object.lotId) : 0,
       remainingQuantity: isSet(object.remainingQuantity) ? globalThis.Number(object.remainingQuantity) : 0,
+      displayPrice: isSet(object.displayPrice) ? Money.fromJSON(object.displayPrice) : undefined,
+      displayCost: isSet(object.displayCost) ? Money.fromJSON(object.displayCost) : undefined,
+      displayFees: isSet(object.displayFees) ? Money.fromJSON(object.displayFees) : undefined,
+      displayCurrency: isSet(object.displayCurrency) ? globalThis.String(object.displayCurrency) : "",
     };
   },
 
@@ -1362,6 +1428,18 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
     if (message.remainingQuantity !== 0) {
       obj.remainingQuantity = Math.round(message.remainingQuantity);
     }
+    if (message.displayPrice !== undefined) {
+      obj.displayPrice = Money.toJSON(message.displayPrice);
+    }
+    if (message.displayCost !== undefined) {
+      obj.displayCost = Money.toJSON(message.displayCost);
+    }
+    if (message.displayFees !== undefined) {
+      obj.displayFees = Money.toJSON(message.displayFees);
+    }
+    if (message.displayCurrency !== "") {
+      obj.displayCurrency = message.displayCurrency;
+    }
     return obj;
   },
 
@@ -1384,6 +1462,16 @@ export const InvestmentTransaction: MessageFns<InvestmentTransaction> = {
     message.updatedAt = object.updatedAt ?? 0;
     message.lotId = object.lotId ?? 0;
     message.remainingQuantity = object.remainingQuantity ?? 0;
+    message.displayPrice = (object.displayPrice !== undefined && object.displayPrice !== null)
+      ? Money.fromPartial(object.displayPrice)
+      : undefined;
+    message.displayCost = (object.displayCost !== undefined && object.displayCost !== null)
+      ? Money.fromPartial(object.displayCost)
+      : undefined;
+    message.displayFees = (object.displayFees !== undefined && object.displayFees !== null)
+      ? Money.fromPartial(object.displayFees)
+      : undefined;
+    message.displayCurrency = object.displayCurrency ?? "";
     return message;
   },
 };

@@ -72,6 +72,11 @@ message InvestmentTransaction {
   // Lot tracking for FIFO
   int32 lotId = 13 [json_name = "lotId"];  // ID of the lot this transaction affects
   int32 remainingQuantity = 14 [json_name = "remainingQuantity"];  // For buy lots: how much is left to sell
+  // Display fields (populated when user's preferred currency differs from investment currency)
+  wealthjourney.common.v1.Money displayPrice = 15 [json_name = "displayPrice"];  // Price in user's preferred currency
+  wealthjourney.common.v1.Money displayCost = 16 [json_name = "displayCost"];  // Total cost in user's preferred currency
+  wealthjourney.common.v1.Money displayFees = 17 [json_name = "displayFees"];  // Fees in user's preferred currency
+  string displayCurrency = 18 [json_name = "displayCurrency"];  // User's preferred currency code
 }
 
 enum InvestmentTransactionType {

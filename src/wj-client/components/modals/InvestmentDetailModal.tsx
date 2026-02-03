@@ -71,6 +71,11 @@ type Transaction = {
   fees: number;
   cost: number;
   transactionDate: number;
+  // Display fields (converted to user's preferred currency)
+  displayPrice?: { amount: number; currency: string };
+  displayFees?: { amount: number; currency: string };
+  displayCost?: { amount: number; currency: string };
+  displayCurrency?: string;
 };
 
 export function InvestmentDetailModal({
@@ -228,23 +233,70 @@ export function InvestmentDetailModal({
         id: "price",
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }) => formatPrice(row.original.price || 0, investment?.type || 0, investment?.currency || "USD", investment?.purchaseUnit),
+        cell: ({ row }) => {
+          const nativeCurrency = investment?.currency || "USD";
+          const price = row.original.price || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatPrice(price, investment?.type || 0, nativeCurrency, investment?.purchaseUnit)}
+              </span>
+              {row.original.displayPrice && row.original.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈{" "}
+                  {formatPrice(
+                    row.original.displayPrice.amount || 0,
+                    investment?.type || 0,
+                    row.original.displayCurrency,
+                    investment?.purchaseUnit,
+                  )}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "fees",
         accessorKey: "fees",
         header: "Fees",
-        cell: ({ row }) => formatCurrency(row.original.fees || 0, investment?.currency || "USD"),
+        cell: ({ row }) => {
+          const nativeCurrency = investment?.currency || "USD";
+          const fees = row.original.fees || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatCurrency(fees, nativeCurrency)}
+              </span>
+              {row.original.displayFees && row.original.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈ {formatCurrency(row.original.displayFees.amount || 0, row.original.displayCurrency)}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "cost",
         accessorKey: "cost",
         header: "Total",
-        cell: ({ row }) => (
-          <span className="font-medium">
-            {formatCurrency(row.original.cost || 0, investment?.currency || "USD")}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const nativeCurrency = investment?.currency || "USD";
+          const cost = row.original.cost || 0;
+          return (
+            <div>
+              <span className="font-medium">
+                {formatCurrency(cost, nativeCurrency)}
+              </span>
+              {row.original.displayCost && row.original.displayCurrency && (
+                <span className="text-xs text-gray-500 block">
+                  ≈ {formatCurrency(row.original.displayCost.amount || 0, row.original.displayCurrency)}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "transactionDate",

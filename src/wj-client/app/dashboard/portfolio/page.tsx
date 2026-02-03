@@ -219,7 +219,11 @@ const useInvestmentColumns = (
         header: "Quantity",
         cell: (info) => {
           const row = info.row.original;
-          return formatQuantity(row.quantity, row.type as any, row.purchaseUnit);
+          return formatQuantity(
+            row.quantity,
+            row.type as any,
+            row.purchaseUnit,
+          );
         },
       },
       {
@@ -232,7 +236,12 @@ const useInvestmentColumns = (
           return (
             <div>
               <span className="font-medium">
-                {formatPrice(price, row.type as any, nativeCurrency, row.purchaseUnit)}
+                {formatPrice(
+                  price,
+                  row.type as any,
+                  nativeCurrency,
+                  row.purchaseUnit,
+                )}
               </span>
               {row.displayAverageCost && row.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
@@ -259,7 +268,12 @@ const useInvestmentColumns = (
           return (
             <div>
               <span className="font-medium">
-                {formatPrice(price, row.type as any, nativeCurrency, row.purchaseUnit)}
+                {formatPrice(
+                  price,
+                  row.type as any,
+                  nativeCurrency,
+                  row.purchaseUnit,
+                )}
               </span>
               {row.displayCurrentPrice && row.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
@@ -572,8 +586,14 @@ const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
     value: String(InvestmentType.INVESTMENT_TYPE_COMMODITY),
     label: "Commodity",
   },
-  { value: String(InvestmentType.INVESTMENT_TYPE_GOLD_VND), label: "Gold (Vietnam)" },
-  { value: String(InvestmentType.INVESTMENT_TYPE_GOLD_USD), label: "Gold (World)" },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_GOLD_VND),
+    label: "Gold (Vietnam)",
+  },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_GOLD_USD),
+    label: "Gold (World)",
+  },
   { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 
@@ -816,7 +836,7 @@ export default function PortfolioPage() {
             {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {/* Wallet Selector */}
-              <div className="w-full sm:w-56">
+              <div className="w-full sm:w-fit">
                 <Select
                   options={walletOptions}
                   value={selectedWallet}
@@ -862,36 +882,56 @@ export default function PortfolioPage() {
           ) : null}
 
           {/* Wallet Cash Balance */}
-          {selectedWallet && selectedWallet !== "all" && (() => {
-            const wallet = investmentWallets.find(w => w.id === Number(selectedWallet));
-            if (!wallet) return null;
-            return (
-              <BaseCard className="p-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm text-gray-600">Available Cash</div>
-                    <div className="text-xl font-bold text-bg">
-                      {formatCurrency(
-                        wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
-                        wallet.displayCurrency || wallet.balance?.currency || currency
-                      )}
+          {selectedWallet &&
+            selectedWallet !== "all" &&
+            (() => {
+              const wallet = investmentWallets.find(
+                (w) => w.id === Number(selectedWallet),
+              );
+              if (!wallet) return null;
+              return (
+                <BaseCard className="p-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-sm text-gray-600">
+                        Available Cash
+                      </div>
+                      <div className="text-xl font-bold text-bg">
+                        {formatCurrency(
+                          wallet.displayBalance?.amount ??
+                            wallet.balance?.amount ??
+                            0,
+                          wallet.displayCurrency ||
+                            wallet.balance?.currency ||
+                            currency,
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Ready to invest
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">Ready to invest</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Total Wallet Value</div>
-                    <div className="text-xl font-bold">
-                      {formatCurrency(
-                        wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount ?? 0,
-                        wallet.displayCurrency || wallet.totalValue?.currency || currency
-                      )}
+                    <div>
+                      <div className="text-sm text-gray-600">
+                        Total Wallet Value
+                      </div>
+                      <div className="text-xl font-bold">
+                        {formatCurrency(
+                          wallet.displayTotalValue?.amount ??
+                            wallet.totalValue?.amount ??
+                            0,
+                          wallet.displayCurrency ||
+                            wallet.totalValue?.currency ||
+                            currency,
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Cash + Investments
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">Cash + Investments</div>
                   </div>
-                </div>
-              </BaseCard>
-            );
-          })()}
+                </BaseCard>
+              );
+            })()}
 
           {/* Holdings Table */}
           <BaseCard className="p-4">
@@ -987,9 +1027,15 @@ export default function PortfolioPage() {
         )}
         {modalType === ModalType.ADD_INVESTMENT && (
           <AddInvestmentForm
-            walletId={!isAllWalletsView ? parseInt(selectedWallet, 10) : undefined}
-            walletBalance={!isAllWalletsView ? selectedWalletBalance : undefined}
-            walletCurrency={!isAllWalletsView ? selectedWalletCurrency : undefined}
+            walletId={
+              !isAllWalletsView ? parseInt(selectedWallet, 10) : undefined
+            }
+            walletBalance={
+              !isAllWalletsView ? selectedWalletBalance : undefined
+            }
+            walletCurrency={
+              !isAllWalletsView ? selectedWalletCurrency : undefined
+            }
             onSuccess={handleModalSuccess}
           />
         )}

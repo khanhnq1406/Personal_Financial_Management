@@ -126,7 +126,7 @@ func (r *investmentRepository) ListByWalletID(ctx context.Context, walletID int3
 
 	// Apply type filter if specified (0 is unspecified, so we don't filter on it)
 	if typeFilter != v1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED && typeFilter != 0 {
-		query = query.Where("type = ?", typeFilter)
+		query = query.Where("type = ?", int32(typeFilter))
 	}
 
 	// Get total count
