@@ -66,7 +66,7 @@ export const WalletGrid = memo(function WalletGrid({
   // Loading state with skeleton cards
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {Array.from({ length: 6 }).map((_, index) => (
           <WalletCardSkeleton key={index} />
         ))}
@@ -81,7 +81,7 @@ export const WalletGrid = memo(function WalletGrid({
 
   // Wallet cards grid
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {wallets.map((wallet) => (
         <WalletCard
           key={wallet.id}

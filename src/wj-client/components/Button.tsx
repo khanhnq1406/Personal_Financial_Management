@@ -12,6 +12,7 @@ type PropType = {
   className?: string;
   "aria-label"?: string;
   "aria-pressed"?: boolean;
+  fullWidth?: boolean; // Optional full-width (default: true for PRIMARY/SECONDARY)
 };
 
 // Hoist SVG content outside component to avoid recreating on each render
@@ -73,6 +74,7 @@ export const Button = React.memo(function Button({
   className = "",
   "aria-label": ariaLabel,
   "aria-pressed": ariaPressed,
+  fullWidth = true,
 }: PropType) {
   switch (type) {
     case ButtonType.IMG:
@@ -94,7 +96,8 @@ export const Button = React.memo(function Button({
       return (
         <button
           className={cn(
-            "bg-hgreen hover:bg-bg text-white py-2 w-full font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            "bg-hgreen hover:bg-bg text-white py-2 sm:py-2.5 font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px]",
+            fullWidth ? "w-full" : "w-auto px-6",
             className
           )}
           onClick={onClick}
@@ -109,7 +112,8 @@ export const Button = React.memo(function Button({
       return (
         <button
           className={cn(
-            "bg-fg hover:bg-white text-hgreen py-2 w-full font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            "bg-fg hover:bg-white text-hgreen py-2 sm:py-2.5 font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px]",
+            fullWidth ? "w-full" : "w-auto px-6",
             className
           )}
           onClick={onClick}

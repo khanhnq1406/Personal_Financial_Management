@@ -51,6 +51,8 @@ export interface SelectProps<T extends string = string> {
   clearable?: boolean;
   /** Whether to disable filtering options by input (useful for autocomplete with server-side filtering) */
   disableFilter?: boolean;
+  /** Whether to disable typing in the input (makes it a pure dropdown without search/filter) */
+  disableInput?: boolean;
   /** Custom render function for the dropdown container */
   renderDropdown?: (props: {
     children: React.ReactNode;
@@ -123,6 +125,7 @@ export function Select<T extends string = string>({
   displayValue,
   clearable = true,
   disableFilter = false,
+  disableInput = false,
   renderDropdown,
   renderOption,
   onOpen,
@@ -203,6 +206,7 @@ export function Select<T extends string = string>({
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disableInput) return;
     const newValue = e.target.value;
     setInputValue(newValue);
     setIsOpen(true);
@@ -357,12 +361,16 @@ export function Select<T extends string = string>({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           disabled={disabled}
+          readOnly={disableInput}
           placeholder={
             placeholder && placeholder.length > 0 ? `${placeholder}…` : ""
           }
           autoComplete="off"
           spellCheck={false}
-          className="p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2"
+          className={cn(
+            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            disableInput && "cursor-pointer",
+          )}
           role="combobox"
           aria-expanded={isOpen}
           aria-haspopup="listbox"

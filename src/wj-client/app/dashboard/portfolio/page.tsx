@@ -113,25 +113,25 @@ const PortfolioSummaryCards = memo(
       userCurrency;
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <BaseCard className="p-4">
-          <div className="text-sm text-gray-600">Total Value</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <BaseCard className="p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-gray-600">Total Value</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
             {formatCurrency(displayValue, displayCurrency)}
           </div>
         </BaseCard>
 
-        <BaseCard className="p-4">
-          <div className="text-sm text-gray-600">Total Cost</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">
+        <BaseCard className="p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-gray-600">Total Cost</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
             {formatCurrency(displayCost, displayCurrency)}
           </div>
         </BaseCard>
 
-        <BaseCard className="p-4">
-          <div className="text-sm text-gray-600">Total PNL</div>
+        <BaseCard className="p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-gray-600">Total PNL</div>
           <div
-            className={`text-2xl font-bold mt-1 ${
+            className={`text-lg sm:text-2xl font-bold mt-1 ${
               displayPnl >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
@@ -139,9 +139,9 @@ const PortfolioSummaryCards = memo(
           </div>
         </BaseCard>
 
-        <BaseCard className="p-4">
-          <div className="text-sm text-gray-600">Holdings</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">
+        <BaseCard className="p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-gray-600">Holdings</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
             {portfolioSummary.totalInvestments || 0}
           </div>
         </BaseCard>
@@ -867,16 +867,16 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <div className="flex justify-center py-4 px-6">
-        <div className="w-full space-y-4">
+      <div className="flex justify-center py-3 sm:py-4 px-3 sm:px-6">
+        <div className="w-full space-y-3 sm:space-y-4">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 className="text-xl font-bold">Investment Portfolio</h1>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
+            <h1 className="text-lg sm:text-xl font-bold">Investment Portfolio</h1>
 
             {/* Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               {/* Wallet Selector */}
-              <div className="w-full sm:w-fit">
+              <div className="w-full sm:w-56 md:w-fit">
                 <Select
                   options={walletOptions}
                   value={selectedWallet}
@@ -892,7 +892,7 @@ export default function PortfolioPage() {
               </div>
 
               {/* Type Filter */}
-              <div className="w-full sm:w-44">
+              <div className="w-full sm:w-full md:w-48">
                 <Select
                   options={TYPE_FILTER_OPTIONS}
                   value={typeFilter}

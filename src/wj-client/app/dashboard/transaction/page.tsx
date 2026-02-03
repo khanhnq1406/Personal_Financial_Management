@@ -10,7 +10,7 @@ import {
 } from "@/utils/generated/hooks";
 import { SortField } from "@/gen/protobuf/v1/transaction";
 import { BaseCard } from "@/components/BaseCard";
-import { SelectDropdown } from "@/components/select/SelectDropdown";
+import { Select } from "@/components/select/Select";
 import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
 import { TablePagination } from "@/components/table/TanStackTable";
 import { MobileTable } from "@/components/table/MobileTable";
@@ -36,7 +36,7 @@ export default function TransactionPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<string>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isHideBalance, setHideBalance] = useState(false);
@@ -49,10 +49,7 @@ export default function TransactionPage() {
     () => ({
       searchNote: debouncedSearchQuery || undefined,
       walletId: selectedWallet ? parseInt(selectedWallet) : undefined,
-      categoryId:
-        categoryFilter && categoryFilter !== "all"
-          ? parseInt(categoryFilter)
-          : undefined,
+      categoryId: categoryFilter ? parseInt(categoryFilter) : undefined,
     }),
     [debouncedSearchQuery, selectedWallet, categoryFilter],
   );
@@ -175,7 +172,11 @@ export default function TransactionPage() {
     sortOrder,
   ]);
 
-  const totalBalance = totalBalanceData?.displayNetWorth?.amount ?? totalBalanceData?.displayValue?.amount ?? totalBalanceData?.data?.amount ?? 0;
+  const totalBalance =
+    totalBalanceData?.displayNetWorth?.amount ??
+    totalBalanceData?.displayValue?.amount ??
+    totalBalanceData?.data?.amount ??
+    0;
   const formattedBalance = useMemo(() => {
     return formatCurrency(totalBalance, currency);
   }, [totalBalance, currency]);
@@ -194,24 +195,20 @@ export default function TransactionPage() {
 
   // Prepare filter options - memoized
   const walletOptions = useMemo(
-    () => [
-      { value: "", label: "All Wallets" },
-      ...(walletsData?.wallets?.map((w) => ({
+    () =>
+      walletsData?.wallets?.map((w) => ({
         value: w.id.toString(),
         label: w.walletName,
-      })) || []),
-    ],
+      })) || [],
     [walletsData?.wallets],
   );
 
   const categoryOptions = useMemo(
-    () => [
-      { value: "all", label: "All Categories" },
-      ...(categoriesData?.categories?.map((c) => ({
+    () =>
+      categoriesData?.categories?.map((c) => ({
         value: c.id.toString(),
         label: c.name,
-      })) || []),
-    ],
+      })) || [],
     [categoriesData?.categories],
   );
 
@@ -242,18 +239,23 @@ export default function TransactionPage() {
         id: "amount",
         header: "Amount",
         accessorFn: (row: (typeof transactions)[number]) => {
-          const amountValue = row.displayAmount?.amount ?? row.amount?.amount ?? 0;
-          const numericAmount = typeof amountValue === 'number' ? amountValue : Number(amountValue) || 0;
+          const amountValue =
+            row.displayAmount?.amount ?? row.amount?.amount ?? 0;
+          const numericAmount =
+            typeof amountValue === "number"
+              ? amountValue
+              : Number(amountValue) || 0;
           return formatCurrency(
             numericAmount,
-            row.displayAmount ? currency : row.currency
+            row.displayAmount ? currency : row.currency,
           );
         },
       },
       {
         id: "date",
         header: "Date & Time",
-        accessorFn: (row: (typeof transactions)[number]) => formatDate(row.date),
+        accessorFn: (row: (typeof transactions)[number]) =>
+          formatDate(row.date),
       },
       {
         id: "note",
@@ -266,86 +268,64 @@ export default function TransactionPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Mobile Header */}
-      <div className="sm:hidden bg-bg p-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-white text-3xl font-bold ">Transactions</h1>
-          <div className="flex items-center gap-4">
+      {/* Unified Responsive Header */}
+      <div className="flex-shrink-0 bg-bg sm:bg-white border-b sm:border-b-gray-300">
+        <div className="p-3 sm:p-4 md:px-6">
+          {/* Title and Balance Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-0">
+            <h1 className="text-white sm:text-gray-900 text-2xl sm:text-xl font-bold">
+              Transactions
+            </h1>
+
+            {/* Balance and Controls */}
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+              {/* Balance Display */}
+              <div className="flex flex-col items-start sm:items-center">
+                <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-bold">
+                  {totalBalanceData ? "Total balance" : "Balance"}
+                </p>
+                <p className="text-white sm:text-gray-900 text-xl sm:text-lg font-bold">
+                  {isHideBalance ? "*****" : formattedBalance}
+                </p>
+              </div>
+
+              {/* Hide Balance Button */}
+              <button
+                className="w-10 h-10 sm:w-8 sm:h-8 flex-shrink-0"
+                aria-label="Toggle balance visibility"
+                onClick={handleHideBalance}
+              >
+                <Image
+                  src={displayImg}
+                  width={40}
+                  height={40}
+                  alt="Toggle balance"
+                  className="w-full h-full object-contain"
+                />
+              </button>
+            </div>
+
             {/* Wallet Selector */}
             {walletsData &&
               walletsData.wallets &&
               walletsData.wallets.length > 0 && (
-                <SelectDropdown
-                  value={selectedWallet || ""}
-                  onChange={(val) => setSelectedWallet(val || null)}
-                  options={walletOptions}
-                  aria-label="Select wallet"
-                />
+                <div className="w-40 sm:w-48">
+                  <Select
+                    value={selectedWallet || ""}
+                    onChange={(val) => setSelectedWallet(val || null)}
+                    options={walletOptions}
+                    placeholder="All Wallets"
+                    clearable={true}
+                  />
+                </div>
               )}
           </div>
-        </div>
-
-        {/* Balance Card */}
-        <BaseCard>
-          <div className="flex justify-between items-center p-4">
-            <div>
-              <p className="text-gray-400 text-sm font-bold mb-1">
-                Total balance
-              </p>
-              <p className="text-gray-900 text-3xl font-bold ">
-                {isHideBalance ? "*****" : formattedBalance}
-              </p>
-            </div>
-            <button
-              className="w-12 h-12"
-              aria-label="Show balance"
-              onClick={handleHideBalance}
-            >
-              <Image
-                src={displayImg}
-                width={48}
-                height={48}
-                alt="Show balance"
-                className="w-full h-full object-contain"
-              />
-            </button>
-          </div>
-        </BaseCard>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="hidden sm:flex items-center justify-between py-4 px-6 flex-shrink-0 border-b border-b-gray-300">
-        <div>
-          <h1 className="text-gray-900 text-xl font-bold ">Transactions</h1>
-        </div>
-
-        <div className="flex gap-2 items-center">
-          <div className="mt-2 flex flex-col justify-center items-center">
-            <p className="text-gray-400 text-sm font-bold">Balance</p>
-            <p className="text-gray-900 text-xl font-bold ">
-              {isHideBalance ? "*****" : formattedBalance}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Wallet Selector */}
-          {walletsData &&
-            walletsData.wallets &&
-            walletsData.wallets.length > 0 && (
-              <SelectDropdown
-                value={selectedWallet || ""}
-                onChange={(val) => setSelectedWallet(val || null)}
-                options={walletOptions}
-                aria-label="Select wallet"
-              />
-            )}
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="px-4 sm:px-6 py-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row gap-3">
+      <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
           {/* Search Bar */}
           <div className="relative flex-1">
             <input
@@ -391,15 +371,16 @@ export default function TransactionPage() {
 
           {/* Filter Dropdowns */}
           <div className="flex gap-3 justify-between">
-            <SelectDropdown
+            <Select
               value={categoryFilter}
               onChange={setCategoryFilter}
               options={categoryOptions}
-              aria-label="Filter by category"
+              placeholder="All Categories"
+              clearable={true}
             />
 
             <div className="relative sm:block">
-              <SelectDropdown
+              <Select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(val) => {
                   const [field, order] = val.split("-");
@@ -407,7 +388,10 @@ export default function TransactionPage() {
                   setSortOrder(order as "asc" | "desc");
                 }}
                 options={sortOptions}
-                aria-label="Sort transactions"
+                placeholder="Sort transactions"
+                clearable={false}
+                disableInput
+                disableFilter
               />
             </div>
           </div>

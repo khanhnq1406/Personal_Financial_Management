@@ -94,14 +94,15 @@ export default function WalletsPage() {
   const wallets = getListWallets.data?.wallets ?? [];
 
   return (
-    <div className="flex flex-col gap-4 px-6 py-4">
+    <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">My Wallets</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h1 className="text-lg sm:text-xl font-bold">My Wallets</h1>
         <Button
           type={ButtonType.PRIMARY}
           onClick={handleCreateWallet}
-          className="px-4 py-2 rounded-md drop-shadow-round w-fit"
+          fullWidth={false}
+          className="px-4 py-2 rounded-md drop-shadow-round"
         >
           <div className="flex items-center gap-2">
             <Image
@@ -110,7 +111,8 @@ export default function WalletsPage() {
               width={20}
               height={20}
             />
-            <span>Create new wallet</span>
+            <span className="hidden sm:inline">Create new wallet</span>
+            <span className="sm:hidden">New wallet</span>
           </div>
         </Button>
       </div>

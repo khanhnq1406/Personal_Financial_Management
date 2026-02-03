@@ -70,7 +70,7 @@ export const FormSelect = memo(function FormSelect({
   };
 
   return (
-    <div className={cn("mb-2", className)}>
+    <div className={cn("mb-2 sm:mb-3", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
@@ -82,7 +82,7 @@ export const FormSelect = memo(function FormSelect({
         disabled={disabled || loading}
         isLoading={loading}
         className={cn(
-          "mt-1",
+          "mt-1 [&_button]:min-h-[44px] [&_button]:p-2.5 [&_button]:sm:p-3 [&_input]:min-h-[44px] [&_input]:p-2.5 [&_input]:sm:p-3 [&_input]:text-base",
           error && "[&_input]:border-2 [&_input]:border-lred",
         )}
         disableFilter={disableFilter}

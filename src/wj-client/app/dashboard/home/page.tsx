@@ -83,45 +83,58 @@ export default function Home() {
   };
 
   return (
-    <div className="sm:grid grid-cols-[75%_25%] divide-x-2">
-      <div className="sm:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center">
-        <div className="w-4/5">
+    <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2">
+      <div className="lg:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center px-4">
+        <div className="w-full max-w-md">
           <TotalBalance />
         </div>
       </div>
-      <div className="flex justify-center py-2 border-none">
-        <div className="w-[80%] mb-3">
-          <div className="font-semibold my-2">My Wallets</div>
+      <div className="flex justify-center py-2 sm:py-4 border-none px-3 sm:px-4">
+        <div className="w-full max-w-4xl mb-3">
+          <div className="font-semibold my-2 text-sm sm:text-base">
+            My Wallets
+          </div>
           <BaseCard>
             <Wallets getListWallets={getListWallets} />
           </BaseCard>
-          <div className="font-semibold mt-4 mb-2">
+          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
             Total balance fluctuation
           </div>
           <BaseCard>
             <Balance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-4 mb-2">Dominance</div>
+          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+            Dominance
+          </div>
           <BaseCard>
             <Dominance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-4 mb-2">Monthly Dominance</div>
+          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+            Monthly Dominance
+          </div>
           <BaseCard>
             <MonthlyDominance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-4 mb-2">Account Balance</div>
+          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+            Account Balance
+          </div>
           <BaseCard>
             <AccountBalance availableYears={availableYears} />
           </BaseCard>
         </div>
       </div>
-      <div className="px-3">
+      <div className="px-3 sm:px-4 ">
         <div className="grid divide-y-2">
           <User />
           <TotalBalance />
           <FunctionalButton onOpenModal={(type) => setModalType(type)} />
         </div>
       </div>
+
+      {/* Mobile Functional Buttons */}
+      {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-3 z-40">
+        <FunctionalButton onOpenModal={(type) => setModalType(type)} />
+      </div> */}
 
       {/* Modals */}
       <BaseModal

@@ -112,14 +112,15 @@ export default function BudgetPage() {
   const budgets = getListBudgets.data?.budgets ?? [];
 
   return (
-    <div className="flex flex-col gap-4 px-6 py-4">
+    <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">Budget</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h1 className="text-lg sm:text-xl font-bold">Budget</h1>
         <Button
           type={ButtonType.PRIMARY}
           onClick={handleCreateBudget}
-          className="px-4 py-2 rounded-md drop-shadow-round w-fit"
+          fullWidth={false}
+          className="px-4 py-2 rounded-md drop-shadow-round"
         >
           <div className="flex items-center gap-2">
             <Image
@@ -128,23 +129,24 @@ export default function BudgetPage() {
               width={20}
               height={20}
             />
-            <span>Create budget</span>
+            <span className="hidden sm:inline">Create budget</span>
+            <span className="sm:hidden">New budget</span>
           </div>
         </Button>
       </div>
 
       {/* Budget Cards Grid */}
       {budgets.length === 0 ? (
-        <BaseCard className="p-8">
-          <div className="flex flex-col items-center justify-center gap-4 py-12">
-            <div className="text-gray-500 text-lg">No budgets yet</div>
-            <div className="text-gray-400">
+        <BaseCard className="p-6 sm:p-8">
+          <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
+            <div className="text-gray-500 text-base sm:text-lg">No budgets yet</div>
+            <div className="text-gray-400 text-sm sm:text-base text-center">
               Create your first budget to start tracking
             </div>
           </div>
         </BaseCard>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {budgets.map((budget) => (
             <BudgetCard
               key={budget.id}

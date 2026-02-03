@@ -68,11 +68,11 @@ export default function Register() {
     console.log("Register Failed");
   };
   return (
-    <div className="flex items-center h-screen relative justify-center">
+    <div className="flex items-center justify-center min-h-screen relative px-4 sm:px-6">
       {state === RegisterState.Start ? (
         <div className="flex justify-center items-center flex-col w-full">
-          <div className="w-2/3 max-w-lg">
-            <p className="text-[30px] font-extrabold my-1">
+          <div className="w-full max-w-md sm:max-w-lg px-4 sm:px-0">
+            <p className="text-2xl sm:text-3xl font-extrabold my-1 mb-3">
               Get Started for Free
             </p>
             <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
@@ -95,7 +95,7 @@ export default function Register() {
                 <LoadingSpinner text="Creating account..." />
               </div>
             )}
-            <p className="my-2">
+            <p className="my-2 text-sm sm:text-base">
               Already a member?{" "}
               <Link className="underline font-bold" href={routes.login}>
                 Login

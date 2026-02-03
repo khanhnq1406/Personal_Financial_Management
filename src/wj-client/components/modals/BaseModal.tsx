@@ -128,14 +128,14 @@ export function BaseModal({
         ref={modalRef}
         tabIndex={-1}
         className={cn(
-          `bg-fg p-5 rounded-lg drop-shadow-round w-full overscroll-contain outline-none`,
-          maxWidth || "max-w-md",
-          maxHeight || "max-h-md",
+          `bg-fg p-3 sm:p-5 rounded-lg drop-shadow-round w-full overscroll-contain outline-none mx-2 sm:mx-4`,
+          maxWidth || "max-w-sm sm:max-w-md lg:max-w-lg",
+          maxHeight || "max-h-[85vh] sm:max-h-[90vh]",
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 id={modalTitleId} className="font-bold text-lg">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <h2 id={modalTitleId} className="font-bold text-base sm:text-lg">
             {title}
           </h2>
           <Button
@@ -148,7 +148,7 @@ export function BaseModal({
 
         {children}
 
-        {footer ? <div className="mt-4">{footer}</div> : null}
+        {footer ? <div className="mt-3 sm:mt-4">{footer}</div> : null}
       </div>
     </div>
   );

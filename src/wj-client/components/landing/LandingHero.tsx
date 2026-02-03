@@ -64,7 +64,7 @@ function DashboardPreview() {
 
 export default function LandingHero() {
   return (
-    <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
+    <section className="relative pt-20 pb-12 sm:pt-32 sm:pb-20 md:pt-40 md:pb-32 overflow-hidden">
       {/* Background Pattern */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-bg/5 via-transparent to-bg/10"
@@ -72,14 +72,14 @@ export default function LandingHero() {
       />
 
       <motion.div
-        className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        className="relative max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         <div className="text-center">
           <motion.div variants={itemVariants}>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
               Your Trusted Guide to{" "}
               <span className="text-bg">Financial Freedom</span>
             </h1>
@@ -87,7 +87,7 @@ export default function LandingHero() {
 
           <motion.p
             variants={itemVariants}
-            className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto"
+            className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4"
           >
             Track expenses, manage multiple wallets, set budgets, and visualize
             your complete financial journey in one powerful platform.
@@ -95,17 +95,17 @@ export default function LandingHero() {
 
           <motion.div
             variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0"
           >
             <Link
               href="/auth/register"
-              className="w-full sm:w-auto px-8 py-3 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
             >
               Get Started for Free
             </Link>
             <a
               href="#features"
-              className="w-full sm:w-auto px-8 py-3 border-2 border-bg text-bg rounded-md hover:bg-bg hover:text-white transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 border-2 border-bg text-bg rounded-md hover:bg-bg hover:text-white transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
             >
               Explore Features
             </a>
@@ -113,7 +113,7 @@ export default function LandingHero() {
 
           <motion.div
             variants={itemVariants}
-            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500"
+            className="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-gray-500 px-4"
           >
             <div className="flex items-center gap-2">
               <svg
@@ -161,7 +161,7 @@ export default function LandingHero() {
         </div>
 
         {/* Dashboard Preview */}
-        <motion.div variants={itemVariants} className="mt-16">
+        <motion.div variants={itemVariants} className="mt-10 sm:mt-12 md:mt-16 px-2 sm:px-4">
           <DashboardPreview />
         </motion.div>
       </motion.div>

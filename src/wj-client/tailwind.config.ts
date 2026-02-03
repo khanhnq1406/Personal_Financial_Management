@@ -22,7 +22,11 @@ export default {
         round: "0px 0px 3px rgb(0 0 0 / 0.4)",
       },
       screens: {
-        sm: '800px',
+        sm: '640px',   // Tablet small (landscape phones)
+        md: '768px',   // Tablet
+        lg: '1024px',  // Desktop
+        xl: '1280px',  // Large desktop
+        '2xl': '1536px', // Extra large desktop
       },
     },
   },

@@ -42,16 +42,16 @@ export default function LandingNavbar() {
       >
         Skip to main content
       </a>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="WealthJourney" width={32} height={32} />
-            <span className="text-xl font-semibold text-bg">WealthJourney</span>
+            <Image src="/logo.png" alt="WealthJourney" width={28} height={28} className="sm:w-8 sm:h-8" />
+            <span className="text-base sm:text-lg md:text-xl font-semibold text-bg">WealthJourney</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden sm:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
@@ -89,7 +89,7 @@ export default function LandingNavbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="sm:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px]"
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
           >
@@ -120,8 +120,8 @@ export default function LandingNavbar() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="sm:hidden py-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-3">
+          <div className="md:hidden py-3 sm:py-4 border-t border-gray-200">
+            <div className="flex flex-col space-y-2 sm:space-y-3">
               {navLinks.map((link) => (
                 <a
                   key={link.name}

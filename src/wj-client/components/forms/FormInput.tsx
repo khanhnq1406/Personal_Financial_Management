@@ -31,7 +31,7 @@ export const FormInput = memo(function FormInput({
   } = useController(props);
 
   return (
-    <div className={cn("mb-2", className)}>
+    <div className={cn("mb-2 sm:mb-3", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
@@ -49,7 +49,7 @@ export const FormInput = memo(function FormInput({
         spellCheck={false}
         {...field}
         className={cn(
-          "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+          "p-2.5 sm:p-3 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px] text-base",
           error && "border-2 border-lred",
         )}
         aria-invalid={error ? "true" : "false"}

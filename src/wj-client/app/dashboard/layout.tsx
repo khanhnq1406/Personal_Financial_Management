@@ -93,10 +93,10 @@ export default function DashboardLayout({
         {/* Currency conversion progress banner */}
         <CurrencyConversionProgress />
 
-        <div className="bg-bg h-full sm:p-3 flex flex-col">
-          <div className="block sm:grid grid-cols-[250px_auto] flex-1 min-h-0">
+        <div className="bg-bg h-screen sm:h-full sm:p-3 flex flex-col overflow-hidden">
+          <div className="flex flex-col sm:grid sm:grid-cols-[250px_auto] flex-1 min-h-0">
             {/* Mobile header */}
-            <div className="sm:hidden bg-bg flex justify-between items-center p-3 gap-3">
+            <div className="sm:hidden bg-bg flex justify-between items-center p-3 gap-3 flex-shrink-0">
               <div className="flex items-center">
                 <Button
                   type={ButtonType.IMG}
@@ -104,7 +104,7 @@ export default function DashboardLayout({
                   onClick={handleExtend}
                 />
               </div>
-              <div className="text-fg font-semibold text-lg flex items-center">
+              <div className="text-fg font-semibold text-base sm:text-lg flex items-center">
                 {pathname}
               </div>
               <div className="flex items-center gap-2">
@@ -120,35 +120,37 @@ export default function DashboardLayout({
                 />
               </div>
             </div>
-          <div
-            className="sm:hidden overflow-hidden opacity-0 scale-95 pointer-events-none h-0 transition-opacity transition-transform duration-300 ease-out"
-            ref={menuRef}
-          >
-            <div className="pb-3">{navigationItems}</div>
-          </div>
-          {/* Desktop sidebar */}
-          <div className="hidden sm:flex flex-col justify-between h-full">
-            <div>
-              <div className="flex h-fit items-center gap-2 my-8 justify-center">
-                <NextImage
-                  alt="Wealth Journey logo"
-                  src="/logo.png"
-                  width={50}
-                  height={50}
-                />
-                <div className="text-fg font-bold h-fit text-lg">
-                  Wealth Journey
+            {/* Mobile menu */}
+            <div
+              className="sm:hidden overflow-hidden opacity-0 scale-95 pointer-events-none h-0 transition-all duration-300 ease-out flex-shrink-0"
+              ref={menuRef}
+            >
+              <div className="pb-3">{navigationItems}</div>
+            </div>
+            {/* Desktop sidebar */}
+            <div className="hidden sm:flex flex-col justify-between h-full">
+              <div>
+                <div className="flex h-fit items-center gap-2 my-8 justify-center">
+                  <NextImage
+                    alt="Wealth Journey logo"
+                    src="/logo.png"
+                    width={50}
+                    height={50}
+                  />
+                  <div className="text-fg font-bold h-fit text-lg">
+                    Wealth Journey
+                  </div>
                 </div>
+                {navigationItems}
               </div>
-              {navigationItems}
+              <div className="px-4 pb-4">
+                <CurrencySelector />
+              </div>
             </div>
-            <div className="px-4 pb-4">
-              <CurrencySelector />
+            {/* Main content area */}
+            <div className="bg-fg sm:rounded-md flex-1 min-h-0 overflow-auto">
+              {children}
             </div>
-          </div>
-          <div className="bg-fg sm:rounded-md h-full overflow-auto">
-            {children}
-          </div>
           </div>
         </div>
         <FloatingActionButton />

@@ -61,11 +61,11 @@ export default function Login() {
     );
   };
   return (
-    <div className="flex items-center h-screen">
+    <div className="flex items-center justify-center min-h-screen px-4 sm:px-6">
       <div className="flex justify-center items-center flex-col w-full">
-        <div className="w-2/3 max-w-lg">
-          <p className="text-[30px] font-extrabold">Login to continue</p>
-          <p className="my-3">
+        <div className="w-full max-w-md sm:max-w-lg px-4 sm:px-0">
+          <p className="text-2xl sm:text-3xl font-extrabold mb-3">Login to continue</p>
+          <p className="my-3 text-sm sm:text-base">
             New here?{" "}
             <Link className="underline font-bold" href={routes.register}>
               Sign up now
