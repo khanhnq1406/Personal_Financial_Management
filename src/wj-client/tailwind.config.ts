@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  darkMode: 'class',
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -31,6 +32,8 @@ export default {
           700: '#1D4ED8',
           800: '#1E40AF',
           900: '#1E3A8A',
+          // Dark mode variants
+          950: '#172554',
         },
 
         // SECONDARY - Warm Trust Gold (success, value, premium features)
@@ -87,9 +90,33 @@ export default {
           700: '#334155',
           800: '#1E293B',
           900: '#0F172A',
+          // Dark mode specific
+          950: '#020617',
         },
 
-        // CHART COLORS - Data Visualization Palette
+        // DARK MODE - Specific dark theme colors
+        dark: {
+          // Background layers (darkest to lightest)
+          background: '#0F172A',      // Main background (neutral-900)
+          surface: '#1E293B',         // Card/surface background (neutral-800)
+          'surface-hover': '#334155', // Hover state (neutral-700)
+          'surface-active': '#475569', // Active state (neutral-600)
+
+          // Text colors (lightest to darkest)
+          text: '#F8FAFC',            // Primary text (neutral-50)
+          'text-secondary': '#94A3B8', // Secondary text (neutral-400)
+          'text-tertiary': '#64748B',  // Tertiary text (neutral-500)
+
+          // Borders and dividers
+          border: '#334155',          // Border color (neutral-700)
+          'border-light': '#475569',  // Light border (neutral-600)
+
+          // Overlay colors
+          overlay: 'rgba(0, 0, 0, 0.7)', // Modal/overlay backdrop
+          'overlay-light': 'rgba(0, 0, 0, 0.5)',
+        },
+
+        // CHART COLORS - Data Visualization Palette (work in both modes)
         chart: {
           blue: '#3B82F6',
           indigo: '#6366F1',
@@ -146,8 +173,9 @@ export default {
         'desktop-xl': '3rem',
       },
 
-      // Box Shadow System
+      // Box Shadow System - Light and Dark mode
       boxShadow: {
+        // Light mode shadows
         'card': '0 2px 8px rgba(15, 23, 42, 0.08)',
         'card-hover': '0 4px 12px rgba(15, 23, 42, 0.12)',
         'card-active': '0 1px 4px rgba(15, 23, 42, 0.06)',
@@ -155,6 +183,14 @@ export default {
         'dropdown': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         'floating': '0 8px 16px rgba(0, 0, 0, 0.12)',
         'focus': '0 0 0 3px rgba(59, 130, 246, 0.5)',
+
+        // Dark mode shadows (subtle, use darker colors)
+        'dark-card': '0 2px 8px rgba(0, 0, 0, 0.3)',
+        'dark-card-hover': '0 4px 12px rgba(0, 0, 0, 0.4)',
+        'dark-card-active': '0 1px 4px rgba(0, 0, 0, 0.2)',
+        'dark-modal': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        'dark-dropdown': '0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
+        'dark-floating': '0 8px 16px rgba(0, 0, 0, 0.4)',
       },
 
       // Keep legacy dropShadow for backward compatibility
@@ -192,6 +228,27 @@ export default {
         'lg': '1024px',  // Laptops
         'xl': '1280px',  // Desktops
         '2xl': '1536px', // Large desktops
+      },
+
+      // Custom animations
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-in': {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'scale-in': {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.3s ease-out',
+        'slide-in': 'slide-in 0.3s ease-out',
+        'scale-in': 'scale-in 0.2s ease-out',
       },
     },
   },

@@ -34,6 +34,62 @@ body {
   touch-action: manipulation;
 }
 
+/* Dark mode styles */
+.dark {
+  color-scheme: dark;
+}
+
+/* Smooth color transitions for theme switching */
+* {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Disable transitions for theme toggle button to avoid jarring animations */
+.theme-toggle,
+.theme-toggle * {
+  transition: none !important;
+}
+
+/* Custom scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1E293B;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Light mode scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
 .custom-input {
   padding: 10px;
   border-radius: 10px;
@@ -41,6 +97,12 @@ body {
   border: none;
   margin-top: 5px;
   margin-bottom: 10px;
+}
+
+.dark .custom-input {
+  background-color: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #334155;
 }
 
 .custom-btn {
@@ -74,6 +136,10 @@ body {
 .required {
   color: #c3151c;
   font-size: 0.9em;
+}
+
+.dark .required {
+  color: #F87171;
 }
 
 /* Screen reader only utility */
@@ -110,6 +176,25 @@ body {
   display: none;  /* Chrome, Safari and Opera */
 }
 
+/* Safe area insets for devices with home indicators/notches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.px-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.py-safe {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Fade in animation for notification banners */
 @keyframes fade-in {
   from {
@@ -124,4 +209,29 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* Shimmer animation for skeleton loading states */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Honor reduced motion preferences for shimmer */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none;
+  }
+
+  .skeleton-shimmer {
+    opacity: 0.7;
+  }
 }

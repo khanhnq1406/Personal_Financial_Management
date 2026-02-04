@@ -8,11 +8,13 @@ import { useState, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+// import ThemeToggle from "@/components/ThemeToggle";
 import NextImage from "next/image";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { CurrencySelector } from "@/components/CurrencySelector";
 import { CurrencyConversionProgress } from "@/components/CurrencyConversionProgress";
 import { ConnectionStatus } from "@/components/trust/ConnectionStatus";
+import { BottomNav, createNavItems } from "@/components/navigation";
 
 export default function DashboardLayout({
   children,
@@ -113,6 +115,7 @@ export default function DashboardLayout({
               </div>
               <div className="flex items-center gap-2">
                 <CurrencySelector />
+                {/* <ThemeToggle size="sm" /> */}
                 <img
                   src={
                     user.picture !== null
@@ -149,16 +152,20 @@ export default function DashboardLayout({
                 {navigationItems}
               </div>
               <div className="px-4 pb-4 space-y-3">
+                {/* <ThemeToggle /> */}
                 <CurrencySelector />
                 <ConnectionStatus />
               </div>
             </div>
             {/* Main content area */}
-            <div className="bg-neutral-50 sm:rounded-md flex-1 min-h-0 overflow-auto">
+            <div className="bg-neutral-50 dark:bg-dark-background sm:rounded-md flex-1 min-h-0 overflow-auto transition-colors duration-200">
               {children}
             </div>
           </div>
         </div>
+        {/* Mobile Bottom Navigation */}
+        <BottomNav navItems={createNavItems(routes)} />
+
         <FloatingActionButton
           actions={[
             {

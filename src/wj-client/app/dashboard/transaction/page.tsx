@@ -22,6 +22,8 @@ import Image from "next/image";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { EditTransactionForm } from "@/components/lazy/OptimizedComponents";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
+import { TransactionFilterModal, TransactionFilters } from "@/app/dashboard/transaction/TransactionFilterModal";
+import { ActiveFilterChips } from "@/app/dashboard/transaction/ActiveFilterChips";
 
 const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
 
@@ -42,6 +44,7 @@ export default function TransactionPage() {
   const [isHideBalance, setHideBalance] = useState(false);
   const [displayImg, setDisplayImg] = useState(displayImgList[0]);
   const [modalState, setModalState] = useState<ModalState>(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Fetch data - use memoized filter to prevent re-renders on every keystroke
@@ -193,6 +196,62 @@ export default function TransactionPage() {
     [isHideBalance],
   );
 
+  // Filter modal handlers
+  const handleOpenFilterModal = useCallback(() => {
+    setIsFilterModalOpen(true);
+  }, []);
+
+  const handleCloseFilterModal = useCallback(() => {
+    setIsFilterModalOpen(false);
+  }, []);
+
+  const handleApplyFilters = useCallback((filters: TransactionFilters) => {
+    setSelectedWallet(filters.walletId);
+    setCategoryFilter(filters.categoryFilter);
+    setSortField(filters.sortField);
+    setSortOrder(filters.sortOrder);
+    setSearchQuery(filters.searchQuery);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedWallet(null);
+    setCategoryFilter("");
+    setSearchQuery("");
+    setSortField("date");
+    setSortOrder("desc");
+  }, []);
+
+  const handleRemoveSingleFilter = useCallback((filterType: keyof TransactionFilters) => {
+    switch (filterType) {
+      case "walletId":
+        setSelectedWallet(null);
+        break;
+      case "categoryFilter":
+        setCategoryFilter("");
+        break;
+      case "searchQuery":
+        setSearchQuery("");
+        break;
+      case "sortField":
+      case "sortOrder":
+        setSortField("date");
+        setSortOrder("desc");
+        break;
+    }
+  }, []);
+
+  // Prepare current filters for chips display
+  const currentFilters: TransactionFilters = useMemo(
+    () => ({
+      walletId: selectedWallet,
+      categoryFilter,
+      sortField,
+      sortOrder,
+      searchQuery,
+    }),
+    [selectedWallet, categoryFilter, sortField, sortOrder, searchQuery],
+  );
+
   // Prepare filter options - memoized
   const walletOptions = useMemo(
     () =>
@@ -325,13 +384,13 @@ export default function TransactionPage() {
 
       {/* Search and Filters */}
       <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-shrink-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
-          {/* Search Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3">
+          {/* Search Bar - Full width on mobile, part of grid on desktop */}
           <div className="relative flex-1">
             <input
               type="text"
               name="search"
-              placeholder="Search"
+              placeholder="Search transactions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-neutral-50 rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:border-primary-600 placeholder:text-gray-400"
@@ -369,8 +428,34 @@ export default function TransactionPage() {
             )}
           </div>
 
-          {/* Filter Dropdowns */}
-          <div className="flex gap-3 justify-between">
+          {/* Mobile Filter Button - Visible only on mobile */}
+          <button
+            onClick={handleOpenFilterModal}
+            className="sm:hidden min-h-[44px] px-4 py-2.5 bg-neutral-50 rounded-lg drop-shadow-round flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-neutral-100 active:bg-neutral-200 transition-colors"
+            aria-label="Open filters"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+              />
+            </svg>
+            Filters
+            {(selectedWallet || categoryFilter) && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
+            )}
+          </button>
+
+          {/* Desktop Filter Dropdowns - Hidden on mobile */}
+          <div className="hidden sm:flex gap-3">
             <Select
               value={categoryFilter}
               onChange={setCategoryFilter}
@@ -379,7 +464,7 @@ export default function TransactionPage() {
               clearable={true}
             />
 
-            <div className="relative sm:block">
+            <div className="relative">
               <Select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(val) => {
@@ -397,6 +482,15 @@ export default function TransactionPage() {
           </div>
         </div>
       </div>
+
+      {/* Active Filter Chips - Horizontal scrollable */}
+      <ActiveFilterChips
+        filters={currentFilters}
+        walletOptions={walletOptions}
+        categoryOptions={categoryOptions}
+        onRemoveFilter={handleRemoveSingleFilter}
+        onClearAll={handleClearFilters}
+      />
 
       {/* Table Section - Scrollable */}
       <div className="flex-1 min-h-0 px-3 sm:px-6 pb-6 ">
@@ -554,6 +648,18 @@ export default function TransactionPage() {
           variant="danger"
         />
       )}
+
+      {/* Mobile Filter Modal */}
+      <TransactionFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={handleCloseFilterModal}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={currentFilters}
+        walletOptions={walletOptions}
+        categoryOptions={categoryOptions}
+        sortOptions={sortOptions}
+        onClearFilters={handleClearFilters}
+      />
     </div>
   );
 }

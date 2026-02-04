@@ -178,3 +178,116 @@ Potential improvements for future versions:
 - [ ] Multiple currency support in single card
 - [ ] Export balance data to CSV/PDF
 - [ ] Custom gradient color schemes
+
+---
+
+## QuickActions
+
+A mobile-optimized horizontal scrolling action bar for quick access to common dashboard operations.
+
+### Features
+
+- **Mobile-Only Design**: Only visible on screens < 640px (`flex sm:hidden`)
+- **Touch-Friendly**: Minimum 44px touch targets for all buttons
+- **Horizontal Scrolling**: Smooth scroll with hidden scrollbar
+- **Icon + Label Layout**: Clear visual hierarchy
+- **Accessibility**: Full ARIA label support and keyboard navigation
+- **Active States**: Visual feedback on touch/press
+- **Predefined Action Sets**: Ready-to-use actions for common pages
+
+### Props
+
+```typescript
+interface ActionItem {
+  id: string;           // Unique identifier
+  label: string;        // Text label below icon
+  icon: ReactNode;      // Icon component
+  onClick: () => void;  // Click handler
+  ariaLabel: string;    // Accessibility label
+  disabled?: boolean;   // Optional: Disable button
+}
+
+interface QuickActionsProps {
+  actions: ActionItem[];    // Array of actions
+  className?: string;       // Optional: Additional CSS classes
+  iconOnly?: boolean;       // Optional: Show icons only (default: false)
+}
+```
+
+### Usage
+
+#### Basic Usage
+
+```tsx
+import { QuickActions, homeQuickActions } from "@/components/dashboard/QuickActions";
+
+const [modalType, setModalType] = useState<string | null>(null);
+
+<QuickActions actions={homeQuickActions(setModalType)} />
+```
+
+#### Custom Actions
+
+```tsx
+const customActions: ActionItem[] = [
+  {
+    id: "export",
+    label: "Export",
+    icon: <ExportIcon />,
+    onClick: handleExport,
+    ariaLabel: "Export data",
+  },
+];
+
+<QuickActions actions={customActions} />
+```
+
+### Predefined Action Sets
+
+- **`homeQuickActions(onOpenModal)`**: Add Transaction, Transfer, New Wallet
+- **`portfolioQuickActions(onOpenModal, onRefresh?)`**: Add Investment, Refresh (optional)
+- **`transactionQuickActions(onOpenModal)`**: Add Transaction, Transfer
+- **`walletsQuickActions(onOpenModal)`**: New Wallet, Transfer
+
+### Integration Example
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import { QuickActions, homeQuickActions } from "@/components/dashboard/QuickActions";
+import { BaseModal } from "@/components/modals/BaseModal";
+import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
+
+type ModalType = "add-transaction" | "transfer-money" | "create-wallet" | null;
+
+export default function HomePage() {
+  const [modalType, setModalType] = useState<ModalType>(null);
+
+  const handleOpenModal = (actionId: string) => {
+    const modalMapping: Record<string, ModalType> = {
+      "add-transaction": "add-transaction",
+      transfer: "transfer-money",
+      "new-wallet": "create-wallet",
+    };
+    setModalType(modalMapping[actionId] || null);
+  };
+
+  return (
+    <>
+      <QuickActions actions={homeQuickActions(handleOpenModal)} />
+      {/* Page content */}
+      <BaseModal isOpen={modalType !== null} onClose={() => setModalType(null)} title={getModalTitle(modalType)}>
+        {modalType === "add-transaction" && <AddTransactionForm onSuccess={handleSuccess} />}
+      </BaseModal>
+    </>
+  );
+}
+```
+
+### Documentation
+
+For complete documentation, see:
+- **[QUICKACTIONS_GUIDE.md](./QUICKACTIONS_GUIDE.md)** - Comprehensive documentation
+- **[QuickActions.usage.examples.tsx](./QuickActions.usage.examples.tsx)** - Usage examples
+- **[QuickActions.integration.example.tsx](./QuickActions.integration.example.tsx)** - Integration patterns

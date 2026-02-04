@@ -50,7 +50,14 @@ export const FormInput = memo(function FormInput({
         {...field}
         className={cn(
           "p-2.5 sm:p-3 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 min-h-[44px] sm:min-h-[48px] text-base",
-          error && "border-2 border-danger-600",
+          // Light mode
+          "bg-white text-neutral-900",
+          // Dark mode
+          "dark:bg-dark-surface dark:text-dark-text dark:focus-visible:ring-offset-dark-background",
+          // Error state
+          error && "border-2 border-danger-600 dark:border-danger-500",
+          // Transitions
+          "transition-colors duration-200",
         )}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={error ? `${props.name}-error` : undefined}

@@ -6,3 +6,12 @@
  */
 
 export { BalanceCard } from "./BalanceCard";
+export {
+  QuickActions,
+  homeQuickActions,
+  portfolioQuickActions,
+  transactionQuickActions,
+  walletsQuickActions,
+  type ActionItem,
+  type QuickActionsProps,
+} from "./QuickActions";

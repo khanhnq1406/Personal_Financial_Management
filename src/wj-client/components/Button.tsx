@@ -77,9 +77,14 @@ export const Button = React.memo(function Button({
         <button
           className={cn(
             "!p-2.5 sm:!p-2 !min-h-[44px] sm:!min-h-[48px] !min-w-[44px] sm:!min-w-[48px] !w-auto",
-            "bg-transparent hover:bg-neutral-100",
+            "bg-transparent",
+            // Light mode hover
+            "hover:bg-neutral-100",
+            // Dark mode hover
+            "dark:hover:bg-dark-surface-hover",
             "rounded-full cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            "dark:focus-visible:ring-offset-dark-background",
             "transition-all duration-200",
             className
           )}
@@ -121,9 +126,15 @@ export const Button = React.memo(function Button({
         <button
           className={cn(
             baseClasses,
+            // Light mode
             "bg-white text-primary-600 border-2 border-primary-600",
             "hover:bg-neutral-50 hover:shadow-card",
-            "active:bg-neutral-100 active:scale-[0.98]",
+            "active:bg-neutral-100",
+            // Dark mode
+            "dark:bg-dark-surface dark:text-primary-500 dark:border-primary-500",
+            "dark:hover:bg-dark-surface-hover dark:hover:shadow-dark-card",
+            "dark:active:bg-dark-surface-active",
+            "active:scale-[0.98]",
             fullWidth ? "w-full" : "w-auto",
             className
           )}
@@ -131,7 +142,7 @@ export const Button = React.memo(function Button({
           disabled={loading || disabled}
           aria-label={ariaLabel}
         >
-          {loading && <LoadingSpinner className="text-primary-600" />}
+          {loading && <LoadingSpinner className="text-primary-600 dark:text-primary-500" />}
           {children}
         </button>
       );
