@@ -49,8 +49,8 @@ export const FormInput = memo(function FormInput({
         spellCheck={false}
         {...field}
         className={cn(
-          "p-2.5 sm:p-3 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px] text-base",
-          error && "border-2 border-lred",
+          "p-2.5 sm:p-3 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 min-h-[44px] sm:min-h-[48px] text-base",
+          error && "border-2 border-danger-600",
         )}
         aria-invalid={error ? "true" : "false"}
         aria-describedby={error ? `${props.name}-error` : undefined}

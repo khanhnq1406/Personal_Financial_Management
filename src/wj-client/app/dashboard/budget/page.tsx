@@ -6,16 +6,18 @@ import {
   useQueryListBudgets,
 } from "@/utils/generated/hooks";
 import { BaseCard } from "@/components/BaseCard";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { CardSkeleton } from "@/components/loading/Skeleton";
 import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 import Image from "next/image";
 import { BudgetCard } from "@/app/dashboard/budget/BudgetCard";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { CreateBudgetForm } from "@/components/modals/forms/CreateBudgetForm";
-import { EditBudgetForm } from "@/components/modals/forms/EditBudgetForm";
-import { CreateBudgetItemForm } from "@/components/modals/forms/CreateBudgetItemForm";
-import { EditBudgetItemForm } from "@/components/modals/forms/EditBudgetItemForm";
+import {
+  CreateBudgetForm,
+  EditBudgetForm,
+  CreateBudgetItemForm,
+  EditBudgetItemForm,
+} from "@/components/lazy/OptimizedComponents";
 import { useQueryClient } from "@tanstack/react-query";
 import { EVENT_BudgetListBudgets } from "@/utils/generated/hooks";
 import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
@@ -88,8 +90,15 @@ export default function BudgetPage() {
 
   if (getListBudgets.isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <LoadingSpinner text="Loading budgets..." />
+      <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="h-8 w-32 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-10 w-40 bg-neutral-200 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardSkeleton lines={5} showAction={true} />
+          <CardSkeleton lines={5} showAction={true} />
+        </div>
       </div>
     );
   }
@@ -97,7 +106,7 @@ export default function BudgetPage() {
   if (getListBudgets.error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <div className="text-lred">Error loading budgets</div>
+        <div className="text-danger-600">Error loading budgets</div>
         <Button
           type={ButtonType.PRIMARY}
           onClick={() => getListBudgets.refetch()}
@@ -115,7 +124,7 @@ export default function BudgetPage() {
     <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <h1 className="text-lg sm:text-xl font-bold">Budget</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">Budget</h1>
         <Button
           type={ButtonType.PRIMARY}
           onClick={handleCreateBudget}
@@ -139,8 +148,8 @@ export default function BudgetPage() {
       {budgets.length === 0 ? (
         <BaseCard className="p-6 sm:p-8">
           <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
-            <div className="text-gray-500 text-base sm:text-lg">No budgets yet</div>
-            <div className="text-gray-400 text-sm sm:text-base text-center">
+            <div className="text-neutral-700 text-lg sm:text-xl font-semibold">No budgets yet</div>
+            <div className="text-neutral-600 text-base text-center">
               Create your first budget to start tracking
             </div>
           </div>

@@ -12,13 +12,14 @@ type PropType = {
   className?: string;
   "aria-label"?: string;
   "aria-pressed"?: boolean;
-  fullWidth?: boolean; // Optional full-width (default: true for PRIMARY/SECONDARY)
+  fullWidth?: boolean;
+  size?: "sm" | "md" | "lg";
 };
 
 // Hoist SVG content outside component to avoid recreating on each render
-const LOADING_SPINNER_WHITE = (
+const LoadingSpinner = ({ className }: { className?: string }) => (
   <svg
-    className="animate-spin h-5 w-5 text-white"
+    className={cn("animate-spin h-5 w-5", className)}
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
@@ -31,36 +32,12 @@ const LOADING_SPINNER_WHITE = (
       r="10"
       stroke="currentColor"
       strokeWidth="4"
-    ></circle>
+    />
     <path
       className="opacity-75"
       fill="currentColor"
       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
-  </svg>
-);
-
-const LOADING_SPINNER_GREEN = (
-  <svg
-    className="animate-spin h-5 w-5 text-hgreen"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    ></circle>
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
+    />
   </svg>
 );
 
@@ -75,20 +52,47 @@ export const Button = React.memo(function Button({
   "aria-label": ariaLabel,
   "aria-pressed": ariaPressed,
   fullWidth = true,
+  size = "md",
 }: PropType) {
+  // Size variants
+  const sizeClasses = {
+    sm: "py-2 px-4 text-sm min-h-[44px] sm:min-h-[40px]",
+    md: "py-2.5 sm:py-3 px-6 text-base min-h-[44px] sm:min-h-[48px]",
+    lg: "py-3 sm:py-4 px-8 text-lg min-h-[48px] sm:min-h-[56px]",
+  };
+
+  // Base classes for all buttons
+  const baseClasses = cn(
+    "font-semibold rounded-lg cursor-pointer",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
+    "flex items-center justify-center gap-2 sm:gap-3",
+    "transition-all duration-200",
+    sizeClasses[size]
+  );
+
   switch (type) {
     case ButtonType.IMG:
       return (
         <button
           className={cn(
-            "hover:bg-hover rounded-md p-1 hover:drop-shadow-sm focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            "!p-2.5 sm:!p-2 !min-h-[44px] sm:!min-h-[48px] !min-w-[44px] sm:!min-w-[48px] !w-auto",
+            "bg-transparent hover:bg-neutral-100",
+            "rounded-full cursor-pointer",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            "transition-all duration-200",
             className
           )}
           onClick={onClick}
           aria-label={ariaLabel}
           aria-pressed={ariaPressed}
+          disabled={loading || disabled}
         >
-          <img src={src} alt="" className="w-5" />
+          {loading ? (
+            <LoadingSpinner className="text-primary-600" />
+          ) : (
+            <img src={src} alt="" className="w-5" />
+          )}
         </button>
       );
 
@@ -96,14 +100,18 @@ export const Button = React.memo(function Button({
       return (
         <button
           className={cn(
-            "bg-hgreen hover:bg-bg text-white py-2 sm:py-2.5 font-semibold rounded drop-shadow-round disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px]",
-            fullWidth ? "w-full" : "w-auto px-6",
+            baseClasses,
+            "bg-primary-600 text-white",
+            "hover:bg-primary-700 hover:shadow-md",
+            "active:bg-primary-800 active:scale-[0.98]",
+            fullWidth ? "w-full" : "w-auto",
             className
           )}
           onClick={onClick}
           disabled={loading || disabled}
+          aria-label={ariaLabel}
         >
-          {loading && LOADING_SPINNER_WHITE}
+          {loading && <LoadingSpinner className="text-white" />}
           {children}
         </button>
       );
@@ -112,14 +120,18 @@ export const Button = React.memo(function Button({
       return (
         <button
           className={cn(
-            "bg-fg hover:bg-white text-hgreen py-2 sm:py-2.5 font-semibold rounded drop-shadow-round border-2 border-hgreen disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 min-h-[44px]",
-            fullWidth ? "w-full" : "w-auto px-6",
+            baseClasses,
+            "bg-white text-primary-600 border-2 border-primary-600",
+            "hover:bg-neutral-50 hover:shadow-card",
+            "active:bg-neutral-100 active:scale-[0.98]",
+            fullWidth ? "w-full" : "w-auto",
             className
           )}
           onClick={onClick}
           disabled={loading || disabled}
+          aria-label={ariaLabel}
         >
-          {loading && LOADING_SPINNER_GREEN}
+          {loading && <LoadingSpinner className="text-primary-600" />}
           {children}
         </button>
       );

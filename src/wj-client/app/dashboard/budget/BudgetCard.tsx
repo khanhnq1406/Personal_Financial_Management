@@ -96,7 +96,7 @@ export function BudgetCard({
         {/* Budget Summary */}
         <div className="text-center space-y-1">
           <div className="text-sm text-gray-500">Total Budget</div>
-          <div className="text-xl font-bold text-bg">
+          <div className="text-xl font-bold text-primary-600">
             {formatCurrency(totalBudget, currency)}
           </div>
           <div className="text-sm text-gray-500">Amount you can spend</div>

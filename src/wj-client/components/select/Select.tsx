@@ -309,7 +309,7 @@ export function Select<T extends string = string>({
         className={cn(
           "px-3 py-2 cursor-pointer text-sm",
           isHighlighted
-            ? "bg-hgreen text-white"
+            ? "bg-primary-500 text-white"
             : isSelected
               ? "bg-green-50 font-semibold"
               : "hover:bg-gray-100",
@@ -368,7 +368,7 @@ export function Select<T extends string = string>({
           autoComplete="off"
           spellCheck={false}
           className={cn(
-            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
             disableInput && "cursor-pointer",
           )}
           role="combobox"
@@ -385,7 +385,7 @@ export function Select<T extends string = string>({
             <button
               type="button"
               onClick={handleClear}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-hgreen rounded-full p-0.5"
+              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5"
               aria-label="Clear selection"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -412,7 +412,7 @@ export function Select<T extends string = string>({
                 }
                 inputRef.current?.focus();
               }}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-hgreen rounded-full p-0.5"
+              className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5"
               aria-label={isOpen ? "Close dropdown" : "Open dropdown"}
               aria-expanded={isOpen}
             >
@@ -439,7 +439,7 @@ export function Select<T extends string = string>({
           {isLoading && (
             <div className="pointer-events-none">
               <svg
-                className="animate-spin h-4 w-4 text-hgreen"
+                className="animate-spin h-4 w-4 text-primary-500"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"

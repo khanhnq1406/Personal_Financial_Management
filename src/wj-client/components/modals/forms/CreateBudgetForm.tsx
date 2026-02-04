@@ -78,7 +78,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}

@@ -160,7 +160,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
         placeholder={placeholder && placeholder.length > 0 ? `${placeholder}…` : ""}
         autoComplete="off"
         spellCheck={false}
-        className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2"
+        className="p-2 drop-shadow-round rounded-lg w-full pr-8 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -195,7 +195,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
       {isLoading && (
         <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg
-            className="animate-spin h-4 w-4 text-hgreen"
+            className="animate-spin h-4 w-4 text-primary-500"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -231,7 +231,7 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                   className={cn(
                     "px-3 py-2 cursor-pointer text-sm",
                     highlightedIndex === index
-                      ? "bg-hgreen text-white"
+                      ? "bg-primary-500 text-white"
                       : "hover:bg-gray-100",
                     value === option.value && "font-semibold"
                   )}
@@ -261,8 +261,8 @@ export const CreatableSelect: React.FC<CreatableSelectProps> = ({
                   className={cn(
                     "px-3 py-2 cursor-pointer text-sm border-t border-gray-200 flex items-center gap-2",
                     highlightedIndex === filteredOptions.length
-                      ? "bg-hgreen text-white"
-                      : "hover:bg-gray-100 text-hgreen font-semibold",
+                      ? "bg-primary-500 text-white"
+                      : "hover:bg-gray-100 text-primary-500 font-semibold",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
                 >

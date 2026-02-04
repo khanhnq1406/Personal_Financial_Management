@@ -18,11 +18,11 @@ export default function Notification(notification: NotificationProps) {
   return (
     <div className="flex w-full h-full justify-center items-center flex-col">
       {_notification.status === NotificationCode.SUCCESS ? (
-        <p className="text-hgreen text-[30px] font-extrabold">
+        <p className="text-primary-500 text-[30px] font-extrabold">
           {_notification.status}
         </p>
       ) : (
-        <p className="text-lred text-[30px] font-extrabold">
+        <p className="text-danger-600 text-[30px] font-extrabold">
           {_notification.status}
         </p>
       )}

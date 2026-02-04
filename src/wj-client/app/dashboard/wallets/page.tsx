@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQueryListWallets } from "@/utils/generated/hooks";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { CardSkeleton } from "@/components/loading/Skeleton";
 import { Button } from "@/components/Button";
 import Image from "next/image";
 import { ButtonType, resources } from "@/app/constants";
@@ -70,8 +70,16 @@ export default function WalletsPage() {
 
   if (getListWallets.isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <LoadingSpinner text="Loading wallets..." />
+      <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="h-8 w-32 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-10 w-40 bg-neutral-200 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CardSkeleton lines={4} showAction={true} />
+          <CardSkeleton lines={4} showAction={true} />
+          <CardSkeleton lines={4} showAction={true} />
+        </div>
       </div>
     );
   }
@@ -79,7 +87,7 @@ export default function WalletsPage() {
   if (getListWallets.error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <div className="text-lred">Error loading wallets</div>
+        <div className="text-danger-600">Error loading wallets</div>
         <Button
           type={ButtonType.PRIMARY}
           onClick={() => getListWallets.refetch()}
@@ -97,7 +105,7 @@ export default function WalletsPage() {
     <div className="flex flex-col gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <h1 className="text-lg sm:text-xl font-bold">My Wallets</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">My Wallets</h1>
         <Button
           type={ButtonType.PRIMARY}
           onClick={handleCreateWallet}

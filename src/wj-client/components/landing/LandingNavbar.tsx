@@ -38,7 +38,7 @@ export default function LandingNavbar() {
     >
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-bg focus:text-white focus:rounded-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-md"
       >
         Skip to main content
       </a>
@@ -47,7 +47,7 @@ export default function LandingNavbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <Image src="/logo.png" alt="WealthJourney" width={28} height={28} className="sm:w-8 sm:h-8" />
-            <span className="text-base sm:text-lg md:text-xl font-semibold text-bg">WealthJourney</span>
+            <span className="text-base sm:text-lg md:text-xl font-semibold text-primary-600">WealthJourney</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -56,7 +56,7 @@ export default function LandingNavbar() {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-gray-700 hover:text-bg transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 rounded-md px-2 py-1"
+                className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-md px-2 py-1"
               >
                 {link.name}
               </a>
@@ -64,7 +64,7 @@ export default function LandingNavbar() {
             {isAuthenticated ? (
               <Link
                 href="/dashboard/home"
-                className="px-4 py-2 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
               >
                 Dashboard
               </Link>
@@ -72,13 +72,13 @@ export default function LandingNavbar() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/auth/login"
-                  className="text-gray-700 hover:text-bg transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 rounded-md px-2 py-1"
+                  className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-md px-2 py-1"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="px-4 py-2 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors duration-200 font-medium focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                 >
                   Get Started
                 </Link>
@@ -126,7 +126,7 @@ export default function LandingNavbar() {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-gray-700 hover:text-bg transition-colors duration-200 font-medium px-2 py-1 focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 rounded-md"
+                  className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium px-2 py-1 focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-md"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
@@ -135,7 +135,7 @@ export default function LandingNavbar() {
               {isAuthenticated ? (
                 <Link
                   href="/dashboard/home"
-                  className="px-4 py-2 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Dashboard
@@ -144,14 +144,14 @@ export default function LandingNavbar() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="text-gray-700 hover:text-bg transition-colors duration-200 font-medium px-2 py-1 focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 rounded-md"
+                    className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium px-2 py-1 focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="px-4 py-2 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Get Started

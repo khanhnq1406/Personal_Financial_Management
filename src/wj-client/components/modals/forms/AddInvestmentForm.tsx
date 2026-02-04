@@ -865,7 +865,7 @@ export function AddInvestmentForm({
 
       {/* Error message */}
       {errorMessage && (
-        <div className="bg-red-50 border border-lred text-lred px-4 py-3 rounded">
+        <div className="bg-red-50 border border-danger-600 text-danger-600 px-4 py-3 rounded">
           {errorMessage}
         </div>
       )}

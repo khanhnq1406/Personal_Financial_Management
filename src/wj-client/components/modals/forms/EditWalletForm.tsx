@@ -217,7 +217,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}

@@ -21,7 +21,7 @@ import React, {
 import { BaseCard } from "@/components/BaseCard";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import { StatsCardSkeleton, TableSkeleton } from "@/components/loading/Skeleton";
 import {
   useQueryListWallets,
   useQueryListUserInvestments,
@@ -65,10 +65,10 @@ const EmptyInvestmentWalletsState = memo(
   ({ onOpenModal }: { onOpenModal: () => void }) => (
     <div className="flex flex-col items-center justify-center h-full gap-4">
       <div className="text-center">
-        <p className="text-lg font-semibold text-gray-700">
+        <p className="text-xl sm:text-2xl font-bold text-neutral-800">
           No Investment Wallets
         </p>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-base text-neutral-600 mt-2">
           Create an investment wallet to start tracking your portfolio
         </p>
       </div>
@@ -115,23 +115,23 @@ const PortfolioSummaryCards = memo(
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total Value</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
+          <div className="text-sm text-neutral-600">Total Value</div>
+          <div className="text-lg sm:text-xl lg:text-2xl font-semibold text-neutral-900 mt-1">
             {formatCurrency(displayValue, displayCurrency)}
           </div>
         </BaseCard>
 
         <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total Cost</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
+          <div className="text-sm text-neutral-600">Total Cost</div>
+          <div className="text-lg sm:text-xl lg:text-2xl font-semibold text-neutral-900 mt-1">
             {formatCurrency(displayCost, displayCurrency)}
           </div>
         </BaseCard>
 
         <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total PNL</div>
+          <div className="text-sm text-neutral-600">Total PNL</div>
           <div
-            className={`text-lg sm:text-2xl font-bold mt-1 ${
+            className={`text-lg sm:text-xl lg:text-2xl font-semibold mt-1 ${
               displayPnl >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
@@ -140,8 +140,8 @@ const PortfolioSummaryCards = memo(
         </BaseCard>
 
         <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Holdings</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
+          <div className="text-sm text-neutral-600">Holdings</div>
+          <div className="text-lg sm:text-xl lg:text-2xl font-semibold text-neutral-900 mt-1">
             {portfolioSummary.totalInvestments || 0}
           </div>
         </BaseCard>
@@ -820,8 +820,21 @@ export default function PortfolioPage() {
   // Loading state
   if (getListWallets.isLoading || getListWallets.isPending) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner text="Loading portfolio..." />
+      <div className="flex flex-col gap-6 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="h-8 w-48 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-10 w-40 bg-neutral-200 rounded animate-pulse" />
+        </div>
+
+        {/* Summary cards skeleton */}
+        <StatsCardSkeleton cards={4} />
+
+        {/* Table skeleton */}
+        <div className="bg-white rounded-lg shadow-card p-4 sm:p-6">
+          <div className="h-6 w-32 bg-neutral-200 rounded animate-pulse mb-4" />
+          <TableSkeleton rows={5} showAvatar={false} />
+        </div>
       </div>
     );
   }
@@ -830,7 +843,7 @@ export default function PortfolioPage() {
   if (getListWallets.error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-lred text-center">
+        <div className="text-danger-600 text-center">
           <p className="text-lg font-semibold">Error loading portfolio</p>
           <p className="text-sm">{getListWallets.error.message}</p>
         </div>
@@ -871,7 +884,7 @@ export default function PortfolioPage() {
         <div className="w-full space-y-3 sm:space-y-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
-            <h1 className="text-lg sm:text-xl font-bold">Investment Portfolio</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">Investment Portfolio</h1>
 
             {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -911,9 +924,7 @@ export default function PortfolioPage() {
 
           {/* Portfolio Summary Cards */}
           {getPortfolioSummary.isLoading || getPortfolioSummary.isPending ? (
-            <div className="flex items-center justify-center h-48">
-              <LoadingSpinner text="Loading summary..." />
-            </div>
+            <StatsCardSkeleton cards={4} />
           ) : portfolioSummary?.data ? (
             <PortfolioSummaryCards
               portfolioSummary={portfolioSummary.data}
@@ -994,10 +1005,10 @@ export default function PortfolioPage() {
                 <BaseCard className="p-4 mb-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-neutral-600">
                         Available Cash
                       </div>
-                      <div className="text-xl font-bold text-bg">
+                      <div className="text-lg sm:text-xl font-semibold text-primary-600">
                         {formatCurrency(
                           wallet.displayBalance?.amount ??
                             wallet.balance?.amount ??
@@ -1007,15 +1018,15 @@ export default function PortfolioPage() {
                             currency,
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-neutral-500 mt-1">
                         Ready to invest
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-neutral-600">
                         Total Wallet Value
                       </div>
-                      <div className="text-xl font-bold">
+                      <div className="text-lg sm:text-xl font-semibold">
                         {formatCurrency(
                           wallet.displayTotalValue?.amount ??
                             wallet.totalValue?.amount ??
@@ -1025,7 +1036,7 @@ export default function PortfolioPage() {
                             currency,
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-neutral-500 mt-1">
                         Cash + Investments
                       </div>
                     </div>
@@ -1037,7 +1048,7 @@ export default function PortfolioPage() {
           {/* Holdings Table */}
           <BaseCard className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Holdings</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-800">Holdings</h2>
               <div className="flex gap-2">
                 <Button
                   type={ButtonType.SECONDARY}
@@ -1086,9 +1097,7 @@ export default function PortfolioPage() {
             </div>
 
             {getListInvestments.isLoading || getListInvestments.isPending ? (
-              <div className="flex items-center justify-center h-48">
-                <LoadingSpinner text="Loading holdings..." />
-              </div>
+              <TableSkeleton rows={5} showAvatar={false} />
             ) : investments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>

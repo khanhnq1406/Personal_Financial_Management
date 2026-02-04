@@ -47,7 +47,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             type={ButtonType.PRIMARY}
             onClick={onConfirm}
             loading={isLoading}
-            className={variant === "danger" ? "bg-lred hover:bg-red-700" : ""}
+            className={variant === "danger" ? "bg-danger-600 hover:bg-red-700" : ""}
           >
             {confirmText}
           </Button>

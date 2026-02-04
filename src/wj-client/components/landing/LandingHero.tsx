@@ -34,7 +34,7 @@ function DashboardPreview() {
   }, []);
 
   return (
-    <div className="relative rounded-lg shadow-2xl overflow-hidden bg-fg">
+    <div className="relative rounded-lg shadow-2xl overflow-hidden bg-neutral-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-2">
         <div className="w-3 h-3 rounded-full bg-red-400"></div>
@@ -67,7 +67,7 @@ export default function LandingHero() {
     <section className="relative pt-20 pb-12 sm:pt-32 sm:pb-20 md:pt-40 md:pb-32 overflow-hidden">
       {/* Background Pattern */}
       <div
-        className="absolute inset-0 bg-gradient-to-br from-bg/5 via-transparent to-bg/10"
+        className="absolute inset-0 bg-gradient-to-br from-primary-600/5 via-transparent to-primary-600/10"
         aria-hidden="true"
       />
 
@@ -81,7 +81,7 @@ export default function LandingHero() {
           <motion.div variants={itemVariants}>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
               Your Trusted Guide to{" "}
-              <span className="text-bg">Financial Freedom</span>
+              <span className="text-primary-600">Financial Freedom</span>
             </h1>
           </motion.div>
 
@@ -99,13 +99,13 @@ export default function LandingHero() {
           >
             <Link
               href="/auth/register"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-bg text-white rounded-md hover:bg-hgreen transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
             >
               Get Started for Free
             </Link>
             <a
               href="#features"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 border-2 border-bg text-bg rounded-md hover:bg-bg hover:text-white transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 border-2 border-primary-600 text-primary-600 rounded-md hover:bg-primary-600 hover:text-white transition-colors duration-200 font-medium text-center focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 min-h-[44px] flex items-center justify-center"
             >
               Explore Features
             </a>
@@ -117,7 +117,7 @@ export default function LandingHero() {
           >
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-bg"
+                className="w-5 h-5 text-primary-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -131,7 +131,7 @@ export default function LandingHero() {
             </div>
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-bg"
+                className="w-5 h-5 text-primary-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -145,7 +145,7 @@ export default function LandingHero() {
             </div>
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-bg"
+                className="w-5 h-5 text-primary-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >

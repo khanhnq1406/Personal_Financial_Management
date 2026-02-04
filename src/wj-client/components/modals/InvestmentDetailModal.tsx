@@ -426,7 +426,7 @@ export function InvestmentDetailModal({
               onClick={() => setActiveTab("overview")}
               className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "overview"
-                  ? "border-b-2 border-hgreen text-hgreen"
+                  ? "border-b-2 border-primary-500 text-primary-500"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -436,7 +436,7 @@ export function InvestmentDetailModal({
               onClick={() => setActiveTab("transactions")}
               className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "transactions"
-                  ? "border-b-2 border-hgreen text-hgreen"
+                  ? "border-b-2 border-primary-500 text-primary-500"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -446,7 +446,7 @@ export function InvestmentDetailModal({
               onClick={() => setActiveTab("add-transaction")}
               className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
                 activeTab === "add-transaction"
-                  ? "border-b-2 border-hgreen text-hgreen"
+                  ? "border-b-2 border-primary-500 text-primary-500"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -707,7 +707,7 @@ export function InvestmentDetailModal({
           )}
         </div>
       ) : (
-        <div className="text-center text-lred">Investment not found</div>
+        <div className="text-center text-danger-600">Investment not found</div>
       )}
 
       {/* Delete Transaction Confirmation Dialog */}

@@ -170,7 +170,7 @@ export function SymbolAutocomplete({
           <div className={props.className}>
             <div className="p-2 text-gray-500 text-sm flex items-center gap-2">
               <svg
-                className="animate-spin h-4 w-4 text-hgreen"
+                className="animate-spin h-4 w-4 text-primary-500"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -244,7 +244,7 @@ export function SymbolAutocomplete({
 
       {/* Error message */}
       {searchError && (
-        <div className="text-lred text-sm mt-1" role="alert">
+        <div className="text-danger-600 text-sm mt-1" role="alert">
           {searchError}
         </div>
       )}

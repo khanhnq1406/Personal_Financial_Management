@@ -58,7 +58,7 @@ export const FormToggle = ({
         ))}
       </div>
       {error ? (
-        <div className="text-lred text-sm mt-1" role="alert">
+        <div className="text-danger-600 text-sm mt-1" role="alert">
           {error.message}
         </div>
       ) : null}

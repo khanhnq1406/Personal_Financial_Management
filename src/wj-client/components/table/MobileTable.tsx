@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, memo } from "react";
+import React, { useMemo, memo, useState } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { cn } from "@/lib/utils/cn";
 
@@ -11,6 +11,11 @@ export interface MobileColumnDef<T> {
   accessorFn?: (row: T, index: number) => any;
   accessorKey?: keyof T | string;
   cell?: (props: { getValue: () => any; row: T }) => React.ReactNode;
+  /**
+   * If true, this column will be shown in the collapsed view (key info)
+   * If false, it will only be shown when expanded
+   */
+  showInCollapsed?: boolean;
 }
 
 export interface MobileTableProps<T> {
@@ -56,6 +61,19 @@ export interface MobileTableProps<T> {
    * Returns the row that was clicked
    */
   onStickyActionClick?: (row: T) => void;
+  /**
+   * Enable expandable rows. When true, rows can be expanded to show more details.
+   * Columns with showInCollapsed=true will be shown in collapsed view.
+   */
+  expandable?: boolean;
+  /**
+   * Label for the expand button
+   */
+  expandButtonLabel?: string;
+  /**
+   * Label for the collapse button
+   */
+  collapseButtonLabel?: string;
 }
 
 /**
@@ -90,6 +108,146 @@ export interface MobileTableProps<T> {
  * />
  * ```
  */
+/**
+ * Internal component for a single expandable mobile table row
+ */
+const MobileTableRow = memo(function MobileTableRow<T>({
+  row,
+  rowIndex,
+  columns,
+  renderFieldValue,
+  renderActions,
+  actionsPosition,
+  expandable,
+  expandButtonLabel,
+  collapseButtonLabel,
+}: {
+  row: T;
+  rowIndex: number;
+  columns: MobileColumnDef<T>[];
+  renderFieldValue?: (columnId: string, value: any, row: T) => React.ReactNode;
+  renderActions?: (row: T) => React.ReactNode;
+  actionsPosition: "inline" | "sticky";
+  expandable?: boolean;
+  expandButtonLabel: string;
+  collapseButtonLabel: string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Separate columns into collapsed and expanded views
+  const collapsedColumns = columns.filter((col) => col.showInCollapsed !== false);
+  const expandedOnlyColumns = columns.filter((col) => col.showInCollapsed === false);
+
+  const hasExpandableContent = expandable && expandedOnlyColumns.length > 0;
+
+  const renderColumn = (column: MobileColumnDef<T>, cellIndex: number) => {
+    // Get column header
+    const headerText =
+      typeof column.header === "string" ? column.header : column.id;
+
+    // Get cell value using accessorFn or accessorKey
+    let cellValue: any;
+    if (column.accessorFn) {
+      cellValue = column.accessorFn(row, rowIndex);
+    } else if (column.accessorKey) {
+      cellValue = (row as any)[column.accessorKey];
+    }
+
+    // Use custom renderer if provided, otherwise use cell renderer
+    const displayValue = renderFieldValue
+      ? renderFieldValue(column.id, cellValue, row)
+      : column.cell
+        ? column.cell({ getValue: () => cellValue, row })
+        : cellValue;
+
+    return (
+      <React.Fragment key={column.id || cellIndex}>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <p className="text-gray-900 text-sm font-bold mb-1">
+              {headerText}
+            </p>
+            <p className="text-gray-900 text-sm font-light text-right">
+              {displayValue ?? "-"}
+            </p>
+          </div>
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div className="p-3 space-y-2">
+      {/* Collapsed view - show key info only */}
+      {collapsedColumns.map((column, cellIndex) => (
+        <React.Fragment key={column.id || cellIndex}>
+          {renderColumn(column, cellIndex)}
+          {cellIndex < collapsedColumns.length - 1 && (
+            <div className="border-t border-gray-200" />
+          )}
+        </React.Fragment>
+      ))}
+
+      {/* Expand/Collapse button */}
+      {hasExpandableContent && (
+        <>
+          <div className="border-t border-gray-200" />
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200 py-1 px-2 rounded hover:bg-primary-50"
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? collapseButtonLabel : expandButtonLabel}
+            >
+              {isExpanded ? collapseButtonLabel : expandButtonLabel}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Expanded view - show all additional fields */}
+      {hasExpandableContent && isExpanded && (
+        <div
+          className={cn(
+            "pt-3 border-t border-gray-200 space-y-2",
+            "animate-in fade-in slide-in-from-top-2 duration-200"
+          )}
+        >
+          {expandedOnlyColumns.map((column, cellIndex) => (
+            <React.Fragment key={column.id || cellIndex}>
+              {renderColumn(column, cellIndex)}
+              {cellIndex < expandedOnlyColumns.length - 1 && (
+                <div className="border-t border-gray-200" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+
+      {/* Inline Actions section */}
+      {renderActions && actionsPosition === "inline" && (
+        <>
+          <div className="border-t border-gray-200" />
+          <div className="flex justify-between items-center">
+            <p className="text-gray-900 text-sm font-bold">Actions</p>
+            <div className="flex gap-1 -mr-2">{renderActions(row)}</div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}) as <T>(props: {
+  row: T;
+  rowIndex: number;
+  columns: MobileColumnDef<T>[];
+  renderFieldValue?: (columnId: string, value: any, row: T) => React.ReactNode;
+  renderActions?: (row: T) => React.ReactNode;
+  actionsPosition: "inline" | "sticky";
+  expandable?: boolean;
+  expandButtonLabel: string;
+  collapseButtonLabel: string;
+}) => React.ReactElement;
+
 export const MobileTable = memo(function MobileTable<T>({
   data,
   columns,
@@ -106,15 +264,21 @@ export const MobileTable = memo(function MobileTable<T>({
   actionsPosition = "inline",
   stickyActionLabel = "View Details",
   onStickyActionClick,
+  expandable = false,
+  expandButtonLabel = "Details",
+  collapseButtonLabel = "Less",
 }: MobileTableProps<T>) {
   // Memoize loading skeleton to avoid recreating on every render
-  const loadingSkeleton = useMemo(
-    () => (
+  const loadingSkeleton = useMemo(() => {
+    const collapsedColumns = columns.filter((col) => col.showInCollapsed !== false);
+    const columnsToShow = expandable ? collapsedColumns : columns;
+
+    return (
       <div className={cn("space-y-3", className)}>
         {Array.from({ length: loadingRowCount }).map((_, index) => (
           <BaseCard key={`loading-${index}`}>
             <div className="p-3 space-y-2">
-              {columns.map((_, cellIndex) => (
+              {columnsToShow.map((_, cellIndex) => (
                 <React.Fragment key={`loading-cell-${cellIndex}`}>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -122,18 +286,25 @@ export const MobileTable = memo(function MobileTable<T>({
                       <div className="h-3 bg-gray-100 rounded animate-pulse w-full" />
                     </div>
                   </div>
-                  {cellIndex < columns.length - 1 && (
+                  {cellIndex < columnsToShow.length - 1 && (
                     <div className="border-t border-gray-200" />
                   )}
                 </React.Fragment>
               ))}
+              {expandable && (
+                <>
+                  <div className="border-t border-gray-200" />
+                  <div className="flex justify-end">
+                    <div className="h-6 w-16 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                </>
+              )}
             </div>
           </BaseCard>
         ))}
       </div>
-    ),
-    [className, columns, loadingRowCount],
-  );
+    );
+  }, [className, columns, loadingRowCount, expandable]);
 
   // Memoize empty state
   const emptyState = useMemo(
@@ -179,57 +350,17 @@ export const MobileTable = memo(function MobileTable<T>({
 
         return (
           <BaseCard key={key}>
-            <div className="p-3 space-y-2">
-              {columns.map((column, cellIndex) => {
-                // Get column header
-                const headerText =
-                  typeof column.header === "string" ? column.header : column.id;
-
-                // Get cell value using accessorFn or accessorKey
-                let cellValue: any;
-                if (column.accessorFn) {
-                  cellValue = column.accessorFn(row, rowIndex);
-                } else if (column.accessorKey) {
-                  cellValue = (row as any)[column.accessorKey];
-                }
-
-                // Use custom renderer if provided, otherwise use cell renderer
-                const displayValue = renderFieldValue
-                  ? renderFieldValue(column.id, cellValue, row)
-                  : column.cell
-                    ? column.cell({ getValue: () => cellValue, row })
-                    : cellValue;
-
-                return (
-                  <React.Fragment key={column.id || cellIndex}>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-gray-900 text-sm font-bold mb-1">
-                          {headerText}
-                        </p>
-                        <p className="text-gray-900 text-sm font-light text-right">
-                          {displayValue ?? "-"}
-                        </p>
-                      </div>
-                    </div>
-                    {cellIndex < columns.length - 1 && (
-                      <div className="border-t border-gray-200" />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-
-              {/* Inline Actions section */}
-              {renderActions && actionsPosition === "inline" && (
-                <>
-                  <div className="border-t border-gray-200" />
-                  <div className="flex justify-between items-center">
-                    <p className="text-gray-900 text-sm font-bold">Actions</p>
-                    <div className="flex gap-2">{renderActions(row)}</div>
-                  </div>
-                </>
-              )}
-            </div>
+            <MobileTableRow
+              row={row}
+              rowIndex={rowIndex}
+              columns={columns}
+              renderFieldValue={renderFieldValue}
+              renderActions={renderActions}
+              actionsPosition={actionsPosition}
+              expandable={expandable}
+              expandButtonLabel={expandButtonLabel}
+              collapseButtonLabel={collapseButtonLabel}
+            />
           </BaseCard>
         );
       })}
@@ -255,7 +386,7 @@ export const MobileTable = memo(function MobileTable<T>({
                   onStickyActionClick(data[0]);
                 }
               }}
-              className="w-full bg-bg text-white py-3 px-4 rounded-lg font-medium shadow-lg hover:opacity-90 transition-opacity"
+              className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium shadow-lg hover:opacity-90 transition-opacity"
             >
               {stickyActionLabel}
             </button>

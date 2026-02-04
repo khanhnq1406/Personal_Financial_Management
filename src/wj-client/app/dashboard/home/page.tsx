@@ -91,31 +91,31 @@ export default function Home() {
       </div>
       <div className="flex justify-center py-2 sm:py-4 border-none px-3 sm:px-4">
         <div className="w-full max-w-4xl mb-3">
-          <div className="font-semibold my-2 text-sm sm:text-base">
+          <div className="text-xl sm:text-2xl font-bold text-neutral-800 my-2">
             My Wallets
           </div>
           <BaseCard>
             <Wallets getListWallets={getListWallets} />
           </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+          <div className="text-xl sm:text-2xl font-bold text-neutral-800 mt-3 sm:mt-4 mb-2">
             Total balance fluctuation
           </div>
           <BaseCard>
             <Balance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+          <div className="text-xl sm:text-2xl font-bold text-neutral-800 mt-3 sm:mt-4 mb-2">
             Dominance
           </div>
           <BaseCard>
             <Dominance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+          <div className="text-xl sm:text-2xl font-bold text-neutral-800 mt-3 sm:mt-4 mb-2">
             Monthly Dominance
           </div>
           <BaseCard>
             <MonthlyDominance availableYears={availableYears} />
           </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
+          <div className="text-xl sm:text-2xl font-bold text-neutral-800 mt-3 sm:mt-4 mb-2">
             Account Balance
           </div>
           <BaseCard>

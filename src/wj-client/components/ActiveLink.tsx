@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils/cn";
 
 function ActiveLink({
   children,
@@ -25,9 +26,13 @@ function ActiveLink({
     <a
       href={href}
       onClick={handleClick}
-      className={`text-fg w-full flex flex-nowrap gap-2 items-center font-medium p-2 rounded-md hover:shadow-md hover:bg-[rgba(255,255,255,0.35)] ${
-        pathname === href ? "bg-[rgba(255,255,255,0.3)]" : ""
-      }`}
+      className={cn(
+        "text-white w-full flex flex-nowrap gap-3 items-center font-medium min-h-[44px] px-3 py-2.5 rounded-lg transition-all duration-200",
+        "hover:bg-white/20 hover:shadow-md",
+        pathname === href
+          ? "bg-white/30 shadow-md border-l-4 border-white font-semibold"
+          : "border-l-4 border-transparent"
+      )}
       aria-current={pathname === href ? "page" : undefined}
     >
       {children}

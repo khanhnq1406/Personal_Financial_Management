@@ -74,7 +74,7 @@ export const WalletCard = memo(function WalletCard({
           <div className="text-sm text-gray-500">
             {isInvestmentWallet ? "Total Value" : "Balance"}
           </div>
-          <div className="text-2xl font-bold text-bg">
+          <div className="text-2xl font-bold text-primary-600">
             {formatCurrency(totalValue, displayCurrency)}
           </div>
         </div>

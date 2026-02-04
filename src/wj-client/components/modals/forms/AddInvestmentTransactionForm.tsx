@@ -518,7 +518,7 @@ export function AddInvestmentTransactionForm({
           htmlFor="transactionDate"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Transaction Date <span className="text-lred">*</span>
+          Transaction Date <span className="text-danger-600">*</span>
         </label>
         <input
           id="transactionDate"

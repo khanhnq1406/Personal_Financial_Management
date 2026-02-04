@@ -1,9 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { ButtonType } from "@/app/constants";
-import { Button } from "@/components/Button";
-import { resources } from "@/app/constants";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 
 // Hoist regex outside component to avoid recreating on each render (js-hoist-regexp)
@@ -35,6 +32,16 @@ export function BaseModal({
 }: BaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to trigger animation after mount
+      requestAnimationFrame(() => setIsAnimating(true));
+    } else {
+      setIsAnimating(false);
+    }
+  }, [isOpen]);
 
   // Focus trap: keep focus within modal when open
   useEffect(() => {
@@ -117,39 +124,60 @@ export function BaseModal({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed top-0 left-0 w-full h-full bg-modal flex justify-center items-center z-50 overscroll-contain"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={modalTitleId}
-    >
+    <>
+      {/* Backdrop with fade animation */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-modal z-40 transition-opacity duration-300",
+          isAnimating ? "opacity-100" : "opacity-0"
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal container with slide/scale animation */}
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={modalTitleId}
         tabIndex={-1}
         className={cn(
-          `bg-fg p-3 sm:p-5 rounded-lg drop-shadow-round w-full overscroll-contain outline-none mx-2 sm:mx-4`,
-          maxWidth || "max-w-sm sm:max-w-md lg:max-w-lg",
-          maxHeight || "max-h-[85vh] sm:max-h-[90vh]",
+          "fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4",
         )}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <h2 id={modalTitleId} className="font-bold text-base sm:text-lg">
-            {title}
-          </h2>
-          <Button
-            type={ButtonType.IMG}
-            src={`${resources}/close.png`}
-            onClick={onClose}
-            aria-label="Close modal"
-          />
+        <div
+          className={cn(
+            "bg-white p-3 sm:p-5 rounded-t-xl sm:rounded-lg shadow-modal w-full overscroll-contain outline-none sm:mx-4",
+            "transform transition-all duration-300 ease-out",
+            isAnimating
+              ? "translate-y-0 opacity-100"
+              : "translate-y-8 sm:translate-y-0 opacity-0 sm:scale-95",
+            maxWidth || "max-w-sm sm:max-w-md lg:max-w-lg",
+            maxHeight || "max-h-[85vh] sm:max-h-[90vh]",
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 id={modalTitleId} className="font-bold text-base sm:text-lg">
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
+              aria-label="Close modal"
+            >
+              <svg className="w-6 h-6 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {children}
+
+          {footer ? <div className="mt-3 sm:mt-4">{footer}</div> : null}
         </div>
-
-        {children}
-
-        {footer ? <div className="mt-3 sm:mt-4">{footer}</div> : null}
       </div>
-    </div>
+    </>
   );
 }

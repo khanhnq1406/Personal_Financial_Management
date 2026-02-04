@@ -1,0 +1,8 @@
+/**
+ * Dashboard Components
+ *
+ * Specialized components for the dashboard UI designed according to
+ * the UI/UX Optimization Plan (docs/UI_UX_OPTIMIZATION_PLAN.md)
+ */
+
+export { BalanceCard } from "./BalanceCard";

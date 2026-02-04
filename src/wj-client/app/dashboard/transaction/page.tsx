@@ -20,7 +20,7 @@ import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { EditTransactionForm } from "@/components/modals/forms/EditTransactionForm";
+import { EditTransactionForm } from "@/components/lazy/OptimizedComponents";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 
 const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
@@ -269,11 +269,11 @@ export default function TransactionPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Unified Responsive Header */}
-      <div className="flex-shrink-0 bg-bg sm:bg-white border-b sm:border-b-gray-300">
+      <div className="flex-shrink-0 bg-primary-600 sm:bg-white border-b sm:border-b-gray-300">
         <div className="p-3 sm:p-4 md:px-6">
           {/* Title and Balance Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-0">
-            <h1 className="text-white sm:text-gray-900 text-2xl sm:text-xl font-bold">
+            <h1 className="text-white sm:text-gray-900 text-2xl sm:text-3xl lg:text-4xl font-bold">
               Transactions
             </h1>
 
@@ -281,10 +281,10 @@ export default function TransactionPage() {
             <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
               {/* Balance Display */}
               <div className="flex flex-col items-start sm:items-center">
-                <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-bold">
+                <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-medium">
                   {totalBalanceData ? "Total balance" : "Balance"}
                 </p>
-                <p className="text-white sm:text-gray-900 text-xl sm:text-lg font-bold">
+                <p className="text-white sm:text-gray-900 text-lg sm:text-xl lg:text-2xl font-semibold">
                   {isHideBalance ? "*****" : formattedBalance}
                 </p>
               </div>
@@ -334,7 +334,7 @@ export default function TransactionPage() {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-fg rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:border-bg placeholder:text-gray-400"
+              className="w-full bg-neutral-50 rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:border-primary-600 placeholder:text-gray-400"
             />
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -439,29 +439,41 @@ export default function TransactionPage() {
                 <>
                   <button
                     onClick={() => handleEditTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
                     aria-label="Edit transaction"
                   >
-                    <Image
-                      src={`${resources}/editing.png`}
-                      width={20}
-                      height={20}
-                      alt="Edit transaction"
-                      className="w-full h-full object-contain"
-                    />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
                   </button>
                   <button
                     onClick={() => handleDeleteTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-danger-50 transition-colors"
                     aria-label="Delete transaction"
                   >
-                    <Image
-                      src={`${resources}/remove.png`}
-                      width={20}
-                      height={20}
-                      alt="Delete transaction"
-                      className="w-full h-full object-contain"
-                    />
+                    <svg
+                      className="w-5 h-5 text-danger-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
                   </button>
                 </>
               )}
@@ -481,7 +493,7 @@ export default function TransactionPage() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                    className="w-24 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
                     aria-label="Previous page"
                   >
                     Previous
@@ -503,7 +515,7 @@ export default function TransactionPage() {
                     disabled={
                       currentPage >= Math.ceil(totalCount / rowsPerPage)
                     }
-                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                    className="w-24 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
                     aria-label="Next page"
                   >
                     Next

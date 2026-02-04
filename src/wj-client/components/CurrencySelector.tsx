@@ -61,7 +61,7 @@ export function CurrencySelector() {
           {isConverting ? (
             // Show loading spinner during conversion
             <svg
-              className="animate-spin h-5 w-5 text-hgreen"
+              className="animate-spin h-5 w-5 text-primary-500"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -124,7 +124,7 @@ export function CurrencySelector() {
                 </div>
                 {curr.code === currency && (
                   <svg
-                    className="w-4 h-4 text-hgreen ml-auto"
+                    className="w-4 h-4 text-primary-500 ml-auto"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
