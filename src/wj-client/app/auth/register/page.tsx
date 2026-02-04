@@ -2,110 +2,100 @@
 import Link from "next/link";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-import { NotificationCode, routes } from "@/app/constants";
+import { LOCAL_STORAGE_TOKEN_NAME, routes } from "@/app/constants";
+import { store } from "@/redux/store";
+import { setAuth } from "@/redux/actions";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Notification from "@/components/Notification";
-import { api } from "@/utils/generated/api";
+import { useMutationRegister } from "@/utils/generated/hooks";
+import { updateAuthTokenCache } from "@/utils/api-client";
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 
-enum RegisterState {
-  Start,
-  Success,
-}
-
 export default function Register() {
-  const notificationSuccess = (
-    <Notification
-      notification={{
-        status: NotificationCode.SUCCESS,
-        message: "Congratulations, your account has been successfully created",
-        submessage: "Please login to access the website",
-        button: "Go to login",
-        navigate: routes.login,
-      }}
-    />
-  );
-  const [state, setState] = useState(RegisterState.Start);
-  const [notification, setNotification] = useState(notificationSuccess);
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [error, setError] = useState("");
+
+  const register = useMutationRegister({
+    onError(error) {
+      setError(error.message || "Registration failed. Please try again.");
+    },
+    onSuccess(data) {
+      if (data.data) {
+        // Registration successful - extract login data and auto-login
+        const { accessToken, email, fullname, picture } = data.data;
+
+        // Store token
+        localStorage.setItem(LOCAL_STORAGE_TOKEN_NAME, accessToken);
+        updateAuthTokenCache(accessToken);
+
+        // Update Redux store
+        store.dispatch(
+          setAuth({
+            isAuthenticated: true,
+            email: email,
+            fullname: fullname,
+            picture: picture,
+          })
+        );
+
+        // Redirect to home
+        router.push(routes.home);
+      }
+    },
+  });
+
   const handleGoogleLogin = async (credentialResponse: any) => {
     // eslint-disable-line @typescript-eslint/no-explicit-any
-    setIsLoading(true);
-    const result = await api.auth.register({
+    setError("");
+    await register.mutateAsync({
       token: credentialResponse.credential,
     });
-    setIsLoading(false);
-    setState(RegisterState.Success);
+  };
 
-    if (result.data) {
-      // Registration successful
-      setNotification(notificationSuccess);
-    } else {
-      // Registration failed
-      setNotification(
-        <div className="flex flex-col justify-center">
-          <Notification
-            notification={{
-              status: NotificationCode.ERROR,
-              message: "Opps, User Registration failed.",
-              submessage: "Please try again",
-            }}
-          />
-          <button
-            className="custom-btn"
-            onClick={() => {
-              setNotification(notificationSuccess);
-              setState(RegisterState.Start);
-            }}
-          >
-            Try again
-          </button>
-        </div>,
-      );
-    }
-  };
   const handleGoogleLoginError = () => {
-    console.log("Register Failed");
+    setError("Google login failed. Please try again.");
   };
+
   return (
     <div className="flex items-center justify-center min-h-screen relative px-4 sm:px-6">
-      {state === RegisterState.Start ? (
-        <div className="flex justify-center items-center flex-col w-full">
-          <div className="w-full max-w-md sm:max-w-lg px-4 sm:px-0">
-            <p className="text-2xl sm:text-3xl font-extrabold my-1 mb-3">
-              Get Started for Free
-            </p>
-            <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
-              <GoogleOAuthProvider
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== undefined
-                    ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-                    : ""
-                }
-              >
-                <GoogleLogin
-                  onSuccess={handleGoogleLogin}
-                  onError={handleGoogleLoginError}
-                  text="signup_with"
-                />
-              </GoogleOAuthProvider>
-            </div>
-            {isLoading && (
-              <div className="my-3">
-                <LoadingSpinner text="Creating account..." />
-              </div>
-            )}
-            <p className="my-2 text-sm sm:text-base">
-              Already a member?{" "}
-              <Link className="underline font-bold" href={routes.login}>
-                Login
-              </Link>
-            </p>
+      <div className="flex justify-center items-center flex-col w-full">
+        <div className="w-full max-w-md sm:max-w-lg px-4 sm:px-0">
+          <p className="text-2xl sm:text-3xl font-extrabold my-1 mb-3">
+            Get Started for Free
+          </p>
+          <div className={register.isPending ? "opacity-50 pointer-events-none" : ""}>
+            <GoogleOAuthProvider
+              clientId={
+                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== undefined
+                  ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+                  : ""
+              }
+            >
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={handleGoogleLoginError}
+                text="signup_with"
+              />
+            </GoogleOAuthProvider>
           </div>
+          {register.isPending && (
+            <div className="my-3">
+              <LoadingSpinner text="Creating account..." />
+            </div>
+          )}
+          {error && (
+            <div className="my-3 text-red-500">
+              <p>{error}</p>
+            </div>
+          )}
+          <p className="my-2 text-sm sm:text-base">
+            Already a member?{" "}
+            <Link className="underline font-bold" href={routes.login}>
+              Login
+            </Link>
+          </p>
         </div>
-      ) : (
-        <>{notification}</>
-      )}
+      </div>
     </div>
   );
 }

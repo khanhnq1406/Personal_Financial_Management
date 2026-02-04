@@ -103,77 +103,84 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 	name := payload.Claims["name"].(string)
 	picture := payload.Claims["picture"].(string)
 
+	var user models.User
+
 	// Check if user already exists
-	var existingUser models.User
-	result := s.db.DB.Where("email = ?", email).First(&existingUser)
+	result := s.db.DB.Where("email = ?", email).First(&user)
 	if result.Error == nil {
-		// User already exists
-		return &authv1.RegisterResponse{
-			Success:   true,
-			Message:   "User already exists",
-			Data: userDataToProto(&UserData{
-				ID:                   existingUser.ID,
-				Email:                existingUser.Email,
-				Name:                 existingUser.Name,
-				Picture:              existingUser.Picture,
-				PreferredCurrency:    existingUser.PreferredCurrency,
-				ConversionInProgress: existingUser.ConversionInProgress,
-				CreatedAt:            existingUser.CreatedAt,
-				UpdatedAt:            existingUser.UpdatedAt,
-			}),
-			Timestamp: time.Now().Format(time.RFC3339),
-		}, nil
+		// User already exists - generate token and login
+		return s.generateLoginResponse(ctx, user)
 	} else if result.Error != gorm.ErrRecordNotFound {
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
 	// Create new user using UserService if available (includes default categories creation)
 	if s.userSvc != nil {
-		createResp, err := s.userSvc.CreateUser(ctx, email, name, picture)
+		_, err := s.userSvc.CreateUser(ctx, email, name, picture)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user via UserService: %w", err)
 		}
 
-		// Convert CreateUserResponse to RegisterResponse
-		return &authv1.RegisterResponse{
-			Success:   createResp.Success,
-			Message:   "User registered successfully",
-			Data:      createResp.Data,
-			Timestamp: createResp.Timestamp,
-		}, nil
-	}
+		// Get the created user from database
+		if err := s.db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+			return nil, fmt.Errorf("failed to retrieve created user: %w", err)
+		}
+	} else {
+		// Fallback: Create user directly in database (without default categories)
+		user = models.User{
+			Email:   email,
+			Name:    name,
+			Picture: picture,
+		}
 
-	// Fallback: Create user directly in database (without default categories)
-	user := models.User{
-		Email:   email,
-		Name:    name,
-		Picture: picture,
-	}
+		if err := s.db.DB.Create(&user).Error; err != nil {
+			return nil, fmt.Errorf("failed to create user: %w", err)
+		}
 
-	if err := s.db.DB.Create(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	// Try to create default categories manually if CategoryService is available
-	if s.categorySvc != nil {
-		if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
-			log.Printf("Warning: Failed to create default categories for user %d (%s): %v", user.ID, email, err)
+		// Try to create default categories manually if CategoryService is available
+		if s.categorySvc != nil {
+			if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
+				log.Printf("Warning: Failed to create default categories for user %d (%s): %v", user.ID, email, err)
+			}
 		}
 	}
 
+	// Generate token and return login response for new user
+	return s.generateLoginResponse(ctx, user)
+}
+
+// generateLoginResponse generates JWT token and returns RegisterResponse with LoginData
+func (s *Server) generateLoginResponse(ctx context.Context, user models.User) (*authv1.RegisterResponse, error) {
+	// Generate JWT token
+	claims := JWTClaims{
+		UserID: user.ID,
+		Email:  user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWT.Expiration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(s.cfg.JWT.Secret))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	// Store token in Redis whitelist
+	if err := s.rdb.AddToWhitelist(user.Email, tokenString); err != nil {
+		return nil, fmt.Errorf("failed to store token: %w", err)
+	}
+
 	return &authv1.RegisterResponse{
-		Success:   true,
-		Message:   "User registered successfully",
-		Data: userDataToProto(&UserData{
-			ID:                   user.ID,
-			Email:                user.Email,
-			Name:                 user.Name,
-			Picture:              user.Picture,
-			PreferredCurrency:    user.PreferredCurrency,
-			ConversionInProgress: user.ConversionInProgress,
-			CreatedAt:            user.CreatedAt,
-			UpdatedAt:            user.UpdatedAt,
-		}),
+		Success: true,
+		Message: "User registered successfully",
+		Data: &authv1.LoginData{
+			AccessToken: tokenString,
+			Email:       user.Email,
+			Fullname:    user.Name,
+			Picture:     user.Picture,
+		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }

@@ -64,7 +64,8 @@ export interface GetAuthRequest {
 export interface RegisterResponse {
   success: boolean;
   message: string;
-  data: User | undefined;
+  /** Changed from User to LoginData for auto-login */
+  data: LoginData | undefined;
   timestamp: string;
 }
 
@@ -693,7 +694,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
       writer.uint32(18).string(message.message);
     }
     if (message.data !== undefined) {
-      User.encode(message.data, writer.uint32(26).fork()).join();
+      LoginData.encode(message.data, writer.uint32(26).fork()).join();
     }
     if (message.timestamp !== "") {
       writer.uint32(34).string(message.timestamp);
@@ -729,7 +730,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
             break;
           }
 
-          message.data = User.decode(reader, reader.uint32());
+          message.data = LoginData.decode(reader, reader.uint32());
           continue;
         }
         case 4: {
@@ -753,7 +754,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
     return {
       success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
-      data: isSet(object.data) ? User.fromJSON(object.data) : undefined,
+      data: isSet(object.data) ? LoginData.fromJSON(object.data) : undefined,
       timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
     };
   },
@@ -767,7 +768,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
       obj.message = message.message;
     }
     if (message.data !== undefined) {
-      obj.data = User.toJSON(message.data);
+      obj.data = LoginData.toJSON(message.data);
     }
     if (message.timestamp !== "") {
       obj.timestamp = message.timestamp;
@@ -782,7 +783,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
     const message = createBaseRegisterResponse();
     message.success = object.success ?? false;
     message.message = object.message ?? "";
-    message.data = (object.data !== undefined && object.data !== null) ? User.fromPartial(object.data) : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? LoginData.fromPartial(object.data) : undefined;
     message.timestamp = object.timestamp ?? "";
     return message;
   },

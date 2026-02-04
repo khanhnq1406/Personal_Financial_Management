@@ -97,7 +97,7 @@ message GetAuthRequest {
 message RegisterResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
-  User data = 3 [json_name = "data"];
+  LoginData data = 3 [json_name = "data"];  // Changed from User to LoginData for auto-login
   string timestamp = 4 [json_name = "timestamp"];
 }
 
