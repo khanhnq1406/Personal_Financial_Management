@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutationCreateBudget } from "@/utils/generated/hooks";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";

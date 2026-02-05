@@ -5,6 +5,20 @@ import { openModal } from "@/redux/actions";
 import { store } from "@/redux/store";
 import { memo, useRef, useState } from "react";
 
+/**
+ * @deprecated This component is deprecated and will be removed in a future version.
+ * Please use FloatingActionButton instead.
+ * See ButtonGroup.DEPRECATED.md for migration guide.
+ *
+ * Issues with this component:
+ * - Uses global Redux state instead of component-level state
+ * - Uses PNG images instead of SVG icons
+ * - Manual DOM manipulation instead of React state
+ * - Poor accessibility (missing ARIA attributes)
+ * - Not mobile-first
+ *
+ * @see FloatingActionButton.tsx for the replacement
+ */
 export const ButtonGroup = memo(function ButtonGroup() {
   const [extend, setExtend] = useState(false);
   const transactionButtonRef = useRef<HTMLButtonElement>(null);

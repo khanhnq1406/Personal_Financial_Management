@@ -5,6 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { SUPPORTED_CURRENCIES } from "@/app/constants";
 import { ZIndex } from "@/lib/utils/z-index";
+import { cn } from "@/lib/utils/cn";
 
 export function CurrencySelector() {
   const { currency, updateCurrency, isConverting } = useCurrency();
@@ -46,11 +47,15 @@ export function CurrencySelector() {
     <>
       <div className="relative group">
         <button
-          className={`flex items-center gap-2 px-3 py-2 bg-white rounded-lg drop-shadow-round transition-colors ${
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+            "bg-white dark:bg-dark-surface",
+            "border border-neutral-200 dark:border-neutral-700",
+            "shadow-sm dark:shadow-dark-card",
             isDisabled
               ? "opacity-60 cursor-not-allowed"
-              : "hover:bg-gray-50 cursor-pointer"
-          }`}
+              : "hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer hover:shadow-md"
+          )}
           aria-label="Select currency"
           disabled={isDisabled}
           title={
@@ -82,16 +87,16 @@ export function CurrencySelector() {
               />
             </svg>
           ) : (
-            <span className="text-lg font-semibold">
+            <span className="text-lg font-semibold text-neutral-900 dark:text-dark-text">
               {currentCurrency?.symbol || currency}
             </span>
           )}
-          <span className="text-sm text-gray-600 hidden sm:inline">
+          <span className="text-sm text-neutral-600 dark:text-neutral-400 hidden sm:inline">
             {currency}
           </span>
           {!isConverting && (
             <svg
-              className="w-4 h-4 text-gray-500"
+              className="w-4 h-4 text-neutral-500 dark:text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -110,25 +115,37 @@ export function CurrencySelector() {
         {/* Mobile: dropdown below (top-full mt-2), Desktop: dropdown above (sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0) */}
         {!isDisabled && (
           <div
-            className="absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2 bg-white rounded-lg drop-shadow-round py-2 hidden group-hover:block min-w-[200px]"
+            className={cn(
+              "absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2",
+              "bg-white dark:bg-dark-surface",
+              "rounded-lg shadow-lg dark:shadow-dark-card",
+              "border border-neutral-200 dark:border-neutral-700",
+              "py-2 hidden group-hover:block min-w-[200px]"
+            )}
             style={{ zIndex: ZIndex.dropdown }}
           >
             {SUPPORTED_CURRENCIES.map((curr) => (
               <button
                 key={curr.code}
                 onClick={() => handleCurrencyClick(curr.code)}
-                className={`w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors flex items-center gap-3 ${
-                  curr.code === currency ? "bg-green-50 font-semibold" : ""
-                }`}
+                className={cn(
+                  "w-full px-4 py-2 text-left transition-colors flex items-center gap-3",
+                  "hover:bg-neutral-100 dark:hover:bg-dark-surface-hover",
+                  "text-neutral-900 dark:text-dark-text",
+                  curr.code === currency &&
+                    "bg-primary-50 dark:bg-primary-900/20 font-semibold"
+                )}
               >
                 <span className="text-lg w-6">{curr.symbol}</span>
                 <div className="flex flex-col">
                   <span className="text-sm">{curr.code}</span>
-                  <span className="text-xs text-gray-500">{curr.name}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {curr.name}
+                  </span>
                 </div>
                 {curr.code === currency && (
                   <svg
-                    className="w-4 h-4 text-primary-500 ml-auto"
+                    className="w-4 h-4 text-primary-500 dark:text-primary-400 ml-auto"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

@@ -8,7 +8,7 @@ import {
   useMutationUpdateWallet,
   useMutationAdjustBalance,
 } from "@/utils/generated/hooks";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";

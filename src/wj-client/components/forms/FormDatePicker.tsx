@@ -169,13 +169,13 @@ export function FormDatePicker({
 
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(
-    (value || defaultValue || new Date()).getMonth()
+    (value || defaultValue || new Date()).getMonth(),
   );
   const [currentYear, setCurrentYear] = useState(
-    (value || defaultValue || new Date()).getFullYear()
+    (value || defaultValue || new Date()).getFullYear(),
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(
-    value || defaultValue || null
+    value || defaultValue || null,
   );
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
@@ -203,7 +203,8 @@ export function FormDatePicker({
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
@@ -212,8 +213,18 @@ export function FormDatePicker({
     if (!date) return placeholder;
 
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     const month = months[date.getMonth()];
@@ -312,33 +323,34 @@ export function FormDatePicker({
     onChange?.(null);
   };
 
-  // Size classes
+  // Size classes - unified with design system
   const sizeClasses = {
-    sm: "h-10 px-3 text-sm",
-    md: "h-12 px-4 text-base",
-    lg: "h-14 px-5 text-lg",
+    sm: "min-h-[40px] px-3 text-sm",
+    md: "min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 text-sm sm:text-base",
+    lg: "min-h-[48px] sm:min-h-[56px] px-4 sm:px-5 text-base sm:text-lg",
   };
 
-  // State colors
+  // State colors - border only
   const getStateClasses = () => {
     if (error) {
-      return "border-red-300 hover:border-red-400 dark:border-red-700 dark:hover:border-red-600";
+      return "border-danger-300 hover:border-danger-400 dark:border-danger-700 dark:hover:border-danger-600";
     }
     if (success) {
-      return "border-green-300 hover:border-green-400 dark:border-green-700 dark:hover:border-green-600";
+      return "border-success-300 hover:border-success-400 dark:border-success-700 dark:hover:border-success-600";
     }
-    return "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500";
+    return "border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500";
   };
 
   const triggerClasses = cn(
     "w-full flex items-center justify-between gap-3",
-    "rounded-lg border bg-white dark:bg-gray-800",
-    "text-gray-900 dark:text-gray-100",
+    "rounded-lg border bg-white dark:bg-dark-surface",
+    "text-neutral-900 dark:text-dark-text",
     "transition-all duration-200",
-    "focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent",
-    "disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-900",
+    // Focus styles - single ring (clean, modern)
+    "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+    "disabled:bg-neutral-50 disabled:cursor-not-allowed dark:disabled:bg-dark-surface-hover disabled:opacity-50",
     sizeClasses[size],
-    getStateClasses()
+    getStateClasses(),
   );
 
   // Generate calendar days
@@ -368,21 +380,24 @@ export function FormDatePicker({
   ];
 
   return (
-    <div ref={containerRef} className={cn("relative w-full", containerClassName)}>
+    <div
+      ref={containerRef}
+      className={cn("relative w-full", containerClassName)}
+    >
       {label && (
         <label
           htmlFor={pickerId}
           className={cn(
             "block text-sm font-medium mb-1.5",
             error
-              ? "text-red-600 dark:text-red-400"
+              ? "text-danger-600 dark:text-danger-400"
               : success
-              ? "text-green-600 dark:text-green-400"
-              : "text-gray-700 dark:text-gray-300"
+                ? "text-success-600 dark:text-success-400"
+                : "text-neutral-700 dark:text-dark-text-secondary",
           )}
         >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-danger-600 dark:text-danger-400 ml-1">*</span>}
         </label>
       )}
 
@@ -399,11 +414,13 @@ export function FormDatePicker({
         aria-expanded={isOpen}
         aria-disabled={disabled}
         aria-required={required}
-        aria-describedby={cn(
-          helperText && helperId,
-          error && errorId,
-          success && successId
-        ).trim() || undefined}
+        aria-describedby={
+          cn(
+            helperText && helperId,
+            error && errorId,
+            success && successId,
+          ).trim() || undefined
+        }
         aria-invalid={error ? "true" : "false"}
       >
         <span className="truncate flex-1 text-left">
@@ -420,16 +437,23 @@ export function FormDatePicker({
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               aria-label="Clear date"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           )}
           <svg
-            className={cn(
-              "w-5 h-5 text-gray-400",
-              isOpen && "rotate-180"
-            )}
+            className={cn("w-5 h-5 text-gray-400", isOpen && "rotate-180")}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -452,7 +476,7 @@ export function FormDatePicker({
             "absolute z-50 w-full mt-1 p-4",
             "bg-white dark:bg-gray-800",
             "border border-gray-200 dark:border-gray-700",
-            "rounded-lg shadow-lg"
+            "rounded-lg shadow-lg",
           )}
         >
           {/* Presets */}
@@ -482,8 +506,18 @@ export function FormDatePicker({
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                 aria-label="Previous month"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
               <button
@@ -492,8 +526,18 @@ export function FormDatePicker({
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                 aria-label="Previous year"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                  />
                 </svg>
               </button>
             </div>
@@ -512,8 +556,18 @@ export function FormDatePicker({
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                 aria-label="Next year"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                  />
                 </svg>
               </button>
               <button
@@ -522,8 +576,18 @@ export function FormDatePicker({
                 className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                 aria-label="Next month"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </div>
@@ -547,7 +611,8 @@ export function FormDatePicker({
               const isSelected = date && isDateSelected(date);
               const isToday = date && isDateToday(date);
               const isDisabled = date && isDateDisabled(date);
-              const isHovered = date && hoveredDate && isDateSelected(hoveredDate);
+              const isHovered =
+                date && hoveredDate && isDateSelected(hoveredDate);
 
               return (
                 <button
@@ -562,14 +627,14 @@ export function FormDatePicker({
                     "hover:bg-gray-100 dark:hover:bg-gray-700",
                     "focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-inset",
                     {
-                      "invisible": isEmpty,
+                      invisible: isEmpty,
                       "bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-700":
                         isSelected,
                       "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400":
                         isToday && !isSelected,
                       "font-semibold": isToday,
                       "text-gray-400 cursor-not-allowed": isDisabled,
-                    }
+                    },
                   )}
                   aria-label={date ? date.toDateString() : ""}
                   aria-selected={isSelected}
@@ -589,7 +654,7 @@ export function FormDatePicker({
           {error && (
             <p
               id={errorId}
-              className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1"
+              className="text-sm text-danger-600 dark:text-danger-400 flex items-center gap-1"
             >
               <svg
                 className="w-4 h-4 flex-shrink-0"
@@ -609,7 +674,7 @@ export function FormDatePicker({
           {success && !error && (
             <p
               id={successId}
-              className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
+              className="text-sm text-success-600 dark:text-success-400 flex items-center gap-1"
             >
               <svg
                 className="w-4 h-4 flex-shrink-0"
@@ -629,7 +694,7 @@ export function FormDatePicker({
           {helperText && !error && !success && (
             <p
               id={helperId}
-              className="text-sm text-gray-500 dark:text-gray-400"
+              className="text-sm text-neutral-500 dark:text-dark-text-tertiary"
             >
               {helperText}
             </p>

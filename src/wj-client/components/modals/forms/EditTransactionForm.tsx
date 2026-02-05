@@ -16,7 +16,7 @@ import {
 } from "@/gen/protobuf/v1/transaction";
 import { FormToggle } from "@/components/forms/FormToggle";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { FormCreatableSelect } from "@/components/forms/FormCreatableSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";

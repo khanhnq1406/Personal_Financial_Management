@@ -172,11 +172,11 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
 
     const showFloatingLabel = floatingLabel && label && (isFocused || hasValue);
 
-    // Size classes
+    // Size classes - unified with design system
     const sizeClasses = {
-      sm: "h-10 px-3 text-sm",
-      md: "h-12 px-4 text-base",
-      lg: "h-14 px-5 text-lg",
+      sm: "min-h-[40px] px-3 text-sm",
+      md: "min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 text-sm sm:text-base",
+      lg: "min-h-[48px] sm:min-h-[56px] px-4 sm:px-5 text-base sm:text-lg",
     };
 
     // Container padding adjustments for icons
@@ -185,26 +185,26 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
       right: rightIcon || loading ? "pr-11" : "",
     };
 
-    // State colors
+    // State colors - unified with design system
     const getStateClasses = () => {
       if (error) {
-        return "border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-700 dark:focus:border-red-500 dark:focus:ring-red-500";
+        return "border-danger-300 focus:border-danger-500 focus:ring-danger-500 dark:border-danger-700 dark:focus:border-danger-500 dark:focus:ring-danger-500";
       }
       if (success) {
-        return "border-green-300 focus:border-green-500 focus:ring-green-500 dark:border-green-700 dark:focus:border-green-500 dark:focus:ring-green-500";
+        return "border-success-300 focus:border-success-500 focus:ring-success-500 dark:border-success-700 dark:focus:border-success-500 dark:focus:ring-success-500";
       }
-      return "border-gray-300 focus:border-green-600 focus:ring-green-600 dark:border-gray-600 dark:focus:border-green-500 dark:focus:ring-green-500";
+      return "border-neutral-300 focus:border-primary-500 focus:ring-primary-500 dark:border-neutral-600 dark:focus:border-primary-500 dark:focus:ring-primary-500";
     };
 
     const inputClasses = cn(
-      // Base styles
+      // Base styles - unified with design system
       "w-full rounded-lg border transition-all duration-200",
-      "bg-white dark:bg-gray-800",
-      "text-gray-900 dark:text-gray-100",
-      "placeholder:text-gray-400 dark:placeholder:text-gray-500",
-      "disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-900",
-      // Focus styles
-      "focus:outline-none focus:ring-2 focus:ring-offset-0",
+      "bg-white dark:bg-dark-surface",
+      "text-neutral-900 dark:text-dark-text",
+      "placeholder:text-neutral-400 dark:placeholder:text-dark-text-tertiary",
+      "disabled:bg-neutral-50 disabled:cursor-not-allowed dark:disabled:bg-dark-surface-hover disabled:opacity-50",
+      // Focus styles - single ring (clean, modern)
+      "focus:outline-none focus:ring-2 focus:border-transparent",
       // Size
       sizeClasses[size],
       // Padding for icons
@@ -218,8 +218,8 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
 
     const labelClasses = cn(
       "absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200",
-      "bg-white dark:bg-gray-800 px-1",
-      "text-gray-500 dark:text-gray-400",
+      "bg-white dark:bg-dark-surface px-1",
+      "text-neutral-500 dark:text-dark-text-tertiary",
       {
         "text-xs -translate-y-8 top-1/2": showFloatingLabel,
         "text-base": !showFloatingLabel,
@@ -234,12 +234,12 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
       containerClassName
     );
 
-    const iconClasses = "absolute top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none";
+    const iconClasses = "absolute top-1/2 -translate-y-1/2 text-neutral-400 dark:text-dark-text-tertiary pointer-events-none";
     const leftIconClasses = cn(iconClasses, "left-3");
     const rightIconClasses = cn(
       iconClasses,
       "right-3",
-      onRightIconClick && "pointer-events-auto cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+      onRightIconClick && "pointer-events-auto cursor-pointer hover:text-neutral-600 dark:hover:text-dark-text-secondary"
     );
 
     return (
@@ -250,14 +250,14 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             className={cn(
               "block text-sm font-medium mb-1.5",
               error
-                ? "text-red-600 dark:text-red-400"
+                ? "text-danger-600 dark:text-danger-400"
                 : success
-                ? "text-green-600 dark:text-green-400"
-                : "text-gray-700 dark:text-gray-300"
+                ? "text-success-600 dark:text-success-400"
+                : "text-neutral-700 dark:text-dark-text-secondary"
             )}
           >
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="text-danger-600 dark:text-danger-400 ml-1">*</span>}
           </label>
         )}
 
@@ -302,7 +302,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             >
               {loading ? (
                 <svg
-                  className="animate-spin h-5 w-5 text-gray-400"
+                  className="animate-spin h-5 w-5 text-neutral-400 dark:text-dark-text-tertiary"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"

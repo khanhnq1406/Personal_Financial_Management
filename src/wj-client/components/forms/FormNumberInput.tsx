@@ -17,6 +17,7 @@ interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   step?: string;
   prefix?: string;
   suffix?: string;
+  helperText?: string;
 }
 
 export const FormNumberInput = ({
@@ -30,6 +31,7 @@ export const FormNumberInput = ({
   step = "1",
   prefix,
   suffix,
+  helperText,
   ...props
 }: FormNumberInputProps) => {
   const {
@@ -43,16 +45,20 @@ export const FormNumberInput = ({
     onChange(isNaN(numValue) ? "" : numValue);
   };
 
+  const hasError = !!error;
+  const errorId = `${props.name}-error`;
+  const helperId = `${props.name}-helper`;
+
   return (
-    <div className={cn("mb-2 sm:mb-3", className)}>
+    <div className={cn("mb-3 sm:mb-4", className)}>
       {label && (
         <Label htmlFor={props.name} required={required}>
           {label}
         </Label>
       )}
-      <div className={cn("relative", label && "mt-1")}>
+      <div className={cn("relative", label && "mt-1 sm:mt-1.5")}>
         {prefix && (
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">
+          <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-dark-text-tertiary text-sm sm:text-base pointer-events-none z-10">
             {prefix}
           </span>
         )}
@@ -70,23 +76,48 @@ export const FormNumberInput = ({
           onBlur={onBlur}
           ref={ref}
           className={cn(
-            "border border-gray-300 rounded-md w-full text-base min-h-[44px] sm:min-h-[48px] p-2.5 sm:p-3 outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed",
-            prefix && "pl-8",
-            suffix && "pr-12",
-            error && "border-2 border-danger-600"
+            "w-full text-sm sm:text-base min-h-[44px] sm:min-h-[48px]",
+            "px-3 sm:px-4 py-2.5 sm:py-3",
+            "rounded-lg",
+            "border transition-all duration-200",
+            "bg-white dark:bg-dark-surface",
+            "text-neutral-900 dark:text-dark-text",
+            "placeholder:text-neutral-400 dark:placeholder:text-dark-text-tertiary",
+            // Focus states - single ring (clean, modern)
+            "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+            // Error states
+            hasError &&
+              "border-danger-500 focus:ring-danger-500 focus:border-transparent",
+            !hasError &&
+              "border-neutral-300 dark:border-dark-border hover:border-neutral-400 dark:hover:border-dark-border-hover",
+            // Disabled states
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral-50 dark:disabled:bg-dark-surface-hover",
+            // Spacing for prefix/suffix
+            prefix && "pl-8 sm:pl-10",
+            suffix && "pr-8 sm:pr-12",
           )}
-          aria-invalid={error ? "true" : "false"}
-          aria-describedby={error ? `${props.name}-error` : undefined}
+          aria-invalid={hasError ? "true" : "false"}
+          aria-describedby={cn(
+            hasError && errorId,
+            helperText && !hasError && helperId,
+          )}
         />
         {suffix && (
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500">
+          <span className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-dark-text-tertiary text-sm sm:text-base pointer-events-none">
             {suffix}
           </span>
         )}
       </div>
-      {error && (
-        <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>
+      {/* Helper text */}
+      {helperText && !hasError && (
+        <p
+          id={helperId}
+          className="mt-1.5 text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary"
+        >
+          {helperText}
+        </p>
       )}
+      {error && <ErrorMessage id={errorId}>{error.message}</ErrorMessage>}
     </div>
   );
 };

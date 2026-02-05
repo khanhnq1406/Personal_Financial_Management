@@ -14,7 +14,7 @@ import {
 import { CategoryType } from "@/gen/protobuf/v1/transaction";
 import { FormToggle } from "@/components/forms/FormToggle";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { FormCreatableSelect } from "@/components/forms/FormCreatableSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
@@ -111,7 +111,7 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
   const walletOptions: SelectOption[] = useMemo(
     () =>
       (walletsData?.wallets || []).map((wallet) => ({
-        value: wallet.id,
+        value: String(wallet.id),
         label: `${wallet.walletName} (${formatCurrency(wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0, currency)})`,
         balance: wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
       })),
@@ -216,7 +216,6 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
         options={walletOptions}
         placeholder="Select wallet"
         required
-        loading={walletsLoading}
       />
 
       <FormCreatableSelect

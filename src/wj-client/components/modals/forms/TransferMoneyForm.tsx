@@ -8,7 +8,7 @@ import {
   useMutationTransferFunds,
 } from "@/utils/generated/hooks";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
 import { Button } from "@/components/Button";
@@ -77,13 +77,13 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
   };
 
   const walletOptions: SelectOption[] = wallets.map((wallet) => ({
-    value: wallet.id,
+    value: String(wallet.id),
     label: wallet.walletName,
     balance: wallet.balance?.amount || 0, // Keep raw balance for validation
   }));
 
   const toWalletOptions: SelectOption[] = availableToWallets.map((wallet) => ({
-    value: wallet.id,
+    value: String(wallet.id),
     label: wallet.walletName,
     balance: wallet.balance?.amount || 0, // Keep raw balance for validation
   }));
@@ -144,8 +144,6 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         options={walletOptions}
         placeholder="Select source wallet"
         required
-        loading={walletsLoading}
-        formatOption={formatWalletOption}
       />
 
       <FormSelect
@@ -159,9 +157,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
             : "Select destination wallet"
         }
         required
-        loading={walletsLoading}
         disabled={!fromWalletId}
-        formatOption={formatWalletOption}
       />
 
       <FormDateTimePicker

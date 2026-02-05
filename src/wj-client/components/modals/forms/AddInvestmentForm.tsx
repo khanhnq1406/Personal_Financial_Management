@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
 import {
   Select,
@@ -70,26 +70,38 @@ interface AddInvestmentFormProps {
 }
 
 const investmentTypeOptions: SelectOption[] = [
-  { value: InvestmentType.INVESTMENT_TYPE_STOCK, label: "Stock" },
-  { value: InvestmentType.INVESTMENT_TYPE_ETF, label: "ETF" },
+  { value: String(InvestmentType.INVESTMENT_TYPE_STOCK), label: "Stock" },
+  { value: String(InvestmentType.INVESTMENT_TYPE_ETF), label: "ETF" },
   {
-    value: InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND,
+    value: String(InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND),
     label: "Mutual Fund",
   },
   {
-    value: InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY,
+    value: String(InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY),
     label: "Cryptocurrency",
   },
-  { value: InvestmentType.INVESTMENT_TYPE_BOND, label: "Bond" },
-  { value: InvestmentType.INVESTMENT_TYPE_COMMODITY, label: "Commodity" },
-  { value: InvestmentType.INVESTMENT_TYPE_GOLD_VND, label: "Gold (Vietnam)" },
-  { value: InvestmentType.INVESTMENT_TYPE_GOLD_USD, label: "Gold (World)" },
+  { value: String(InvestmentType.INVESTMENT_TYPE_BOND), label: "Bond" },
   {
-    value: InvestmentType.INVESTMENT_TYPE_SILVER_VND,
+    value: String(InvestmentType.INVESTMENT_TYPE_COMMODITY),
+    label: "Commodity",
+  },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_GOLD_VND),
+    label: "Gold (Vietnam)",
+  },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_GOLD_USD),
+    label: "Gold (World)",
+  },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_SILVER_VND),
     label: "Silver (Vietnam)",
   },
-  { value: InvestmentType.INVESTMENT_TYPE_SILVER_USD, label: "Silver (World)" },
-  { value: InvestmentType.INVESTMENT_TYPE_OTHER, label: "Other" },
+  {
+    value: String(InvestmentType.INVESTMENT_TYPE_SILVER_USD),
+    label: "Silver (World)",
+  },
+  { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 
 export function AddInvestmentForm({
@@ -474,7 +486,6 @@ export function AddInvestmentForm({
             disabled={isSubmitting || getListWallets.isLoading}
             isLoading={getListWallets.isLoading}
             clearable={false}
-            disableFilter={true}
             className="mt-1"
           />
           {!walletId && (
