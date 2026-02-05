@@ -235,3 +235,104 @@ body {
     opacity: 0.7;
   }
 }
+
+/* Tabular numbers for financial data */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-md {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Financial display typography */
+.text-display-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-sm {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-md {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-lg {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.text-display-xl {
+  font-size: 2rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.text-display-2xl {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.text-display-3xl {
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Safe area bottom padding for mobile bottom navigation */
+.pb-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+}
+
+/* Touch-friendly utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-lg {
+  min-height: 48px;
+  min-width: 48px;
+}

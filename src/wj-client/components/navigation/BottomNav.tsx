@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { memo } from "react";
+import { ZIndex } from "@/lib/utils/z-index";
 
 export interface NavItem {
   href: string;
@@ -47,12 +48,13 @@ export const BottomNav = memo(function BottomNav({
   return (
     <nav
       className={cn(
-        "sm:hidden fixed bottom-0 left-0 right-0 z-50",
+        "sm:hidden fixed bottom-0 left-0 right-0",
         "bg-white border-t border-neutral-200",
         "pb-safe pt-1",
         "shadow-[0_-2px_10px_rgba(0,0,0,0.05)]",
         className
       )}
+      style={{ zIndex: ZIndex.sidebar }}
       role="navigation"
       aria-label="Main navigation"
     >

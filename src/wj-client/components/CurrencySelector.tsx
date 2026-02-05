@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { SUPPORTED_CURRENCIES } from "@/app/constants";
+import { ZIndex } from "@/lib/utils/z-index";
 
 export function CurrencySelector() {
   const { currency, updateCurrency, isConverting } = useCurrency();
@@ -108,7 +109,10 @@ export function CurrencySelector() {
         {/* Dropdown menu - only show when not disabled */}
         {/* Mobile: dropdown below (top-full mt-2), Desktop: dropdown above (sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0) */}
         {!isDisabled && (
-          <div className="absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2 bg-white rounded-lg drop-shadow-round py-2 z-50 hidden group-hover:block min-w-[200px]">
+          <div
+            className="absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2 bg-white rounded-lg drop-shadow-round py-2 hidden group-hover:block min-w-[200px]"
+            style={{ zIndex: ZIndex.dropdown }}
+          >
             {SUPPORTED_CURRENCIES.map((curr) => (
               <button
                 key={curr.code}

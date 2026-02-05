@@ -3,7 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils/cn";
 
-type SkeletonProps = {
+export type SkeletonProps = {
   className?: string;
   style?: React.CSSProperties;
 };

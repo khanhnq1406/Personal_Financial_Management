@@ -1,23 +1,16 @@
 "use client";
 
 /**
- * Optimized Portfolio Page
+ * Enhanced Portfolio Page with Pull-to-Refresh and Mobile-First Layout
  *
- * Phase 2 Refactoring: Component breakdown for better maintainability and mobile optimization
+ * Phase 5 Refactoring: Data visualization and mobile-optimized analytics
  *
- * Implements Vercel React Best Practices:
- * - bundle-dynamic-imports: Heavy modal loaded dynamically
- * - bundle-preload: Modal preloaded on row hover for perceived speed
- * - rerender-memo: Components memoized to prevent unnecessary re-renders
- * - rerender-functional-setState: Use functional setState for stable callbacks
- * - rendering-hoist-jsx: Static JSX extracted outside component
- *
- * Component Breakdown:
- * - PortfolioSummary: Overview stats cards (Total Value, Cost, PNL, Holdings)
- * - InvestmentList: Desktop table + mobile card view for holdings
- * - InvestmentCard: Individual investment card (mobile)
- * - PortfolioAnalytics: Charts and metrics (collapsible on mobile)
- * - InvestmentActions: Quick action buttons (Add, Refresh)
+ * Features:
+ * - Pull-to-refresh for price updates
+ * - Enhanced PortfolioSummary with animations and charts
+ * - Enhanced InvestmentCard with expandable details
+ * - Mobile-first responsive layout
+ * - Touch-friendly interactions
  */
 
 import {
@@ -25,9 +18,14 @@ import {
   useMemo,
   useCallback,
   startTransition,
+  useRef,
+  useEffect,
 } from "react";
 import { BaseCard } from "@/components/BaseCard";
-import { StatsCardSkeleton, TableSkeleton } from "@/components/loading/Skeleton";
+import {
+  StatsCardSkeleton,
+  TableSkeleton,
+} from "@/components/loading/Skeleton";
 import {
   useQueryListWallets,
   useQueryListUserInvestments,
@@ -48,10 +46,10 @@ import {
   preloadInvestmentDetailModal,
 } from "@/components/lazy/OptimizedComponents";
 import { BaseModal } from "@/components/modals/BaseModal";
+import { PortfolioSummaryEnhanced } from "./components/PortfolioSummaryEnhanced";
+import { InvestmentList } from "./components/InvestmentList";
+import { InvestmentCardEnhanced } from "./components/InvestmentCardEnhanced";
 import {
-  PortfolioSummary,
-  InvestmentList,
-  InvestmentActions,
   EmptyInvestmentsState,
   EmptyWalletsState,
   UpdateProgressBanner,
@@ -65,10 +63,8 @@ const ModalType = {
   INVESTMENT_DETAIL: "INVESTMENT_DETAIL",
 } as const;
 
-// Wallet filter value: "all" for all wallets, or wallet ID as string
 type WalletFilterValue = "all" | string;
 
-// Type filter options
 const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
   { value: "0", label: "All Types" },
   {
@@ -97,24 +93,36 @@ const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
   { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 
-export default function PortfolioPage() {
+const SORT_OPTIONS: SelectOption<string>[] = [
+  { value: "name", label: "Name (A-Z)" },
+  { value: "value", label: "Value (High-Low)" },
+  { value: "pnl", label: "PnL (High-Low)" },
+  { value: "pnlPercent", label: "PnL % (High-Low)" },
+];
+
+export default function PortfolioPageEnhanced() {
   const { currency } = useCurrency();
-  // "all" for all wallets, or wallet ID as string
   const [selectedWallet, setSelectedWallet] =
     useState<WalletFilterValue>("all");
-  // Type filter (0 = all types)
   const [typeFilter, setTypeFilter] = useState<string>("0");
+  const [sortBy, setSortBy] = useState<string>("name");
   const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
     null,
   );
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     number | null
   >(null);
-  // UI state for price update feedback
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
-  // Fetch user's wallets
+  // Pull-to-refetch state
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch data
   const getListWallets = useQueryListWallets(
     {
       pagination: {
@@ -127,7 +135,6 @@ export default function PortfolioPage() {
     { refetchOnMount: "always" },
   );
 
-  // Filter for investment wallets (memoized)
   const investmentWallets = useMemo(() => {
     if (!getListWallets.data?.wallets) return [];
     return getListWallets.data.wallets.filter(
@@ -135,7 +142,6 @@ export default function PortfolioPage() {
     );
   }, [getListWallets.data]);
 
-  // Build wallet filter options
   const walletOptions = useMemo((): SelectOption<string>[] => {
     const options: SelectOption<string>[] = [
       { value: "all", label: "All Investment Wallets" },
@@ -149,7 +155,6 @@ export default function PortfolioPage() {
     return options;
   }, [investmentWallets]);
 
-  // Computed values for API calls
   const walletIdForApi = useMemo(() => {
     if (selectedWallet === "all") return 0;
     return parseInt(selectedWallet, 10);
@@ -164,7 +169,6 @@ export default function PortfolioPage() {
 
   const isAllWalletsView = selectedWallet === "all";
 
-  // Fetch portfolio summary (uses aggregated endpoint)
   const getPortfolioSummary = useQueryGetAggregatedPortfolioSummary(
     {
       walletId: walletIdForApi,
@@ -176,7 +180,6 @@ export default function PortfolioPage() {
     },
   );
 
-  // Fetch investments (uses user investments endpoint)
   const getListInvestments = useQueryListUserInvestments(
     {
       walletId: walletIdForApi,
@@ -189,8 +192,30 @@ export default function PortfolioPage() {
     },
   );
 
-  // Get selected wallet balance and currency for AddInvestmentForm validation
-  // Only available when a specific wallet is selected (not "all")
+  // Sort investments
+  const sortedInvestments = useMemo(() => {
+    const investments = getListInvestments.data?.investments || [];
+    return [...investments].sort((a, b) => {
+      switch (sortBy) {
+        case "value":
+          return (
+            (b.displayCurrentValue?.amount || b.currentValue || 0) -
+            (a.displayCurrentValue?.amount || a.currentValue || 0)
+          );
+        case "pnl":
+          return (
+            (b.displayUnrealizedPnl?.amount || b.unrealizedPnl || 0) -
+            (a.displayUnrealizedPnl?.amount || a.unrealizedPnl || 0)
+          );
+        case "pnlPercent":
+          return (b.unrealizedPnlPercent || 0) - (a.unrealizedPnlPercent || 0);
+        case "name":
+        default:
+          return a.symbol.localeCompare(b.symbol);
+      }
+    });
+  }, [getListInvestments.data?.investments, sortBy]);
+
   const selectedWalletBalance = useMemo(() => {
     if (isAllWalletsView) return 0;
     const walletId = parseInt(selectedWallet, 10);
@@ -205,21 +230,62 @@ export default function PortfolioPage() {
     return wallet?.balance?.currency || "USD";
   }, [selectedWallet, investmentWallets, isAllWalletsView]);
 
-  // Query client for invalidating queries
   const queryClient = useQueryClient();
+
+  // Refetch all data
+  const refetchAllData = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentListUserInvestments],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
+      }),
+    ]);
+  }, [queryClient]);
+
+  // Pull-to-refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current?.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || containerRef.current?.scrollTop !== 0)
+      return;
+
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - touchStartY.current;
+
+    if (distance > 0) {
+      setIsPulling(true);
+      setPullDistance(Math.min(distance * 0.5, 120)); // Max 120px pull
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 80 && !isRefreshing) {
+      setIsRefreshing(true);
+      setIsPulling(false);
+      await refetchAllData();
+      setTimeout(() => setIsRefreshing(false), 500);
+    } else {
+      setIsPulling(false);
+    }
+    setPullDistance(0);
+    touchStartY.current = null;
+  };
 
   // Update prices mutation
   const updatePricesMutation = useMutationUpdatePrices({
-    onSuccess: (data) => {
-      // Show update in progress banner
+    onSuccess: async (data) => {
       setShowUpdateBanner(true);
       console.log(`Price update started: ${data.message}`);
 
-      // Polling mechanism to check for updated prices
-      // We'll check every 2 seconds for up to 15 seconds (max 7 attempts)
       let pollAttempts = 0;
       const maxPollAttempts = 7;
-      const pollInterval = 2000; // 2 seconds
+      const pollInterval = 2000;
 
       const pollForUpdates = () => {
         pollAttempts++;
@@ -227,37 +293,18 @@ export default function PortfolioPage() {
           `Checking for price updates (attempt ${pollAttempts}/${maxPollAttempts})...`,
         );
 
-        // Refetch data
-        queryClient
-          .invalidateQueries({
-            queryKey: [EVENT_InvestmentListUserInvestments],
-          })
-          .then(() => {
-            return queryClient.invalidateQueries({
-              queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
-            });
-          });
+        refetchAllData();
 
-        // Check if we should continue polling or show success
         if (pollAttempts >= maxPollAttempts) {
-          // Max attempts reached, assume complete
           setShowUpdateBanner(false);
           setShowSuccessBanner(true);
-          console.log(
-            "Price update polling complete (max attempts reached). Showing success.",
-          );
-
-          // Auto-hide success banner after 4 seconds
-          setTimeout(() => {
-            setShowSuccessBanner(false);
-          }, 4000);
+          console.log("Price update polling complete. Showing success.");
+          setTimeout(() => setShowSuccessBanner(false), 4000);
         } else {
-          // Continue polling
           setTimeout(pollForUpdates, pollInterval);
         }
       };
 
-      // Start polling after initial delay (give backend time to start processing)
       setTimeout(pollForUpdates, 2000);
     },
     onError: (error: any) => {
@@ -266,7 +313,6 @@ export default function PortfolioPage() {
     },
   });
 
-  // Memoize modal title
   const modalTitle = useMemo(() => {
     switch (modalType) {
       case ModalType.CREATE_WALLET:
@@ -280,7 +326,6 @@ export default function PortfolioPage() {
     }
   }, [modalType]);
 
-  // Use startTransition for non-urgent state updates (rerender-transitions)
   const handleOpenModal = useCallback(
     (type: keyof typeof ModalType, investmentId?: number) => {
       startTransition(() => {
@@ -300,45 +345,52 @@ export default function PortfolioPage() {
 
   const handleModalSuccess = useCallback(() => {
     startTransition(() => {
-      getListWallets.refetch();
-      getPortfolioSummary.refetch();
-      getListInvestments.refetch();
+      refetchAllData();
       handleCloseModal();
     });
-  }, [
-    getListWallets,
-    getPortfolioSummary,
-    getListInvestments,
-    handleCloseModal,
-  ]);
+  }, [refetchAllData, handleCloseModal]);
 
-  // Preload modal on hover for perceived speed (bundle-preload)
   const handleRowHover = useCallback(() => {
     preloadInvestmentDetailModal();
   }, []);
 
-  // Handle refresh prices
   const handleRefreshPrices = useCallback(() => {
     updatePricesMutation.mutate({
-      investmentIds: [], // Empty = update all investments
-      forceRefresh: true, // Bypass cache for fresh data
+      investmentIds: [],
+      forceRefresh: true,
     });
   }, [updatePricesMutation]);
+
+  const handleBuyMore = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+    },
+    [handleOpenModal],
+  );
+
+  const handleSell = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+    },
+    [handleOpenModal],
+  );
+
+  const handleEdit = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+    },
+    [handleOpenModal],
+  );
 
   // Loading state
   if (getListWallets.isLoading || getListWallets.isPending) {
     return (
       <div className="flex flex-col gap-6 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-        {/* Header skeleton */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div className="h-8 w-48 bg-neutral-200 rounded animate-pulse" />
           <div className="h-10 w-40 bg-neutral-200 rounded animate-pulse" />
         </div>
-
-        {/* Summary cards skeleton */}
         <StatsCardSkeleton cards={4} />
-
-        {/* Table skeleton */}
         <div className="bg-white rounded-lg shadow-card p-4 sm:p-6">
           <div className="h-6 w-32 bg-neutral-200 rounded animate-pulse mb-4" />
           <TableSkeleton rows={5} showAvatar={false} />
@@ -360,9 +412,9 @@ export default function PortfolioPage() {
   }
 
   const portfolioSummary = getPortfolioSummary.data?.data;
-  const investments = getListInvestments.data?.investments || [];
+  const investments = sortedInvestments;
 
-  // No investment wallets - render empty state with modal
+  // No investment wallets
   if (investmentWallets.length === 0) {
     return (
       <>
@@ -387,7 +439,31 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <div className="flex justify-center py-3 sm:py-4 px-3 sm:px-6">
+      <div
+        ref={containerRef}
+        className="flex justify-center py-3 sm:py-4 px-3 sm:px-6 overflow-y-auto"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ overscrollBehaviorY: "contain" }}
+      >
+        {/* Pull-to-refresh indicator */}
+        {(isPulling || isRefreshing) && (
+          <div
+            className="flex justify-center py-2"
+            style={{ height: pullDistance }}
+          >
+            <div className="flex items-center gap-2 text-neutral-600">
+              <div
+                className={`w-5 h-5 border-2 border-neutral-600 border-t-transparent rounded-full ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              <span className="text-sm">
+                {isRefreshing ? "Updating..." : "Pull to refresh"}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="w-full space-y-3 sm:space-y-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
@@ -397,15 +473,14 @@ export default function PortfolioPage() {
 
             {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              {/* Wallet Selector */}
               <div className="w-full sm:w-56 md:w-fit">
                 <Select
                   options={walletOptions}
                   value={selectedWallet}
                   onChange={(value) => {
-                    startTransition(() => {
-                      setSelectedWallet(value as WalletFilterValue);
-                    });
+                    startTransition(() =>
+                      setSelectedWallet(value as WalletFilterValue),
+                    );
                   }}
                   placeholder="Select Wallet"
                   clearable={false}
@@ -413,17 +488,27 @@ export default function PortfolioPage() {
                 />
               </div>
 
-              {/* Type Filter */}
-              <div className="w-full sm:w-full md:w-48">
+              <div className="w-full sm:w-full md:w-40">
                 <Select
                   options={TYPE_FILTER_OPTIONS}
                   value={typeFilter}
                   onChange={(value) => {
-                    startTransition(() => {
-                      setTypeFilter(value);
-                    });
+                    startTransition(() => setTypeFilter(value));
                   }}
                   placeholder="Filter by Type"
+                  clearable={false}
+                  disableFilter={true}
+                />
+              </div>
+
+              <div className="w-full sm:w-full md:w-40">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(value) => {
+                    startTransition(() => setSortBy(value));
+                  }}
+                  placeholder="Sort by"
                   clearable={false}
                   disableFilter={true}
                 />
@@ -435,23 +520,22 @@ export default function PortfolioPage() {
           {getPortfolioSummary.isLoading || getPortfolioSummary.isPending ? (
             <StatsCardSkeleton cards={4} />
           ) : portfolioSummary ? (
-            <PortfolioSummary
+            <PortfolioSummaryEnhanced
               portfolioSummary={portfolioSummary}
               userCurrency={currency}
+              onRefreshPrices={handleRefreshPrices}
+              onAddInvestment={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
+              isRefreshing={updatePricesMutation.isPending || showUpdateBanner}
             />
           ) : null}
 
-          {/* Update Banner - Shows during price update */}
-          {showUpdateBanner && (
-            <UpdateProgressBanner />
-          )}
+          {/* Update Banner */}
+          {showUpdateBanner && <UpdateProgressBanner />}
 
-          {/* Success Banner - Shows after successful update */}
-          {showSuccessBanner && (
-            <UpdateSuccessBanner />
-          )}
+          {/* Success Banner */}
+          {showSuccessBanner && <UpdateSuccessBanner />}
 
-          {/* Wallet Cash Balance (only for specific wallet selection) */}
+          {/* Wallet Cash Balance */}
           {!isAllWalletsView && (
             <WalletCashBalanceCard
               wallet={investmentWallets.find(
@@ -461,22 +545,12 @@ export default function PortfolioPage() {
             />
           )}
 
-          {/* Holdings Table */}
+          {/* Holdings - Mobile Card View */}
           <BaseCard className="p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-800">
                 Holdings
               </h2>
-              <InvestmentActions
-                onAddInvestment={() =>
-                  handleOpenModal(ModalType.ADD_INVESTMENT)
-                }
-                onRefreshPrices={handleRefreshPrices}
-                isRefreshing={
-                  updatePricesMutation.isPending || showUpdateBanner
-                }
-                disableRefresh={investmentWallets.length === 0}
-              />
             </div>
 
             {getListInvestments.isLoading || getListInvestments.isPending ? (
@@ -484,21 +558,29 @@ export default function PortfolioPage() {
             ) : investments.length === 0 ? (
               <EmptyInvestmentsState />
             ) : (
-              <InvestmentList
-                investments={investments}
-                userCurrency={currency}
-                onInvestmentClick={(id) =>
-                  handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
-                }
-                onRowHover={handleRowHover}
-                showWalletColumn={isAllWalletsView}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {investments.map((investment) => (
+                  <InvestmentCardEnhanced
+                    key={investment.id}
+                    investment={investment}
+                    userCurrency={currency}
+                    onClick={(id) =>
+                      handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
+                    }
+                    // onRowHover={handleRowHover} // Not supported in InvestmentCardEnhanced
+                    showWallet={isAllWalletsView}
+                    onBuyMore={handleBuyMore}
+                    onSell={handleSell}
+                    onEdit={handleEdit}
+                  />
+                ))}
+              </div>
             )}
           </BaseCard>
         </div>
       </div>
 
-      {/* Modal - InvestmentDetailModal handles its own BaseModal */}
+      {/* Modals */}
       {modalType === ModalType.INVESTMENT_DETAIL && selectedInvestmentId && (
         <InvestmentDetailModal
           isOpen={modalType === ModalType.INVESTMENT_DETAIL}
@@ -508,7 +590,6 @@ export default function PortfolioPage() {
         />
       )}
 
-      {/* BaseModal for other modals */}
       <BaseModal
         isOpen={modalType !== null && modalType !== ModalType.INVESTMENT_DETAIL}
         onClose={handleCloseModal}

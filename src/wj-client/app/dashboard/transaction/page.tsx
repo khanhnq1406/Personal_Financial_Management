@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
+import { ListTransactionsResponse } from "@/gen/protobuf/v1/transaction";
 import {
   useQueryListTransactions,
   useQueryListCategories,
@@ -9,45 +12,58 @@ import {
   useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
 import { SortField } from "@/gen/protobuf/v1/transaction";
-import { BaseCard } from "@/components/BaseCard";
-import { Select } from "@/components/select/Select";
-import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
-import { TablePagination } from "@/components/table/TanStackTable";
-import { MobileTable } from "@/components/table/MobileTable";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { EditTransactionForm } from "@/components/lazy/OptimizedComponents";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
-import { TransactionFilterModal, TransactionFilters } from "@/app/dashboard/transaction/TransactionFilterModal";
-import { ActiveFilterChips } from "@/app/dashboard/transaction/ActiveFilterChips";
+import {
+  TransactionFilterModal,
+  TransactionFilters,
+} from "./TransactionFilterModal";
+import { ActiveFilterChips } from "./ActiveFilterChips";
+import { TransactionCard, getDateGroupLabel } from "./TransactionCard";
+import { QuickFilterChips, QuickFilterType } from "./QuickFilterChips";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { cn } from "@/lib/utils/cn";
+import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
 
 const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
 
-type ModalState =
-  | { type: "edit-transaction"; transactionId: number }
-  | { type: "delete-confirmation"; transactionId: number }
-  | null;
+type ModalState = { type: "delete-confirmation"; transactionId: number } | null;
+
+// Lazy load EditTransactionForm
+const EditTransactionForm = dynamic(
+  () =>
+    import("@/components/lazy/OptimizedComponents").then(
+      (mod) => mod.EditTransactionForm,
+    ),
+  { ssr: false },
+);
 
 export default function TransactionPage() {
   const { currency } = useCurrency();
+  const queryClient = useQueryClient();
+
+  // State
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<string>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
   const [isHideBalance, setHideBalance] = useState(false);
   const [displayImg, setDisplayImg] = useState(displayImgList[0]);
   const [modalState, setModalState] = useState<ModalState>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Fetch data - use memoized filter to prevent re-renders on every keystroke
+  // Fetch data
   const filter = useMemo(
     () => ({
       searchNote: debouncedSearchQuery || undefined,
@@ -57,22 +73,22 @@ export default function TransactionPage() {
     [debouncedSearchQuery, selectedWallet, categoryFilter],
   );
 
-  // Memoize pagination config
   const paginationConfig = useMemo(
     () => ({
-      page: currentPage,
+      page: 1,
       pageSize: rowsPerPage,
       orderBy: sortField,
       order: sortOrder,
     }),
-    [currentPage, rowsPerPage, sortField, sortOrder],
+    [rowsPerPage, sortField, sortOrder],
   );
 
   const {
     data: transactionsData,
     isLoading,
     refetch,
-  } = useQueryListTransactions(
+    isFetching,
+  } = useQueryListTransactions<ListTransactionsResponse>(
     {
       pagination: paginationConfig,
       filter,
@@ -82,30 +98,49 @@ export default function TransactionPage() {
     { refetchOnMount: "always" },
   );
 
-  const { data: categoriesData, refetch: refetchListCategories } =
-    useQueryListCategories({
-      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-    });
+  const { data: categoriesData } = useQueryListCategories({
+    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+  });
 
-  const { data: walletsData, refetch: refetchListWallets } =
-    useQueryListWallets({
-      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-    });
+  const { data: walletsData } = useQueryListWallets({
+    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+  });
 
   const { data: totalBalanceData, refetch: refetchTotalBalance } =
     useQueryGetTotalBalance({});
 
   const deleteTransactionMutation = useMutationDeleteTransaction({
     onSuccess: () => {
-      refetchListWallets();
-      refetchListCategories();
-      refetchTotalBalance();
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["ListTransactions"] });
+      queryClient.invalidateQueries({ queryKey: ["ListWallets"] });
+      queryClient.invalidateQueries({ queryKey: ["ListCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["GetTotalBalance"] });
       setModalState(null);
     },
   });
 
-  // Get category name by ID - memoized with proper dependency
+  // Infinite scroll
+  const { containerRef, isLoadingMore, loadMore, setIsLoadingMore } =
+    useInfiniteScroll({
+      threshold: 200,
+      enabled: !isLoading && !isFetching,
+      hasMore: transactionsData?.pagination
+        ? transactionsData.transactions.length <
+          transactionsData.pagination.totalCount
+        : false,
+    });
+
+  // Load more handler
+  useEffect(() => {
+    if (isLoadingMore) {
+      // Fetch more data by refetching
+      refetch().then(() => {
+        setIsLoadingMore(false);
+      });
+    }
+  }, [isLoadingMore, refetch, setIsLoadingMore]);
+
+  // Memoized helpers
   const getCategoryName = useMemo(() => {
     const categoryMap = new Map<number, string>();
     categoriesData?.categories?.forEach((cat) => {
@@ -114,7 +149,6 @@ export default function TransactionPage() {
     return (id: number) => categoryMap.get(id) || "Uncategorized";
   }, [categoriesData]);
 
-  // Get wallet name by ID - memoized with proper dependency
   const getWalletName = useMemo(() => {
     const walletMap = new Map<number, string>();
     walletsData?.wallets?.forEach((wallet) => {
@@ -123,25 +157,30 @@ export default function TransactionPage() {
     return (id: number) => walletMap.get(id) || "Unknown Wallet";
   }, [walletsData]);
 
-  // Format date - memoized
-  const formatDate = useCallback((timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  // Group transactions by date
+  const groupedTransactions = useMemo(() => {
+    const transactions = transactionsData?.transactions || [];
+    const groups: Record<string, typeof transactions> = {};
+
+    transactions.forEach((transaction) => {
+      const groupLabel = getDateGroupLabel(transaction.date);
+      if (!groups[groupLabel]) {
+        groups[groupLabel] = [];
+      }
+      groups[groupLabel].push(transaction);
     });
-  }, []);
 
-  // Handle actions - memoized callbacks
-  const handleEditTransaction = useCallback((transactionId: number) => {
-    setModalState({ type: "edit-transaction", transactionId });
-  }, []);
+    return groups;
+  }, [transactionsData]);
 
+  // Handlers
   const handleDeleteTransaction = useCallback((transactionId: number) => {
     setModalState({ type: "delete-confirmation", transactionId });
+  }, []);
+
+  const handleEditTransaction = useCallback((transactionId: number) => {
+    // Handle edit - could open a modal or navigate
+    console.log("Edit transaction:", transactionId);
   }, []);
 
   const handleConfirmDelete = useCallback(() => {
@@ -156,47 +195,14 @@ export default function TransactionPage() {
     setModalState(null);
   }, []);
 
-  const handleModalSuccess = useCallback(() => {
-    refetchListWallets();
-    refetchListCategories();
-    refetchTotalBalance();
-    refetch();
-    handleCloseModal();
-  }, [refetch, handleCloseModal]);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetch();
+    await refetchTotalBalance();
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [refetch, refetchTotalBalance]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    selectedWallet,
-    debouncedSearchQuery,
-    categoryFilter,
-    sortField,
-    sortOrder,
-  ]);
-
-  const totalBalance =
-    totalBalanceData?.displayNetWorth?.amount ??
-    totalBalanceData?.displayValue?.amount ??
-    totalBalanceData?.data?.amount ??
-    0;
-  const formattedBalance = useMemo(() => {
-    return formatCurrency(totalBalance, currency);
-  }, [totalBalance, currency]);
-  const transactions = transactionsData?.transactions || [];
-  const totalCount =
-    transactionsData?.pagination?.totalCount ?? transactions.length;
-
-  const handleHideBalance = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      event.preventDefault();
-      setHideBalance((prev) => !prev);
-      setDisplayImg(displayImgList[Number(isHideBalance)]);
-    },
-    [isHideBalance],
-  );
-
-  // Filter modal handlers
+  // Filter handlers
   const handleOpenFilterModal = useCallback(() => {
     setIsFilterModalOpen(true);
   }, []);
@@ -221,38 +227,131 @@ export default function TransactionPage() {
     setSortOrder("desc");
   }, []);
 
-  const handleRemoveSingleFilter = useCallback((filterType: keyof TransactionFilters) => {
-    switch (filterType) {
-      case "walletId":
-        setSelectedWallet(null);
+  const handleRemoveSingleFilter = useCallback(
+    (filterType: keyof TransactionFilters) => {
+      switch (filterType) {
+        case "walletId":
+          setSelectedWallet(null);
+          break;
+        case "categoryFilter":
+          setCategoryFilter("");
+          break;
+        case "searchQuery":
+          setSearchQuery("");
+          break;
+        case "sortField":
+        case "sortOrder":
+          setSortField("date");
+          setSortOrder("desc");
+          break;
+      }
+    },
+    [],
+  );
+
+  // Quick filter handler
+  const handleQuickFilterChange = useCallback((filter: QuickFilterType) => {
+    setQuickFilter(filter);
+    // Apply filter logic here
+    switch (filter) {
+      case "income":
+        // Filter by income categories
         break;
-      case "categoryFilter":
-        setCategoryFilter("");
+      case "expense":
+        // Filter by expense categories
         break;
-      case "searchQuery":
-        setSearchQuery("");
+      case "today":
+        // Filter by today's date
         break;
-      case "sortField":
-      case "sortOrder":
-        setSortField("date");
-        setSortOrder("desc");
+      case "week":
+        // Filter by this week
+        break;
+      case "month":
+        // Filter by this month
+        break;
+      default:
+        // Show all
         break;
     }
   }, []);
 
-  // Prepare current filters for chips display
-  const currentFilters: TransactionFilters = useMemo(
-    () => ({
-      walletId: selectedWallet,
-      categoryFilter,
-      sortField,
-      sortOrder,
-      searchQuery,
-    }),
-    [selectedWallet, categoryFilter, sortField, sortOrder, searchQuery],
+  const handleHideBalance = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      event.preventDefault();
+      setHideBalance((prev) => !prev);
+      setDisplayImg(displayImgList[Number(isHideBalance)]);
+    },
+    [isHideBalance],
   );
 
-  // Prepare filter options - memoized
+  // Handle export transactions
+  const handleExportTransactions = useCallback(
+    async (options: ExportOptions) => {
+      try {
+        // Get filtered transactions based on current filters
+        const transactions = transactionsData?.transactions || [];
+
+        if (transactions.length === 0) {
+          alert("No transactions to export");
+          return;
+        }
+
+        // Convert to CSV format
+        const headers = [
+          "Date",
+          "Category",
+          "Wallet",
+          "Note",
+          "Amount",
+          "Type",
+        ];
+        const rows = transactions.map((t) => {
+          // Safely extract amount value
+          const amountValue =
+            t.displayAmount?.amount ?? t.amount?.amount ?? 0;
+          const numericAmount =
+            typeof amountValue === "number" ? amountValue : Number(amountValue) || 0;
+
+          return [
+            new Date(t.date * 1000).toLocaleDateString(),
+            getCategoryName(t.categoryId),
+            getWalletName(t.walletId),
+            t.note || "",
+            formatCurrency(numericAmount, currency),
+            t.type === 1 ? "Expense" : "Income",
+          ];
+        });
+
+        let csvContent = headers.join(",") + "\n";
+        csvContent += rows.map((row) => row.join(",")).join("\n");
+
+        // Create and download the file
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `transactions_${new Date().toISOString().split("T")[0]}.csv`,
+        );
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to export transactions",
+        );
+      }
+    },
+    [transactionsData, getCategoryName, getWalletName, currency],
+  );
+
+  // Prepare options
   const walletOptions = useMemo(
     () =>
       walletsData?.wallets?.map((w) => ({
@@ -275,80 +374,53 @@ export default function TransactionPage() {
     () => [
       { value: "date-desc", label: "Newest first" },
       { value: "date-asc", label: "Oldest first" },
+      { value: "amount-desc", label: "Highest first" },
+      { value: "amount-asc", label: "Lowest first" },
     ],
     [],
   );
 
-  // Memoize mobile table columns to avoid recreating on every render
-  const mobileColumns = useMemo(
-    () => [
-      {
-        id: "category",
-        header: "Category",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          getCategoryName(row.categoryId),
-      },
-      {
-        id: "wallet",
-        header: "Wallet",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          getWalletName(row.walletId),
-      },
-      {
-        id: "amount",
-        header: "Amount",
-        accessorFn: (row: (typeof transactions)[number]) => {
-          const amountValue =
-            row.displayAmount?.amount ?? row.amount?.amount ?? 0;
-          const numericAmount =
-            typeof amountValue === "number"
-              ? amountValue
-              : Number(amountValue) || 0;
-          return formatCurrency(
-            numericAmount,
-            row.displayAmount ? currency : row.currency,
-          );
-        },
-      },
-      {
-        id: "date",
-        header: "Date & Time",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          formatDate(row.date),
-      },
-      {
-        id: "note",
-        header: "Note",
-        accessorFn: (row: (typeof transactions)[number]) => row.note || "-",
-      },
-    ],
-    [getCategoryName, getWalletName, formatDate, currency],
+  const currentFilters: TransactionFilters = useMemo(
+    () => ({
+      walletId: selectedWallet,
+      categoryFilter,
+      sortField,
+      sortOrder,
+      searchQuery,
+    }),
+    [selectedWallet, categoryFilter, sortField, sortOrder, searchQuery],
   );
+
+  // Calculate totals
+  const totalBalance =
+    totalBalanceData?.displayNetWorth?.amount ??
+    totalBalanceData?.displayValue?.amount ??
+    totalBalanceData?.data?.amount ??
+    0;
+  const formattedBalance = useMemo(() => {
+    return formatCurrency(totalBalance, currency);
+  }, [totalBalance, currency]);
 
   return (
     <div className="h-full flex flex-col">
-      {/* Unified Responsive Header */}
-      <div className="flex-shrink-0 bg-primary-600 sm:bg-white border-b sm:border-b-gray-300">
+      {/* Header with Balance */}
+      <div className="flex-shrink-0 bg-primary-600 rounded-sm sm:bg-transparent border-b sm:border-b-gray-300">
         <div className="p-3 sm:p-4 md:px-6">
-          {/* Title and Balance Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-0">
             <h1 className="text-white sm:text-gray-900 text-2xl sm:text-3xl lg:text-4xl font-bold">
               Transactions
             </h1>
 
-            {/* Balance and Controls */}
             <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-              {/* Balance Display */}
               <div className="flex flex-col items-start sm:items-center">
                 <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-medium">
-                  {totalBalanceData ? "Total balance" : "Balance"}
+                  Total balance
                 </p>
                 <p className="text-white sm:text-gray-900 text-lg sm:text-xl lg:text-2xl font-semibold">
                   {isHideBalance ? "*****" : formattedBalance}
                 </p>
               </div>
 
-              {/* Hide Balance Button */}
               <button
                 className="w-10 h-10 sm:w-8 sm:h-8 flex-shrink-0"
                 aria-label="Toggle balance visibility"
@@ -363,75 +435,79 @@ export default function TransactionPage() {
                 />
               </button>
             </div>
-
-            {/* Wallet Selector */}
-            {walletsData &&
-              walletsData.wallets &&
-              walletsData.wallets.length > 0 && (
-                <div className="w-40 sm:w-48">
-                  <Select
-                    value={selectedWallet || ""}
-                    onChange={(val) => setSelectedWallet(val || null)}
-                    options={walletOptions}
-                    placeholder="All Wallets"
-                    clearable={true}
-                  />
-                </div>
-              )}
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
       <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-shrink-0">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 sm:gap-3">
-          {/* Search Bar - Full width on mobile, part of grid on desktop */}
-          <div className="relative flex-1">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-50 rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:border-primary-600 placeholder:text-gray-400"
+        {/* Search Bar */}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            name="search"
+            placeholder="Search transactions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-neutral-50 rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-gray-400 dark:bg-dark-surface-hover dark:text-dark-text"
+          />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          </svg>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Clear search"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            {/* Clear button */}
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Clear search"
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            )}
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Quick Filters & Mobile Filter Button */}
+        <div className="flex items-center gap-3">
+          {/* Quick Filter Chips */}
+          <div className="flex-1 overflow-x-auto scrollbar-thin">
+            <QuickFilterChips
+              activeFilter={quickFilter}
+              onFilterChange={handleQuickFilterChange}
+            />
           </div>
 
-          {/* Mobile Filter Button - Visible only on mobile */}
+          {/* Export Button - Hidden on very small screens, visible on sm+ */}
+          <div className="hidden sm:block flex-shrink-0">
+            <ExportButton
+              onExport={handleExportTransactions}
+              categories={categoryOptions.map((c) => ({
+                id: c.value,
+                name: c.label,
+              }))}
+            />
+          </div>
+
+          {/* Mobile Filter Button */}
           <button
             onClick={handleOpenFilterModal}
-            className="sm:hidden min-h-[44px] px-4 py-2.5 bg-neutral-50 rounded-lg drop-shadow-round flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-neutral-100 active:bg-neutral-200 transition-colors"
+            className="sm:hidden flex-shrink-0 min-h-[44px] px-3 py-2 bg-neutral-50 rounded-lg drop-shadow-round flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-neutral-100 transition-colors"
             aria-label="Open filters"
           >
             <svg
@@ -439,7 +515,6 @@ export default function TransactionPage() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -448,42 +523,14 @@ export default function TransactionPage() {
                 d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
               />
             </svg>
-            Filters
             {(selectedWallet || categoryFilter) && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
             )}
           </button>
-
-          {/* Desktop Filter Dropdowns - Hidden on mobile */}
-          <div className="hidden sm:flex gap-3">
-            <Select
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              options={categoryOptions}
-              placeholder="All Categories"
-              clearable={true}
-            />
-
-            <div className="relative">
-              <Select
-                value={`${sortField}-${sortOrder}`}
-                onChange={(val) => {
-                  const [field, order] = val.split("-");
-                  setSortField(field);
-                  setSortOrder(order as "asc" | "desc");
-                }}
-                options={sortOptions}
-                placeholder="Sort transactions"
-                clearable={false}
-                disableInput
-                disableFilter
-              />
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Active Filter Chips - Horizontal scrollable */}
+      {/* Active Filter Chips */}
       <ActiveFilterChips
         filters={currentFilters}
         walletOptions={walletOptions}
@@ -492,148 +539,123 @@ export default function TransactionPage() {
         onClearAll={handleClearFilters}
       />
 
-      {/* Table Section - Scrollable */}
-      <div className="flex-1 min-h-0 px-3 sm:px-6 pb-6 ">
-        {/* Desktop Table */}
-        <BaseCard className="hidden sm:flex sm:flex-col h-full overflow-hidden">
-          <TransactionTable
-            transactions={transactions}
-            getCategoryName={getCategoryName}
-            getWalletName={getWalletName}
-            onEdit={handleEditTransaction}
-            onDelete={handleDeleteTransaction}
-            isLoading={isLoading}
-            className="overflow-auto flex-1 min-h-0"
-          />
-
-          {/* Pagination */}
-          {!isLoading && transactions.length > 0 && (
-            <TablePagination
-              currentPage={currentPage}
-              pageSize={rowsPerPage}
-              totalCount={totalCount}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setRowsPerPage(size);
-                setCurrentPage(1);
-              }}
-              showPageNumbers={true}
-            />
-          )}
-        </BaseCard>
-
-        {/* Mobile Transaction List */}
-        <div className="sm:hidden flex flex-col h-full">
-          <div className="flex-1 overflow-auto p-1">
-            <MobileTable
-              data={transactions}
-              columns={mobileColumns}
-              getKey={(transaction) => transaction.id}
-              renderActions={(transaction) => (
-                <>
-                  <button
-                    onClick={() => handleEditTransaction(transaction.id)}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
-                    aria-label="Edit transaction"
+      {/* Transaction List with Pull-to-Refresh and Infinite Scroll */}
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        className="flex-1 min-h-0"
+      >
+        <div ref={containerRef} className="h-full overflow-auto">
+          <div className="px-3 sm:px-6 pb-6">
+            {isLoading &&
+            (!transactionsData ||
+              (transactionsData as any).transactions?.length === 0) ? (
+              // Loading skeleton
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-dark-surface rounded-lg p-4 animate-pulse"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTransaction(transaction.id)}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-danger-50 transition-colors"
-                    aria-label="Delete transaction"
-                  >
-                    <svg
-                      className="w-5 h-5 text-danger-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </>
-              )}
-              emptyMessage="No transactions found"
-              emptyDescription="Add your first transaction to get started"
-              isLoading={isLoading}
-              maxHeight="calc(100vh - 400px)"
-              showScrollIndicator={transactions.length > 5}
-            />
-          </div>
-
-          {/* Mobile Pagination */}
-          {!isLoading && transactions.length > 0 && (
-            <div className="flex-shrink-0 pt-3">
-              <BaseCard>
-                <div className="flex items-center justify-between px-4 py-3 gap-3">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="w-24 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                    aria-label="Previous page"
-                  >
-                    Previous
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      Page {currentPage} of{" "}
-                      {Math.ceil(totalCount / rowsPerPage)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      </div>
+                      <div className="h-6 bg-gray-200 rounded w-20" />
+                    </div>
                   </div>
+                ))}
+              </div>
+            ) : Object.keys(groupedTransactions).length === 0 ? (
+              // Empty state
+              <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-dark-text-tertiary">
+                <svg
+                  className="w-16 h-16 mb-4 opacity-50"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                <p className="text-lg font-medium">No transactions found</p>
+                <p className="text-sm">
+                  Add your first transaction or adjust filters
+                </p>
+              </div>
+            ) : (
+              // Transaction list with groups
+              <div className="space-y-4">
+                {Object.entries(groupedTransactions).map(
+                  ([groupLabel, transactions]) => (
+                    <div key={groupLabel}>
+                      {/* Group Header */}
+                      <TransactionCard
+                        transaction={null as any}
+                        categoryName=""
+                        walletName=""
+                        currency=""
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        isGroupHeader={true}
+                        groupLabel={groupLabel}
+                      />
 
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) =>
-                        Math.min(Math.ceil(totalCount / rowsPerPage), p + 1),
-                      )
-                    }
-                    disabled={
-                      currentPage >= Math.ceil(totalCount / rowsPerPage)
-                    }
-                    className="w-24 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                    aria-label="Next page"
-                  >
-                    Next
-                  </button>
-                </div>
-              </BaseCard>
-            </div>
-          )}
+                      {/* Transactions in group */}
+                      <div className="space-y-2">
+                        {transactions.map((transaction) => (
+                          <TransactionCard
+                            key={transaction.id}
+                            transaction={transaction}
+                            categoryName={getCategoryName(
+                              transaction.categoryId,
+                            )}
+                            walletName={getWalletName(transaction.walletId)}
+                            currency={currency}
+                            onEdit={handleEditTransaction}
+                            onDelete={handleDeleteTransaction}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
+
+                {/* Loading more indicator */}
+                {isLoadingMore && (
+                  <div className="flex justify-center py-4">
+                    <svg
+                      className="w-6 h-6 text-primary-600 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Edit Transaction Modal */}
-      {modalState?.type === "edit-transaction" && (
-        <BaseModal
-          isOpen={modalState.type === "edit-transaction"}
-          onClose={handleCloseModal}
-          title="Edit Transaction"
-        >
-          <EditTransactionForm
-            transactionId={modalState.transactionId}
-            onSuccess={handleModalSuccess}
-          />
-        </BaseModal>
-      )}
+      </PullToRefresh>
 
       {/* Delete Confirmation Modal */}
       {modalState?.type === "delete-confirmation" && (

@@ -95,7 +95,7 @@ export default function Home() {
   };
 
   return (
-    <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2 lg:min-h-0">
+    <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2 lg:min-h-0 !border-l-0">
       {/* Mobile-optimized header with Total Balance */}
       {/* Top Section: Always visible - Most important */}
       <div className="lg:hidden bg-gradient-to-b from-primary-50 to-neutral-50 px-3 py-4 mb-2">
@@ -105,7 +105,7 @@ export default function Home() {
       </div>
 
       {/* Main content area - mobile-optimized spacing */}
-      <div className="flex justify-center px-3 py-2 lg:py-4 lg:px-4 pb-20 lg:pb-4">
+      <div className="flex justify-center px-3 py-2 lg:py-4 lg:px-4 pb-20 lg:pb-4 ">
         <div className="w-full max-w-4xl">
           {/* Top Section: My Wallets - always visible (highest priority) */}
           <section className="mb-3 lg:mb-4">
@@ -152,7 +152,10 @@ export default function Home() {
           </section>
 
           {/* Bottom Section: Analytics - Collapsible on mobile, always visible on desktop */}
-          <details className="lg:open group mb-3 lg:mb-4" open={expandedSections.analytics}>
+          {/* <details
+            className="lg:open group mb-3 lg:mb-4"
+            open={expandedSections.analytics}
+          >
             <summary
               className="cursor-pointer list-none"
               onClick={(e) => {
@@ -173,44 +176,49 @@ export default function Home() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </h2>
             </summary>
-            {expandedSections.analytics || window.innerWidth >= 1024 ? (
-              <div className="space-y-3 lg:space-y-4">
-                {/* Dominance */}
-                <div>
-                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
-                    Dominance
-                  </h3>
-                  <BaseCard mobileOptimized noMobileMargin>
-                    <Dominance availableYears={availableYears} />
-                  </BaseCard>
-                </div>
+            {expandedSections.analytics || window.innerWidth >= 1024 ? ( */}
+          <div className="space-y-3 lg:space-y-4">
+            {/* Dominance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Dominance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <Dominance availableYears={availableYears} />
+              </BaseCard>
+            </div>
 
-                {/* Monthly Dominance */}
-                <div>
-                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
-                    Monthly Dominance
-                  </h3>
-                  <BaseCard mobileOptimized noMobileMargin>
-                    <MonthlyDominance availableYears={availableYears} />
-                  </BaseCard>
-                </div>
+            {/* Monthly Dominance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Monthly Dominance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <MonthlyDominance availableYears={availableYears} />
+              </BaseCard>
+            </div>
 
-                {/* Account Balance */}
-                <div>
-                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
-                    Account Balance
-                  </h3>
-                  <BaseCard mobileOptimized noMobileMargin>
-                    <AccountBalance availableYears={availableYears} />
-                  </BaseCard>
-                </div>
-              </div>
-            ) : null}
-          </details>
+            {/* Account Balance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Account Balance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <AccountBalance availableYears={availableYears} />
+              </BaseCard>
+            </div>
+          </div>
+          {/* ) : null}
+          </details> */}
         </div>
       </div>
 

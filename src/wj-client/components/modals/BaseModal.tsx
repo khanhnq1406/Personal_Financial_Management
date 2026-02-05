@@ -2,15 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
+import { ZIndex } from "@/lib/utils/z-index";
 
 // Hoist regex outside component to avoid recreating on each render (js-hoist-regexp)
 const SPACE_REGEX = /\s+/g;
 
-// Swipe threshold to close modal (in pixels)
-const SWIPE_THRESHOLD = 100;
-
-// Velocity threshold for swipe-to-dismiss (pixels per millisecond)
-const VELOCITY_THRESHOLD = 0.5;
+export type ModalVariant = "center" | "bottom" | "full";
+export type ModalAnimation = "fade" | "scale" | "slide" | "none";
 
 export interface BaseModalProps {
   isOpen: boolean;
@@ -23,6 +21,21 @@ export interface BaseModalProps {
   // Mobile-specific props
   fullScreenOnMobile?: boolean; // Show modal as full-screen on mobile (< 800px)
   bottomSheetOnMobile?: boolean; // Force bottom sheet style on mobile (default: true)
+
+  // Enhanced props
+  variant?: ModalVariant; // Modal variant: "center" (default), "bottom", "full"
+  animation?: ModalAnimation; // Animation type: "scale" (default), "fade", "slide", "none"
+  closeOnBackdropClick?: boolean; // Close modal when clicking backdrop (default: true)
+  closeOnEscape?: boolean; // Close modal when pressing Escape (default: true)
+  showCloseButton?: boolean; // Show close button in header (default: true)
+  closeOnSwipe?: boolean; // Enable swipe-to-close gesture on mobile (default: true)
+  swipeThreshold?: number; // Swipe threshold in pixels (default: 100)
+  swipeVelocityThreshold?: number; // Velocity threshold for swipe (default: 0.5)
+  backdropBlur?: boolean; // Add backdrop blur effect (default: false)
+  padding?: "none" | "sm" | "md" | "lg"; // Modal padding (default: "md")
+  zIndex?: number; // Custom z-index for the modal (default: 50)
+  id?: string; // Custom ID for the modal
+  ariaLabel?: string; // Custom aria-label for the modal
 }
 
 /**
@@ -55,6 +68,19 @@ export function BaseModal({
   maxHeight,
   fullScreenOnMobile = false,
   bottomSheetOnMobile = true,
+  variant = "center",
+  animation = "scale",
+  closeOnBackdropClick = true,
+  closeOnEscape = true,
+  showCloseButton = true,
+  closeOnSwipe = true,
+  swipeThreshold = 100,
+  swipeVelocityThreshold = 0.5,
+  backdropBlur = false,
+  padding = "md",
+  zIndex = ZIndex.modal,
+  id,
+  ariaLabel,
 }: BaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -186,7 +212,7 @@ export function BaseModal({
   // Handle ESC key to close modal
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && closeOnEscape) {
         onClose();
       }
     };
@@ -195,7 +221,7 @@ export function BaseModal({
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, closeOnEscape]);
 
   // Swipe gesture handlers for mobile with smooth 60fps animations
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -238,7 +264,7 @@ export function BaseModal({
   }, [isDragging]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!isDragging) return;
+    if (!isDragging || !closeOnSwipe) return;
 
     setIsDragging(false);
 
@@ -249,7 +275,7 @@ export function BaseModal({
     // Close modal if:
     // 1. Dragged past threshold, OR
     // 2. Fast swipe down with sufficient velocity
-    const shouldClose = dragY > SWIPE_THRESHOLD || (dragY > 50 && velocity > VELOCITY_THRESHOLD);
+    const shouldClose = dragY > swipeThreshold || (dragY > 50 && velocity > swipeVelocityThreshold);
 
     if (shouldClose) {
       setIsClosing(true);
@@ -269,7 +295,7 @@ export function BaseModal({
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
     }
-  }, [isDragging, dragY, onClose]);
+  }, [isDragging, dragY, onClose, closeOnSwipe, swipeThreshold, swipeVelocityThreshold]);
 
   // Cleanup animation frames on unmount
   useEffect(() => {
@@ -282,7 +308,10 @@ export function BaseModal({
 
   // Memoize modal title ID to avoid recalculating (rendering-hoist-jsx)
   const modalTitleId = useMemo(
-    () => `modal-title-${title.replace(SPACE_REGEX, "-")}`,
+    () => {
+      const titleStr = typeof title === 'string' ? title : String(title);
+      return `modal-title-${titleStr.replace(SPACE_REGEX, "-")}`;
+    },
     [title],
   );
 
@@ -293,11 +322,13 @@ export function BaseModal({
       {/* Backdrop with fade animation and swipe feedback */}
       <div
         className={cn(
-          "fixed inset-0 z-40 transition-opacity duration-300",
+          "fixed inset-0 transition-opacity duration-300",
           // Light mode backdrop
           "bg-modal",
           // Dark mode backdrop (darker for better contrast)
           "dark:bg-dark-overlay",
+          // Backdrop blur
+          backdropBlur && "backdrop-blur-sm",
           // Fade backdrop when dragging modal
           isDragging && dragY > 50
             ? "opacity-0"
@@ -305,7 +336,8 @@ export function BaseModal({
             ? "opacity-100"
             : "opacity-0"
         )}
-        onClick={onClose}
+        style={{ zIndex: zIndex - 1 }}
+        onClick={closeOnBackdropClick ? onClose : undefined}
         aria-hidden="true"
       />
 
@@ -315,12 +347,19 @@ export function BaseModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={modalTitleId}
+        aria-label={ariaLabel}
+        id={id}
         tabIndex={-1}
         className={cn(
-          "fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4",
+          "fixed inset-0 flex justify-center p-0 sm:p-4",
+          // Variant positioning
+          variant === "bottom" && "items-end sm:items-center",
+          variant === "center" && "items-center",
+          variant === "full" && "items-center",
           // Adjust position when keyboard is visible on mobile
-          isKeyboardVisible && "items-end",
+          isKeyboardVisible && "items-end"
         )}
+        style={{ zIndex }}
       >
         <div
           ref={modalContentRef}
@@ -331,39 +370,58 @@ export function BaseModal({
             "dark:bg-dark-surface dark:shadow-dark-modal",
             "w-full overscroll-contain outline-none",
             // Responsive border radius
-            fullScreenOnMobile
+            fullScreenOnMobile || variant === "full"
               ? "rounded-none sm:rounded-lg"
-              : "rounded-t-xl sm:rounded-lg",
+              : variant === "bottom"
+              ? "rounded-t-xl sm:rounded-lg"
+              : "rounded-lg",
             // Responsive margin
-            fullScreenOnMobile ? "" : "sm:mx-4",
+            fullScreenOnMobile || variant === "full" ? "" : "sm:mx-4",
             // Mobile-specific optimizations
             "pb-safe", // Safe area for devices with home indicators
             // Transform with swipe drag - no transition during drag for 1:1 finger tracking
             isDragging || isClosing
               ? "transition-none"
-              : "transition-transform duration-300 ease-out",
+              : "transition-all duration-300 ease-out",
             // Color transitions for dark mode
             "transition-colors duration-200",
-            // Animation states
+            // Animation states based on animation prop
             isAnimating && !isDragging && !isClosing
-              ? "translate-y-0 opacity-100"
+              ? animation === "fade"
+                ? "opacity-100"
+                : animation === "scale"
+                ? "scale-100 opacity-100"
+                : animation === "slide"
+                ? "translate-y-0 opacity-100"
+                : "opacity-100"
               : !isAnimating
-              ? "translate-y-full sm:translate-y-0 opacity-0 sm:scale-95"
+              ? animation === "fade"
+                ? "opacity-0"
+                : animation === "scale"
+                ? "scale-95 opacity-0"
+                : animation === "slide"
+                ? "translate-y-full sm:translate-y-4 opacity-0"
+                : "opacity-0"
               : "",
             // Add backdrop blur when dragging for visual depth
             isDragging && dragY > 50 && "backdrop-blur-sm",
             maxWidth || "max-w-sm sm:max-w-md lg:max-w-lg",
-            // Responsive max height
-            maxHeight || (fullScreenOnMobile ? "h-[100dvh] sm:max-h-[90vh]" : "max-h-[85vh] sm:max-h-[90vh]"),
+            // Responsive max height based on variant
+            maxHeight ||
+              (variant === "full"
+                ? "h-[100dvh]"
+                : fullScreenOnMobile
+                ? "h-[100dvh] sm:max-h-[90vh]"
+                : "max-h-[85vh] sm:max-h-[90vh]"),
             // Adjust height when keyboard is visible
-            isKeyboardVisible && !fullScreenOnMobile && "max-h-[50vh]",
+            isKeyboardVisible && !fullScreenOnMobile && variant !== "full" && "max-h-[50vh]",
             // Prevent touch actions like browser zoom/scroll during swipe
             isDragging && "touch-none",
           )}
           onClick={(e) => e.stopPropagation()}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          onTouchStart={closeOnSwipe ? handleTouchStart : undefined}
+          onTouchMove={closeOnSwipe ? handleTouchMove : undefined}
+          onTouchEnd={closeOnSwipe ? handleTouchEnd : undefined}
           style={
             isDragging && dragY > 0
               ? {
@@ -379,13 +437,13 @@ export function BaseModal({
           }
         >
           {/* Mobile drag handle indicator - visible only on mobile and bottom sheet mode */}
-          {bottomSheetOnMobile && !fullScreenOnMobile && (
+          {bottomSheetOnMobile && !fullScreenOnMobile && variant !== "full" && (
             <div className="sm:hidden flex justify-center pt-3 pb-2">
               <div className={cn(
                 "w-12 h-1.5 rounded-full transition-colors duration-200",
                 // Visual feedback during drag
                 isDragging && dragY > 0
-                  ? dragY > SWIPE_THRESHOLD
+                  ? dragY > swipeThreshold
                     ? "bg-danger-500 dark:bg-danger-600" // Red when close threshold reached
                     : "bg-primary-500 dark:bg-primary-600" // Blue while dragging
                   : "bg-neutral-300 dark:bg-dark-border" // Gray at rest
@@ -394,28 +452,33 @@ export function BaseModal({
           )}
 
           <div className={cn(
-            // Responsive padding
-            fullScreenOnMobile
+            // Responsive padding based on padding prop
+            padding === "none" && "px-0 py-0 sm:px-0 sm:py-0",
+            padding === "sm" && "px-2 sm:px-3 py-2 sm:py-3",
+            padding === "md" && (fullScreenOnMobile
               ? "px-4 sm:px-6 py-4 sm:py-5"
-              : "px-3 sm:px-5 pb-4 sm:pb-5",
+              : "px-3 sm:px-5 pb-4 sm:pb-5"),
+            padding === "lg" && "px-6 sm:px-8 py-6 sm:py-8",
             // Extra top padding when no drag handle (full screen mode)
-            fullScreenOnMobile && "pt-4",
+            (fullScreenOnMobile || variant === "full") && padding !== "none" && "pt-4",
           )}>
             <div className="flex justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
               <h2 id={modalTitleId} className="font-bold text-base sm:text-lg flex-1 pr-2 dark:text-dark-text">
                 {title}
               </h2>
-              <button
-                onClick={onClose}
-                // Touch-friendly minimum size (44x44px per iOS Human Interface Guidelines)
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-neutral-100 active:bg-neutral-200 dark:hover:bg-dark-surface-hover dark:active:bg-dark-surface-active transition-colors flex-shrink-0"
-                aria-label="Close modal"
-                type="button"
-              >
-                <svg className="w-6 h-6 text-neutral-500 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {showCloseButton && (
+                <button
+                  onClick={onClose}
+                  // Touch-friendly minimum size (44x44px per iOS Human Interface Guidelines)
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-neutral-100 active:bg-neutral-200 dark:hover:bg-dark-surface-hover dark:active:bg-dark-surface-active transition-colors flex-shrink-0"
+                  aria-label="Close modal"
+                  type="button"
+                >
+                  <svg className="w-6 h-6 text-neutral-500 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             <div className="max-h-[calc(100vh-180px)] sm:max-h-[calc(90vh-150px)] overflow-y-auto overflow-x-hidden -mx-1 px-1">

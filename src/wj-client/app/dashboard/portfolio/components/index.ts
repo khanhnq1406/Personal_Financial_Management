@@ -1,28 +1,33 @@
 /**
- * Portfolio components barrel file
- * Exports all portfolio sub-components for cleaner imports
+ * Enhanced Portfolio Components Export
+ *
+ * Export all enhanced portfolio components for easy importing:
+ *
+ * ```tsx
+ * import {
+ *   PortfolioSummaryEnhanced,
+ *   InvestmentCardEnhanced
+ * } from "@/app/dashboard/portfolio/components";
+ * ```
  */
 
-export { PortfolioSummary } from "./PortfolioSummary";
-export type { PortfolioSummaryProps } from "./PortfolioSummary";
+export { PortfolioSummaryEnhanced } from "./PortfolioSummaryEnhanced";
+export type {
+  PortfolioSummaryEnhancedProps,
+  PortfolioSummaryData,
+} from "./PortfolioSummaryEnhanced";
 
-export { InvestmentCard } from "./InvestmentCard";
-export type { InvestmentCardProps, InvestmentCardData } from "./InvestmentCard";
+export { InvestmentCardEnhanced } from "./InvestmentCardEnhanced";
+export type {
+  InvestmentCardEnhancedProps,
+  InvestmentCardData,
+} from "./InvestmentCardEnhanced";
 
 export { InvestmentList } from "./InvestmentList";
 export type {
   InvestmentListProps,
   InvestmentData,
 } from "./InvestmentList";
-
-export { PortfolioAnalytics } from "./PortfolioAnalytics";
-export type {
-  PortfolioAnalyticsProps,
-  PortfolioAnalyticsData,
-} from "./PortfolioAnalytics";
-
-export { InvestmentActions } from "./InvestmentActions";
-export type { InvestmentActionsProps } from "./InvestmentActions";
 
 // Empty states
 export { EmptyWalletsState, EmptyInvestmentsState } from "./EmptyStates";

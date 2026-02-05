@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils/cn";
 import React, { useState, useCallback } from "react";
+import { ZIndex } from "@/lib/utils/z-index";
 
 interface FABAction {
   label: string;
@@ -26,15 +27,16 @@ export function FloatingActionButton({ actions }: FABProps) {
       {/* Backdrop when expanded */}
       <div
         className={cn(
-          "fixed inset-0 bg-neutral-900/20 z-40 sm:hidden transition-opacity duration-300",
+          "fixed inset-0 bg-neutral-900/20 sm:hidden transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
+        style={{ zIndex: ZIndex.modalBackdrop }}
         onClick={() => setIsOpen(false)}
         aria-hidden="true"
       />
 
       {/* FAB Container - only visible on mobile */}
-      <div className="fixed bottom-6 right-6 z-50 sm:hidden">
+      <div className="fixed bottom-6 right-6 sm:hidden" style={{ zIndex: ZIndex.floating }}>
         {/* Action buttons (expand upward) */}
         <div
           className={cn(

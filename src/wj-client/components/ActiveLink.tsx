@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils/cn";
 function ActiveLink({
   children,
   href,
+  className,
 }: {
   children: React.ReactNode;
   href: string;
+  className?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -31,7 +33,8 @@ function ActiveLink({
         "hover:bg-white/20 hover:shadow-md",
         pathname === href
           ? "bg-white/30 shadow-md border-l-4 border-white font-semibold"
-          : "border-l-4 border-transparent"
+          : "border-l-4 border-transparent",
+        className
       )}
       aria-current={pathname === href ? "page" : undefined}
     >
