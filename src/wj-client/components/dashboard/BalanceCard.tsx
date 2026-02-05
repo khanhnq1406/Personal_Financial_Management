@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { formatDistanceToNow } from "date-fns";
 import { memo, useState } from "react";
+import { Button } from "../Button";
 
 interface BalanceCardProps {
   balance: number;
@@ -42,7 +43,12 @@ const DataFreshnessIndicator = memo(function DataFreshnessIndicator({
 
   return (
     <div className="flex items-center gap-1.5 text-xs text-white/70">
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        className="w-3.5 h-3.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -70,14 +76,16 @@ export const BalanceCard = memo(function BalanceCard({
     <div
       className={cn(
         "bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-lg p-4 sm:p-6 shadow-card",
-        className
+        className,
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-medium text-primary-100">Total Balance</span>
+            <span className="text-sm font-medium text-primary-100">
+              Total Balance
+            </span>
             {showVerified && lastUpdated && <VerifiedBadge />}
           </div>
 
@@ -85,7 +93,7 @@ export const BalanceCard = memo(function BalanceCard({
           <div
             className={cn(
               "text-3xl sm:text-4xl font-bold mb-4 transition-all duration-200",
-              isHidden && "blur-md select-none"
+              isHidden && "blur-md select-none",
             )}
           >
             {formatCurrency(balance, currency)}
@@ -99,10 +107,14 @@ export const BalanceCard = memo(function BalanceCard({
                   "flex items-center gap-1 px-2 py-1 rounded text-sm font-semibold",
                   isPositive
                     ? "bg-success-500/20 text-success-100"
-                    : "bg-danger-500/20 text-danger-100"
+                    : "bg-danger-500/20 text-danger-100",
                 )}
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
                   {isPositive ? (
                     <path
                       fillRule="evenodd"
@@ -126,14 +138,20 @@ export const BalanceCard = memo(function BalanceCard({
         </div>
 
         {/* Eye Toggle Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setIsHidden(!isHidden)}
           className="flex-shrink-0 p-2 hover:bg-white/10 rounded-full transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={isHidden ? "Show balance" : "Hide balance"}
           type="button"
         >
           {isHidden ? (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -148,7 +166,12 @@ export const BalanceCard = memo(function BalanceCard({
               />
             </svg>
           ) : (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -157,7 +180,7 @@ export const BalanceCard = memo(function BalanceCard({
               />
             </svg>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Last Updated Timestamp */}

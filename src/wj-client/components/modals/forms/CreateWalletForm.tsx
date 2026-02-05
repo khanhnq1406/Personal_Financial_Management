@@ -130,6 +130,7 @@ export function CreateWalletForm({
         label="Wallet Type"
         options={walletTypeOptions}
         placeholder="Select wallet type"
+        portal
       />
 
       <div className="mt-4">

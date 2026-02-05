@@ -5,8 +5,7 @@ import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import Image from "next/image";
-import { resources } from "@/app/constants";
+import { Button } from "@/components/Button";
 
 export interface WalletListViewProps {
   wallets: Wallet[];
@@ -49,7 +48,7 @@ export const WalletListView = memo(function WalletListView({
 
     // Filter by type
     if (filterType === "basic") {
-      filtered = filtered.filter((w) => w.type === 0);
+      filtered = filtered.filter((w) => w.type === 0 || !w.type);
     } else if (filterType === "investment") {
       filtered = filtered.filter((w) => w.type === 1);
     }
@@ -77,7 +76,8 @@ export const WalletListView = memo(function WalletListView({
   // Calculate total balance
   const totalBalance = useMemo(() => {
     return processedWallets.reduce((sum, wallet) => {
-      const balance = wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
+      const balance =
+        wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
       return sum + balance;
     }, 0);
   }, [processedWallets]);
@@ -90,7 +90,7 @@ export const WalletListView = memo(function WalletListView({
         onTransfer(fromWallet, null as any);
       }
     },
-    [onTransfer]
+    [onTransfer],
   );
 
   return (
@@ -102,7 +102,8 @@ export const WalletListView = memo(function WalletListView({
           {formatCurrency(totalBalance, currency)}
         </p>
         <p className="text-xs text-primary-200 mt-2">
-          {processedWallets.length} wallet{processedWallets.length !== 1 ? "s" : ""}
+          {processedWallets.length} wallet
+          {processedWallets.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -124,11 +125,14 @@ export const WalletListView = memo(function WalletListView({
               />
             </svg>
             <p className="text-lg font-medium">No wallets found</p>
-            <p className="text-sm">Try changing filters or create a new wallet</p>
+            <p className="text-sm">
+              Try changing filters or create a new wallet
+            </p>
           </div>
         ) : (
           processedWallets.map((wallet) => {
-            const balance = wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
+            const balance =
+              wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
             const isInvestment = wallet.type === 1;
             const isSelected = selectedWallets?.has(wallet.id);
 
@@ -140,7 +144,7 @@ export const WalletListView = memo(function WalletListView({
                   "border-2",
                   isSelected
                     ? "border-primary-500"
-                    : "border-transparent hover:border-gray-200 dark:hover:border-dark-border"
+                    : "border-transparent hover:border-gray-200 dark:hover:border-dark-border",
                 )}
               >
                 <div className="flex items-center gap-3 p-3 sm:p-4">
@@ -153,13 +157,19 @@ export const WalletListView = memo(function WalletListView({
                         "flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
                         isSelected
                           ? "bg-primary-600 border-primary-600"
-                          : "border-gray-300 dark:border-dark-border hover:border-primary-400"
+                          : "border-gray-300 dark:border-dark-border hover:border-primary-400",
                       )}
-                      aria-label={isSelected ? "Deselect wallet" : "Select wallet"}
+                      aria-label={
+                        isSelected ? "Deselect wallet" : "Select wallet"
+                      }
                       aria-pressed={isSelected}
                     >
                       {isSelected && (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
                           <path
                             fillRule="evenodd"
                             d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -173,17 +183,33 @@ export const WalletListView = memo(function WalletListView({
                   {/* Wallet Icon */}
                   <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 flex items-center justify-center">
                     {isInvestment ? (
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      <svg
+                        className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 dark:text-primary-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                        />
                       </svg>
                     ) : (
-                      <Image
-                        src={`${resources}wallet.png`}
-                        alt="Wallet"
-                        width={24}
-                        height={24}
+                      <svg
                         className="w-5 h-5 sm:w-6 sm:h-6"
-                      />
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                        />
+                      </svg>
                     )}
                   </div>
 
@@ -214,39 +240,72 @@ export const WalletListView = memo(function WalletListView({
                   {/* Action Buttons */}
                   <div className="flex items-center gap-1 sm:gap-2">
                     {onTransfer && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => handleTransfer(wallet)}
                         className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                         aria-label={`Transfer from ${wallet.walletName}`}
                       >
-                        <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        <svg
+                          className="w-5 h-5 text-primary-600 dark:text-primary-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                          />
                         </svg>
-                      </button>
+                      </Button>
                     )}
 
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       onClick={() => onEdit(wallet)}
                       className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-surface-hover transition-colors"
                       aria-label={`Edit ${wallet.walletName}`}
                     >
-                      <svg className="w-5 h-5 text-gray-600 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <svg
+                        className="w-5 h-5 text-gray-600 dark:text-dark-text-secondary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
                       </svg>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       onClick={() => onDelete(wallet)}
                       className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-colors"
                       aria-label={`Delete ${wallet.walletName}`}
                     >
-                      <svg className="w-5 h-5 text-danger-600 dark:text-danger-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg
+                        className="w-5 h-5 text-danger-600 dark:text-danger-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
                       </svg>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
