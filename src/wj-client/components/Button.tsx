@@ -89,7 +89,13 @@ export const Button = React.memo(function Button({
   download,
 }: PropType) {
   // Determine button variant from type or variant prop
-  const buttonVariant = variant || (type === ButtonType.PRIMARY ? "primary" : type === ButtonType.SECONDARY ? "secondary" : "primary");
+  const buttonVariant =
+    variant ||
+    (type === ButtonType.PRIMARY
+      ? "primary"
+      : type === ButtonType.SECONDARY
+        ? "secondary"
+        : "primary");
 
   // Size variants
   const sizeClasses = {
@@ -107,50 +113,51 @@ export const Button = React.memo(function Button({
   // Base classes for all buttons
   const baseClasses = cn(
     "font-semibold rounded-lg cursor-pointer",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
     "flex items-center justify-center gap-2 sm:gap-3",
-    "transition-all duration-200",
+    "transition-all duration-200 ease-in-out",
     "active:scale-[0.98]",
-    sizeClasses[size]
+    sizeClasses[size],
   );
 
-  // Variant-specific classes
+  // Variant-specific classes (using semantic design system colors)
   const variantClasses = {
     primary: cn(
-      "bg-green-600 text-white",
-      "hover:bg-green-700 hover:shadow-md",
-      "active:bg-green-800",
-      "dark:bg-green-600 dark:hover:bg-green-700 dark:active:bg-green-800"
+      "bg-primary-600 text-white",
+      "hover:bg-primary-700 hover:shadow-md",
+      "active:bg-primary-800",
+      "dark:bg-primary-600 dark:hover:bg-primary-700 dark:active:bg-primary-800",
     ),
     secondary: cn(
-      "bg-white text-green-600 border-2 border-green-600",
-      "hover:bg-green-50 hover:shadow-md",
-      "active:bg-green-100",
-      "dark:bg-gray-800 dark:text-green-500 dark:border-green-500",
-      "dark:hover:bg-gray-700 dark:active:bg-gray-600"
+      "bg-white text-primary-600 border-2 border-primary-600",
+      "hover:bg-primary-50 hover:shadow-md",
+      "active:bg-primary-100",
+      "dark:bg-dark-surface dark:text-primary-500 dark:border-primary-500",
+      "dark:hover:bg-dark-surface-hover dark:active:bg-dark-surface-active",
     ),
     ghost: cn(
-      "bg-transparent text-gray-700 dark:text-gray-300",
-      "hover:bg-gray-100 dark:hover:bg-gray-800",
-      "active:bg-gray-200 dark:active:bg-gray-700"
+      "bg-transparent text-neutral-700 dark:text-neutral-300",
+      "hover:bg-neutral-100 dark:hover:bg-dark-surface-hover",
+      "active:bg-neutral-200 dark:active:bg-dark-surface-active",
     ),
     link: cn(
-      "bg-transparent text-green-600 dark:text-green-500",
+      "bg-transparent text-primary-600 dark:text-primary-500",
       "hover:underline",
       "hover:bg-transparent",
-      "p-0 min-h-0"
+      "p-0 min-h-0",
     ),
     danger: cn(
-      "bg-red-600 text-white",
-      "hover:bg-red-700 hover:shadow-md",
-      "active:bg-red-800",
-      "dark:bg-red-600 dark:hover:bg-red-700 dark:active:bg-red-800"
+      "bg-danger-600 text-white",
+      "hover:bg-danger-700 hover:shadow-md",
+      "active:bg-danger-800",
+      "dark:bg-danger-600 dark:hover:bg-danger-700 dark:active:bg-danger-800",
     ),
     success: cn(
-      "bg-green-600 text-white",
-      "hover:bg-green-700",
-      "active:bg-green-800"
+      "bg-success-600 text-white",
+      "hover:bg-success-700 hover:shadow-md",
+      "active:bg-success-800",
+      "dark:bg-success-600 dark:hover:bg-success-700 dark:active:bg-success-800",
     ),
   };
 
@@ -189,7 +196,7 @@ export const Button = React.memo(function Button({
       baseClasses,
       variantClasses[buttonVariant],
       fullWidth && !iconOnly && buttonVariant !== "link" ? "w-full" : "w-auto",
-      className
+      className,
     ),
     onClick: href ? undefined : onClick,
     disabled: loading || disabled || success,
@@ -205,12 +212,12 @@ export const Button = React.memo(function Button({
         className={cn(
           "!p-2.5 sm:!p-2 !min-h-[44px] sm:!min-h-[48px] !min-w-[44px] sm:!min-w-[48px] !w-auto",
           "bg-transparent",
-          "hover:bg-neutral-100 dark:hover:bg-gray-800",
+          "hover:bg-neutral-100 dark:hover:bg-dark-surface-hover",
           "rounded-full",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2",
-          "transition-all duration-200",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+          "transition-all duration-200 ease-in-out",
           "active:scale-[0.95]",
-          className
+          className,
         )}
         onClick={onClick}
         aria-label={ariaLabel}
@@ -219,7 +226,7 @@ export const Button = React.memo(function Button({
         aria-busy={loading}
       >
         {loading ? (
-          <LoadingSpinner className="text-green-600" />
+          <LoadingSpinner className="text-primary-600" />
         ) : src ? (
           <img src={src} alt="" className="w-5 h-5" />
         ) : null}
@@ -247,20 +254,11 @@ export const Button = React.memo(function Button({
   // Regular button
   if (href) {
     return (
-      <a
-        href={href}
-        target={target}
-        download={download}
-        {...commonProps}
-      >
+      <a href={href} target={target} download={download} {...commonProps}>
         {renderContent()}
       </a>
     );
   }
 
-  return (
-    <button {...commonProps}>
-      {renderContent()}
-    </button>
-  );
+  return <button {...commonProps}>{renderContent()}</button>;
 });

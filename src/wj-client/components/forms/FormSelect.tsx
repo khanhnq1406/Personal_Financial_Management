@@ -1,95 +1,687 @@
 "use client";
 
-import { useController, UseControllerProps } from "react-hook-form";
-import { Label } from "./Label";
-import { ErrorMessage } from "./ErrorMessage";
+import React, {
+  useState,
+  useId,
+  useRef,
+  useEffect,
+  useCallback,
+  KeyboardEvent,
+  FocusEvent,
+} from "react";
 import { cn } from "@/lib/utils/cn";
-import { memo, useMemo } from "react";
-import { Select } from "@/components/select/Select";
 
 export interface SelectOption {
-  value: string | number;
+  value: string;
   label: string;
   disabled?: boolean;
-  group?: string;
-  balance?: number;
+  icon?: React.ReactNode;
 }
 
-interface FormSelectProps extends Omit<UseControllerProps, "control"> {
-  control: any; // Control type causes generic issues with RHF, using any as workaround
-  label: string;
+export interface FormSelectProps {
+  /**
+   * Unique identifier
+   */
+  id?: string;
+
+  /**
+   * Label for the select
+   */
+  label?: string;
+
+  /**
+   * Options to display
+   */
   options: SelectOption[];
+
+  /**
+   * Current value
+   */
+  value?: string;
+
+  /**
+   * Default value
+   */
+  defaultValue?: string;
+
+  /**
+   * Placeholder text
+   * @default "Select an option"
+   */
   placeholder?: string;
-  required?: boolean;
+
+  /**
+   * Helper text
+   */
+  helperText?: string;
+
+  /**
+   * Error message
+   */
+  error?: string;
+
+  /**
+   * Success message
+   */
+  success?: string;
+
+  /**
+   * Size variant
+   * @default "md"
+   */
+  size?: "sm" | "md" | "lg";
+
+  /**
+   * Whether the select is disabled
+   */
   disabled?: boolean;
+
+  /**
+   * Whether the select is required
+   */
+  required?: boolean;
+
+  /**
+   * Enable search/filter
+   */
+  searchable?: boolean;
+
+  /**
+   * Search placeholder
+   */
+  searchPlaceholder?: string;
+
+  /**
+   * Enable multi-select
+   */
+  multiple?: boolean;
+
+  /**
+   * Selected values for multi-select
+   */
+  values?: string[];
+
+  /**
+   * Maximum number of items to show without scroll
+   */
+  maxVisibleItems?: number;
+
+  /**
+   * No results message
+   */
+  noResultsMessage?: string;
+
+  /**
+   * Group options by category
+   */
+  groupBy?: (option: SelectOption) => string;
+
+  /**
+   * Custom render function for options
+   */
+  renderOption?: (option: SelectOption) => React.ReactNode;
+
+  /**
+   * Custom render function for selected value
+   */
+  renderValue?: (option: SelectOption | SelectOption[]) => React.ReactNode;
+
+  /**
+   * Change callback
+   */
+  onChange?: (value: string) => void;
+
+  /**
+   * Multi-select change callback
+   */
+  onValuesChange?: (values: string[]) => void;
+
+  /**
+   * Blur callback
+   */
+  onBlur?: () => void;
+
+  /**
+   * Focus callback
+   */
+  onFocus?: () => void;
+
+  /**
+   * Additional class name
+   */
   className?: string;
-  loading?: boolean;
-  formatOption?: (option: SelectOption) => string;
-  disableFilter?: boolean;
+
+  /**
+   * Container class name
+   */
+  containerClassName?: string;
+
+  /**
+   * Portal dropdown to body
+   */
+  portal?: boolean;
 }
 
-export const FormSelect = memo(function FormSelect({
+export function FormSelect({
+  id,
   label,
-  options = [],
+  options,
+  value,
+  defaultValue,
   placeholder = "Select an option",
-  required = false,
-  disabled = false,
-  className = "",
-  loading = false,
-  formatOption,
-  disableFilter,
-  ...props
+  helperText,
+  error,
+  success,
+  size = "md",
+  disabled,
+  required,
+  searchable = false,
+  searchPlaceholder = "Search...",
+  multiple = false,
+  values,
+  maxVisibleItems = 6,
+  noResultsMessage = "No results found",
+  groupBy,
+  renderOption,
+  renderValue,
+  onChange,
+  onValuesChange,
+  onBlur,
+  onFocus,
+  className,
+  containerClassName,
+  portal = false,
 }: FormSelectProps) {
-  const {
-    field,
-    fieldState: { error },
-  } = useController(props);
+  const generatedId = useId();
+  const selectId = id || generatedId;
+  const helperId = `${selectId}-helper`;
+  const errorId = `${selectId}-error`;
+  const successId = `${selectId}-success`;
 
-  // Convert options to string-based Select options
-  const selectOptions = useMemo(() => {
-    return options.map((option) => ({
-      value: String(option.value),
-      label: formatOption ? formatOption(option) : option.label,
-      disabled: option.disabled,
-    }));
-  }, [options, formatOption]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Convert the current value to string for Select component
-  const selectValue =
-    field.value !== undefined && field.value !== ""
-      ? String(field.value)
-      : undefined;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (value: string) => {
-    // Convert back to number if original options had number values
-    const hasNumberValues = options.some(
-      (opt) => typeof opt.value === "number",
-    );
-    const parsedValue = hasNumberValues && value !== "" ? Number(value) : value;
-    field.onChange(parsedValue);
+  // Get current selection(s)
+  const selectedOption = options.find((opt) => opt.value === (value || defaultValue));
+  const selectedOptions = options.filter((opt) => values?.includes(opt.value));
+
+  // Filter options based on search
+  const filteredOptions = options.filter((opt) => {
+    if (!searchQuery) return true;
+    return opt.label.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Group options if groupBy is provided
+  const groupedOptions = groupBy
+    ? filteredOptions.reduce((acc, opt) => {
+        const group = groupBy(opt);
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(opt);
+        return acc;
+      }, {} as Record<string, SelectOption[]>)
+    : null;
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearchQuery("");
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (!isOpen) {
+        if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+          e.preventDefault();
+          setIsOpen(true);
+          setHighlightedIndex(0);
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setHighlightedIndex((prev) => {
+            const maxIndex = filteredOptions.length - 1;
+            return prev < maxIndex ? prev + 1 : prev;
+          });
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
+            handleSelect(filteredOptions[highlightedIndex]);
+          }
+          break;
+        case "Escape":
+          e.preventDefault();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+        case "Tab":
+          setIsOpen(false);
+          break;
+      }
+    },
+    [isOpen, highlightedIndex, filteredOptions]
+  );
+
+  // Handle option selection
+  const handleSelect = (option: SelectOption) => {
+    if (option.disabled) return;
+
+    if (multiple) {
+      const newValues = values?.includes(option.value)
+        ? values.filter((v) => v !== option.value)
+        : [...(values || []), option.value];
+      onValuesChange?.(newValues);
+    } else {
+      onChange?.(option.value);
+      setIsOpen(false);
+    }
+
+    setSearchQuery("");
+    setHighlightedIndex(-1);
+  };
+
+  // Handle blur
+  const handleBlur = (e: FocusEvent) => {
+    // Delay to allow click events to process
+    setTimeout(() => {
+      if (!containerRef.current?.contains(document.activeElement)) {
+        setIsFocused(false);
+        setIsOpen(false);
+        onBlur?.();
+      }
+    }, 150);
+  };
+
+  // Handle focus
+  const handleFocus = () => {
+    setIsFocused(true);
+    onFocus?.();
+  };
+
+  // Size classes
+  const sizeClasses = {
+    sm: "h-10 px-3 text-sm",
+    md: "h-12 px-4 text-base",
+    lg: "h-14 px-5 text-lg",
+  };
+
+  // State colors
+  const getStateClasses = () => {
+    if (error) {
+      return "border-red-300 hover:border-red-400 dark:border-red-700 dark:hover:border-red-600";
+    }
+    if (success) {
+      return "border-green-300 hover:border-green-400 dark:border-green-700 dark:hover:border-green-600";
+    }
+    return "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500";
+  };
+
+  const triggerClasses = cn(
+    "w-full flex items-center justify-between gap-3",
+    "rounded-lg border bg-white dark:bg-gray-800",
+    "text-gray-900 dark:text-gray-100",
+    "transition-all duration-200",
+    "focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent",
+    "disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-900",
+    sizeClasses[size],
+    getStateClasses(),
+    {
+      "ring-2 ring-green-600 border-transparent": isFocused && !error,
+      "ring-2 ring-red-500 border-transparent": isFocused && error,
+      "opacity-50 cursor-not-allowed": disabled,
+    }
+  );
+
+  const getSelectedLabel = () => {
+    if (renderValue) {
+      if (multiple) {
+        return renderValue(selectedOptions);
+      }
+      if (selectedOption) {
+        return renderValue(selectedOption);
+      }
+      return placeholder;
+    }
+
+    if (multiple) {
+      if (selectedOptions.length === 0) return placeholder;
+      if (selectedOptions.length === 1) return selectedOptions[0].label;
+      return `${selectedOptions.length} items selected`;
+    }
+
+    return selectedOption?.label || placeholder;
   };
 
   return (
-    <div className={cn("mb-2 sm:mb-3", className)}>
-      <Label htmlFor={props.name} required={required}>
-        {label}
-      </Label>
-      <Select
-        options={selectOptions}
-        value={selectValue}
-        onChange={handleChange}
-        placeholder={placeholder}
-        disabled={disabled || loading}
-        isLoading={loading}
-        className={cn(
-          "mt-1 [&_button]:min-h-[44px] [&_button]:sm:min-h-[48px] [&_button]:p-2.5 [&_button]:sm:p-3 [&_input]:min-h-[44px] [&_input]:sm:min-h-[48px] [&_input]:p-2.5 [&_input]:sm:p-3 [&_input]:text-base",
-          error && "[&_input]:border-2 [&_input]:border-danger-600",
-        )}
-        disableFilter={disableFilter}
-      />
-      {error && (
-        <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>
+    <div
+      ref={containerRef}
+      className={cn("relative w-full", containerClassName)}
+    >
+      {label && (
+        <label
+          htmlFor={selectId}
+          className={cn(
+            "block text-sm font-medium mb-1.5",
+            error
+              ? "text-red-600 dark:text-red-400"
+              : success
+              ? "text-green-600 dark:text-green-400"
+              : "text-gray-700 dark:text-gray-300"
+          )}
+        >
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+
+      <button
+        ref={triggerRef}
+        id={selectId}
+        type="button"
+        disabled={disabled}
+        className={triggerClasses}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-disabled={disabled}
+        aria-required={required}
+        aria-describedby={cn(
+          helperText && helperId,
+          error && errorId,
+          success && successId
+        ).trim() || undefined}
+        aria-invalid={error ? "true" : "false"}
+      >
+        <span className="truncate flex-1 text-left">
+          {getSelectedLabel()}
+        </span>
+        <svg
+          className={cn(
+            "w-5 h-5 flex-shrink-0 text-gray-400 transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div
+          ref={dropdownRef}
+          className={cn(
+            "absolute z-50 w-full mt-1",
+            "bg-white dark:bg-gray-800",
+            "border border-gray-200 dark:border-gray-700",
+            "rounded-lg shadow-lg",
+            "overflow-hidden"
+          )}
+          style={{
+            maxHeight: `${maxVisibleItems * 44 + (searchable ? 48 : 0)}px`,
+          }}
+        >
+          {/* Search input */}
+          {searchable && (
+            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* Options list */}
+          <div
+            className="overflow-y-auto"
+            role="listbox"
+            aria-multiselectable={multiple}
+            style={{ maxHeight: `${maxVisibleItems * 44}px` }}
+          >
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                {noResultsMessage}
+              </div>
+            ) : groupedOptions ? (
+              Object.entries(groupedOptions).map(([group, opts]) => (
+                <div key={group}>
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 uppercase tracking-wider">
+                    {group}
+                  </div>
+                  {opts.map((option, idx) => {
+                    const isSelected = multiple
+                      ? values?.includes(option.value)
+                      : value === option.value || defaultValue === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={cn(
+                          "w-full px-4 py-3 text-left flex items-center gap-3",
+                          "transition-colors duration-150",
+                          "hover:bg-gray-100 dark:hover:bg-gray-700",
+                          "focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700",
+                          "disabled:opacity-50 disabled:cursor-not-allowed",
+                          {
+                            "bg-green-50 dark:bg-green-900/20":
+                              isSelected && !option.disabled,
+                            "text-gray-400 cursor-not-allowed":
+                              option.disabled,
+                          }
+                        )}
+                        onClick={() => handleSelect(option)}
+                        disabled={option.disabled}
+                        role="option"
+                        aria-selected={isSelected}
+                        tabIndex={highlightedIndex === idx ? 0 : -1}
+                      >
+                        {multiple && (
+                          <div className="flex-shrink-0">
+                            <div
+                              className={cn(
+                                "w-5 h-5 rounded border-2 flex items-center justify-center",
+                                isSelected
+                                  ? "bg-green-600 border-green-600"
+                                  : "border-gray-300 dark:border-gray-600"
+                              )}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="w-3 h-3 text-white"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {option.icon && (
+                          <span className="flex-shrink-0">{option.icon}</span>
+                        )}
+                        <span
+                          className={cn(
+                            "flex-1 truncate",
+                            option.disabled && "text-gray-400"
+                          )}
+                        >
+                          {renderOption ? renderOption(option) : option.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
+            ) : (
+              filteredOptions.map((option, idx) => {
+                const isSelected = multiple
+                  ? values?.includes(option.value)
+                  : value === option.value || defaultValue === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={cn(
+                      "w-full px-4 py-3 text-left flex items-center gap-3",
+                      "transition-colors duration-150",
+                      "hover:bg-gray-100 dark:hover:bg-gray-700",
+                      "focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      {
+                        "bg-green-50 dark:bg-green-900/20":
+                          isSelected && !option.disabled,
+                        "text-gray-400 cursor-not-allowed": option.disabled,
+                      }
+                    )}
+                    onClick={() => handleSelect(option)}
+                    disabled={option.disabled}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={highlightedIndex === idx ? 0 : -1}
+                  >
+                    {multiple && (
+                      <div className="flex-shrink-0">
+                        <div
+                          className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center",
+                            isSelected
+                              ? "bg-green-600 border-green-600"
+                              : "border-gray-300 dark:border-gray-600"
+                          )}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {option.icon && (
+                      <span className="flex-shrink-0">{option.icon}</span>
+                    )}
+                    <span
+                      className={cn(
+                        "flex-1 truncate",
+                        option.disabled && "text-gray-400"
+                      )}
+                    >
+                      {renderOption ? renderOption(option) : option.label}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Helper text, error, or success message */}
+      {(helperText || error || success) && (
+        <div className="mt-1.5 min-h-[20px]">
+          {error && (
+            <p
+              id={errorId}
+              className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1"
+            >
+              <svg
+                className="w-4 h-4 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{error}</span>
+            </p>
+          )}
+          {success && !error && (
+            <p
+              id={successId}
+              className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
+            >
+              <svg
+                className="w-4 h-4 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{success}</span>
+            </p>
+          )}
+          {helperText && !error && !success && (
+            <p
+              id={helperId}
+              className="text-sm text-gray-500 dark:text-gray-400"
+            >
+              {helperText}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
-});
+}

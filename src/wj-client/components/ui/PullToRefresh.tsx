@@ -53,10 +53,7 @@ export const PullToRefresh = memo(function PullToRefresh({
       if (distance > 0) {
         // Add resistance for longer pulls
         const resistance = distance > threshold ? 0.4 : 1;
-        const clampedDistance = Math.min(
-          maxPull,
-          distance * resistance
-        );
+        const clampedDistance = Math.min(maxPull, distance * resistance);
 
         setPullDistance(clampedDistance);
 
@@ -68,7 +65,7 @@ export const PullToRefresh = memo(function PullToRefresh({
         }
       }
     },
-    [isPulling, threshold, maxPull, shouldRefresh]
+    [isPulling, threshold, maxPull, shouldRefresh],
   );
 
   const handleTouchEnd = useCallback(async () => {
@@ -110,10 +107,10 @@ export const PullToRefresh = memo(function PullToRefresh({
       <div
         className={cn(
           "absolute left-0 right-0 flex items-center justify-center transition-transform duration-200 pointer-events-none",
-          "bg-gradient-to-b from-primary-50 to-transparent dark:from-primary-900/10"
+          "bg-gradient-to-b from-primary-50 to-transparent dark:from-primary-900/10",
         )}
         style={{
-          transform: `translateY(${-Math.max(0, pullDistance - 40)}px)`,
+          transform: `translateY(${-Math.max(0, pullDistance - 70)}px)`,
           height: Math.max(0, pullDistance),
           opacity: pullDistance > 0 ? 1 : 0,
         }}
@@ -122,7 +119,7 @@ export const PullToRefresh = memo(function PullToRefresh({
           className={cn(
             "flex items-center justify-center w-10 h-10 rounded-full",
             "bg-white dark:bg-dark-surface shadow-sm",
-            "transition-transform duration-200"
+            "transition-transform duration-200",
           )}
           style={{
             transform: `rotate(${rotation}deg)`,
@@ -170,10 +167,11 @@ export const PullToRefresh = memo(function PullToRefresh({
       <div
         className={cn(
           "transition-transform duration-200",
-          isRefreshing && "opacity-50"
+          isRefreshing && "opacity-50",
         )}
         style={{
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
+          transform:
+            pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
         }}
       >
         {children}

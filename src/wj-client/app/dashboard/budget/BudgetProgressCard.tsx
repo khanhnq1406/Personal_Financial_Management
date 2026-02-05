@@ -1,12 +1,14 @@
 "use client";
 
 import React, { memo, useMemo } from "react";
+import { motion } from "framer-motion";
 import { BaseCard } from "@/components/BaseCard";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useAnimatedPercentage } from "@/components/charts/useAnimatedNumber";
 import { ButtonType } from "@/app/constants";
 import { resources } from "@/app/constants";
 import Image from "next/image";
+import { Button } from "@/components/Button";
 
 /**
  * Budget progress data structure
@@ -162,9 +164,6 @@ const AnimatedProgressBar = memo(function AnimatedProgressBar({
     </div>
   );
 });
-
-import { motion } from "framer-motion";
-import { Button } from "@/components/Button";
 
 /**
  * BudgetProgressCard - Enhanced budget tracking with circular progress, warnings, and quick actions

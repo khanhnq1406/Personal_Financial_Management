@@ -129,7 +129,7 @@ export const DonutChart = memo(function DonutChart({
   const legendLayout = getLegendLayout();
 
   return (
-    <div className={className} style={{ height: `${height}px` }}>
+    <div className={`relative ${className}`} style={{ height: `${height}px` }}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsPieChart>
           <Pie

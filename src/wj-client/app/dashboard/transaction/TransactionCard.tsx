@@ -47,7 +47,12 @@ export const TransactionCard = memo(function TransactionCard({
   // Group header - render early to avoid accessing null transaction properties
   if (isGroupHeader && groupLabel) {
     return (
-      <div className={cn("sticky top-0 z-10 bg-gray-50 dark:bg-dark-background px-3 py-2 sm:px-4", className)}>
+      <div
+        className={cn(
+          "sticky top-0 z-10 bg-gray-50 dark:bg-dark-background px-3 py-2 sm:px-4",
+          className,
+        )}
+      >
         <span className="text-xs font-semibold text-gray-600 dark:text-dark-text-secondary uppercase tracking-wide">
           {groupLabel}
         </span>
@@ -100,11 +105,11 @@ export const TransactionCard = memo(function TransactionCard({
       // Limit swipe offset
       const clampedOffset = Math.max(
         -SWIPE_MAX_OFFSET,
-        Math.min(SWIPE_MAX_OFFSET, deltaX)
+        Math.min(SWIPE_MAX_OFFSET, deltaX),
       );
       setSwipeOffset(clampedOffset);
     },
-    [isDragging]
+    [isDragging],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -171,7 +176,7 @@ export const TransactionCard = memo(function TransactionCard({
           "flex items-center justify-center w-10 h-10 rounded-full",
           isExpense
             ? "bg-danger-100 text-danger-600 dark:bg-danger-900/30 dark:text-danger-400"
-            : "bg-success-100 text-success-600 dark:bg-success-900/30 dark:text-success-400"
+            : "bg-success-100 text-success-600 dark:bg-success-900/30 dark:text-success-400",
         )}
       >
         {Icon}
@@ -209,27 +214,51 @@ export const TransactionCard = memo(function TransactionCard({
       {/* Swipe Background Actions */}
       <div
         className={cn(
-          "absolute inset-0 flex items-center justify-between px-4 transition-transform duration-200",
-          "bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20"
+          "absolute inset-0 rounded-lg flex items-center justify-between px-4 transition-transform duration-200",
+          "bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20",
         )}
         aria-hidden="true"
       >
         {/* Edit Action (Right swipe) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-lg">
           <div className="w-10 h-10 flex items-center justify-center bg-primary-600 text-white rounded-full min-h-[44px] min-w-[44px]">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
             </svg>
           </div>
-          <span className="text-sm font-medium text-primary-700 dark:text-primary-300">Edit</span>
+          <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+            Edit
+          </span>
         </div>
 
         {/* Delete Action (Left swipe) */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-danger-700 dark:text-danger-300">Delete</span>
+          <span className="text-sm font-medium text-danger-700 dark:text-danger-300">
+            Delete
+          </span>
           <div className="w-10 h-10 flex items-center justify-center bg-danger-600 text-white rounded-full min-h-[44px] min-w-[44px]">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </div>
         </div>
@@ -240,7 +269,7 @@ export const TransactionCard = memo(function TransactionCard({
         className={cn(
           "relative bg-white dark:bg-dark-surface rounded-lg shadow-sm",
           "transition-transform duration-200",
-          "active:shadow-card-active dark:active:shadow-dark-card-active"
+          "active:shadow-card-active dark:active:shadow-dark-card-active",
         )}
         style={{
           transform: `translateX(${swipeOffset}px)`,
@@ -264,13 +293,13 @@ export const TransactionCard = memo(function TransactionCard({
                   "text-base font-semibold flex-shrink-0",
                   isExpense
                     ? "text-danger-600 dark:text-danger-400"
-                    : "text-success-600 dark:text-success-400"
+                    : "text-success-600 dark:text-success-400",
                 )}
               >
                 {isExpense ? "-" : "+"}
                 {formatCurrency(
                   displayAmount,
-                  transaction.displayAmount ? currency : transaction.currency
+                  transaction.displayAmount ? currency : transaction.currency,
                 )}
               </span>
             </div>

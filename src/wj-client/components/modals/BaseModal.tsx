@@ -181,16 +181,26 @@ export function BaseModal({
 
     // Use visual viewport API for better keyboard detection
     if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleVisualViewportResize);
+      window.visualViewport.addEventListener(
+        "resize",
+        handleVisualViewportResize,
+      );
       return () => {
-        window.visualViewport?.removeEventListener("resize", handleVisualViewportResize);
+        window.visualViewport?.removeEventListener(
+          "resize",
+          handleVisualViewportResize,
+        );
       };
     }
 
     // Fallback: listen for window resize and focus events
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.tagName === "SELECT") {
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT"
+      ) {
         setIsKeyboardVisible(true);
       }
     };
@@ -239,29 +249,32 @@ export function BaseModal({
     }
   }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging) return;
 
-    const touch = e.touches[0];
-    currentY.current = touch.clientY;
-    const deltaY = currentY.current - startY.current;
+      const touch = e.touches[0];
+      currentY.current = touch.clientY;
+      const deltaY = currentY.current - startY.current;
 
-    // Only allow dragging downward (positive delta)
-    if (deltaY > 0) {
-      // Use requestAnimationFrame for smooth 60fps updates
-      if (rafId.current === null) {
-        rafId.current = requestAnimationFrame(() => {
-          setDragY(deltaY);
-          rafId.current = null;
-        });
+      // Only allow dragging downward (positive delta)
+      if (deltaY > 0) {
+        // Use requestAnimationFrame for smooth 60fps updates
+        if (rafId.current === null) {
+          rafId.current = requestAnimationFrame(() => {
+            setDragY(deltaY);
+            rafId.current = null;
+          });
+        }
+
+        // Prevent default scrolling during drag
+        if (e.cancelable && deltaY > 10) {
+          e.preventDefault();
+        }
       }
-
-      // Prevent default scrolling during drag
-      if (e.cancelable && deltaY > 10) {
-        e.preventDefault();
-      }
-    }
-  }, [isDragging]);
+    },
+    [isDragging],
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (!isDragging || !closeOnSwipe) return;
@@ -270,12 +283,15 @@ export function BaseModal({
 
     // Calculate velocity (pixels per millisecond)
     const deltaTime = Date.now() - startTime.current;
-    const velocity = deltaTime > 0 ? (currentY.current - startY.current) / deltaTime : 0;
+    const velocity =
+      deltaTime > 0 ? (currentY.current - startY.current) / deltaTime : 0;
 
     // Close modal if:
     // 1. Dragged past threshold, OR
     // 2. Fast swipe down with sufficient velocity
-    const shouldClose = dragY > swipeThreshold || (dragY > 50 && velocity > swipeVelocityThreshold);
+    const shouldClose =
+      dragY > swipeThreshold ||
+      (dragY > 50 && velocity > swipeVelocityThreshold);
 
     if (shouldClose) {
       setIsClosing(true);
@@ -295,7 +311,14 @@ export function BaseModal({
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
     }
-  }, [isDragging, dragY, onClose, closeOnSwipe, swipeThreshold, swipeVelocityThreshold]);
+  }, [
+    isDragging,
+    dragY,
+    onClose,
+    closeOnSwipe,
+    swipeThreshold,
+    swipeVelocityThreshold,
+  ]);
 
   // Cleanup animation frames on unmount
   useEffect(() => {
@@ -307,13 +330,10 @@ export function BaseModal({
   }, []);
 
   // Memoize modal title ID to avoid recalculating (rendering-hoist-jsx)
-  const modalTitleId = useMemo(
-    () => {
-      const titleStr = typeof title === 'string' ? title : String(title);
-      return `modal-title-${titleStr.replace(SPACE_REGEX, "-")}`;
-    },
-    [title],
-  );
+  const modalTitleId = useMemo(() => {
+    const titleStr = typeof title === "string" ? title : String(title);
+    return `modal-title-${titleStr.replace(SPACE_REGEX, "-")}`;
+  }, [title]);
 
   if (!isOpen) return null;
 
@@ -333,8 +353,8 @@ export function BaseModal({
           isDragging && dragY > 50
             ? "opacity-0"
             : isAnimating
-            ? "opacity-100"
-            : "opacity-0"
+              ? "opacity-100"
+              : "opacity-0",
         )}
         style={{ zIndex: zIndex - 1 }}
         onClick={closeOnBackdropClick ? onClose : undefined}
@@ -357,7 +377,7 @@ export function BaseModal({
           variant === "center" && "items-center",
           variant === "full" && "items-center",
           // Adjust position when keyboard is visible on mobile
-          isKeyboardVisible && "items-end"
+          isKeyboardVisible && "items-end",
         )}
         style={{ zIndex }}
       >
@@ -373,8 +393,8 @@ export function BaseModal({
             fullScreenOnMobile || variant === "full"
               ? "rounded-none sm:rounded-lg"
               : variant === "bottom"
-              ? "rounded-t-xl sm:rounded-lg"
-              : "rounded-lg",
+                ? "rounded-t-xl sm:rounded-lg"
+                : "rounded-lg",
             // Responsive margin
             fullScreenOnMobile || variant === "full" ? "" : "sm:mx-4",
             // Mobile-specific optimizations
@@ -390,19 +410,19 @@ export function BaseModal({
               ? animation === "fade"
                 ? "opacity-100"
                 : animation === "scale"
-                ? "scale-100 opacity-100"
-                : animation === "slide"
-                ? "translate-y-0 opacity-100"
-                : "opacity-100"
+                  ? "scale-100 opacity-100"
+                  : animation === "slide"
+                    ? "translate-y-0 opacity-100"
+                    : "opacity-100"
               : !isAnimating
-              ? animation === "fade"
-                ? "opacity-0"
-                : animation === "scale"
-                ? "scale-95 opacity-0"
-                : animation === "slide"
-                ? "translate-y-full sm:translate-y-4 opacity-0"
-                : "opacity-0"
-              : "",
+                ? animation === "fade"
+                  ? "opacity-0"
+                  : animation === "scale"
+                    ? "scale-95 opacity-0"
+                    : animation === "slide"
+                      ? "translate-y-full sm:translate-y-4 opacity-0"
+                      : "opacity-0"
+                : "",
             // Add backdrop blur when dragging for visual depth
             isDragging && dragY > 50 && "backdrop-blur-sm",
             maxWidth || "max-w-sm sm:max-w-md lg:max-w-lg",
@@ -411,10 +431,13 @@ export function BaseModal({
               (variant === "full"
                 ? "h-[100dvh]"
                 : fullScreenOnMobile
-                ? "h-[100dvh] sm:max-h-[90vh]"
-                : "max-h-[85vh] sm:max-h-[90vh]"),
+                  ? "h-[100dvh] sm:max-h-[90vh]"
+                  : "max-h-[85vh] sm:max-h-[90vh]"),
             // Adjust height when keyboard is visible
-            isKeyboardVisible && !fullScreenOnMobile && variant !== "full" && "max-h-[50vh]",
+            isKeyboardVisible &&
+              !fullScreenOnMobile &&
+              variant !== "full" &&
+              "max-h-[50vh]",
             // Prevent touch actions like browser zoom/scroll during swipe
             isDragging && "touch-none",
           )}
@@ -426,44 +449,54 @@ export function BaseModal({
             isDragging && dragY > 0
               ? {
                   transform: `translateY(${dragY}px)`,
-                  transition: 'none',
+                  transition: "none",
                 }
               : isClosing
-              ? {
-                  transform: `translateY(100%)`,
-                  transition: 'transform 150ms ease-out',
-                }
-              : undefined
+                ? {
+                    transform: `translateY(100%)`,
+                    transition: "transform 150ms ease-out",
+                  }
+                : undefined
           }
         >
           {/* Mobile drag handle indicator - visible only on mobile and bottom sheet mode */}
           {bottomSheetOnMobile && !fullScreenOnMobile && variant !== "full" && (
             <div className="sm:hidden flex justify-center pt-3 pb-2">
-              <div className={cn(
-                "w-12 h-1.5 rounded-full transition-colors duration-200",
-                // Visual feedback during drag
-                isDragging && dragY > 0
-                  ? dragY > swipeThreshold
-                    ? "bg-danger-500 dark:bg-danger-600" // Red when close threshold reached
-                    : "bg-primary-500 dark:bg-primary-600" // Blue while dragging
-                  : "bg-neutral-300 dark:bg-dark-border" // Gray at rest
-              )} />
+              <div
+                className={cn(
+                  "w-12 h-1.5 rounded-full transition-colors duration-200",
+                  // Visual feedback during drag
+                  isDragging && dragY > 0
+                    ? dragY > swipeThreshold
+                      ? "bg-danger-500 dark:bg-danger-600" // Red when close threshold reached
+                      : "bg-primary-500 dark:bg-primary-600" // Blue while dragging
+                    : "bg-neutral-300 dark:bg-dark-border", // Gray at rest
+                )}
+              />
             </div>
           )}
 
-          <div className={cn(
-            // Responsive padding based on padding prop
-            padding === "none" && "px-0 py-0 sm:px-0 sm:py-0",
-            padding === "sm" && "px-2 sm:px-3 py-2 sm:py-3",
-            padding === "md" && (fullScreenOnMobile
-              ? "px-4 sm:px-6 py-4 sm:py-5"
-              : "px-3 sm:px-5 pb-4 sm:pb-5"),
-            padding === "lg" && "px-6 sm:px-8 py-6 sm:py-8",
-            // Extra top padding when no drag handle (full screen mode)
-            (fullScreenOnMobile || variant === "full") && padding !== "none" && "pt-4",
-          )}>
+          <div
+            className={cn(
+              // Responsive padding based on padding prop
+              padding === "none" && "px-0 py-0 sm:px-0 sm:py-0",
+              padding === "sm" && "px-2 sm:px-3 py-2 sm:py-3",
+              padding === "md" &&
+                (fullScreenOnMobile
+                  ? "px-4 sm:px-6 py-4 sm:py-5"
+                  : "px-3 sm:px-5 pb-4 sm:pb-5"),
+              padding === "lg" && "px-6 sm:px-8 py-6 sm:py-8",
+              // Extra top padding when no drag handle (full screen mode)
+              (fullScreenOnMobile || variant === "full") &&
+                padding !== "none" &&
+                "pt-4",
+            )}
+          >
             <div className="flex justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
-              <h2 id={modalTitleId} className="font-bold text-base sm:text-lg flex-1 pr-2 dark:text-dark-text">
+              <h2
+                id={modalTitleId}
+                className="font-bold text-base sm:text-lg flex-1 pr-2 dark:text-dark-text"
+              >
                 {title}
               </h2>
               {showCloseButton && (
@@ -474,14 +507,22 @@ export function BaseModal({
                   aria-label="Close modal"
                   type="button"
                 >
-                  <svg className="w-6 h-6 text-neutral-500 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="w-6 h-6 text-neutral-500 dark:text-dark-text-secondary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               )}
             </div>
 
-            <div className="max-h-[calc(100vh-180px)] sm:max-h-[calc(90vh-150px)] overflow-y-auto overflow-x-hidden -mx-1 px-1">
+            <div className="max-h-[calc(100vh-250px)] sm:max-h-[calc(90vh-150px)] overflow-y-auto overflow-x-hidden -mx-1 px-1">
               {children}
             </div>
 

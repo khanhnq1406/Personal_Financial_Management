@@ -15,6 +15,7 @@ export const FunctionalButton = memo(function FunctionalButton({
     <div className="py-5">
       <div className="mb-5">
         <Button
+          variant="primary"
           type={ButtonType.PRIMARY}
           onClick={() => onOpenModal("add-transaction")}
         >
