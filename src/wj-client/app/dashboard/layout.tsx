@@ -1,7 +1,7 @@
 "use client";
 import ActiveLink from "@/components/ActiveLink";
 import { logout } from "../auth/utils/logout";
-import { routes, ButtonType, resources } from "../constants";
+import { routes, ButtonType, resources, ModalType } from "../constants";
 import { AuthCheck } from "../auth/utils/AuthCheck";
 import { store } from "@/redux/store";
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -15,6 +15,9 @@ import { CurrencyConversionProgress } from "@/components/CurrencyConversionProgr
 import { BottomNav, createNavItems } from "@/components/navigation";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { ZIndex } from "@/lib/utils/z-index";
+import { BaseModal } from "@/components/modals/BaseModal";
+import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
+import { TransferMoneyForm } from "@/components/modals/forms/TransferMoneyForm";
 
 export default function DashboardLayout({
   children,
@@ -25,6 +28,7 @@ export default function DashboardLayout({
   const [user, setUser] = useState(store.getState().setAuthReducer);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [modalType, setModalType] = useState<string | null>(null);
 
   store.subscribe(() => {
     if (!user.picture) {
@@ -511,7 +515,7 @@ export default function DashboardLayout({
                 </svg>
               ),
               onClick: () => {
-                window.location.href = "/dashboard/transaction";
+                setModalType(ModalType.ADD_TRANSACTION);
               },
             },
             {
@@ -532,11 +536,35 @@ export default function DashboardLayout({
                 </svg>
               ),
               onClick: () => {
-                window.location.href = "/dashboard/transaction";
+                setModalType(ModalType.TRANSFER_MONEY);
               },
             },
           ]}
         />
+
+        {/* Global Modals */}
+        <BaseModal
+          isOpen={modalType !== null}
+          onClose={() => setModalType(null)}
+          title={modalType || ""}
+        >
+          {modalType === ModalType.ADD_TRANSACTION && (
+            <AddTransactionForm
+              onSuccess={() => {
+                setModalType(null);
+                // Refresh data if needed
+              }}
+            />
+          )}
+          {modalType === ModalType.TRANSFER_MONEY && (
+            <TransferMoneyForm
+              onSuccess={() => {
+                setModalType(null);
+                // Refresh data if needed
+              }}
+            />
+          )}
+        </BaseModal>
       </CurrencyProvider>
     </AuthCheck>
   );

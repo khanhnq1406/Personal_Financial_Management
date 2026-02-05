@@ -1,7 +1,7 @@
 "use client";
 
 import { BaseModal } from "@/components/modals/BaseModal";
-import { Select } from "@/components/select/Select";
+import { FormSelect } from "@/components/forms/FormSelect";
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils/cn";
 import { FormInput } from "@/components/forms/FormInput";
@@ -54,11 +54,11 @@ function FilterSection({
       </button>
       <div
         className={cn(
-          "overflow-hidden transition-all duration-200",
-          expanded ? "max-h-96 pb-3 sm:pb-4" : "max-h-0",
+          "transition-all duration-200",
+          expanded ? "max-h-[600px] pb-3 sm:pb-4 overflow-visible" : "max-h-0 overflow-hidden",
         )}
       >
-        <div className="px-3 sm:px-4">{children}</div>
+        <div className="px-3 sm:px-4 relative">{children}</div>
       </div>
     </div>
   );
@@ -333,7 +333,7 @@ export function TransactionFilterModal({
           </span>
         </div>
       )}
-      <div className="space-y-0 sm:space-y-4 divide-y divide-gray-200 dark:divide-dark-border max-h-full ">
+      <div className="space-y-0 sm:space-y-4 divide-y divide-gray-200 dark:divide-dark-border">
         {/* Search Input - Always visible */}
         <FilterSection
           title="Search"
@@ -396,50 +396,42 @@ export function TransactionFilterModal({
           expanded={isExpanded("filters")}
           onToggle={toggleSection}
         >
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-0">
             {/* Wallet Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1.5 sm:mb-2">
-                Wallet
-              </label>
-              <Select
-                value={localWallet || ""}
-                onChange={(val) => setLocalWallet(val || null)}
-                options={walletOptions}
-                placeholder="All Wallets"
-                clearable={true}
-              />
-            </div>
+            <FormSelect
+              id="filter-wallet"
+              label="Wallet"
+              value={localWallet || ""}
+              onChange={(val: string) => setLocalWallet(val || null)}
+              options={walletOptions}
+              placeholder="All Wallets"
+              size="sm"
+              containerClassName="mb-3"
+            />
 
             {/* Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1.5 sm:mb-2">
-                Category
-              </label>
-              <Select
-                value={localCategory}
-                onChange={setLocalCategory}
-                options={categoryOptions}
-                placeholder="All Categories"
-                clearable={true}
-              />
-            </div>
+            <FormSelect
+              id="filter-category"
+              label="Category"
+              value={localCategory}
+              onChange={setLocalCategory}
+              options={categoryOptions}
+              placeholder="All Categories"
+              size="sm"
+              containerClassName="mb-3"
+            />
 
             {/* Sort Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1.5 sm:mb-2">
-                Sort By
-              </label>
-              <Select
-                value={localSort}
-                onChange={setLocalSort}
-                options={sortOptions}
-                placeholder="Sort transactions"
-                clearable={false}
-                disableInput
-                disableFilter
-              />
-            </div>
+            <FormSelect
+              id="filter-sort"
+              label="Sort By"
+              value={localSort}
+              onChange={setLocalSort}
+              options={sortOptions}
+              placeholder="Sort transactions"
+              size="sm"
+              containerClassName="mb-0"
+            />
           </div>
         </FilterSection>
 

@@ -49,7 +49,7 @@ export const TransactionCard = memo(function TransactionCard({
     return (
       <div
         className={cn(
-          "sticky top-0 z-10 bg-gray-50 dark:bg-dark-background px-3 py-2 sm:px-4",
+          "sticky top-0 z-1 bg-gray-50 dark:bg-dark-background px-3 py-2 sm:px-4",
           className,
         )}
       >

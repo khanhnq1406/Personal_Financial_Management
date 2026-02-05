@@ -17,10 +17,17 @@ interface FABProps {
 export function FloatingActionButton({ actions }: FABProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleActionClick = useCallback((action: FABAction) => {
-    action.onClick();
-    setIsOpen(false);
-  }, []);
+  const handleActionClick = useCallback(
+    (
+      event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+      action: FABAction,
+    ) => {
+      event.preventDefault();
+      action.onClick();
+      setIsOpen(false);
+    },
+    [],
+  );
 
   return (
     <>
@@ -28,32 +35,38 @@ export function FloatingActionButton({ actions }: FABProps) {
       <div
         className={cn(
           "fixed inset-0 bg-neutral-900/20 sm:hidden transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
-        style={{ zIndex: ZIndex.modalBackdrop }}
+        style={{ zIndex: ZIndex.floating }}
         onClick={() => setIsOpen(false)}
         aria-hidden="true"
       />
 
       {/* FAB Container - only visible on mobile */}
-      <div className="fixed bottom-6 right-6 sm:hidden" style={{ zIndex: ZIndex.floating }}>
+      <div
+        className="fixed bottom-14 right-3 sm:hidden flex items-end"
+        style={{ zIndex: ZIndex.floating + 1 }}
+      >
         {/* Action buttons (expand upward) */}
         <div
           className={cn(
             "flex flex-col-reverse gap-3 mb-3 transition-all duration-300",
-            isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+            isOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-4 pointer-events-none",
           )}
         >
           {actions.map((action, index) => (
             <button
               key={index}
-              onClick={() => handleActionClick(action)}
+              onClick={(event) => handleActionClick(event, action)}
               className={cn(
                 "flex items-center gap-3 bg-white shadow-floating rounded-full",
                 "px-4 py-3 min-h-[56px]",
                 "hover:shadow-xl active:scale-95",
                 "transition-all duration-200",
-                "transform"
+                "transform",
+                "relative",
               )}
               style={{
                 transitionDelay: isOpen ? `${index * 50}ms` : "0ms",
@@ -79,7 +92,7 @@ export function FloatingActionButton({ actions }: FABProps) {
             "hover:bg-primary-700 hover:shadow-xl",
             "active:scale-95",
             "transition-all duration-200",
-            isOpen && "rotate-45"
+            isOpen && "rotate-45",
           )}
           aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
           aria-expanded={isOpen}
@@ -91,7 +104,11 @@ export function FloatingActionButton({ actions }: FABProps) {
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
         </button>
       </div>
