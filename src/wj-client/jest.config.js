@@ -7,6 +7,7 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
+  setupFiles: ['<rootDir>/jest.polyfills.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
@@ -15,6 +16,14 @@ const customJestConfig = {
   testMatch: [
     '**/__tests__/**/*.test.[jt]s?(x)',
     '**/components/**/*.test.[jt]s?(x)',
+    '**/utils/**/*.test.[jt]s?(x)',
+    '**/hooks/**/*.test.[jt]s?(x)',
+  ],
+  testEnvironmentOptions: {
+    url: 'http://localhost:3000',
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(?:.pnpm/node_modules/(?:(?:@mswjs|msw)/)))',
   ],
 }
 

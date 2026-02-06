@@ -35,6 +35,7 @@ interface ExportDialogProps {
   title?: string;
   defaultFormat?: ExportFormat;
   defaultDateRange?: DateRange;
+  isExporting?: boolean;
 }
 
 /**
@@ -71,6 +72,7 @@ export function ExportDialog({
   title = "Export Data",
   defaultFormat = "csv",
   defaultDateRange = "last30days",
+  isExporting: isExportingProp = false,
 }: ExportDialogProps) {
   const [format, setFormat] = useState<ExportFormat>(defaultFormat);
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
@@ -232,6 +234,7 @@ export function ExportDialog({
       onClose={onClose}
       title={title}
       maxWidth="max-w-2xl"
+      fullScreenOnMobile={false}
     >
       <div className="space-y-6">
         {/* Export Format */}
@@ -447,7 +450,7 @@ export function ExportDialog({
           )}
 
           {/* Custom Branding */}
-          <label className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-dark-border hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer transition-colors">
+          {/* <label className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-dark-border hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer transition-colors">
             <input
               type="checkbox"
               checked={customBranding}
@@ -462,7 +465,7 @@ export function ExportDialog({
                 Include company logo and colors
               </p>
             </div>
-          </label>
+          </label> */}
 
           {/* Custom File Name */}
           <div>
@@ -598,29 +601,62 @@ export function ExportDialog({
 export function ExportButton({
   onExport,
   categories,
+  isExporting = false,
 }: {
   onExport: (options: ExportOptions) => void | Promise<void>;
   categories?: Array<{ id: string; name: string }>;
+  isExporting?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Button type={ButtonType.SECONDARY} onClick={() => setIsOpen(true)}>
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-          />
-        </svg>
-        Export
+      <Button
+        type={ButtonType.SECONDARY}
+        onClick={() => setIsOpen(true)}
+        disabled={isExporting}
+      >
+        {isExporting ? (
+          <>
+            <svg
+              className="w-4 h-4 mr-2 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            Exporting...
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export
+          </>
+        )}
       </Button>
 
       <ExportDialog
@@ -628,6 +664,7 @@ export function ExportButton({
         onClose={() => setIsOpen(false)}
         onExport={onExport}
         categories={categories}
+        isExporting={isExporting}
       />
     </>
   );

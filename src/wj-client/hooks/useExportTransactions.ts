@@ -1,6 +1,5 @@
 // src/wj-client/hooks/useExportTransactions.ts
-import { useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import { ExportOptions } from "@/components/export/ExportDialog";
 import { Transaction } from "@/gen/protobuf/v1/transaction";
 import {
@@ -11,19 +10,40 @@ import {
   type TransactionExportData,
 } from "@/utils/export";
 
+// API configuration
+const API_BASE_URL =
+  `${process.env.NEXT_PUBLIC_API_URL}/api` || "http://localhost:5000/api";
+const LOCAL_STORAGE_TOKEN_NAME = "token";
+
+// Helper to get auth token
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+}
+
 interface UseExportTransactionsOptions {
   onError?: (error: Error) => void;
   onSuccess?: () => void;
 }
 
 export function useExportTransactions(options?: UseExportTransactionsOptions) {
-  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState({
+    current: 0,
+    total: 3,
+  });
 
-  return useCallback(
+  const exportTransactions = useCallback(
     async (exportOptions: ExportOptions) => {
+      setIsExporting(true);
+      setExportProgress({ current: 0, total: 3 }); // 3 steps: fetch, filter, generate
+
       try {
-        // Build filter for API call
-        const { startDate, endDate } = getDateRangeTimestamps(exportOptions.dateRange);
+        // Step 1: Fetch transactions
+        setExportProgress({ current: 1, total: 3 });
+        const { startDate, endDate } = getDateRangeTimestamps(
+          exportOptions.dateRange,
+        );
 
         // Use custom dates if provided
         const apiStartDate =
@@ -35,40 +55,69 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
             ? Math.floor(exportOptions.customEndDate.getTime() / 1000)
             : endDate;
 
-        // Build filter object for API
-        // Note: For category filtering, we'll fetch all and filter client-side
-        // since the API filter only supports single categoryId
-        const filter = {
-          startDate: apiStartDate,
-          endDate: apiEndDate,
+        // Build query parameters using the correct format expected by the backend
+        // The backend uses underscore_case parameters like start_date, end_date, page_size, etc.
+        const params = new URLSearchParams();
+        params.append("page", "1");
+        params.append("page_size", "10000"); // Large page size for export
+        params.append("order_by", "date");
+        params.append("order", "desc");
+
+        // Add date range filters if provided
+        if (apiStartDate !== undefined) {
+          params.append("start_date", apiStartDate.toString());
+        }
+        if (apiEndDate !== undefined) {
+          params.append("end_date", apiEndDate.toString());
+        }
+
+        // Get auth token
+        const token = getAuthToken();
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
         };
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
 
         // Fetch all transactions matching date range
-        // Use a large page size to get all data
-        const { data: transactionsData } = await queryClient.fetchQuery({
-          queryKey: ["ListTransactions", "export", filter],
-          queryFn: () =>
-            fetch("/api/v1/transactions?" + new URLSearchParams({
-              pagination: JSON.stringify({ page: 1, pageSize: 10000, orderBy: "date", order: "desc" }),
-              filter: JSON.stringify(filter),
-              sortField: "1", // DATE
-              sortOrder: "desc",
-            })).then(res => res.json()),
-        });
+        const response = await fetch(
+          `${API_BASE_URL}/v1/transactions?${params}`,
+          {
+            headers,
+          },
+        );
 
-        const transactions: Transaction[] = transactionsData?.transactions || [];
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch transactions: ${response.statusText}`,
+          );
+        }
+
+        const transactionsData = await response.json();
+        const transactions: Transaction[] =
+          transactionsData?.transactions || [];
 
         if (transactions.length === 0) {
-          throw new Error("No transactions to export with the selected filters");
+          throw new Error(
+            "No transactions to export with the selected filters",
+          );
         }
+
+        // Step 2: Apply filters and fetch lookup data
+        setExportProgress({ current: 2, total: 3 });
 
         // Apply category filter client-side if specified
         let filteredTransactions = transactions;
         if (exportOptions.includeCategories.length > 0) {
           const categoryIds = new Set(
-            exportOptions.includeCategories.map((id) => parseInt(id, 10)).filter((id) => !isNaN(id)),
+            exportOptions.includeCategories
+              .map((id) => parseInt(id, 10))
+              .filter((id) => !isNaN(id)),
           );
-          filteredTransactions = transactions.filter((t) => categoryIds.has(t.categoryId));
+          filteredTransactions = transactions.filter((t) =>
+            categoryIds.has(t.categoryId),
+          );
         }
 
         if (filteredTransactions.length === 0) {
@@ -76,17 +125,35 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
         }
 
         // Get categories and wallets for name mapping
+        const [categoriesResponse, walletsResponse] = await Promise.all([
+          fetch(
+            `${API_BASE_URL}/v1/categories?page=1&page_size=100&order_by=id&order=asc`,
+            {
+              headers,
+            },
+          ),
+          fetch(
+            `${API_BASE_URL}/v1/wallets?page=1&page_size=100&order_by=id&order=asc`,
+            {
+              headers,
+            },
+          ),
+        ]);
+
+        if (!categoriesResponse.ok) {
+          throw new Error(
+            `Failed to fetch categories: ${categoriesResponse.statusText}`,
+          );
+        }
+        if (!walletsResponse.ok) {
+          throw new Error(
+            `Failed to fetch wallets: ${walletsResponse.statusText}`,
+          );
+        }
+
         const [categoriesData, walletsData] = await Promise.all([
-          queryClient.fetchQuery({
-            queryKey: ["ListCategories"],
-            queryFn: () => fetch("/api/v1/categories?pagination=" + JSON.stringify({ page: 1, pageSize: 100, orderBy: "id", order: "asc" }))
-              .then(res => res.json()),
-          }),
-          queryClient.fetchQuery({
-            queryKey: ["ListWallets"],
-            queryFn: () => fetch("/api/v1/wallets?pagination=" + JSON.stringify({ page: 1, pageSize: 100, orderBy: "id", order: "asc" }))
-              .then(res => res.json()),
-          }),
+          categoriesResponse.json(),
+          walletsResponse.json(),
         ]);
 
         // Create lookup maps
@@ -102,6 +169,9 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
 
         // Get currency from first transaction or default
         const currency = filteredTransactions[0]?.displayCurrency || "VND";
+
+        // Step 3: Generate and download
+        setExportProgress({ current: 3, total: 3 });
 
         // Generate CSV
         const exportData: TransactionExportData = {
@@ -128,8 +198,13 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
         const err = error instanceof Error ? error : new Error("Export failed");
         options?.onError?.(err);
         throw error;
+      } finally {
+        setIsExporting(false);
+        setExportProgress({ current: 0, total: 0 });
       }
     },
-    [queryClient, options],
+    [options],
   );
+
+  return { exportTransactions, isExporting, exportProgress };
 }

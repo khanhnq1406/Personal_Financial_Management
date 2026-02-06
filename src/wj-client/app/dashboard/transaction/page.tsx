@@ -395,7 +395,7 @@ export default function TransactionPage() {
   );
 
   // Handle export transactions
-  const exportTransactions = useExportTransactions({
+  const { exportTransactions, isExporting } = useExportTransactions({
     onError: (error) => {
       alert(error.message);
     },
@@ -604,6 +604,7 @@ export default function TransactionPage() {
               id: c.value,
               name: c.label,
             }))}
+            isExporting={isExporting}
           />
         </div>
       </div>
