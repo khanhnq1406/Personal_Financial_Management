@@ -13,14 +13,7 @@
  * - Touch-friendly interactions
  */
 
-import {
-  useState,
-  useMemo,
-  useCallback,
-  startTransition,
-  useRef,
-  useEffect,
-} from "react";
+import { useState, useMemo, useCallback, startTransition } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import {
   StatsCardSkeleton,
@@ -56,6 +49,7 @@ import {
   UpdateSuccessBanner,
   WalletCashBalanceCard,
 } from "./components";
+import { TabType } from "@/components/modals/InvestmentDetailModal";
 
 const ModalType = {
   CREATE_WALLET: "CREATE_WALLET",
@@ -114,13 +108,7 @@ export default function PortfolioPageEnhanced() {
   >(null);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-
-  // Pull-to-refetch state
-  const [isPulling, setIsPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const touchStartY = useRef<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<TabType>();
 
   // Fetch data
   const getListWallets = useQueryListWallets(
@@ -244,39 +232,6 @@ export default function PortfolioPageEnhanced() {
     ]);
   }, [queryClient]);
 
-  // Pull-to-refresh handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (containerRef.current?.scrollTop === 0) {
-      touchStartY.current = e.touches[0].clientY;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current === null || containerRef.current?.scrollTop !== 0)
-      return;
-
-    const currentY = e.touches[0].clientY;
-    const distance = currentY - touchStartY.current;
-
-    if (distance > 0) {
-      setIsPulling(true);
-      setPullDistance(Math.min(distance * 0.5, 120)); // Max 120px pull
-    }
-  };
-
-  const handleTouchEnd = async () => {
-    if (pullDistance > 80 && !isRefreshing) {
-      setIsRefreshing(true);
-      setIsPulling(false);
-      await refetchAllData();
-      setTimeout(() => setIsRefreshing(false), 500);
-    } else {
-      setIsPulling(false);
-    }
-    setPullDistance(0);
-    touchStartY.current = null;
-  };
-
   // Update prices mutation
   const updatePricesMutation = useMutationUpdatePrices({
     onSuccess: async (data) => {
@@ -364,6 +319,7 @@ export default function PortfolioPageEnhanced() {
   const handleBuyMore = useCallback(
     (investmentId: number) => {
       handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("overview");
     },
     [handleOpenModal],
   );
@@ -371,6 +327,7 @@ export default function PortfolioPageEnhanced() {
   const handleSell = useCallback(
     (investmentId: number) => {
       handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("add-transaction");
     },
     [handleOpenModal],
   );
@@ -378,6 +335,7 @@ export default function PortfolioPageEnhanced() {
   const handleEdit = useCallback(
     (investmentId: number) => {
       handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("transactions");
     },
     [handleOpenModal],
   );
@@ -439,32 +397,8 @@ export default function PortfolioPageEnhanced() {
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className="flex justify-center py-3 sm:py-4 px-3 sm:px-6 overflow-y-auto"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ overscrollBehaviorY: "contain" }}
-      >
-        {/* Pull-to-refresh indicator */}
-        {(isPulling || isRefreshing) && (
-          <div
-            className="flex justify-center py-2"
-            style={{ height: pullDistance }}
-          >
-            <div className="flex items-center gap-2 text-neutral-600">
-              <div
-                className={`w-5 h-5 border-2 border-neutral-600 border-t-transparent rounded-full ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              <span className="text-sm">
-                {isRefreshing ? "Updating..." : "Pull to refresh"}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="w-full space-y-3 sm:space-y-4">
+      <div className="flex justify-center w-full">
+        <div className="w-full max-w-7xl space-y-3 sm:space-y-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">
@@ -587,6 +521,7 @@ export default function PortfolioPageEnhanced() {
           onClose={handleCloseModal}
           investmentId={selectedInvestmentId}
           onSuccess={handleModalSuccess}
+          activeTabProp={activeTab}
         />
       )}
 

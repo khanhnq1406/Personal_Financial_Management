@@ -176,7 +176,7 @@ export default function BudgetPageEnhanced() {
         >
           <div className="flex items-center gap-2">
             <Image
-              src={`${resources}/plus.png`}
+              src={`${resources}/plus.svg`}
               alt="Add"
               width={20}
               height={20}

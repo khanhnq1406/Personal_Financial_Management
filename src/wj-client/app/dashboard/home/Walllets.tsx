@@ -37,7 +37,7 @@ const WalletItem = memo(function WalletItem({
           width={25}
           height={25}
           alt="wallet-icon"
-          src={`${resources}wallet.png`}
+          src={`${resources}wallet.svg`}
         />
         <div className="font-semibold">{wallet.walletName}</div>
       </div>

@@ -121,7 +121,7 @@ export const TablePagination = memo(({
                 ))}
               </select>
               <Image
-                src={`${resources}/down.png`}
+                src={`${resources}/down.svg`}
                 width={12}
                 height={12}
                 alt="Rows per page dropdown"

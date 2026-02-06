@@ -98,7 +98,7 @@ export default function Home() {
     <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2 lg:min-h-0 !border-l-0">
       {/* Mobile-optimized header with Total Balance */}
       {/* Top Section: Always visible - Most important */}
-      <div className="lg:hidden bg-gradient-to-b from-primary-50 to-neutral-50 px-3 py-4 mb-2">
+      <div className="lg:hidden bg-gradient-to-b from-primary-50 to-neutral-50 px-3 py-4 mb-2 rounded-lg">
         <div className="w-full max-w-md mx-auto">
           <TotalBalance />
         </div>

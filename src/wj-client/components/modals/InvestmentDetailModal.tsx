@@ -31,11 +31,13 @@ import { formatQuantity, formatPrice } from "@/app/dashboard/portfolio/helpers";
 import { isGoldType } from "@/lib/utils/gold-calculator";
 import { isSilverType } from "@/lib/utils/silver-calculator";
 
+export type TabType = "overview" | "transactions" | "add-transaction";
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   investmentId: number;
   onSuccess?: () => void;
+  activeTabProp?: TabType;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -61,8 +63,6 @@ const getTransactionTypeLabel = (type: InvestmentTransactionType): string => {
   }
 };
 
-type TabType = "overview" | "transactions" | "add-transaction";
-
 type Transaction = {
   id: number;
   type: InvestmentTransactionType;
@@ -83,12 +83,19 @@ export function InvestmentDetailModal({
   onClose,
   investmentId,
   onSuccess,
+  activeTabProp,
 }: InvestmentDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [deletingTransactionId, setDeletingTransactionId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>(
+    activeTabProp || "overview",
+  );
+  const [deletingTransactionId, setDeletingTransactionId] = useState<
+    number | null
+  >(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteInvestment, setShowDeleteInvestment] = useState(false);
-  const [deleteInvestmentError, setDeleteInvestmentError] = useState<string | null>(null);
+  const [deleteInvestmentError, setDeleteInvestmentError] = useState<
+    string | null
+  >(null);
   const queryClient = useQueryClient();
 
   // Fetch investment details
@@ -114,7 +121,9 @@ export function InvestmentDetailModal({
   const updatePricesMutation = useMutationUpdatePrices({
     onSuccess: () => {
       // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetInvestment] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetInvestment],
+      });
 
       // Call the onSuccess callback to refresh modal data
       if (onSuccess) {
@@ -130,9 +139,15 @@ export function InvestmentDetailModal({
   const deleteTransactionMutation = useMutationDeleteInvestmentTransaction({
     onSuccess: () => {
       // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetInvestment] });
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetInvestment],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentListInvestments],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetPortfolioSummary],
+      });
       // Invalidate wallet queries to refresh balance after transaction deletion
       queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetWallet] });
@@ -160,8 +175,12 @@ export function InvestmentDetailModal({
   const deleteInvestmentMutation = useMutationDeleteInvestment({
     onSuccess: () => {
       // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentListInvestments] });
-      queryClient.invalidateQueries({ queryKey: [EVENT_InvestmentGetPortfolioSummary] });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentListInvestments],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetPortfolioSummary],
+      });
       // Invalidate wallet queries to refresh balance after investment deletion
       queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
       queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetWallet] });
@@ -227,7 +246,11 @@ export function InvestmentDetailModal({
         accessorKey: "quantity",
         header: "Quantity",
         cell: ({ row }) =>
-          formatQuantity(row.original.quantity, investment?.type || 0, investment?.purchaseUnit),
+          formatQuantity(
+            row.original.quantity,
+            investment?.type || 0,
+            investment?.purchaseUnit,
+          ),
       },
       {
         id: "price",
@@ -239,7 +262,12 @@ export function InvestmentDetailModal({
           return (
             <div>
               <span className="font-medium">
-                {formatPrice(price, investment?.type || 0, nativeCurrency, investment?.purchaseUnit)}
+                {formatPrice(
+                  price,
+                  investment?.type || 0,
+                  nativeCurrency,
+                  investment?.purchaseUnit,
+                )}
               </span>
               {row.original.displayPrice && row.original.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
@@ -270,7 +298,11 @@ export function InvestmentDetailModal({
               </span>
               {row.original.displayFees && row.original.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
-                  ≈ {formatCurrency(row.original.displayFees.amount || 0, row.original.displayCurrency)}
+                  ≈{" "}
+                  {formatCurrency(
+                    row.original.displayFees.amount || 0,
+                    row.original.displayCurrency,
+                  )}
                 </span>
               )}
             </div>
@@ -291,7 +323,11 @@ export function InvestmentDetailModal({
               </span>
               {row.original.displayCost && row.original.displayCurrency && (
                 <span className="text-xs text-gray-500 block">
-                  ≈ {formatCurrency(row.original.displayCost.amount || 0, row.original.displayCurrency)}
+                  ≈{" "}
+                  {formatCurrency(
+                    row.original.displayCost.amount || 0,
+                    row.original.displayCurrency,
+                  )}
                 </span>
               )}
             </div>
@@ -317,8 +353,18 @@ export function InvestmentDetailModal({
             title="Delete transaction"
             aria-label="Delete transaction"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
         ),
@@ -356,22 +402,34 @@ export function InvestmentDetailModal({
         id: "quantity",
         header: "Quantity",
         accessorFn: (row) =>
-          formatQuantity(row.quantity, investment?.type || 0, investment?.purchaseUnit),
+          formatQuantity(
+            row.quantity,
+            investment?.type || 0,
+            investment?.purchaseUnit,
+          ),
       },
       {
         id: "price",
         header: "Price",
-        accessorFn: (row) => formatPrice(row.price || 0, investment?.type || 0, investment?.currency || "USD", investment?.purchaseUnit),
+        accessorFn: (row) =>
+          formatPrice(
+            row.price || 0,
+            investment?.type || 0,
+            investment?.currency || "USD",
+            investment?.purchaseUnit,
+          ),
       },
       {
         id: "fees",
         header: "Fees",
-        accessorFn: (row) => formatCurrency(row.fees || 0, investment?.currency || "USD"),
+        accessorFn: (row) =>
+          formatCurrency(row.fees || 0, investment?.currency || "USD"),
       },
       {
         id: "cost",
         header: "Total",
-        accessorFn: (row) => formatCurrency(row.cost || 0, investment?.currency || "USD"),
+        accessorFn: (row) =>
+          formatCurrency(row.cost || 0, investment?.currency || "USD"),
       },
       {
         id: "transactionDate",
@@ -388,8 +446,18 @@ export function InvestmentDetailModal({
             title="Delete transaction"
             aria-label="Delete transaction"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
         ),
@@ -467,32 +535,47 @@ export function InvestmentDetailModal({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Currency</span>
-                <span className="font-medium">{investment.currency || "USD"}</span>
+                <span className="font-medium">
+                  {investment.currency || "USD"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Quantity</span>
                 <span className="font-medium">
-                  {formatQuantity(investment.quantity, investment.type, investment.purchaseUnit)}
+                  {formatQuantity(
+                    investment.quantity,
+                    investment.type,
+                    investment.purchaseUnit,
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Avg Cost</span>
-                <span>{formatPrice(investment.averageCost || 0, investment.type, investment.currency || "USD", investment.purchaseUnit)}</span>
+                <span>
+                  {formatPrice(
+                    investment.averageCost || 0,
+                    investment.type,
+                    investment.currency || "USD",
+                    investment.purchaseUnit,
+                  )}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Current Price</span>
                   <button
-                    onClick={() => updatePricesMutation.mutate({
-                      investmentIds: [investment.id],
-                      forceRefresh: true,
-                    })}
+                    onClick={() =>
+                      updatePricesMutation.mutate({
+                        investmentIds: [investment.id],
+                        forceRefresh: true,
+                      })
+                    }
                     disabled={updatePricesMutation.isPending}
                     className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 transition-colors"
                     title="Refresh price"
                   >
                     <svg
-                      className={`w-4 h-4 text-gray-500 ${updatePricesMutation.isPending ? 'animate-spin' : ''}`}
+                      className={`w-4 h-4 text-gray-500 ${updatePricesMutation.isPending ? "animate-spin" : ""}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -507,7 +590,14 @@ export function InvestmentDetailModal({
                   </button>
                 </div>
                 <div className="text-right">
-                  <span>{formatPrice(investment.currentPrice || 0, investment.type, investment.currency || "USD", investment.purchaseUnit)}</span>
+                  <span>
+                    {formatPrice(
+                      investment.currentPrice || 0,
+                      investment.type,
+                      investment.currency || "USD",
+                      investment.purchaseUnit,
+                    )}
+                  </span>
                   <div className="mt-1">
                     {(() => {
                       const date = new Date(investment.updatedAt * 1000);
@@ -550,25 +640,43 @@ export function InvestmentDetailModal({
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Cost</span>
                 <div className="text-right">
-                  <span>{formatCurrency(investment.totalCost || 0, investment.currency || "USD")}</span>
-                  {investment.displayTotalCost && investment.displayCurrency && (
-                    <span className="text-xs text-gray-500 block">
-                      ≈ {formatCurrency(investment.displayTotalCost.amount || 0, investment.displayCurrency)}
-                    </span>
-                  )}
+                  <span>
+                    {formatCurrency(
+                      investment.totalCost || 0,
+                      investment.currency || "USD",
+                    )}
+                  </span>
+                  {investment.displayTotalCost &&
+                    investment.displayCurrency && (
+                      <span className="text-xs text-gray-500 block">
+                        ≈{" "}
+                        {formatCurrency(
+                          investment.displayTotalCost.amount || 0,
+                          investment.displayCurrency,
+                        )}
+                      </span>
+                    )}
                 </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Current Value</span>
                 <div className="text-right">
                   <span className="font-semibold">
-                    {formatCurrency(investment.currentValue || 0, investment.currency || "USD")}
+                    {formatCurrency(
+                      investment.currentValue || 0,
+                      investment.currency || "USD",
+                    )}
                   </span>
-                  {investment.displayCurrentValue && investment.displayCurrency && (
-                    <span className="text-xs text-gray-500 block">
-                      ≈ {formatCurrency(investment.displayCurrentValue.amount || 0, investment.displayCurrency)}
-                    </span>
-                  )}
+                  {investment.displayCurrentValue &&
+                    investment.displayCurrency && (
+                      <span className="text-xs text-gray-500 block">
+                        ≈{" "}
+                        {formatCurrency(
+                          investment.displayCurrentValue.amount || 0,
+                          investment.displayCurrency,
+                        )}
+                      </span>
+                    )}
                 </div>
               </div>
               <div className="border-t pt-3">
@@ -582,13 +690,21 @@ export function InvestmentDetailModal({
                           : "text-red-600"
                       }`}
                     >
-                      {formatCurrency(investment.unrealizedPnl || 0, investment.currency || "USD")}
+                      {formatCurrency(
+                        investment.unrealizedPnl || 0,
+                        investment.currency || "USD",
+                      )}
                     </span>
-                    {investment.displayUnrealizedPnl && investment.displayCurrency && (
-                      <span className="text-xs text-gray-500 block">
-                        ≈ {formatCurrency(investment.displayUnrealizedPnl.amount || 0, investment.displayCurrency)}
-                      </span>
-                    )}
+                    {investment.displayUnrealizedPnl &&
+                      investment.displayCurrency && (
+                        <span className="text-xs text-gray-500 block">
+                          ≈{" "}
+                          {formatCurrency(
+                            investment.displayUnrealizedPnl.amount || 0,
+                            investment.displayCurrency,
+                          )}
+                        </span>
+                      )}
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
@@ -614,19 +730,30 @@ export function InvestmentDetailModal({
                           : "text-red-600"
                       }`}
                     >
-                      {formatCurrency(investment.realizedPnl || 0, investment.currency || "USD")}
+                      {formatCurrency(
+                        investment.realizedPnl || 0,
+                        investment.currency || "USD",
+                      )}
                     </span>
-                    {investment.displayRealizedPnl && investment.displayCurrency && (
-                      <span className="text-xs text-gray-500 block">
-                        ≈ {formatCurrency(investment.displayRealizedPnl.amount || 0, investment.displayCurrency)}
-                      </span>
-                    )}
+                    {investment.displayRealizedPnl &&
+                      investment.displayCurrency && (
+                        <span className="text-xs text-gray-500 block">
+                          ≈{" "}
+                          {formatCurrency(
+                            investment.displayRealizedPnl.amount || 0,
+                            investment.displayCurrency,
+                          )}
+                        </span>
+                      )}
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Dividends</span>
                   <span className="font-semibold text-green-600">
-                    {formatCurrency(investment.totalDividends || 0, investment.currency || "USD")}
+                    {formatCurrency(
+                      investment.totalDividends || 0,
+                      investment.currency || "USD",
+                    )}
                   </span>
                 </div>
               </div>
@@ -637,8 +764,18 @@ export function InvestmentDetailModal({
                   onClick={() => setShowDeleteInvestment(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                   Delete Investment
                 </button>
@@ -718,7 +855,8 @@ export function InvestmentDetailModal({
             <div>
               <p>Are you sure you want to delete this transaction?</p>
               <p className="text-sm text-gray-500 mt-2">
-                This will recalculate your investment&apos;s quantity and cost basis.
+                This will recalculate your investment&apos;s quantity and cost
+                basis.
               </p>
               {deleteError && (
                 <p className="text-sm text-red-600 mt-2">{deleteError}</p>
@@ -743,11 +881,20 @@ export function InvestmentDetailModal({
           title="Delete Investment"
           message={
             <div>
-              <p>Are you sure you want to delete <strong>{investment?.symbol}</strong>?</p>
+              <p>
+                Are you sure you want to delete{" "}
+                <strong>{investment?.symbol}</strong>?
+              </p>
               {(investment?.quantity || 0) > 0 ? (
                 <p className="text-sm text-red-600 mt-2">
-                  Warning: You still have {formatQuantity(investment?.quantity || 0, investment?.type || 0, investment?.purchaseUnit)} units.
-                  All holdings and transaction history will be permanently deleted.
+                  Warning: You still have{" "}
+                  {formatQuantity(
+                    investment?.quantity || 0,
+                    investment?.type || 0,
+                    investment?.purchaseUnit,
+                  )}{" "}
+                  units. All holdings and transaction history will be
+                  permanently deleted.
                 </p>
               ) : (
                 <p className="text-sm text-gray-500 mt-2">
@@ -755,7 +902,9 @@ export function InvestmentDetailModal({
                 </p>
               )}
               {deleteInvestmentError && (
-                <p className="text-sm text-red-600 mt-2">{deleteInvestmentError}</p>
+                <p className="text-sm text-red-600 mt-2">
+                  {deleteInvestmentError}
+                </p>
               )}
             </div>
           }

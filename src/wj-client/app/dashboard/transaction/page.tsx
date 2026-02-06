@@ -31,7 +31,7 @@ import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { cn } from "@/lib/utils/cn";
 import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
 
-const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
+const displayImgList = [`${resources}/unhide.svg`, `${resources}/hide.svg`];
 
 type ModalState = { type: "delete-confirmation"; transactionId: number } | null;
 

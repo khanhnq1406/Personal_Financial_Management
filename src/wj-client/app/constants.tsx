@@ -85,8 +85,7 @@ export const routes = {
   portfolio: `/dashboard/portfolio`,
 };
 
-export const resources =
-  "https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/";
+export const resources = "/resources/icons/";
 
 export const chartColors = [
   "#66bfff", // Pastel Blue (similar to #0090FF)

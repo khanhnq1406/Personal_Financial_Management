@@ -197,7 +197,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         label="Total Income"
         value={formatCurrency(animatedIncome, currency)}
         color="green"
-        icon={`${resources}/income.png`}
+        icon={`${resources}/income.svg`}
         change={incomeChange}
         changeLabel="vs last period"
         showSparkline={incomeSparkline.length > 1}
@@ -209,7 +209,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         label="Total Expenses"
         value={formatCurrency(animatedExpenses, currency)}
         color="red"
-        icon={`${resources}/expense.png`}
+        icon={`${resources}/expense.svg`}
         change={expensesChange}
         changeLabel="vs last period"
         showSparkline={expenseSparkline.length > 1}
@@ -222,7 +222,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         value={formatCurrency(animatedSavings, currency)}
         subtitle={netSavings >= 0 ? "Positive cash flow" : "Negative cash flow"}
         color={netSavings >= 0 ? "blue" : "red"}
-        icon={`${resources}/savings.png`}
+        icon={`${resources}/savings.svg`}
         change={savingsChange}
         changeLabel="vs last period"
       />
@@ -233,7 +233,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         value={`${animatedRate.toFixed(1)}%`}
         subtitle={savingsRate >= 20 ? "Excellent!" : savingsRate >= 10 ? "Good" : "Needs improvement"}
         color="neutral"
-        icon={`${resources}/percent.png`}
+        icon={`${resources}/percent.svg`}
         change={rateChange}
         changeLabel="pp change"
       />
@@ -245,7 +245,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
           value={formatCurrency(topExpenseCategory.amount, currency)}
           subtitle={topExpenseCategory.name}
           color="neutral"
-          icon={`${resources}/category.png`}
+          icon={`${resources}/category.svg`}
         />
       )}
     </div>

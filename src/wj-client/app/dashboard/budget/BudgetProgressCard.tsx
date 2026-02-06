@@ -352,7 +352,7 @@ export const BudgetProgressCard = memo(function BudgetProgressCard({
             >
               <div className="flex items-center justify-center gap-2">
                 <Image
-                  src={`${resources}/plus.png`}
+                  src={`${resources}/plus.svg`}
                   alt="Add"
                   width={16}
                   height={16}

@@ -103,13 +103,13 @@ export function BudgetItemCard({
         <div className="flex items-center gap-2">
           <Button
             type={ButtonType.IMG}
-            src={`${resources}/editing.png`}
+            src={`${resources}/editing.svg`}
             onClick={() => onEditItem(budgetId, item)}
             disabled={isPending}
           />
           <Button
             type={ButtonType.IMG}
-            src={`${resources}/remove.png`}
+            src={`${resources}/remove.svg`}
             onClick={handleDeleteItem}
             disabled={isPending}
           />

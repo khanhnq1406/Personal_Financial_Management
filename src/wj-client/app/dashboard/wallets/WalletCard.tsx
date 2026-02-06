@@ -48,7 +48,7 @@ export const WalletCard = memo(function WalletCard({
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
             <Image
-              src={`${resources}wallet.png`}
+              src={`${resources}wallet.svg`}
               alt="Wallet"
               width={32}
               height={32}
@@ -58,12 +58,12 @@ export const WalletCard = memo(function WalletCard({
           <div className="flex gap-2">
             <Button
               type={ButtonType.IMG}
-              src={`${resources}/editing.png`}
+              src={`${resources}/editing.svg`}
               onClick={() => onEdit(wallet)}
             />
             <Button
               type={ButtonType.IMG}
-              src={`${resources}/remove.png`}
+              src={`${resources}/remove.svg`}
               onClick={() => onDelete(wallet)}
             />
           </div>

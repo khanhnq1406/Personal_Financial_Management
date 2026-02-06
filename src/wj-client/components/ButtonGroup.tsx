@@ -51,7 +51,7 @@ export const ButtonGroup = memo(function ButtonGroup() {
           className="relative hover:drop-shadow-round z-50"
           onClick={handleExtend}
         >
-          <img src={`${resources}/plus.png`} alt="" className="w-8" />
+          <img src={`${resources}/plus.svg`} alt="" className="w-8" />
         </button>
         <button
           className="btn-transaction fixed hover:drop-shadow-round bottom-8 right-14 bg-primary-600 rounded-full w-8"
@@ -62,7 +62,7 @@ export const ButtonGroup = memo(function ButtonGroup() {
             );
           }}
         >
-          <img src={`${resources}/transaction.png`} alt="" className="w-8" />
+          <img src={`${resources}/transaction.svg`} alt="" className="w-8" />
         </button>
         <button
           className="btn-transfer fixed hover:drop-shadow-round bottom-14 right-6 bg-primary-600 rounded-full w-8 p-1"
@@ -73,7 +73,7 @@ export const ButtonGroup = memo(function ButtonGroup() {
             );
           }}
         >
-          <img src={`${resources}/transfer.png`} alt="" className="" />
+          <img src={`${resources}/transfer.svg`} alt="" className="" />
         </button>
       </div>
     </div>

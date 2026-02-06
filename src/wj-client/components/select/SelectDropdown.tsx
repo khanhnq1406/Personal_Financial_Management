@@ -40,7 +40,7 @@ export function SelectDropdown({
         ))}
       </select>
       <Image
-        src={`${resources}/down.png`}
+        src={`${resources}/down.svg`}
         width={16}
         height={16}
         alt="Dropdown"

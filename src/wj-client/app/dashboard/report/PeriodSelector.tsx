@@ -283,7 +283,7 @@ export const PeriodSelector = memo(function PeriodSelector({
               aria-label="Previous period"
             >
               <Image
-                src={`${resources}/chevron-left.png`}
+                src={`${resources}/chevron-left.svg`}
                 alt="Previous"
                 width={16}
                 height={16}
@@ -309,7 +309,7 @@ export const PeriodSelector = memo(function PeriodSelector({
               aria-label="Next period"
             >
               <Image
-                src={`${resources}/chevron-right.png`}
+                src={`${resources}/chevron-right.svg`}
                 alt="Next"
                 width={16}
                 height={16}

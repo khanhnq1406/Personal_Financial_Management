@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "WealthJourney",
   description:
     "Welcome to WealthJourney - Your Trusted Guide to Financial Freedom",
-  icons: "/logo.png",
+  icons: "/logo.svg",
 };
 
 export default function RootLayout({

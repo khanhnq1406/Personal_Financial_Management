@@ -59,7 +59,7 @@ const TransactionActions = memo(function TransactionActions({
         aria-label="Edit transaction"
       >
         <Image
-          src={`${resources}/editing.png`}
+          src={`${resources}/editing.svg`}
           width={24}
           height={24}
           alt="Edit transaction"
@@ -72,7 +72,7 @@ const TransactionActions = memo(function TransactionActions({
         aria-label="Delete transaction"
       >
         <Image
-          src={`${resources}/remove.png`}
+          src={`${resources}/remove.svg`}
           width={24}
           height={24}
           alt="Delete transaction"

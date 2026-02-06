@@ -103,7 +103,7 @@ const CategoryItem = memo(function CategoryItem({
               className="p-1.5 rounded-md hover:bg-green-100 text-green-600 transition-colors"
               title="Add expense"
             >
-              <Image src={`${resources}/plus.png`} alt="Add" width={16} height={16} />
+              <Image src={`${resources}/plus.svg`} alt="Add" width={16} height={16} />
             </button>
             <button
               onClick={(e) => {
@@ -113,7 +113,7 @@ const CategoryItem = memo(function CategoryItem({
               className="p-1.5 rounded-md hover:bg-blue-100 text-blue-600 transition-colors"
               title="Edit budget"
             >
-              <Image src={`${resources}/editing.png`} alt="Edit" width={16} height={16} />
+              <Image src={`${resources}/editing.svg`} alt="Edit" width={16} height={16} />
             </button>
           </div>
         </div>

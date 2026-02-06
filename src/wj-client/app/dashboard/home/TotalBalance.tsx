@@ -8,7 +8,7 @@ import { memo, useMemo, useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils/cn";
 
-const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
+const displayImgList = [`${resources}/unhide.svg`, `${resources}/hide.svg`];
 
 export const TotalBalance = memo(function TotalBalance() {
   const [isHide, setHide] = useState(false);
@@ -46,7 +46,7 @@ export const TotalBalance = memo(function TotalBalance() {
 
   if (getTotalBalance.isLoading) {
     return (
-      <div className="py-5 hidden sm:block">
+      <div className="py-5">
         <BaseCard>
           <TotalBalanceSkeleton />
         </BaseCard>
@@ -59,8 +59,8 @@ export const TotalBalance = memo(function TotalBalance() {
     : balanceData.netWorth;
 
   return (
-    <div className="py-5 hidden sm:block">
-      <BaseCard>
+    <div>
+      <BaseCard className="mt-2 sm:mt-3 lg:mt-4">
         <div className="flex items-center justify-between py-5 flex-wrap px-5">
           <div className="flex-1">
             <div className="text-[#99A3A5] font-semibold mb-2">

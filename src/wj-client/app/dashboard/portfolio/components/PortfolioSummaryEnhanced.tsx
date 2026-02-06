@@ -228,7 +228,6 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
         <StatCard
           label="Total PNL"
           value={formatCurrency(animatedPnl, displayCurrency)}
-          subtitle={`${pnlPercent >= 0 ? "+" : ""}${pnlPercent.toFixed(2)}%`}
           color={displayPnl >= 0 ? "green" : "red"}
           trend={pnlPercent}
         />
@@ -237,23 +236,6 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
           label="Holdings"
           value={animatedHoldings.toString()}
           color="neutral"
-          icon={
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <svg
-                className="w-4 h-4 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </div>
-          }
         />
       </div>
 
@@ -306,7 +288,7 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
           >
             <div className="flex items-center justify-center gap-2">
               <Image
-                src={`${resources}/plus.png`}
+                src={`${resources}/plus.svg`}
                 alt="Add"
                 width={20}
                 height={20}
@@ -324,7 +306,7 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
           >
             <div className="flex items-center justify-center gap-2">
               <Image
-                src={`${resources}/refresh.png`}
+                src={`${resources}/refresh.svg`}
                 alt="Refresh"
                 width={20}
                 height={20}

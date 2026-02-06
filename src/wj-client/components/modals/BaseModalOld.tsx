@@ -644,7 +644,7 @@
 //               </h2>
 //               <Button
 //                 type={ButtonType.IMG}
-//                 src={`${resources}/close.png`}
+//                 src={`${resources}/close.svg`}
 //                 onClick={handleClose}
 //                 aria-label="Close modal"
 //               />

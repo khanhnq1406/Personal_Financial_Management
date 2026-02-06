@@ -50,7 +50,7 @@ function DashboardPreview() {
       {/* Content */}
       <div>
         <Image
-          src={"/dashboard.png"}
+          src={"/dashboard.svg"}
           alt="dashboard"
           width={0}
           height={0}

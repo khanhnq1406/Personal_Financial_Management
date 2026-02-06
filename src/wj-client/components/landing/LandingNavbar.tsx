@@ -46,7 +46,7 @@ export default function LandingNavbar() {
         <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="WealthJourney" width={28} height={28} className="sm:w-8 sm:h-8" />
+            <Image src="/logo.svg" alt="WealthJourney" width={28} height={28} className="sm:w-8 sm:h-8" />
             <span className="text-base sm:text-lg md:text-xl font-semibold text-primary-600">WealthJourney</span>
           </Link>
 

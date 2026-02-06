@@ -42,7 +42,7 @@ const EmptyWalletsState = memo(function EmptyWalletsState() {
     <BaseCard className="p-8">
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <Image
-          src={`${resources}wallet.png`}
+          src={`${resources}wallet.svg`}
           alt="No wallets"
           width={64}
           height={64}

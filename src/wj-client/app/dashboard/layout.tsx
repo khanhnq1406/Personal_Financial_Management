@@ -214,7 +214,7 @@ export default function DashboardLayout({
         {/* Currency conversion progress banner */}
         <CurrencyConversionProgress />
 
-        <div className="min-h-screen bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row">
+        <div className="h-screen bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
           {/* Desktop Sidebar */}
           <aside className="hidden sm:flex sm:w-64 lg:w-72 flex-col bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface min-h-screen fixed left-0 top-0 z-sidebar">
             {/* Logo */}
@@ -299,7 +299,7 @@ export default function DashboardLayout({
           </aside>
 
           {/* Mobile Header */}
-          <header className="sm:hidden sticky top-0 z-sticky bg-white dark:bg-dark-surface border-b border-neutral-200 dark:border-dark-border">
+          <header className="sm:hidden shrink-0 sticky top-0 z-sticky bg-white dark:bg-dark-surface border-b border-neutral-200 dark:border-dark-border">
             <div className="flex items-center justify-between px-4 py-3">
               {/* Mobile Menu Button */}
               <button
@@ -478,8 +478,8 @@ export default function DashboardLayout({
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 sm:ml-64 lg:ml-72 min-h-0">
-            <div className="p-4 sm:p-6 lg:p-8 pb-safe-bottom sm:pb-8">
+          <main className="flex-1 sm:ml-64 lg:ml-72 overflow-y-auto">
+            <div className="h-full p-4 sm:p-6 lg:p-8 pb-14 sm:pb-8 overflow-y-auto">
               {children}
             </div>
           </main>

@@ -66,7 +66,7 @@ export const TransactionItem = ({
             width={24}
             height={24}
             alt="category-icon"
-            src={`${resources}${isIncome ? "income.png" : "expense.png"}`}
+            src={`${resources}${isIncome ? "income.svg" : "expense.svg"}`}
           />
         </div>
 
@@ -107,12 +107,12 @@ export const TransactionItem = ({
         <div className="flex gap-1">
           <Button
             type={ButtonType.IMG}
-            src={`${resources}edit.png`}
+            src={`${resources}edit.svg`}
             onClick={handleEdit}
           />
           <Button
             type={ButtonType.IMG}
-            src={`${resources}delete.png`}
+            src={`${resources}delete.svg`}
             onClick={handleDelete}
           />
         </div>

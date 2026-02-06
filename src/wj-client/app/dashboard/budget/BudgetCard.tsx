@@ -76,12 +76,12 @@ export function BudgetCard({
           <div className="flex gap-2">
             <Button
               type={ButtonType.IMG}
-              src={`${resources}/editing.png`}
+              src={`${resources}/editing.svg`}
               onClick={() => onEditBudget(budget)}
             />
             <Button
               type={ButtonType.IMG}
-              src={`${resources}/remove.png`}
+              src={`${resources}/remove.svg`}
               onClick={handleDeleteBudget}
               disabled={deleteBudgetMutation.isPending}
             />
@@ -113,7 +113,7 @@ export function BudgetCard({
             </h4>
             <Button
               type={ButtonType.IMG}
-              src={`${resources}/plus.png`}
+              src={`${resources}/plus.svg`}
               onClick={() => onAddBudgetItem(budget.id)}
             />
           </div>

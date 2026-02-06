@@ -21,7 +21,7 @@ import Image from "next/image";
  *   width={40}
  *   height={40}
  *   priority={false}
- *   fallback="/default-avatar.png"
+ *   fallback="/default-avatar.svg"
  * />
  * ```
  */
