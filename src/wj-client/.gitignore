@@ -41,3 +41,12 @@ next-env.d.ts
 
 # hide constants
 hideConstants.tsx
+
+# backup files
+*.bak
+*.bak.*
+*.bk
+*.old
+*.tmp
+*.swp
+*~
