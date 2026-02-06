@@ -55,7 +55,9 @@ function FilterSection({
       <div
         className={cn(
           "transition-all duration-200",
-          expanded ? "max-h-[600px] pb-3 sm:pb-4 overflow-visible" : "max-h-0 overflow-hidden",
+          expanded
+            ? "max-h-[600px] pb-3 sm:pb-4 overflow-visible"
+            : "max-h-0 overflow-hidden",
         )}
       >
         <div className="px-3 sm:px-4 relative">{children}</div>
@@ -122,15 +124,8 @@ export function TransactionFilterModal({
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
 
-  console.log(
-    `[TransactionFilterModal] Render #${renderCountRef.current}, localSearch: "${localSearch}"`,
-  );
-
   // Custom debounce implementation that doesn't cause re-renders
   useEffect(() => {
-    console.log(
-      `[TransactionFilterModal] useEffect triggered, localSearch: "${localSearch}"`,
-    );
     // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -153,7 +148,7 @@ export function TransactionFilterModal({
     currentFilters.amountRange?.min || 0,
   );
   const [amountMax, setAmountMax] = useState(
-    currentFilters.amountRange?.max || 10000000,
+    currentFilters.amountRange?.max || 0,
   );
   const [dateRangeType, setDateRangeType] = useState<
     "all" | "today" | "week" | "month" | "custom"
@@ -184,7 +179,7 @@ export function TransactionFilterModal({
       setLocalSort(`${currentFilters.sortField}-${currentFilters.sortOrder}`);
       setLocalSearch(currentFilters.searchQuery);
       setAmountMin(currentFilters.amountRange?.min || 0);
-      setAmountMax(currentFilters.amountRange?.max || 10000000);
+      setAmountMax(currentFilters.amountRange?.max || 0);
       setCustomStartDate(parseDate(currentFilters.dateRange?.start));
       setCustomEndDate(parseDate(currentFilters.dateRange?.end));
       // Reset expanded sections on mobile
@@ -203,24 +198,51 @@ export function TransactionFilterModal({
     };
 
     // Add amount range if specified
-    if (amountMin > 0 || amountMax < 10000000) {
+    if (amountMin > 0 || amountMax > 0) {
       filters.amountRange = {
         min: amountMin > 0 ? amountMin : undefined,
-        max: amountMax < 10000000 ? amountMax : undefined,
+        max: amountMax,
       };
     }
 
     // Add date range if specified
     if (dateRangeType !== "all") {
-      if (dateRangeType === "custom" && (customStartDate || customEndDate)) {
-        // Convert Date objects to ISO strings for the API
-        const formatDate = (date: Date | undefined): string | undefined => {
-          if (!date) return undefined;
-          return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-        };
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      const formatDate = (date: Date | undefined): string | undefined => {
+        if (!date) return undefined;
+        return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+      };
+
+      if (dateRangeType === "custom") {
+        // Use custom date range
+        if (customStartDate || customEndDate) {
+          filters.dateRange = {
+            start: formatDate(customStartDate),
+            end: formatDate(customEndDate),
+          };
+        }
+      } else if (dateRangeType === "today") {
         filters.dateRange = {
-          start: formatDate(customStartDate),
-          end: formatDate(customEndDate),
+          start: formatDate(today),
+          end: formatDate(endOfDay),
+        };
+      } else if (dateRangeType === "week") {
+        // Start of week (Sunday)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        filters.dateRange = {
+          start: formatDate(startOfWeek),
+          end: formatDate(endOfDay),
+        };
+      } else if (dateRangeType === "month") {
+        // Start of month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        filters.dateRange = {
+          start: formatDate(startOfMonth),
+          end: formatDate(endOfDay),
         };
       }
     }
@@ -246,12 +268,12 @@ export function TransactionFilterModal({
     setLocalSearch("");
     setLocalSort("date-desc");
     setAmountMin(0);
-    setAmountMax(10000000);
+    setAmountMax(0);
     setDateRangeType("all");
     setCustomStartDate(undefined);
     setCustomEndDate(undefined);
     onClearFilters();
-    onClose();
+    // onClose();
   }, [onClearFilters, onClose]);
 
   const hasActiveFilters = useMemo(() => {
@@ -260,7 +282,7 @@ export function TransactionFilterModal({
       !!localCategory ||
       !!localSearch ||
       amountMin > 0 ||
-      amountMax < 10000000 ||
+      amountMax > 0 ||
       dateRangeType !== "all"
     );
   }, [
@@ -277,7 +299,7 @@ export function TransactionFilterModal({
     if (localWallet) count++;
     if (localCategory) count++;
     if (localSearch) count++;
-    if (amountMin > 0 || amountMax < 10000000) count++;
+    if (amountMin > 0 || amountMax > 0) count++;
     if (dateRangeType !== "all") count++;
     return count;
   }, [
@@ -396,7 +418,7 @@ export function TransactionFilterModal({
           expanded={isExpanded("filters")}
           onToggle={toggleSection}
         >
-          <div className="space-y-0">
+          <div className="">
             {/* Wallet Filter */}
             <FormSelect
               id="filter-wallet"
@@ -458,8 +480,8 @@ export function TransactionFilterModal({
               label="Max Amount"
               type="number"
               inputMode="decimal"
-              value={amountMax < 10000000 ? amountMax : ""}
-              onChange={(e) => setAmountMax(Number(e.target.value) || 10000000)}
+              value={amountMax ? amountMax : ""}
+              onChange={(e) => setAmountMax(Number(e.target.value) || 0)}
               placeholder="No limit"
               size="sm"
             />

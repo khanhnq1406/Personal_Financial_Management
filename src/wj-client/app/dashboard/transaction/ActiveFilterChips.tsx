@@ -119,5 +119,43 @@ function getActiveFilters(
     });
   }
 
+  // Handle amount range filter
+  if (filters.amountRange?.min || filters.amountRange?.max) {
+    const min = filters.amountRange.min;
+    const max = filters.amountRange.max;
+    let value = "";
+    if (min && max) {
+      value = `${min.toLocaleString()} - ${max.toLocaleString()}`;
+    } else if (min) {
+      value = `≥ ${min.toLocaleString()}`;
+    } else if (max) {
+      value = `≤ ${max.toLocaleString()}`;
+    }
+    chips.push({
+      key: "amountRange",
+      label: "Amount",
+      value,
+    });
+  }
+
+  // Handle date range filter
+  if (filters.dateRange?.start || filters.dateRange?.end) {
+    const start = filters.dateRange.start;
+    const end = filters.dateRange.end;
+    let value = "";
+    if (start && end) {
+      value = `${start} - ${end}`;
+    } else if (start) {
+      value = `From ${start}`;
+    } else if (end) {
+      value = `Until ${end}`;
+    }
+    chips.push({
+      key: "dateRange",
+      label: "Date",
+      value,
+    });
+  }
+
   return chips;
 }

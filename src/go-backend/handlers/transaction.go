@@ -349,18 +349,27 @@ func parseTransactionFilter(c *gin.Context) *transactionv1.TransactionFilter {
 		}
 	}
 
-	// Parse type
+	// Parse type - supports both string ("Income", "Expense") and numeric (1, 2) values
 	if typeStr := c.Query("type"); typeStr != "" {
 		var txType transactionv1.TransactionType
-		switch typeStr {
-		case "Income":
-			txType = transactionv1.TransactionType_TRANSACTION_TYPE_INCOME
-		case "Expense":
-			txType = transactionv1.TransactionType_TRANSACTION_TYPE_EXPENSE
-		default:
-			txType = transactionv1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
+		// First try to parse as numeric (enum value)
+		if typeNum, err := strconv.ParseInt(typeStr, 10, 32); err == nil {
+			txType = transactionv1.TransactionType(typeNum)
+		} else {
+			// Fall back to string matching
+			switch typeStr {
+			case "Income":
+				txType = transactionv1.TransactionType_TRANSACTION_TYPE_INCOME
+			case "Expense":
+				txType = transactionv1.TransactionType_TRANSACTION_TYPE_EXPENSE
+			default:
+				txType = transactionv1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
+			}
 		}
-		filter.Type = &txType
+		// Only set if it's a valid type (not unspecified)
+		if txType != transactionv1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED {
+			filter.Type = &txType
+		}
 	}
 
 	// Parse start_date

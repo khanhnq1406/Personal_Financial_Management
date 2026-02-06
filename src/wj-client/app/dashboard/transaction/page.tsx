@@ -12,6 +12,7 @@ import {
   useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
 import { SortField } from "@/gen/protobuf/v1/transaction";
+import { TransactionType } from "@/gen/protobuf/v1/transaction";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { resources } from "@/app/constants";
@@ -30,6 +31,56 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { cn } from "@/lib/utils/cn";
 import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
+import { Button } from "@/components/Button";
+
+// Date range helpers for quick filters
+function getDateRangeForFilter(filter: QuickFilterType): {
+  startDate?: number;
+  endDate?: number;
+  type?: TransactionType;
+} {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+
+  switch (filter) {
+    case "income":
+      return { type: TransactionType.TRANSACTION_TYPE_INCOME };
+    case "expense":
+      return { type: TransactionType.TRANSACTION_TYPE_EXPENSE };
+    case "today":
+      return {
+        startDate: Math.floor(today.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    case "week":
+      // Start of week (Sunday)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return {
+        startDate: Math.floor(startOfWeek.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    case "month":
+      // Start of month
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return {
+        startDate: Math.floor(startOfMonth.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    default:
+      return {};
+  }
+}
 
 const displayImgList = [`${resources}/unhide.svg`, `${resources}/hide.svg`];
 
@@ -61,17 +112,57 @@ export default function TransactionPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Additional filter states
+  const [amountMin, setAmountMin] = useState<number>(0);
+  const [amountMax, setAmountMax] = useState<number>(0);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(
+    undefined,
+  );
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(
+    undefined,
+  );
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Fetch data
-  const filter = useMemo(
-    () => ({
+  const filter = useMemo(() => {
+    const quickFilterParams = getDateRangeForFilter(quickFilter);
+    // Determine decimal places based on currency (VND = 0, USD = 2, etc.)
+    const currencyDecimals = currency === "VND" || currency === "JPY" ? 0 : 2;
+    const multiplier = Math.pow(10, currencyDecimals);
+
+    // Use custom date range if set, otherwise use quick filter date range
+    let startDate = quickFilterParams.startDate;
+    let endDate = quickFilterParams.endDate;
+
+    // If custom date range is set (from modal), use it instead
+    if (customStartDate) {
+      startDate = Math.floor(customStartDate.getTime() / 1000);
+    }
+    if (customEndDate) {
+      endDate = Math.floor(customEndDate.getTime() / 1000);
+    }
+
+    return {
       searchNote: debouncedSearchQuery || undefined,
       walletId: selectedWallet ? parseInt(selectedWallet) : undefined,
       categoryId: categoryFilter ? parseInt(categoryFilter) : undefined,
-    }),
-    [debouncedSearchQuery, selectedWallet, categoryFilter],
-  );
+      type: quickFilterParams.type,
+      startDate,
+      endDate,
+      minAmount: amountMin > 0 ? amountMin * multiplier : undefined,
+      maxAmount: amountMax > 0 ? amountMax * multiplier : undefined,
+    };
+  }, [
+    debouncedSearchQuery,
+    selectedWallet,
+    categoryFilter,
+    quickFilter,
+    amountMin,
+    amountMax,
+    currency,
+    customStartDate,
+    customEndDate,
+  ]);
 
   const paginationConfig = useMemo(
     () => ({
@@ -124,10 +215,11 @@ export default function TransactionPage() {
     useInfiniteScroll({
       threshold: 200,
       enabled: !isLoading && !isFetching,
-      hasMore: transactionsData?.pagination
-        ? transactionsData.transactions.length <
-          transactionsData.pagination.totalCount
-        : false,
+      hasMore:
+        transactionsData?.pagination && transactionsData.transactions
+          ? transactionsData.transactions.length <
+            transactionsData.pagination.totalCount
+          : false,
     });
 
   // Load more handler
@@ -217,6 +309,27 @@ export default function TransactionPage() {
     setSortField(filters.sortField);
     setSortOrder(filters.sortOrder);
     setSearchQuery(filters.searchQuery);
+    // Handle amount range
+    setAmountMin(filters.amountRange?.min || 0);
+    setAmountMax(filters.amountRange?.max || 0);
+    // Handle date range - convert string dates to Date objects
+    if (filters.dateRange?.start) {
+      setCustomStartDate(new Date(filters.dateRange.start));
+    } else {
+      setCustomStartDate(undefined);
+    }
+    if (filters.dateRange?.end) {
+      // Set to end of the day
+      const endDate = new Date(filters.dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      setCustomEndDate(endDate);
+    } else {
+      setCustomEndDate(undefined);
+    }
+    // Reset quick filter when using custom date range from modal
+    if (filters.dateRange) {
+      setQuickFilter("all");
+    }
   }, []);
 
   const handleClearFilters = useCallback(() => {
@@ -225,6 +338,11 @@ export default function TransactionPage() {
     setSearchQuery("");
     setSortField("date");
     setSortOrder("desc");
+    setAmountMin(0);
+    setAmountMax(0);
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
+    setQuickFilter("all");
   }, []);
 
   const handleRemoveSingleFilter = useCallback(
@@ -244,35 +362,26 @@ export default function TransactionPage() {
           setSortField("date");
           setSortOrder("desc");
           break;
+        case "amountRange":
+          setAmountMin(0);
+          setAmountMax(0);
+          break;
+        case "dateRange":
+          setCustomStartDate(undefined);
+          setCustomEndDate(undefined);
+          setQuickFilter("all");
+          break;
       }
     },
     [],
   );
 
-  // Quick filter handler
+  // Quick filter handler - Updates the quick filter state which is used in the filter useMemo
   const handleQuickFilterChange = useCallback((filter: QuickFilterType) => {
     setQuickFilter(filter);
-    // Apply filter logic here
-    switch (filter) {
-      case "income":
-        // Filter by income categories
-        break;
-      case "expense":
-        // Filter by expense categories
-        break;
-      case "today":
-        // Filter by today's date
-        break;
-      case "week":
-        // Filter by this week
-        break;
-      case "month":
-        // Filter by this month
-        break;
-      default:
-        // Show all
-        break;
-    }
+    // Clear custom date range when using quick filters
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
   }, []);
 
   const handleHideBalance = useCallback(
@@ -307,10 +416,11 @@ export default function TransactionPage() {
         ];
         const rows = transactions.map((t) => {
           // Safely extract amount value
-          const amountValue =
-            t.displayAmount?.amount ?? t.amount?.amount ?? 0;
+          const amountValue = t.displayAmount?.amount ?? t.amount?.amount ?? 0;
           const numericAmount =
-            typeof amountValue === "number" ? amountValue : Number(amountValue) || 0;
+            typeof amountValue === "number"
+              ? amountValue
+              : Number(amountValue) || 0;
 
           return [
             new Date(t.date * 1000).toLocaleDateString(),
@@ -387,8 +497,26 @@ export default function TransactionPage() {
       sortField,
       sortOrder,
       searchQuery,
+      amountRange: {
+        min: amountMin > 0 ? amountMin : undefined,
+        max: amountMax > 0 ? amountMax : undefined,
+      },
+      dateRange: {
+        start: customStartDate?.toISOString().split("T")[0],
+        end: customEndDate?.toISOString().split("T")[0],
+      },
     }),
-    [selectedWallet, categoryFilter, sortField, sortOrder, searchQuery],
+    [
+      selectedWallet,
+      categoryFilter,
+      sortField,
+      sortOrder,
+      searchQuery,
+      amountMin,
+      amountMax,
+      customStartDate,
+      customEndDate,
+    ],
   );
 
   // Calculate totals
@@ -484,9 +612,9 @@ export default function TransactionPage() {
         </div>
 
         {/* Quick Filters & Mobile Filter Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           {/* Quick Filter Chips */}
-          <div className="flex-1 overflow-x-auto scrollbar-thin">
+          <div className="flex-1 overflow-x-auto scrollbar-thin max-w-full overflow-auto">
             <QuickFilterChips
               activeFilter={quickFilter}
               onFilterChange={handleQuickFilterChange}
@@ -494,7 +622,7 @@ export default function TransactionPage() {
           </div>
 
           {/* Export Button - Hidden on very small screens, visible on sm+ */}
-          <div className="hidden sm:block flex-shrink-0">
+          <div className="flex gap-2 justify-between items-center w-full sm:w-fit">
             <ExportButton
               onExport={handleExportTransactions}
               categories={categoryOptions.map((c) => ({
@@ -502,31 +630,30 @@ export default function TransactionPage() {
                 name: c.label,
               }))}
             />
-          </div>
-
-          {/* Mobile Filter Button */}
-          <button
-            onClick={handleOpenFilterModal}
-            className="sm:hidden flex-shrink-0 min-h-[44px] px-3 py-2 bg-neutral-50 rounded-lg drop-shadow-round flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-neutral-100 transition-colors"
-            aria-label="Open filters"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <Button
+              onClick={handleOpenFilterModal}
+              className=""
+              aria-label="Open filters"
+              variant="ghost"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            {(selectedWallet || categoryFilter) && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
-            )}
-          </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+              {(selectedWallet || categoryFilter) && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
