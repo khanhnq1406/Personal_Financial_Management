@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-, "app/dashboard/portfolio/page.tsx.bk", "app/dashboard/home/page.tsx.bak.2", "app/dashboard/budget/page.tsx.bak", "app/dashboard/report/page.tsx.bak", "app/dashboard/portfolio/components/index.bak.ts"  ],
+  ],
   "exclude": [
     "node_modules"
   ]

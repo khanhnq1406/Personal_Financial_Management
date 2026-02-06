@@ -23,7 +23,8 @@ const CURRENCY_CONFIG: Record<
  */
 export function formatCurrency(
   amount: number | bigint,
-  currency: string = "VND"
+  currency: string = "VND",
+  currencyDisplay?: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry,
 ): string {
   const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND;
 
@@ -39,6 +40,7 @@ export function formatCurrency(
     minimumFractionDigits: config.decimals,
     maximumFractionDigits: config.decimals,
     trailingZeroDisplay: "stripIfInteger",
+    currencyDisplay: currencyDisplay,
   });
 
   return formatter.format(value);

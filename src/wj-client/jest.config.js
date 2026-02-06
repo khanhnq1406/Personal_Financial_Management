@@ -23,7 +23,7 @@ const customJestConfig = {
     url: 'http://localhost:3000',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(?:.pnpm/node_modules/(?:(?:@mswjs|msw)/)))',
+    'node_modules/(?!(?:.pnpm/node_modules/(?:(?:@mswjs|msw)/)|exceljs|jszip|pako|saxes|fast-crc32c|ip-address)/)',
   ],
 }
 

@@ -5,10 +5,21 @@ import { Transaction } from "@/gen/protobuf/v1/transaction";
 import {
   getDateRangeTimestamps,
   generateTransactionCSV,
-  generateExportFilename,
+  generateExportFilename as generateCSVFilename,
   downloadCSV,
   type TransactionExportData,
-} from "@/utils/export";
+} from "@/utils/export/transaction-export";
+import {
+  generateTransactionPDF,
+  generateExportFilename as generatePDFFilename,
+  downloadPDF,
+  type PDFExportOptions,
+} from "@/utils/export/pdf-export";
+import {
+  generateTransactionExcel,
+  generateExportFilename as generateExcelFilename,
+  downloadExcel,
+} from "@/utils/export/excel-export";
 
 // API configuration
 const API_BASE_URL =
@@ -19,6 +30,37 @@ const LOCAL_STORAGE_TOKEN_NAME = "token";
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(LOCAL_STORAGE_TOKEN_NAME);
+}
+
+/**
+ * Capture chart element as base64 image using html2canvas
+ * @returns Base64 image data or undefined if chart not found or capture fails
+ */
+async function captureChartAsImage(): Promise<string | undefined> {
+  if (typeof window === "undefined") return undefined;
+
+  try {
+    // Dynamically import html2canvas to avoid SSR issues
+    const html2canvas = (await import("html2canvas")).default;
+
+    // Find chart container element
+    const chartElement = document.querySelector("[data-chart-container]");
+    if (!chartElement) {
+      console.warn("Chart element not found for PDF export");
+      return undefined;
+    }
+
+    // Capture chart as canvas
+    const canvas = await html2canvas(chartElement as HTMLElement, {
+      backgroundColor: "#ffffff",
+    } as any);
+
+    // Convert to base64
+    return canvas.toDataURL("image/png");
+  } catch (error) {
+    console.error("Failed to capture chart for PDF export:", error);
+    return undefined;
+  }
 }
 
 interface UseExportTransactionsOptions {
@@ -170,10 +212,7 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
         // Get currency from first transaction or default
         const currency = filteredTransactions[0]?.displayCurrency || "VND";
 
-        // Step 3: Generate and download
-        setExportProgress({ current: 3, total: 3 });
-
-        // Generate CSV
+        // Prepare export data
         const exportData: TransactionExportData = {
           transactions: filteredTransactions,
           categoryNames,
@@ -181,17 +220,65 @@ export function useExportTransactions(options?: UseExportTransactionsOptions) {
           currency,
         };
 
-        const csvContent = generateTransactionCSV(exportData);
-        const fileName = generateExportFilename(
-          "transactions",
-          exportOptions.dateRange,
-          exportOptions.customStartDate,
-          exportOptions.customEndDate,
-          exportOptions.fileName,
-        );
+        // Step 3: Generate and download based on format
+        setExportProgress({ current: 3, total: 3 });
 
-        // Download file
-        downloadCSV(csvContent, fileName);
+        // Handle export based on format
+        switch (exportOptions.format) {
+          case "csv": {
+            const csvContent = generateTransactionCSV(exportData);
+            const fileName = generateCSVFilename(
+              "transactions",
+              exportOptions.dateRange,
+              exportOptions.customStartDate,
+              exportOptions.customEndDate,
+              exportOptions.fileName,
+            );
+            downloadCSV(csvContent, fileName);
+            break;
+          }
+
+          case "pdf": {
+            // Capture chart if requested
+            let chartImage: string | undefined;
+            if (exportOptions.includeCharts) {
+              chartImage = await captureChartAsImage();
+            }
+
+            const pdfOptions: PDFExportOptions = {
+              includeCharts: exportOptions.includeCharts,
+              customBranding: exportOptions.customBranding,
+              chartImage,
+            };
+
+            const pdf = generateTransactionPDF(exportData, pdfOptions);
+            const fileName = generatePDFFilename(
+              "transactions",
+              exportOptions.dateRange,
+              exportOptions.customStartDate,
+              exportOptions.customEndDate,
+              exportOptions.fileName,
+            );
+            downloadPDF(pdf, fileName);
+            break;
+          }
+
+          case "excel": {
+            const workbook = await generateTransactionExcel(exportData);
+            const fileName = generateExcelFilename(
+              "transactions",
+              exportOptions.dateRange,
+              exportOptions.customStartDate,
+              exportOptions.customEndDate,
+              exportOptions.fileName,
+            );
+            await downloadExcel(workbook, fileName);
+            break;
+          }
+
+          default:
+            throw new Error(`Unsupported export format: ${exportOptions.format}`);
+        }
 
         options?.onSuccess?.();
       } catch (error) {

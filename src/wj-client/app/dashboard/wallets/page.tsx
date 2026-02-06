@@ -237,7 +237,7 @@ export default function WalletsPage() {
 
       {/* Wallet Display - Grid or List View */}
       {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {wallets
             .filter((w) => {
               if (filterType === "basic") return w.type === 0 || !w.type;

@@ -179,7 +179,7 @@ export function ExportDialog({
       },
       pdf: {
         name: "PDF",
-        description: "Professional document format with embedded charts",
+        description: "Professional document format",
         icon: (
           <svg
             className="w-5 h-5"
@@ -430,7 +430,7 @@ export function ExportDialog({
         {/* Additional Options */}
         <div className="space-y-3">
           {/* Include Charts (only for PDF) */}
-          {format === "pdf" && (
+          {/* {format === "pdf" && (
             <label className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-dark-border hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer transition-colors">
               <input
                 type="checkbox"
@@ -447,7 +447,7 @@ export function ExportDialog({
                 </p>
               </div>
             </label>
-          )}
+          )} */}
 
           {/* Custom Branding */}
           {/* <label className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-dark-border hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer transition-colors">
