@@ -32,6 +32,7 @@ import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { cn } from "@/lib/utils/cn";
 import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
 import { Button } from "@/components/Button";
+import { useExportTransactions } from "@/hooks/useExportTransactions";
 
 // Date range helpers for quick filters
 function getDateRangeForFilter(filter: QuickFilterType): {
@@ -394,71 +395,20 @@ export default function TransactionPage() {
   );
 
   // Handle export transactions
+  const exportTransactions = useExportTransactions({
+    onError: (error) => {
+      alert(error.message);
+    },
+    onSuccess: () => {
+      console.log("Transactions exported successfully");
+    },
+  });
+
   const handleExportTransactions = useCallback(
     async (options: ExportOptions) => {
-      try {
-        // Get filtered transactions based on current filters
-        const transactions = transactionsData?.transactions || [];
-
-        if (transactions.length === 0) {
-          alert("No transactions to export");
-          return;
-        }
-
-        // Convert to CSV format
-        const headers = [
-          "Date",
-          "Category",
-          "Wallet",
-          "Note",
-          "Amount",
-          "Type",
-        ];
-        const rows = transactions.map((t) => {
-          // Safely extract amount value
-          const amountValue = t.displayAmount?.amount ?? t.amount?.amount ?? 0;
-          const numericAmount =
-            typeof amountValue === "number"
-              ? amountValue
-              : Number(amountValue) || 0;
-
-          return [
-            new Date(t.date * 1000).toLocaleDateString(),
-            getCategoryName(t.categoryId),
-            getWalletName(t.walletId),
-            t.note || "",
-            formatCurrency(numericAmount, currency),
-            t.type === 1 ? "Expense" : "Income",
-          ];
-        });
-
-        let csvContent = headers.join(",") + "\n";
-        csvContent += rows.map((row) => row.join(",")).join("\n");
-
-        // Create and download the file
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `transactions_${new Date().toISOString().split("T")[0]}.csv`,
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        alert(
-          error instanceof Error
-            ? error.message
-            : "Failed to export transactions",
-        );
-      }
+      await exportTransactions(options);
     },
-    [transactionsData, getCategoryName, getWalletName, currency],
+    [exportTransactions],
   );
 
   // Prepare options
@@ -532,7 +482,7 @@ export default function TransactionPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header with Balance */}
-      <div className="flex-shrink-0 bg-primary-600 rounded-sm sm:bg-transparent border-b sm:border-b-gray-300">
+      <div className="flex-shrink-0 bg-primary-600 rounded-md sm:bg-transparent border-b sm:border-b-gray-300">
         <div className="p-3 sm:p-4 md:px-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-0">
             <h1 className="text-white sm:text-gray-900 text-2xl sm:text-3xl lg:text-4xl font-bold">
@@ -614,25 +564,18 @@ export default function TransactionPage() {
         {/* Quick Filters & Mobile Filter Button */}
         <div className="flex flex-col items-center gap-3 sm:flex-row">
           {/* Quick Filter Chips */}
-          <div className="flex-1 overflow-x-auto scrollbar-thin max-w-full overflow-auto">
-            <QuickFilterChips
-              activeFilter={quickFilter}
-              onFilterChange={handleQuickFilterChange}
-            />
-          </div>
 
           {/* Export Button - Hidden on very small screens, visible on sm+ */}
           <div className="flex gap-2 justify-between items-center w-full sm:w-fit">
-            <ExportButton
-              onExport={handleExportTransactions}
-              categories={categoryOptions.map((c) => ({
-                id: c.value,
-                name: c.label,
-              }))}
-            />
+            <div className="flex-1 overflow-x-auto scrollbar-thin max-w-full overflow-auto">
+              <QuickFilterChips
+                activeFilter={quickFilter}
+                onFilterChange={handleQuickFilterChange}
+              />
+            </div>
             <Button
               onClick={handleOpenFilterModal}
-              className=""
+              className="w-fit h-fit"
               aria-label="Open filters"
               variant="ghost"
             >
@@ -654,6 +597,14 @@ export default function TransactionPage() {
               )}
             </Button>
           </div>
+
+          <ExportButton
+            onExport={handleExportTransactions}
+            categories={categoryOptions.map((c) => ({
+              id: c.value,
+              name: c.label,
+            }))}
+          />
         </div>
       </div>
 

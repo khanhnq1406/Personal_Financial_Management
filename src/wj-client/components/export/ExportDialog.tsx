@@ -608,7 +608,7 @@ export function ExportButton({
     <>
       <Button type={ButtonType.SECONDARY} onClick={() => setIsOpen(true)}>
         <svg
-          className="w-4 h-4 mr-2"
+          className="w-4 h-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
