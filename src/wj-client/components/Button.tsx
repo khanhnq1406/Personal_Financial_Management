@@ -217,6 +217,7 @@ export const Button = React.memo(function Button({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
           "transition-all duration-200 ease-in-out",
           "active:scale-[0.95]",
+          "flex items-center justify-center",
           className,
         )}
         onClick={onClick}
