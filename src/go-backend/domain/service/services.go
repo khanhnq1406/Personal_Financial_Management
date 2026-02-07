@@ -9,13 +9,14 @@ import (
 
 // Services holds all service instances.
 type Services struct {
-	Wallet      WalletService
-	User        UserService
-	Transaction TransactionService
-	Category    CategoryService
-	Budget      BudgetService
-	Investment  InvestmentService
-	FXRate      FXRateService
+	Wallet             WalletService
+	User               UserService
+	Transaction        TransactionService
+	Category           CategoryService
+	Budget             BudgetService
+	Investment         InvestmentService
+	FXRate             FXRateService
+	PortfolioHistory   PortfolioHistoryService
 }
 
 // NewServices creates all service instances.
@@ -50,29 +51,34 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 
 	walletSvc := NewWalletService(repos.Wallet, repos.User, repos.Transaction, repos.Category, categorySvc, fxRateSvc, currencyCache, repos.Investment, redisClient)
 
+	// Create portfolio history service
+	portfolioHistorySvc := NewPortfolioHistoryService(repos.PortfolioHistory, NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache, walletSvc), repos.User, fxRateSvc)
+
 	return &Services{
-		Wallet:      walletSvc,
-		User:        userSvc,
-		Transaction: NewTransactionService(repos.Transaction, repos.Wallet, repos.Category, repos.User, fxRateSvc, currencyCache),
-		Category:    categorySvc,
-		Budget:      NewBudgetService(repos.Budget, repos.BudgetItem, repos.User, fxRateSvc, currencyCache),
-		Investment:  NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache, walletSvc),
-		FXRate:      fxRateSvc,
+		Wallet:           walletSvc,
+		User:             userSvc,
+		Transaction:      NewTransactionService(repos.Transaction, repos.Wallet, repos.Category, repos.User, fxRateSvc, currencyCache),
+		Category:         categorySvc,
+		Budget:           NewBudgetService(repos.Budget, repos.BudgetItem, repos.User, fxRateSvc, currencyCache),
+		Investment:       NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache, walletSvc),
+		FXRate:           fxRateSvc,
+		PortfolioHistory: portfolioHistorySvc,
 	}
 }
 
 // Repositories holds all repository instances.
 type Repositories struct {
-	Wallet                    repository.WalletRepository
-	User                      repository.UserRepository
-	Transaction               repository.TransactionRepository
-	Category                  repository.CategoryRepository
-	Budget                    repository.BudgetRepository
-	BudgetItem                repository.BudgetItemRepository
-	Investment                repository.InvestmentRepository
-	InvestmentTransaction     repository.InvestmentTransactionRepository
-	MarketData                repository.MarketDataRepository
-	FXRate                    repository.FXRateRepository
+	Wallet                repository.WalletRepository
+	User                  repository.UserRepository
+	Transaction           repository.TransactionRepository
+	Category              repository.CategoryRepository
+	Budget                repository.BudgetRepository
+	BudgetItem            repository.BudgetItemRepository
+	Investment            repository.InvestmentRepository
+	InvestmentTransaction repository.InvestmentTransactionRepository
+	MarketData            repository.MarketDataRepository
+	FXRate                repository.FXRateRepository
+	PortfolioHistory      repository.PortfolioHistoryRepository
 }
 
 // NewRepositories creates all repository instances.

@@ -176,4 +176,15 @@ func RegisterRoutes(
 	{
 		portfolioSummary.GET("", h.Investment.GetAggregatedPortfolioSummary)
 	}
+
+	// Historical portfolio values route (protected)
+	// This is a top-level route for getting historical portfolio values for charts
+	portfolio := v1.Group("/portfolio")
+	if rateLimiter != nil {
+		portfolio.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	portfolio.Use(AuthMiddleware())
+	{
+		portfolio.GET("/historical-values", h.Investment.GetHistoricalPortfolioValues)
+	}
 }

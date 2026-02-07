@@ -4,3 +4,7 @@ export type { AuthState, AuthActions } from './useAuth';
 
 // Export useDebounce hook
 export { useDebounce } from './useDebounce';
+
+// Export usePortfolioHistoricalValues hook
+export { usePortfolioHistoricalValues, useLivePortfolioHistoricalValues } from './usePortfolioHistoricalValues';
+export type { HistoricalPortfolioValue, PortfolioHistoricalValuesResponse, UsePortfolioHistoricalValuesOptions } from './usePortfolioHistoricalValues';

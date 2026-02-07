@@ -74,7 +74,7 @@ export const AccountBalance = memo(function AccountBalance({
           })}
         </select>
       </div>
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={chartData}
           margin={{ top: 10, right: 30, left: 15, bottom: 10 }}

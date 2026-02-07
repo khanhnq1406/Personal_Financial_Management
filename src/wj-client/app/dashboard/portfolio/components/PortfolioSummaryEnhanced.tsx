@@ -11,6 +11,41 @@ import { Sparkline, DonutChart } from "@/components/charts";
 import { Button } from "@/components/Button";
 import { ButtonType, resources } from "@/app/constants";
 import Image from "next/image";
+import { usePortfolioHistoricalValues } from "@/hooks/usePortfolioHistoricalValues";
+import { InvestmentType } from "@/gen/protobuf/v1/investment";
+
+/**
+ * Investment type to display name mapping
+ */
+const INVESTMENT_TYPE_LABELS: Record<number, string> = {
+  [InvestmentType.INVESTMENT_TYPE_STOCK]: "Stocks",
+  [InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY]: "Crypto",
+  [InvestmentType.INVESTMENT_TYPE_ETF]: "ETFs",
+  [InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND]: "Mutual Funds",
+  [InvestmentType.INVESTMENT_TYPE_BOND]: "Bonds",
+  [InvestmentType.INVESTMENT_TYPE_COMMODITY]: "Commodities",
+  [InvestmentType.INVESTMENT_TYPE_GOLD_VND]: "Gold (Vietnam)",
+  [InvestmentType.INVESTMENT_TYPE_GOLD_USD]: "Gold (World)",
+  [InvestmentType.INVESTMENT_TYPE_SILVER_VND]: "Silver (Vietnam)",
+  [InvestmentType.INVESTMENT_TYPE_SILVER_USD]: "Silver (World)",
+  [InvestmentType.INVESTMENT_TYPE_OTHER]: "Other",
+};
+
+/**
+ * Color palette for asset allocation chart
+ */
+const ASSET_COLORS = [
+  "#10b981", // green-500
+  "#3b82f6", // blue-500
+  "#f59e0b", // amber-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#06b6d4", // cyan-500
+  "#f97316", // orange-500
+  "#84cc16", // lime-500
+  "#6366f1", // indigo-500
+  "#14b8a6", // teal-500
+];
 
 /**
  * Portfolio summary data structure
@@ -25,10 +60,35 @@ export interface PortfolioSummaryData {
   displayCurrency?: string;
   currency?: string;
   totalInvestments?: number;
+  totalPnlPercent?: number;
   /** Historical data for sparkline (optional) */
   historicalValues?: { value: number; date: string }[];
   /** Asset allocation data (optional) */
   assetAllocation?: { name: string; value: number; color?: string }[];
+  /** Investment breakdown by type */
+  investmentsByType?: {
+    type: InvestmentType;
+    totalValue: number;
+    count: number;
+  }[];
+  /** Top performing investments */
+  topPerformers?: {
+    investmentId: number;
+    symbol: string;
+    name: string;
+    type: InvestmentType;
+    unrealizedPnl: number;
+    unrealizedPnlPercent: number;
+  }[];
+  /** Worst performing investments */
+  worstPerformers?: {
+    investmentId: number;
+    symbol: string;
+    name: string;
+    type: InvestmentType;
+    unrealizedPnl: number;
+    unrealizedPnlPercent: number;
+  }[];
 }
 
 /**
@@ -45,6 +105,8 @@ export interface PortfolioSummaryEnhancedProps {
   onAddInvestment?: () => void;
   /** Whether refresh is in progress */
   isRefreshing?: boolean;
+  /** Optional wallet ID for filtering historical data */
+  walletId?: number;
 }
 
 /**
@@ -117,8 +179,9 @@ const StatCard = memo(function StatCard({
  *
  * Features:
  * - Animated number counters
- * - Sparkline trend indicators
- * - Asset allocation donut chart
+ * - Real historical data sparkline from API
+ * - Asset allocation donut chart based on actual investment types
+ * - Top/worst performers display
  * - Quick action buttons
  * - Mobile-optimized layout
  */
@@ -128,8 +191,16 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
   onRefreshPrices,
   onAddInvestment,
   isRefreshing = false,
+  walletId = 0,
 }: PortfolioSummaryEnhancedProps) {
   const [showAssetAllocation, setShowAssetAllocation] = useState(false);
+
+  // Fetch historical portfolio values for sparkline
+  const { historicalData } = usePortfolioHistoricalValues({
+    walletId,
+    days: 30,
+    points: 10,
+  });
 
   // Extract values
   const displayValue =
@@ -147,6 +218,13 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
     portfolioSummary.currency ||
     userCurrency;
 
+  // Use the totalPnlPercent from API if available, otherwise calculate
+  const pnlPercent = portfolioSummary.totalPnlPercent !== undefined
+    ? portfolioSummary.totalPnlPercent
+    : displayCost > 0
+      ? (displayPnl / displayCost) * 100
+      : 0;
+
   // Animated values
   const animatedValue = useAnimatedNumber(displayValue, 1200);
   const animatedCost = useAnimatedNumber(displayCost, 1200);
@@ -156,17 +234,20 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
     800,
   );
 
-  // Calculate PNL percentage
-  const pnlPercent = displayCost > 0 ? (displayPnl / displayCost) * 100 : 0;
-
-  // Prepare sparkline data (mock data for now - would come from API)
+  // Prepare sparkline data from real historical values
   const sparklineData = useMemo(() => {
+    if (historicalData && historicalData.length > 0) {
+      return historicalData.map((point) => ({
+        value: point.displayTotalValue?.amount ?? point.totalValue,
+      }));
+    }
+    // Fallback to mock trend data if no historical data available yet
     if (portfolioSummary.historicalValues) {
       return portfolioSummary.historicalValues.map((v) => ({ value: v.value }));
     }
-    // Generate mock trend data based on current value
+    // Generate mock trend data based on current value as last resort
     const currentValue = displayValue;
-    const variance = currentValue * 0.1; // 10% variance
+    const variance = currentValue > 0 ? currentValue * 0.1 : 100; // 10% variance
     return Array.from({ length: 10 }, (_, i) => ({
       value:
         currentValue -
@@ -174,38 +255,87 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
         (variance * 2 * i) / 9 +
         (Math.random() - 0.5) * variance * 0.2,
     }));
-  }, [displayValue, portfolioSummary.historicalValues]);
+  }, [historicalData, displayValue, portfolioSummary.historicalValues]);
 
-  // Prepare asset allocation data
+  // Prepare asset allocation data from investmentsByType
   const assetAllocationData = useMemo(() => {
+    // If provided directly, use it
     if (portfolioSummary.assetAllocation) {
+      console.log("Using direct assetAllocation:", portfolioSummary.assetAllocation);
       return portfolioSummary.assetAllocation;
     }
-    // Mock data based on holdings count
+
+    // Build from investmentsByType API response
+    if (portfolioSummary.investmentsByType && portfolioSummary.investmentsByType.length > 0) {
+      const result = portfolioSummary.investmentsByType.map((item, index) => ({
+        name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
+        value: item.totalValue,
+        color: ASSET_COLORS[index % ASSET_COLORS.length],
+      }));
+      console.log("Built assetAllocation from investmentsByType:", result);
+      return result;
+    }
+
+    // Fallback: mock data based on holdings count (for empty portfolios)
     const holdings = portfolioSummary.totalInvestments || 0;
-    if (holdings === 0) return [];
+    if (holdings === 0) {
+      console.log("No holdings, returning empty assetAllocation");
+      return [];
+    }
 
     const types = ["Stocks", "Crypto", "ETFs", "Gold"];
     const avgPerType = displayValue / Math.max(holdings, 1);
-    return types.map((type, i) => ({
+    const mockResult = types.map((type, i) => ({
       name: type,
       value: Math.round(avgPerType * (0.5 + Math.random() * 1)),
-      color: undefined,
+      color: ASSET_COLORS[i % ASSET_COLORS.length],
     }));
+    console.log("Using mock assetAllocation:", mockResult);
+    return mockResult;
   }, [
     displayValue,
     portfolioSummary.assetAllocation,
+    portfolioSummary.investmentsByType,
     portfolioSummary.totalInvestments,
   ]);
 
-  // Top performer (mock calculation)
+  // Get best performer from API data
   const topPerformer = useMemo(() => {
-    return {
-      name: "Best Performer",
-      value: "+12.5%",
-      positive: true,
-    };
-  }, []);
+    if (portfolioSummary.topPerformers && portfolioSummary.topPerformers.length > 0) {
+      const best = portfolioSummary.topPerformers[0];
+      console.log("Top performer data:", best);
+      const result = {
+        name: best.symbol || best.name,
+        value: `${best.unrealizedPnlPercent >= 0 ? "+" : ""}${best.unrealizedPnlPercent.toFixed(2)}%`,
+        positive: best.unrealizedPnlPercent >= 0,
+      };
+      console.log("Formatted top performer:", result);
+      return result;
+    }
+    console.log("No top performers found");
+    return null;
+  }, [portfolioSummary.topPerformers]);
+
+  // Get worst performer from API data
+  const worstPerformer = useMemo(() => {
+    if (portfolioSummary.worstPerformers && portfolioSummary.worstPerformers.length > 0) {
+      const worst = portfolioSummary.worstPerformers[0];
+      console.log("Worst performer data:", worst);
+      const result = {
+        name: worst.symbol || worst.name,
+        value: `${worst.unrealizedPnlPercent >= 0 ? "+" : ""}${worst.unrealizedPnlPercent.toFixed(2)}%`,
+        positive: worst.unrealizedPnlPercent >= 0,
+      };
+      console.log("Formatted worst performer:", result);
+      return result;
+    }
+    console.log("No worst performers found");
+    return null;
+  }, [portfolioSummary.worstPerformers]);
+
+  console.log("PortfolioSummaryEnhanced render - assetAllocationData.length:", assetAllocationData.length);
+  console.log("PortfolioSummaryEnhanced render - topPerformer:", topPerformer);
+  console.log("PortfolioSummaryEnhanced render - worstPerformer:", worstPerformer);
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -240,9 +370,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       </div>
 
       {/* Asset Allocation Card */}
-      {assetAllocationData.length > 0 && (
+      {assetAllocationData.length > 0 ? (
         <BaseCard className="p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-bold text-neutral-900">
                 Asset Allocation
@@ -251,32 +381,53 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
                 Distribution by investment type
               </p>
             </div>
-            {topPerformer && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100">
-                <span className="text-xs text-green-700 font-medium">
-                  {topPerformer.name}
-                </span>
-                <span className="text-xs font-bold text-green-700">
-                  {topPerformer.value}
-                </span>
-              </div>
-            )}
+
+            {/* Performers display */}
+            <div className="flex flex-col gap-2">
+              {topPerformer && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100">
+                  <span className="text-xs text-green-700 font-medium">
+                    Best: {topPerformer.name}
+                  </span>
+                  <span className={`text-xs font-bold ${topPerformer.positive ? "text-green-700" : "text-red-700"}`}>
+                    {topPerformer.value}
+                  </span>
+                </div>
+              )}
+              {worstPerformer && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100">
+                  <span className="text-xs text-red-700 font-medium">
+                    Worst: {worstPerformer.name}
+                  </span>
+                  <span className={`text-xs font-bold ${worstPerformer.positive ? "text-green-700" : "text-red-700"}`}>
+                    {worstPerformer.value}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="relative h-64 sm:h-72">
-            <DonutChart
-              data={assetAllocationData}
-              innerRadius="60%"
-              outerRadius="80%"
-              height={288}
-              centerLabel={formatCurrency(displayValue, displayCurrency)}
-              centerSubLabel="Total Portfolio"
-              showLegend={true}
-              legendPosition="right"
-            />
+            {(() => {
+              try {
+                return <DonutChart
+                  data={assetAllocationData}
+                  innerRadius="60%"
+                  outerRadius="80%"
+                  height={288}
+                  centerLabel={formatCurrency(displayValue, displayCurrency)}
+                  centerSubLabel="Total Portfolio"
+                  showLegend={true}
+                  legendPosition="right"
+                />;
+              } catch (error) {
+                console.error("DonutChart error:", error);
+                return <div className="flex items-center justify-center h-full text-red-500">Chart error</div>;
+              }
+            })()}
           </div>
         </BaseCard>
-      )}
+      ) : null}
 
       {/* Quick Actions Card */}
       <BaseCard className="p-4">

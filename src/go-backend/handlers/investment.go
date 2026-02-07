@@ -16,13 +16,15 @@ import (
 
 // InvestmentHandlers handles investment-related HTTP requests.
 type InvestmentHandlers struct {
-	investmentService service.InvestmentService
+	investmentService   service.InvestmentService
+	portfolioHistorySvc service.PortfolioHistoryService
 }
 
 // NewInvestmentHandlers creates a new InvestmentHandlers instance.
-func NewInvestmentHandlers(investmentService service.InvestmentService) *InvestmentHandlers {
+func NewInvestmentHandlers(investmentService service.InvestmentService, portfolioHistorySvc service.PortfolioHistoryService) *InvestmentHandlers {
 	return &InvestmentHandlers{
-		investmentService: investmentService,
+		investmentService:   investmentService,
+		portfolioHistorySvc: portfolioHistorySvc,
 	}
 }
 
@@ -792,3 +794,67 @@ func (h *InvestmentHandlers) GetAggregatedPortfolioSummary(c *gin.Context) {
 
 	handler.Success(c, result)
 }
+
+// GetHistoricalPortfolioValues retrieves historical portfolio values for charts.
+// @Summary Get historical portfolio values
+// @Tags investments
+// @Produce json
+// @Param walletId query int false "Filter by specific wallet (optional, 0 or omitted = all wallets)"
+// @Param days query int false "Number of days to look back (default: 30, max: 365)"
+// @Param points query int false "Number of data points to return (default: 10, max: 100)"
+// @Success 200 {object} types.APIResponse{data=investmentv1.GetHistoricalPortfolioValuesResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/portfolio/historical-values [get]
+func (h *InvestmentHandlers) GetHistoricalPortfolioValues(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Build request
+	var req investmentv1.GetHistoricalPortfolioValuesRequest
+
+	// Parse optional walletId (support both snake_case and camelCase)
+	walletIDStr := c.Query("walletId")
+	if walletIDStr == "" {
+		walletIDStr = c.Query("wallet_id") // Fallback to snake_case
+	}
+	if walletIDStr != "" {
+		walletID, err := strconv.ParseInt(walletIDStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid walletId parameter"))
+			return
+		}
+		req.WalletId = int32(walletID)
+	}
+
+	// Parse days parameter
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.ParseInt(daysStr, 10, 32)
+	if err != nil || days <= 0 || days > 365 {
+		days = 30 // Default to 30 days
+	}
+	req.Days = int32(days)
+
+	// Parse points parameter
+	pointsStr := c.DefaultQuery("points", "10")
+	points, err := strconv.ParseInt(pointsStr, 10, 32)
+	if err != nil || points <= 0 || points > 100 {
+		points = 10 // Default to 10 points
+	}
+	req.Points = int32(points)
+
+	// Call service
+	result, err := h.portfolioHistorySvc.GetHistoricalValues(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+

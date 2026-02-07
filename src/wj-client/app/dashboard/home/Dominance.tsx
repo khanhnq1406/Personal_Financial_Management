@@ -117,7 +117,7 @@ export const Dominance = memo(function Dominance({
           })}
         </select>
       </div>
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Legend />
           <Pie
