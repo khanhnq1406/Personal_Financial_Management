@@ -110,7 +110,7 @@ const CategoryItem = memo(function CategoryItem({
                 e.stopPropagation();
                 onEditBudget?.(id);
               }}
-              className="p-1.5 rounded-md hover:bg-blue-100 text-blue-600 transition-colors"
+              className="p-1.5 rounded-md hover:bg-primary-100 text-primary-600 transition-colors"
               title="Edit budget"
             >
               <Image src={`${resources}/editing.svg`} alt="Edit" width={16} height={16} />

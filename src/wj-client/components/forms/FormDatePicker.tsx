@@ -434,7 +434,7 @@ export function FormDatePicker({
                 e.stopPropagation();
                 handleClear();
               }}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
               aria-label="Clear date"
             >
               <svg
@@ -453,7 +453,7 @@ export function FormDatePicker({
             </button>
           )}
           <svg
-            className={cn("w-5 h-5 text-gray-400", isOpen && "rotate-180")}
+            className={cn("w-5 h-5 text-neutral-400", isOpen && "rotate-180")}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -474,21 +474,21 @@ export function FormDatePicker({
           ref={dropdownRef}
           className={cn(
             "absolute z-50 w-full mt-1 p-4",
-            "bg-white dark:bg-gray-800",
-            "border border-gray-200 dark:border-gray-700",
+            "bg-white dark:bg-dark-surface",
+            "border border-neutral-200 dark:border-dark-border",
             "rounded-lg shadow-lg",
           )}
         >
           {/* Presets */}
           {showPresets && presets.length > 0 && (
-            <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="mb-4 pb-4 border-b border-neutral-200 dark:border-dark-border">
               <div className="flex flex-wrap gap-2">
                 {presets.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => handlePresetSelect(preset)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium rounded-full bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
                   >
                     {preset.label}
                   </button>
@@ -503,7 +503,7 @@ export function FormDatePicker({
               <button
                 type="button"
                 onClick={() => navigateMonth(-1)}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 aria-label="Previous month"
               >
                 <svg
@@ -523,7 +523,7 @@ export function FormDatePicker({
               <button
                 type="button"
                 onClick={() => navigateYear(-1)}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 aria-label="Previous year"
               >
                 <svg
@@ -542,7 +542,7 @@ export function FormDatePicker({
               </button>
             </div>
 
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
               {new Date(currentYear, currentMonth).toLocaleDateString("en-US", {
                 month: "long",
                 year: "numeric",
@@ -553,7 +553,7 @@ export function FormDatePicker({
               <button
                 type="button"
                 onClick={() => navigateYear(1)}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 aria-label="Next year"
               >
                 <svg
@@ -573,7 +573,7 @@ export function FormDatePicker({
               <button
                 type="button"
                 onClick={() => navigateMonth(1)}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 aria-label="Next month"
               >
                 <svg
@@ -599,7 +599,7 @@ export function FormDatePicker({
             {adjustedWeekDays.map((day) => (
               <div
                 key={day}
-                className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2"
+                className="text-center text-xs font-medium text-neutral-500 dark:text-neutral-400 py-2"
               >
                 {day.slice(0, 1)}
               </div>
@@ -624,16 +624,16 @@ export function FormDatePicker({
                   onMouseLeave={() => setHoveredDate(null)}
                   className={cn(
                     "aspect-square flex items-center justify-center text-sm rounded-lg transition-all duration-150",
-                    "hover:bg-gray-100 dark:hover:bg-gray-700",
-                    "focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-inset",
+                    "hover:bg-neutral-100 dark:hover:bg-neutral-700",
+                    "focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-inset",
                     {
                       invisible: isEmpty,
-                      "bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-700":
+                      "bg-primary-600 text-white hover:bg-primary-700 dark:hover:bg-primary-700":
                         isSelected,
-                      "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400":
+                      "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400":
                         isToday && !isSelected,
                       "font-semibold": isToday,
-                      "text-gray-400 cursor-not-allowed": isDisabled,
+                      "text-neutral-400 cursor-not-allowed": isDisabled,
                     },
                   )}
                   aria-label={date ? date.toDateString() : ""}

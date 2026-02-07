@@ -109,10 +109,10 @@ export function SymbolAutocomplete({
       label: result.symbol,
       render: () => (
         <div className="flex flex-col gap-0.5">
-          {/* First row: Symbol (blue/bold) | Type | Exchange (right) */}
+          {/* First row: Symbol (green/bold) | Type | Exchange (right) */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-blue-600 font-bold">{result.symbol}</span>
+              <span className="text-primary-600 font-bold">{result.symbol}</span>
               <span className="text-gray-500 text-xs">•</span>
               <span className="text-gray-600 text-sm">{result.type}</span>
             </div>

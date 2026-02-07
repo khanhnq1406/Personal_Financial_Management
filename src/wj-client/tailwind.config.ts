@@ -13,44 +13,44 @@ export default {
         // Legacy compatibility (will be phased out)
         background: "var(--background)",
         foreground: "var(--foreground)",
-        bg: "#2563EB", // Mapped to primary-600 for backward compatibility
+        bg: "#008148", // Updated to primary fintech green
         fg: "#F8FAFC", // Mapped to neutral-50
-        hgreen: "#3B82F6", // Mapped to primary-500
+        hgreen: "#006638", // Darker green for hover states
         lred: "#DC2626", // Mapped to danger-600
         hover: "#E2E8F0", // Mapped to neutral-200
         modal: "rgba(0, 0, 0, 0.5)",
 
-        // PRIMARY - Deep Professional Blue (trust, stability)
+        // PRIMARY - Fintech Green (growth, wealth, trust)
         primary: {
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+          50: "#F0FDF4", // Very light green tint
+          100: "#DCFCE7", // Light green background
+          200: "#BBF7D0", // Soft green surface
+          300: "#86EFAC", // Medium light green
+          400: "#4ADE80", // Bright green accent
+          500: "#22C55E", // Primary green (emerald)
+          600: "#008148", // Main brand green (fintech)
+          700: "#006638", // Darker green for hover
+          800: "#064E3B", // Deep green
+          900: "#064E3B", // Very dark green
           // Dark mode variants
-          950: "#172554",
+          950: "#022C22", // Almost black green
         },
 
-        // SECONDARY - Warm Trust Gold (success, value, premium features)
+        // SECONDARY - Teal/Cyan (modern, tech-forward)
         secondary: {
-          50: "#FFFBEB",
-          100: "#FEF3C7",
-          200: "#FDE68A",
-          300: "#FCD34D",
-          400: "#FBBF24",
-          500: "#F59E0B",
-          600: "#D97706",
-          700: "#B45309",
-          800: "#92400E",
-          900: "#78350F",
+          50: "#F0FDFA",
+          100: "#CCFBF1",
+          200: "#99F6E4",
+          300: "#5EEAD4",
+          400: "#2DD4BF",
+          500: "#14B8A6", // Teal accent
+          600: "#0D9488", // Darker teal
+          700: "#0F766E",
+          800: "#115E59",
+          900: "#134E4A",
         },
 
-        // SUCCESS - Positive Green (gains, income, positive trends)
+        // SUCCESS - Bright Growth Green (gains, income, positive)
         success: {
           50: "#F0FDF4",
           100: "#DCFCE7",
@@ -97,41 +97,41 @@ export default {
         // DARK MODE - Specific dark theme colors
         dark: {
           // Background layers (darkest to lightest)
-          background: "#0F172A", // Main background (neutral-900)
-          surface: "#1E293B", // Card/surface background (neutral-800)
-          "surface-hover": "#334155", // Hover state (neutral-700)
-          "surface-active": "#475569", // Active state (neutral-600)
+          background: "#020617", // Main dark background
+          surface: "#0F172A", // Card/surface background
+          "surface-hover": "#1E293B", // Hover state
+          "surface-active": "#334155", // Active state
 
           // Text colors (lightest to darkest)
-          text: "#F8FAFC", // Primary text (neutral-50)
-          "text-secondary": "#94A3B8", // Secondary text (neutral-400)
-          "text-tertiary": "#64748B", // Tertiary text (neutral-500)
+          text: "#F8FAFC", // Primary text
+          "text-secondary": "#94A3B8", // Secondary text
+          "text-tertiary": "#64748B", // Tertiary text
 
           // Borders and dividers
-          border: "#334155", // Border color (neutral-700)
-          "border-light": "#475569", // Light border (neutral-600)
+          border: "#1E293B", // Border color
+          "border-light": "#334155", // Light border
 
           // Overlay colors
           overlay: "rgba(0, 0, 0, 0.7)", // Modal/overlay backdrop
           "overlay-light": "rgba(0, 0, 0, 0.5)",
         },
 
-        // CHART COLORS - Data Visualization Palette (work in both modes)
+        // CHART COLORS - Green-based Data Visualization Palette
         chart: {
-          blue: "#3B82F6",
-          indigo: "#6366F1",
-          purple: "#8B5CF6",
-          pink: "#EC4899",
-          rose: "#F43F5E",
-          orange: "#F97316",
-          amber: "#F59E0B",
-          yellow: "#EAB308",
-          lime: "#84CC16",
-          green: "#22C55E",
-          emerald: "#10B981",
-          teal: "#14B8A6",
-          cyan: "#06B6D4",
-          sky: "#0EA5E9",
+          green: "#22C55E", // Primary green
+          emerald: "#10B981", // Emerald green
+          teal: "#14B8A6", // Teal accent
+          cyan: "#06B6D4", // Cyan highlight
+          "light-green": "#86EFAC", // Light green
+          "dark-green": "#064E3B", // Dark green
+          lime: "#84CC16", // Lime accent
+          mint: "#5EEAD4", // Mint fresh
+          forest: "#065F46", // Forest green
+          sage: "#A7F3D0", // Sage green
+          olive: "#84CC16", // Olive
+          "sea-green": "#2DD4BF", // Sea green
+          "pale-green": "#BBF7D0", // Pale green
+          "spring-green": "#4ADE80", // Spring green
         },
       },
 
@@ -189,14 +189,14 @@ export default {
       // Box Shadow System - Light and Dark mode
       boxShadow: {
         // Light mode shadows
-        card: "0 2px 8px rgba(15, 23, 42, 0.08)",
-        "card-hover": "0 4px 12px rgba(15, 23, 42, 0.12)",
-        "card-active": "0 1px 4px rgba(15, 23, 42, 0.06)",
+        card: "0 2px 8px rgba(0, 129, 72, 0.08)", // Green-tinted shadow
+        "card-hover": "0 4px 12px rgba(0, 129, 72, 0.12)",
+        "card-active": "0 1px 4px rgba(0, 129, 72, 0.06)",
         modal: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         dropdown:
           "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-        floating: "0 8px 16px rgba(0, 0, 0, 0.12)",
-        focus: "0 0 0 3px rgba(59, 130, 246, 0.5)",
+        floating: "0 8px 16px rgba(0, 129, 72, 0.12)", // Green-tinted
+        focus: "0 0 0 3px rgba(0, 129, 72, 0.4)", // Green focus ring
 
         // Dark mode shadows (subtle, use darker colors)
         "dark-card": "0 2px 8px rgba(0, 0, 0, 0.3)",

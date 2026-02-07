@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { chartColors } from "@/app/constants";
 
 /**
  * Data point for bar chart
@@ -80,15 +81,9 @@ export interface BarChartProps {
 }
 
 /**
- * Default colors for series
+ * Default colors for series - using green fintech palette
  */
-const DEFAULT_SERIES_COLORS = [
-  "#10b981", // Green 500
-  "#3b82f6", // Blue 500
-  "#f59e0b", // Amber 500
-  "#ef4444", // Red 500
-  "#8b5cf6", // Violet 500
-];
+const DEFAULT_SERIES_COLORS = chartColors;
 
 /**
  * BarChart component - Sector allocation and categorical comparisons

@@ -332,7 +332,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
         {(helperText || error || success) && (
           <div className="mt-1.5 min-h-[20px]">
             {error && (
-              <p id={errorId} className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+              <p id={errorId} className="text-sm text-danger-600 dark:text-danger-400 flex items-center gap-1">
                 <svg
                   className="w-4 h-4 flex-shrink-0"
                   fill="currentColor"
@@ -348,7 +348,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
               </p>
             )}
             {success && !error && (
-              <p id={successId} className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+              <p id={successId} className="text-sm text-success-600 dark:text-success-400 flex items-center gap-1">
                 <svg
                   className="w-4 h-4 flex-shrink-0"
                   fill="currentColor"
@@ -364,7 +364,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
               </p>
             )}
             {helperText && !error && !success && (
-              <p id={helperId} className="text-sm text-gray-500 dark:text-gray-400">
+              <p id={helperId} className="text-sm text-neutral-500 dark:text-neutral-400">
                 {helperText}
               </p>
             )}

@@ -350,8 +350,8 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                   icon={`${resources}/editing.svg`}
                   label="Edit"
                   onClick={handleEdit}
-                  bgColor="bg-blue-100"
-                  textColor="text-blue-700"
+                  bgColor="bg-primary-100"
+                  textColor="text-primary-700"
                 /> */}
               </div>
             </div>

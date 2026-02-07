@@ -116,7 +116,7 @@ export function QuickActions({
             // Active state (touch feedback)
             "active:bg-neutral-100 active:scale-95",
             // Focus state for keyboard navigation
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2",
             // Transitions
             "transition-all duration-200",
             // Disabled state

@@ -75,7 +75,7 @@ export const BalanceCard = memo(function BalanceCard({
   return (
     <div
       className={cn(
-        "bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-lg p-4 sm:p-6 shadow-card",
+        "bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-lg p-4 sm:p-6 shadow-card",
         className,
       )}
     >
@@ -106,8 +106,8 @@ export const BalanceCard = memo(function BalanceCard({
                 className={cn(
                   "flex items-center gap-1 px-2 py-1 rounded text-sm font-semibold",
                   isPositive
-                    ? "bg-success-500/20 text-success-100"
-                    : "bg-danger-500/20 text-danger-100",
+                    ? "bg-emerald-500/20 text-emerald-100"
+                    : "bg-red-500/20 text-red-100",
                 )}
               >
                 <svg

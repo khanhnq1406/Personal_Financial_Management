@@ -229,11 +229,11 @@ export function InvestmentDetailModal({
               className={`font-medium ${
                 type ===
                 InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
-                  ? "text-green-600"
+                  ? "text-primary-600"
                   : type ===
                       InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL
                     ? "text-red-600"
-                    : "text-blue-600"
+                    : "text-secondary-600"
               }`}
             >
               {getTransactionTypeLabel(type)}
@@ -386,11 +386,11 @@ export function InvestmentDetailModal({
               className={`font-medium ${
                 type ===
                 InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY
-                  ? "text-green-600"
+                  ? "text-primary-600"
                   : type ===
                       InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL
                     ? "text-red-600"
-                    : "text-blue-600"
+                    : "text-secondary-600"
               }`}
             >
               {getTransactionTypeLabel(type)}
@@ -610,13 +610,13 @@ export function InvestmentDetailModal({
 
                       if (diffMins < 1) {
                         text = "Just now";
-                        colorClass = "text-green-600";
+                        colorClass = "text-primary-600";
                       } else if (diffMins < 5) {
                         text = `${diffMins}m ago`;
-                        colorClass = "text-green-600";
+                        colorClass = "text-primary-600";
                       } else if (diffMins < 15) {
                         text = `${diffMins}m ago`;
-                        colorClass = "text-green-600";
+                        colorClass = "text-primary-600";
                       } else if (diffMins < 60) {
                         text = `${diffMins}m ago`;
                         colorClass = "text-yellow-600";
@@ -686,7 +686,7 @@ export function InvestmentDetailModal({
                     <span
                       className={`font-semibold ${
                         (investment.unrealizedPnl || 0) >= 0
-                          ? "text-green-600"
+                          ? "text-primary-600"
                           : "text-red-600"
                       }`}
                     >
@@ -712,7 +712,7 @@ export function InvestmentDetailModal({
                   <span
                     className={`font-semibold ${
                       (investment.unrealizedPnlPercent || 0) >= 0
-                        ? "text-green-600"
+                        ? "text-primary-600"
                         : "text-red-600"
                     }`}
                   >
@@ -726,7 +726,7 @@ export function InvestmentDetailModal({
                     <span
                       className={`font-semibold ${
                         (investment.realizedPnl || 0) >= 0
-                          ? "text-green-600"
+                          ? "text-primary-600"
                           : "text-red-600"
                       }`}
                     >
@@ -749,7 +749,7 @@ export function InvestmentDetailModal({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Dividends</span>
-                  <span className="font-semibold text-green-600">
+                  <span className="font-semibold text-primary-600">
                     {formatCurrency(
                       investment.totalDividends || 0,
                       investment.currency || "USD",

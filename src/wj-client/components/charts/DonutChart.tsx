@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { pieChartColors } from "@/app/constants";
 
 /**
  * Data point for donut/pie chart
@@ -55,20 +56,9 @@ export interface DonutChartProps {
 }
 
 /**
- * Default color palette - modern, accessible colors
+ * Default color palette - using green fintech palette from constants
  */
-const DEFAULT_COLORS = [
-  "#10b981", // Green 500
-  "#3b82f6", // Blue 500
-  "#f59e0b", // Amber 500
-  "#ef4444", // Red 500
-  "#8b5cf6", // Violet 500
-  "#ec4899", // Pink 500
-  "#14b8a6", // Teal 500
-  "#f97316", // Orange 500
-  "#6366f1", // Indigo 500
-  "#84cc16", // Lime 500
-];
+const DEFAULT_COLORS = pieChartColors;
 
 /**
  * DonutChart component - Asset allocation and categorical breakdowns

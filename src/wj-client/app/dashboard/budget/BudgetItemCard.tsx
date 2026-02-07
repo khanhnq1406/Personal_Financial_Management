@@ -97,7 +97,7 @@ export function BudgetItemCard({
         className={`group flex items-center gap-3 py-2.5 px-3 rounded-lg border transition-all duration-200 ${
           isChecked
             ? "bg-gray-50 border-gray-200"
-            : "bg-white border-gray-200 hover:border-primary-200 hover:bg-gray-50/50"
+            : "bg-white border-gray-200 hover:border-primary-600 hover:bg-gray-50/50"
         }`}
       >
         {/* Checkbox */}
@@ -133,7 +133,7 @@ export function BudgetItemCard({
             src={`${resources}/editing.svg`}
             onClick={() => onEditItem(budgetId, item)}
             disabled={isPending}
-            className="p-1.5 hover:bg-blue-50 rounded-md transition-colors"
+            className="p-1.5 hover:bg-primary-50 rounded-md transition-colors"
           />
           <Button
             type={ButtonType.IMG}

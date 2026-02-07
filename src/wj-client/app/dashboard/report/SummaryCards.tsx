@@ -85,9 +85,9 @@ const SummaryCard = memo(function SummaryCard({
       icon: "bg-red-100",
     },
     blue: {
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      icon: "bg-blue-100",
+      bg: "bg-primary-50",
+      text: "text-primary-700",
+      icon: "bg-primary-100",
     },
     neutral: {
       bg: "bg-neutral-50",

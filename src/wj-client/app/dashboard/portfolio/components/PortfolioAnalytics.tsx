@@ -169,7 +169,7 @@ export const PortfolioAnalytics = memo(function PortfolioAnalytics({
         </h2>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="sm:hidden text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="sm:hidden text-sm text-primary-600 hover:text-primary-800 font-medium"
           aria-label={isExpanded ? "Collapse" : "Expand"}
         >
           {isExpanded ? "Show Less" : "Show More"}

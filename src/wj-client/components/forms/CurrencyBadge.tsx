@@ -76,7 +76,7 @@ export function CurrencyBadge({
           ${
             disabled
               ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-              : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300 cursor-pointer"
+              : "bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 hover:border-primary-300 cursor-pointer"
           }
         `}
         aria-label="Change currency"
@@ -118,7 +118,7 @@ export function CurrencyBadge({
                 w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors
                 ${
                   curr.code === value
-                    ? "bg-blue-50 text-blue-700 font-medium"
+                    ? "bg-primary-50 text-primary-700 font-medium"
                     : "hover:bg-gray-50 text-gray-700"
                 }
               `}
@@ -129,7 +129,7 @@ export function CurrencyBadge({
               <span className="flex-1">{curr.code}</span>
               {curr.code === value && (
                 <svg
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-primary-600"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >

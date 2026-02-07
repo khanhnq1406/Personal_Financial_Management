@@ -14,15 +14,19 @@ html {
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  --btn-green: #00a445;
-  --white: #f5f7fd;
+  --foreground: #0F172A;
+  --btn-green: #008148; /* Updated to primary fintech green */
+  --btn-green-hover: #006638; /* Darker green for hover */
+  --white: #ffffff;
+  --primary-green: #008148;
+  --accent-green: #22C55E;
+  --teal-accent: #14B8A6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #F8FAFC;
   }
 }
 
@@ -59,16 +63,16 @@ body {
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #1E293B;
+  background: #0F172A;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1E293B;
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }
 
 /* Light mode scrollbar */
@@ -115,6 +119,10 @@ body {
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
 }
 
+.custom-btn:hover {
+  background-color: var(--btn-green-hover);
+}
+
 .btn-transaction {
   opacity: 0;
   transform: translateY(14px) translateX(37px);
@@ -134,7 +142,7 @@ body {
 }
 
 .required {
-  color: #c3151c;
+  color: #DC2626;
   font-size: 0.9em;
 }
 
@@ -351,4 +359,10 @@ body {
 .touch-target-lg {
   min-height: 48px;
   min-width: 48px;
+}
+
+/* Green focus ring for accessibility */
+*:focus-visible {
+  outline: 2px solid #008148;
+  outline-offset: 2px;
 }

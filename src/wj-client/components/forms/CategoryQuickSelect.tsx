@@ -100,7 +100,7 @@ export const CategoryQuickSelect = memo(function CategoryQuickSelect({
   const getDefaultColor = useCallback((id: string | number): string => {
     const colors = [
       "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-      "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+      "bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400",
       "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
       "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
       "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",

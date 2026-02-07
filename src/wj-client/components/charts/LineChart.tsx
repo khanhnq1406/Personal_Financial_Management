@@ -14,6 +14,7 @@ import {
   AreaChart as RechartsAreaChart,
 } from "recharts";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { chartColors } from "@/app/constants";
 
 /**
  * Data point for line/area chart
@@ -82,15 +83,9 @@ export interface LineChartProps {
 }
 
 /**
- * Default colors for series
+ * Default colors for series - using green fintech palette
  */
-const DEFAULT_SERIES_COLORS = [
-  "#10b981", // Green 500
-  "#3b82f6", // Blue 500
-  "#f59e0b", // Amber 500
-  "#ef4444", // Red 500
-  "#8b5cf6", // Violet 500
-];
+const DEFAULT_SERIES_COLORS = chartColors;
 
 /**
  * LineChart component - Portfolio performance and trends over time

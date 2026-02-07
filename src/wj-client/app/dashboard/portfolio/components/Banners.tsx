@@ -7,9 +7,9 @@ import React, { memo } from "react";
  */
 export const UpdateProgressBanner = memo(function UpdateProgressBanner() {
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+    <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
       <svg
-        className="animate-spin h-5 w-5 text-blue-600"
+        className="animate-spin h-5 w-5 text-primary-600"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -29,10 +29,10 @@ export const UpdateProgressBanner = memo(function UpdateProgressBanner() {
         />
       </svg>
       <div className="flex-1">
-        <p className="text-sm font-medium text-blue-900">
+        <p className="text-sm font-medium text-primary-900">
           Fetching latest prices from market...
         </p>
-        <p className="text-xs text-blue-700">
+        <p className="text-xs text-primary-700">
           This may take 5-15 seconds. We're checking for updates every 2
           seconds.
         </p>

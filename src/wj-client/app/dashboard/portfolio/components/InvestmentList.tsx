@@ -257,7 +257,7 @@ function useInvestmentColumns(
           return (
             <button
               onClick={() => onRowClick(investmentId)}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+              className="text-sm text-primary-600 hover:text-primary-800 hover:underline font-medium"
               aria-label="View investment details"
             >
               View Details

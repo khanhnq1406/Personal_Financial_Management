@@ -62,7 +62,7 @@ export function WealthCard({
     success: "text-green-600 dark:text-green-400",
     warning: "text-yellow-600 dark:text-yellow-400",
     danger: "text-red-600 dark:text-red-400",
-    info: "text-blue-600 dark:text-blue-400",
+    info: "text-primary-600 dark:text-primary-400",
   };
 
   const trendColor = trend && trend > 0 ? "text-green-600" : trend && trend < 0 ? "text-red-600" : "text-gray-500";

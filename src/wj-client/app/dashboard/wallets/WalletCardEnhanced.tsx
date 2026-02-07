@@ -17,7 +17,7 @@ export interface WalletCardEnhancedProps {
 
 // Gradient presets for wallet cards
 const WALLET_GRADIENTS = [
-  "from-blue-600 to-blue-800",
+  "from-primary-600 to-primary-800",
   "from-purple-600 to-purple-800",
   "from-emerald-600 to-emerald-800",
   "from-rose-600 to-rose-800",

@@ -204,7 +204,7 @@ export function TransactionCard({
     if (color) return color;
     if (isIncome) return "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400";
     if (isExpense) return "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400";
-    return "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+    return "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400";
   };
 
   const cardClasses = cn(

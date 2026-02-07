@@ -113,15 +113,15 @@ export default function ReportPageEnhanced() {
     };
   }, []);
 
-  // Mock expense category breakdown data
+  // Mock expense category breakdown data - using green palette
   const expenseCategories = useMemo(() => {
     return [
-      { name: "Food & Dining", value: 800, color: "#ef4444" },
-      { name: "Transportation", value: 450, color: "#f59e0b" },
-      { name: "Shopping", value: 600, color: "#8b5cf6" },
-      { name: "Entertainment", value: 350, color: "#ec4899" },
-      { name: "Bills & Utilities", value: 700, color: "#3b82f6" },
-      { name: "Others", value: 300, color: "#6b7280" },
+      { name: "Food & Dining", value: 800, color: "#008148" },
+      { name: "Transportation", value: 450, color: "#22C55E" },
+      { name: "Shopping", value: 600, color: "#14B8A6" },
+      { name: "Entertainment", value: 350, color: "#06B6D4" },
+      { name: "Bills & Utilities", value: 700, color: "#84CC16" },
+      { name: "Others", value: 300, color: "#94A3B8" },
     ];
   }, []);
 
@@ -235,14 +235,14 @@ export default function ReportPageEnhanced() {
                   {
                     dataKey: "thisMonth",
                     name: "This Month",
-                    color: "#10b981",
+                    color: "#008148",
                   },
                   ...(compareWithPrevious
                     ? [
                         {
                           dataKey: "lastMonth",
                           name: "Last Month",
-                          color: "#94a3b8",
+                          color: "#94A3B8",
                         } as const,
                       ]
                     : []),
@@ -275,21 +275,21 @@ export default function ReportPageEnhanced() {
                 {
                   dataKey: "income",
                   name: "Income",
-                  color: "#10b981",
+                  color: "#22C55E",
                   showArea: true,
                   curveType: "monotone",
                 },
                 {
                   dataKey: "expenses",
                   name: "Expenses",
-                  color: "#ef4444",
+                  color: "#DC2626",
                   showArea: true,
                   curveType: "monotone",
                 },
                 {
                   dataKey: "net",
                   name: "Net Savings",
-                  color: "#3b82f6",
+                  color: "#008148",
                   showArea: false,
                   curveType: "monotone",
                   strokeWidth: 3,
@@ -345,13 +345,13 @@ export default function ReportPageEnhanced() {
                     <td className="py-3 px-4 font-medium text-neutral-900">
                       {row.month}
                     </td>
-                    <td className="py-3 px-4 text-right text-green-600 font-medium">
+                    <td className="py-3 px-4 text-right text-success-600 font-medium">
                       {formatCurrency(row.income, "USD")}
                     </td>
-                    <td className="py-3 px-4 text-right text-red-600 font-medium">
+                    <td className="py-3 px-4 text-right text-danger-600 font-medium">
                       {formatCurrency(row.expenses, "USD")}
                     </td>
-                    <td className="py-3 px-4 text-right text-neutral-900 font-medium">
+                    <td className="py-3 px-4 text-right text-primary-900 font-medium">
                       {formatCurrency(row.net, "USD")}
                     </td>
                     <td className="py-3 px-4 text-right text-neutral-600">

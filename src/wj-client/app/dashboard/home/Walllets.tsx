@@ -33,12 +33,35 @@ const WalletItem = memo(function WalletItem({
   return (
     <div className="flex flex-nowrap justify-between m-3">
       <div className="flex flex-nowrap gap-3 items-center">
-        <Image
-          width={25}
-          height={25}
-          alt="wallet-icon"
-          src={`${resources}wallet.svg`}
-        />
+        {isInvestmentWallet ? (
+          <svg
+            className="w-6 h-6 sm:w-6 sm:h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+            />
+          </svg>
+        ) : (
+          <svg
+            className="w-6 h-6 sm:w-6 sm:h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            />
+          </svg>
+        )}
         <div className="font-semibold">{wallet.walletName}</div>
       </div>
       <div className="text-right">
