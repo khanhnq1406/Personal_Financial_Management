@@ -33,6 +33,35 @@ export {
 } from "./excel-export";
 
 // =============================================================================
+// Report PDF Export
+// =============================================================================
+export {
+  generateReportPDF,
+  generateReportPDFFilename,
+  downloadPDF as downloadReportPDF,
+  exportReportToPDF,
+  formatCurrency as formatReportCurrency,
+  type ReportExportData,
+  type ReportPDFExportOptions,
+  type SummaryData as ReportSummaryData,
+  type TrendData as ReportTrendData,
+  type ExpenseCategoryData as ReportExpenseCategoryData,
+  type CategoryComparisonData as ReportCategoryComparisonData,
+} from "./report-pdf-export";
+
+// =============================================================================
+// Report Excel Export
+// =============================================================================
+export {
+  generateReportExcel,
+  generateReportExcelFilename,
+  downloadExcel as downloadReportExcel,
+  exportReportToExcel,
+  formatCurrency as formatReportExcelCurrency,
+  type ReportExcelExportOptions,
+} from "./report-excel-export";
+
+// =============================================================================
 // Legacy Exports
 // =============================================================================
 // Re-export existing financial report export

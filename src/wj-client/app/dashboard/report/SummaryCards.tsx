@@ -5,8 +5,6 @@ import { BaseCard } from "@/components/BaseCard";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useAnimatedNumber, useAnimatedPercentage } from "@/components/charts/useAnimatedNumber";
 import { Sparkline } from "@/components/charts";
-import Image from "next/image";
-import { resources } from "@/app/constants";
 
 /**
  * Financial summary data structure
@@ -55,7 +53,7 @@ interface SummaryCardProps {
   value: string;
   subtitle?: string;
   color: "green" | "red" | "blue" | "neutral";
-  icon?: string;
+  icon?: React.ReactNode;
   change?: number;
   changeLabel?: string;
   showSparkline?: boolean;
@@ -106,7 +104,7 @@ const SummaryCard = memo(function SummaryCard({
           <span className="text-sm font-medium text-neutral-600">{label}</span>
           {icon && (
             <div className={`w-8 h-8 rounded-full ${colors.icon} flex items-center justify-center`}>
-              <Image src={icon} alt={label} width={16} height={16} />
+              {icon}
             </div>
           )}
         </div>
@@ -137,6 +135,100 @@ const SummaryCard = memo(function SummaryCard({
     </BaseCard>
   );
 });
+
+/**
+ * Icon components for summary cards
+ */
+const Icons = {
+  Income: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-green-600"
+    >
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  ),
+  Expense: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-red-600"
+    >
+      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+      <polyline points="17 18 23 18 23 12" />
+    </svg>
+  ),
+  Savings: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-blue-600"
+    >
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
+  ),
+  Percent: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-neutral-600"
+    >
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  ),
+  Category: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-neutral-600"
+    >
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  ),
+};
 
 /**
  * SummaryCards - Financial report summary cards with comparisons and trends
@@ -197,7 +289,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         label="Total Income"
         value={formatCurrency(animatedIncome, currency)}
         color="green"
-        icon={`${resources}/income.svg`}
+        icon={<Icons.Income />}
         change={incomeChange}
         changeLabel="vs last period"
         showSparkline={incomeSparkline.length > 1}
@@ -209,7 +301,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         label="Total Expenses"
         value={formatCurrency(animatedExpenses, currency)}
         color="red"
-        icon={`${resources}/expense.svg`}
+        icon={<Icons.Expense />}
         change={expensesChange}
         changeLabel="vs last period"
         showSparkline={expenseSparkline.length > 1}
@@ -222,7 +314,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         value={formatCurrency(animatedSavings, currency)}
         subtitle={netSavings >= 0 ? "Positive cash flow" : "Negative cash flow"}
         color={netSavings >= 0 ? "blue" : "red"}
-        icon={`${resources}/savings.svg`}
+        icon={<Icons.Savings />}
         change={savingsChange}
         changeLabel="vs last period"
       />
@@ -233,7 +325,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
         value={`${animatedRate.toFixed(1)}%`}
         subtitle={savingsRate >= 20 ? "Excellent!" : savingsRate >= 10 ? "Good" : "Needs improvement"}
         color="neutral"
-        icon={`${resources}/percent.svg`}
+        icon={<Icons.Percent />}
         change={rateChange}
         changeLabel="pp change"
       />
@@ -245,7 +337,7 @@ export const SummaryCards = memo(function SummaryCards({ data }: SummaryCardsPro
           value={formatCurrency(topExpenseCategory.amount, currency)}
           subtitle={topExpenseCategory.name}
           color="neutral"
-          icon={`${resources}/category.svg`}
+          icon={<Icons.Category />}
         />
       )}
     </div>

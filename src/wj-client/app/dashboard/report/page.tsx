@@ -14,35 +14,72 @@
  * - Export options
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { BaseCard } from "@/components/BaseCard";
 import { formatCurrency } from "@/utils/currency-formatter";
-import { useQueryGetFinancialReport } from "@/utils/generated/hooks";
+import {
+  useQueryGetFinancialReport,
+  useQueryGetCategoryBreakdown,
+  useQueryListCategories,
+} from "@/utils/generated/hooks";
 import { exportFinancialReportToCSV } from "@/utils/csv-export";
 import { PeriodSelector, PeriodType, DateRange } from "./PeriodSelector";
 import { SummaryCards, FinancialSummaryData } from "./SummaryCards";
 import { LineChart, BarChart, DonutChart } from "@/components/charts";
 import { motion } from "framer-motion";
 import { ExportOptions, ExportButton } from "@/components/export/ExportDialog";
+import { FullPageLoading } from "@/components/loading/FullPageLoading";
+import {
+  getDateRangeForPeriod,
+  calculateSummaryData,
+  calculateTrendData,
+  toUnixTimestamp,
+  getReportCurrency,
+  getCategoryColor,
+  getPreviousPeriodRange,
+} from "./data-utils";
+import {
+  CategoryBreakdownItem,
+  CategoryType,
+} from "@/gen/protobuf/v1/transaction";
 
 export default function ReportPageEnhanced() {
   const [selectedPeriod, setSelectedPeriod] =
     useState<PeriodType>("this-month");
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [compareWithPrevious, setCompareWithPrevious] = useState(false);
-  const [selectedWalletIds, setSelectedWalletIds] = useState<number[]>([]);
-  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [selectedWalletIds] = useState<number[]>([]);
+
+  // Calculate date range for the selected period
+  const dateRange = useMemo(
+    () => getDateRangeForPeriod(selectedPeriod, customRange),
+    [selectedPeriod, customRange],
+  );
+
+  // Calculate previous period date range for comparison
+  const previousPeriodRange = useMemo(
+    () => getPreviousPeriodRange(selectedPeriod, customRange),
+    [selectedPeriod, customRange],
+  );
+
+  // Determine year for API call
+  const reportYear = useMemo(() => dateRange.start.getFullYear(), [dateRange]);
+
+  // Determine year for previous period API call
+  const previousReportYear = useMemo(
+    () => previousPeriodRange.startDate.getFullYear(),
+    [previousPeriodRange],
+  );
 
   // Fetch financial report data
   const {
     data: reportData,
-    isLoading,
-    error,
-    refetch,
+    isLoading: isReportLoading,
+    error: reportError,
   } = useQueryGetFinancialReport(
     {
-      year: new Date().getFullYear(),
-      walletIds: selectedWalletIds ?? [],
+      year: reportYear,
+      walletIds: selectedWalletIds.length > 0 ? selectedWalletIds : [],
     },
     {
       refetchOnMount: "always",
@@ -50,104 +87,276 @@ export default function ReportPageEnhanced() {
     },
   );
 
+  // Fetch category breakdown data
+  const {
+    data: categoryBreakdown,
+    isLoading: isCategoryLoading,
+    error: categoryError,
+  } = useQueryGetCategoryBreakdown(
+    {
+      startDate: toUnixTimestamp(dateRange.start),
+      endDate: toUnixTimestamp(dateRange.end),
+      walletIds: selectedWalletIds.length > 0 ? selectedWalletIds : [],
+    },
+    {
+      refetchOnMount: "always",
+      enabled: !!selectedPeriod,
+    },
+  );
+
+  // Fetch previous period category breakdown data for comparison
+  const {
+    data: previousCategoryBreakdown,
+    isLoading: isPreviousCategoryLoading,
+  } = useQueryGetCategoryBreakdown(
+    {
+      startDate: toUnixTimestamp(previousPeriodRange.startDate),
+      endDate: toUnixTimestamp(previousPeriodRange.endDate),
+      walletIds: selectedWalletIds.length > 0 ? selectedWalletIds : [],
+    },
+    {
+      refetchOnMount: "always",
+      enabled: compareWithPrevious && !!selectedPeriod,
+    },
+  );
+
+  // Fetch categories for export dialog
+  const { data: categoriesData } = useQueryListCategories(
+    { pagination: { page: 1, pageSize: 100, orderBy: "", order: "" } },
+    { refetchOnMount: "always" },
+  );
+
+  // Combined loading and error states
+  const isLoading = isReportLoading || isCategoryLoading;
+  const error = reportError || categoryError;
+
+  // Get currency from report data
+  const currency = useMemo(() => getReportCurrency(reportData), [reportData]);
+
+  // Transform categories data for export dialog
+  const categoriesForExport = useMemo(() => {
+    return (
+      categoriesData?.categories?.map((cat) => ({
+        id: cat.id?.toString() || "",
+        name: cat.name || "Uncategorized",
+      })) || []
+    );
+  }, [categoriesData]);
+
   // Handle period change
-  const handlePeriodChange = (period: PeriodType, range?: DateRange) => {
-    setSelectedPeriod(period);
-    setCustomRange(range);
-    // In a real implementation, this would trigger a new API call with the date range
-    refetch();
-  };
+  const handlePeriodChange = useCallback(
+    (period: PeriodType, range?: DateRange) => {
+      setSelectedPeriod(period);
+      setCustomRange(range);
+      // Refetch will be triggered automatically by dateRange dependency
+    },
+    [],
+  );
 
   // Handle export with dialog options
-  const handleExport = async (options: ExportOptions) => {
-    try {
-      // Map the period to year for the existing export function
-      const year = selectedPeriod === "this-month" || selectedPeriod === "last-month"
-        ? new Date().getFullYear()
-        : new Date().getFullYear();
-
-      switch (options.format) {
-        case "csv":
-          exportFinancialReportToCSV(reportData, year);
-          break;
-        case "pdf":
-          // TODO: Implement PDF export
-          alert("PDF export coming soon!");
-          break;
-        case "excel":
-          // TODO: Implement Excel export
-          alert("Excel export coming soon!");
-          break;
+  const handleExport = useCallback(
+    async (options: ExportOptions) => {
+      try {
+        switch (options.format) {
+          case "csv":
+            if (reportData) {
+              exportFinancialReportToCSV(reportData, reportYear, currency);
+            }
+            break;
+          case "pdf":
+            // TODO: Implement PDF export
+            alert("PDF export coming soon!");
+            break;
+          case "excel":
+            // TODO: Implement Excel export
+            alert("Excel export coming soon!");
+            break;
+        }
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Failed to export");
       }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to export");
-    }
-  };
+    },
+    [reportData, reportYear, currency],
+  );
 
-  // Mock summary data (in real implementation, this would come from the API)
+  // Calculate summary data from API response
   const summaryData: FinancialSummaryData = useMemo(() => {
+    const baseSummary = calculateSummaryData(
+      reportData,
+      selectedPeriod,
+      customRange,
+    );
+
+    // Add history data for sparklines
+    const trendDataPoints = calculateTrendData(
+      reportData,
+      selectedPeriod,
+      customRange,
+    );
+    const incomeHistory = trendDataPoints.map((d) => ({
+      value: d.income,
+      date: d.month,
+    }));
+    const expenseHistory = trendDataPoints.map((d) => ({
+      value: d.expenses,
+      date: d.month,
+    }));
+
+    // Get top expense category from category breakdown
+    let topExpenseCategory: { name: string; amount: number } | undefined;
+    if (
+      categoryBreakdown?.categories &&
+      categoryBreakdown.categories.length > 0
+    ) {
+      const expenses = categoryBreakdown.categories
+        .filter(
+          (cat: CategoryBreakdownItem) =>
+            cat.type === CategoryType.CATEGORY_TYPE_EXPENSE,
+        )
+        .sort(
+          (a: CategoryBreakdownItem, b: CategoryBreakdownItem) =>
+            (b.displayAmount?.amount || b.totalAmount?.amount || 0) -
+            (a.displayAmount?.amount || a.totalAmount?.amount || 0),
+        );
+
+      if (expenses.length > 0) {
+        topExpenseCategory = {
+          name: expenses[0].categoryName || "Unknown",
+          amount:
+            expenses[0].displayAmount?.amount ||
+            expenses[0].totalAmount?.amount ||
+            0,
+        };
+      }
+    }
+
     return {
-      totalIncome: 5000,
-      totalExpenses: 3200,
-      netSavings: 1800,
-      savingsRate: 36,
-      topExpenseCategory: {
-        name: "Food & Dining",
-        amount: 800,
-      },
-      currency: "USD",
-      incomeHistory: [
-        { value: 4200, date: "Jan" },
-        { value: 4500, date: "Feb" },
-        { value: 4800, date: "Mar" },
-        { value: 4700, date: "Apr" },
-        { value: 5000, date: "May" },
-      ],
-      expenseHistory: [
-        { value: 2800, date: "Jan" },
-        { value: 3000, date: "Feb" },
-        { value: 3100, date: "Mar" },
-        { value: 2900, date: "Apr" },
-        { value: 3200, date: "May" },
-      ],
+      ...baseSummary,
+      topExpenseCategory,
+      currency,
+      incomeHistory,
+      expenseHistory,
     };
-  }, []);
+  }, [reportData, selectedPeriod, customRange, categoryBreakdown, currency]);
 
-  // Mock expense category breakdown data - using green palette
+  // Process expense category breakdown from API
   const expenseCategories = useMemo(() => {
-    return [
-      { name: "Food & Dining", value: 800, color: "#008148" },
-      { name: "Transportation", value: 450, color: "#22C55E" },
-      { name: "Shopping", value: 600, color: "#14B8A6" },
-      { name: "Entertainment", value: 350, color: "#06B6D4" },
-      { name: "Bills & Utilities", value: 700, color: "#84CC16" },
-      { name: "Others", value: 300, color: "#94A3B8" },
-    ];
-  }, []);
+    if (!categoryBreakdown?.categories) {
+      return [];
+    }
 
-  // Mock income vs expense trend data
+    return categoryBreakdown.categories
+      .filter(
+        (cat: CategoryBreakdownItem) =>
+          cat.type === CategoryType.CATEGORY_TYPE_EXPENSE,
+      )
+      .sort(
+        (a: CategoryBreakdownItem, b: CategoryBreakdownItem) =>
+          (b.displayAmount?.amount || b.totalAmount?.amount || 0) -
+          (a.displayAmount?.amount || a.totalAmount?.amount || 0),
+      )
+      .map((cat: CategoryBreakdownItem, index: number) => ({
+        name: cat.categoryName || "Unknown",
+        value: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+        color: getCategoryColor(index),
+      }));
+  }, [categoryBreakdown]);
+
+  // Calculate trend data from API response (convert to format expected by LineChart)
   const trendData = useMemo(() => {
-    return [
-      { month: "Jan", income: 4200, expenses: 2800, net: 1400 },
-      { month: "Feb", income: 4500, expenses: 3000, net: 1500 },
-      { month: "Mar", income: 4800, expenses: 3100, net: 1700 },
-      { month: "Apr", income: 4700, expenses: 2900, net: 1800 },
-      { month: "May", income: 5000, expenses: 3200, net: 1800 },
-      { month: "Jun", income: 5200, expenses: 3300, net: 1900 },
-    ];
-  }, []);
+    const rawTrendData = calculateTrendData(
+      reportData,
+      selectedPeriod,
+      customRange,
+    );
+    // Convert to format with index signature for LineChart
+    return rawTrendData.map((d) => ({
+      ...d,
+    })) as Array<
+      (typeof rawTrendData)[0] & { [key: string]: string | number | undefined }
+    >;
+  }, [reportData, selectedPeriod, customRange]);
 
-  // Mock category comparison data
+  // Calculate category comparison data (current vs previous period)
   const categoryComparisonData = useMemo(() => {
-    return [
-      { category: "Food", thisMonth: 800, lastMonth: 750 },
-      { category: "Transport", thisMonth: 450, lastMonth: 500 },
-      { category: "Shopping", thisMonth: 600, lastMonth: 400 },
-      { category: "Entertainment", thisMonth: 350, lastMonth: 300 },
-      { category: "Bills", thisMonth: 700, lastMonth: 700 },
-      { category: "Others", thisMonth: 300, lastMonth: 250 },
-    ];
-  }, []);
+    if (!categoryBreakdown?.categories) {
+      return [];
+    }
+
+    // Current period categories
+    const currentCategories = categoryBreakdown.categories
+      .filter(
+        (cat: CategoryBreakdownItem) =>
+          cat.type === CategoryType.CATEGORY_TYPE_EXPENSE,
+      )
+      .map((cat: CategoryBreakdownItem) => ({
+        name: cat.categoryName || "Unknown",
+        amount: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+      }));
+
+    // Previous period categories (if comparison is enabled and data is available)
+    const previousCategoriesMap = new Map<string, number>();
+    if (compareWithPrevious && previousCategoryBreakdown?.categories) {
+      previousCategoryBreakdown.categories
+        .filter(
+          (cat: CategoryBreakdownItem) =>
+            cat.type === CategoryType.CATEGORY_TYPE_EXPENSE,
+        )
+        .forEach((cat: CategoryBreakdownItem) => {
+          previousCategoriesMap.set(
+            cat.categoryName || "Unknown",
+            cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+          );
+        });
+    }
+
+    // Create comparison data
+    return currentCategories.map((cat) => {
+      const lastMonth = compareWithPrevious
+        ? previousCategoriesMap.get(cat.name) || 0
+        : 0;
+      const change = cat.amount - lastMonth;
+      const changePercentage =
+        lastMonth !== 0 ? Math.round((change / lastMonth) * 100) : 0;
+
+      return {
+        category: cat.name,
+        thisMonth: cat.amount,
+        lastMonth,
+        change,
+        changePercentage,
+      };
+    });
+  }, [categoryBreakdown, previousCategoryBreakdown, compareWithPrevious]);
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 px-6">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-neutral-900 mb-2">
+            Failed to Load Report
+          </h2>
+          <p className="text-neutral-600 mb-4">
+            {error instanceof Error
+              ? error.message
+              : "An unexpected error occurred"}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return <FullPageLoading text="Loading financial report..." />;
+  }
 
   return (
     <div className="flex flex-col gap-4 px-3 sm:px-6 py-3 sm:py-4">
@@ -158,7 +367,8 @@ export default function ReportPageEnhanced() {
         </h1>
         <ExportButton
           onExport={handleExport}
-          categories={[]} // TODO: Add category data if available
+          categories={categoriesForExport}
+          className="w-fit"
         />
       </div>
 
@@ -183,6 +393,35 @@ export default function ReportPageEnhanced() {
         <SummaryCards data={summaryData} />
       </motion.div>
 
+      {/* No Data State */}
+      {(!reportData?.walletData || reportData.walletData.length === 0) &&
+        !isLoading && (
+          <BaseCard className="p-8">
+            <div className="text-center py-12">
+              <svg
+                className="w-16 h-16 mx-auto text-neutral-400 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                No Data Available
+              </h3>
+              <p className="text-neutral-600">
+                No transactions found for the selected period. Try selecting a
+                different time range.
+              </p>
+            </div>
+          </BaseCard>
+        )}
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Expense Breakdown - Donut Chart */}
@@ -204,7 +443,7 @@ export default function ReportPageEnhanced() {
                 showLegend={true}
                 legendPosition="right"
                 tooltipFormatter={(value) => [
-                  formatCurrency(value, "USD"),
+                  formatCurrency(value, currency),
                   "Amount",
                 ]}
               />
@@ -249,7 +488,7 @@ export default function ReportPageEnhanced() {
                 ]}
                 height={288}
                 showLegend={true}
-                yAxisFormatter={(value) => formatCurrency(value, "USD")}
+                yAxisFormatter={(value) => formatCurrency(value, currency)}
                 xAxisFormatter={(label) => label}
               />
             </div>
@@ -299,7 +538,7 @@ export default function ReportPageEnhanced() {
               showGrid={true}
               showTooltip={true}
               showLegend={true}
-              yAxisFormatter={(value) => formatCurrency(value, "USD")}
+              yAxisFormatter={(value) => formatCurrency(value, currency)}
             />
           </div>
         </BaseCard>
@@ -346,16 +585,18 @@ export default function ReportPageEnhanced() {
                       {row.month}
                     </td>
                     <td className="py-3 px-4 text-right text-success-600 font-medium">
-                      {formatCurrency(row.income, "USD")}
+                      {formatCurrency(row.income, currency)}
                     </td>
                     <td className="py-3 px-4 text-right text-danger-600 font-medium">
-                      {formatCurrency(row.expenses, "USD")}
+                      {formatCurrency(row.expenses, currency)}
                     </td>
                     <td className="py-3 px-4 text-right text-primary-900 font-medium">
-                      {formatCurrency(row.net, "USD")}
+                      {formatCurrency(row.net, currency)}
                     </td>
                     <td className="py-3 px-4 text-right text-neutral-600">
-                      {((row.net / row.income) * 100).toFixed(1)}%
+                      {row.income > 0
+                        ? `${((row.net / row.income) * 100).toFixed(1)}%`
+                        : "0.0%"}
                     </td>
                   </tr>
                 ))}

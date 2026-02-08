@@ -60,7 +60,7 @@ interface PeriodOption {
 /**
  * Get date range for a period type
  */
-function getDateRangeForPeriod(period: PeriodType): DateRange {
+export function getDateRangeForPeriod(period: PeriodType): DateRange {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 

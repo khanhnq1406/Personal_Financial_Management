@@ -602,10 +602,12 @@ export function ExportButton({
   onExport,
   categories,
   isExporting = false,
+  className,
 }: {
   onExport: (options: ExportOptions) => void | Promise<void>;
   categories?: Array<{ id: string; name: string }>;
   isExporting?: boolean;
+  className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -615,6 +617,7 @@ export function ExportButton({
         type={ButtonType.SECONDARY}
         onClick={() => setIsOpen(true)}
         disabled={isExporting}
+        className={className}
       >
         {isExporting ? (
           <>

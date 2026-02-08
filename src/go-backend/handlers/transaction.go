@@ -327,6 +327,90 @@ func (h *TransactionHandlers) GetFinancialReport(c *gin.Context) {
 	handler.Success(c, result)
 }
 
+// GetCategoryBreakdown retrieves category-wise transaction summary for a date range.
+// @Summary Get category breakdown for transactions
+// @Tags transactions
+// @Produce json
+// @Param start_date query int true "Start date (Unix timestamp)"
+// @Param end_date query int true "End date (Unix timestamp)"
+// @Param wallet_ids query string false "Comma-separated wallet IDs to filter"
+// @Param category_type query int false "Filter by category type (1=Income, 2=Expense)"
+// @Success 200 {object} types.APIResponse{data=transactionv1.GetCategoryBreakdownResponse}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/transactions/category-breakdown [get]
+func (h *TransactionHandlers) GetCategoryBreakdown(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse start_date parameter
+	startDateStr := c.Query("start_date")
+	if startDateStr == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("start_date parameter is required"))
+		return
+	}
+
+	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid start_date format"))
+		return
+	}
+
+	// Parse end_date parameter
+	endDateStr := c.Query("end_date")
+	if endDateStr == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("end_date parameter is required"))
+		return
+	}
+
+	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid end_date format"))
+		return
+	}
+
+	// Build request
+	req := &transactionv1.GetCategoryBreakdownRequest{
+		StartDate: startDate,
+		EndDate:   endDate,
+	}
+
+	// Parse wallet_ids if provided
+	if walletIDsStr := c.Query("wallet_ids"); walletIDsStr != "" {
+		walletIDs, err := parseCommaSeparatedInt32(walletIDsStr)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid wallet_ids format"))
+			return
+		}
+		req.WalletIds = walletIDs
+	}
+
+	// Parse category_type if provided
+	if categoryTypeStr := c.Query("category_type"); categoryTypeStr != "" {
+		categoryTypeInt, err := strconv.ParseInt(categoryTypeStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid category_type format"))
+			return
+		}
+		categoryType := transactionv1.CategoryType(categoryTypeInt)
+		req.CategoryType = &categoryType
+	}
+
+	// Call service
+	result, err := h.transactionService.GetCategoryBreakdown(c.Request.Context(), userID, req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
 // Helper functions for parsing query parameters
 
 // parseTransactionFilter parses filter parameters from query string.

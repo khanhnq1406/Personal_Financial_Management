@@ -72,6 +72,7 @@ export function usePortfolioHistoricalValues(options: UsePortfolioHistoricalValu
   const result = useQueryGetHistoricalPortfolioValues(
     {
       walletId,
+      typeFilter: 0, // 0 = all types
       days,
       points,
     },

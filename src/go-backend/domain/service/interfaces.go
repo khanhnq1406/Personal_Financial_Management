@@ -101,6 +101,9 @@ type TransactionService interface {
 
 	// GetFinancialReport retrieves monthly financial breakdown for wallets in a given year.
 	GetFinancialReport(ctx context.Context, userID int32, req *transactionv1.GetFinancialReportRequest) (*transactionv1.GetFinancialReportResponse, error)
+
+	// GetCategoryBreakdown retrieves category-wise transaction summary for a date range.
+	GetCategoryBreakdown(ctx context.Context, userID int32, req *v1.GetCategoryBreakdownRequest) (*v1.GetCategoryBreakdownResponse, error)
 }
 
 // CategoryService defines the interface for category business logic.
