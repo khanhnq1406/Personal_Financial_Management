@@ -79,7 +79,11 @@ export interface LineChartProps {
   /** Custom Y-axis label formatter */
   yAxisFormatter?: (value: number) => string;
   /** Custom tooltip formatter */
-  tooltipFormatter?: (value: number, name: string, props: any) => [string, string];
+  tooltipFormatter?: (
+    value: number,
+    name: string,
+    props: any,
+  ) => [string, string];
   /** Background color for grid (default: transparent) */
   gridColor?: string;
   /** Y-axis domain (min, max values) */
@@ -136,7 +140,7 @@ export const LineChart = memo(function LineChart({
     series.map((s) => {
       if (s.chartType) return s.chartType;
       return s.showArea ? "area" : "line";
-    })
+    }),
   );
 
   const hasMultipleTypes = seriesTypes.size > 1 || seriesTypes.has("bar");
@@ -197,7 +201,7 @@ export const LineChart = memo(function LineChart({
       <ResponsiveContainer width="100%" height="100%">
         <ChartComponent
           data={data}
-          margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+          margin={{ top: 40, right: 10, left: 0, bottom: 10 }}
         >
           {showGrid && (
             <CartesianGrid
@@ -221,6 +225,7 @@ export const LineChart = memo(function LineChart({
             axisLine={false}
             domain={yAxisDomain}
             tickFormatter={yAxisFormatter}
+            width={80}
           />
 
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
@@ -237,7 +242,9 @@ export const LineChart = memo(function LineChart({
           )}
 
           {series.map((s, index) => {
-            const color = s.color ?? DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length];
+            const color =
+              s.color ??
+              DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length];
             const type = s.chartType || (s.showArea ? "area" : "line");
             const gradientId = `area-gradient-${s.dataKey}-${index}`;
 
@@ -282,7 +289,12 @@ export const LineChart = memo(function LineChart({
                       ? { r: 4, fill: color, strokeWidth: 2, stroke: "white" }
                       : false
                   }
-                  activeDot={{ r: 5, fill: color, strokeWidth: 2, stroke: "white" }}
+                  activeDot={{
+                    r: 5,
+                    fill: color,
+                    strokeWidth: 2,
+                    stroke: "white",
+                  }}
                   isAnimationActive={animate}
                   animationBegin={index * 100}
                   animationDuration={750}
