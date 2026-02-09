@@ -237,6 +237,7 @@ export default function ReportPageEnhanced() {
           (a.displayAmount?.amount || a.totalAmount?.amount || 0),
       )
       .map((cat: CategoryBreakdownItem, index: number) => ({
+        id: cat.categoryId?.toString() || "",
         name: cat.categoryName || "Unknown",
         value: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
         color: getCategoryColor(index),
@@ -271,6 +272,7 @@ export default function ReportPageEnhanced() {
           cat.type === CategoryType.CATEGORY_TYPE_EXPENSE,
       )
       .map((cat: CategoryBreakdownItem) => ({
+        id: cat.categoryId?.toString() || "",
         name: cat.categoryName || "Unknown",
         amount: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
       }));
@@ -301,6 +303,7 @@ export default function ReportPageEnhanced() {
         lastMonth !== 0 ? Math.round((change / lastMonth) * 100) : 0;
 
       return {
+        categoryId: cat.id,
         category: cat.name,
         thisMonth: cat.amount,
         lastMonth,
@@ -314,6 +317,20 @@ export default function ReportPageEnhanced() {
   const handleExport = useCallback(
     async (options: ExportOptions) => {
       try {
+        // Filter categories if specific ones were selected
+        let filteredExpenseCategories = expenseCategories;
+        let filteredCategoryComparison = categoryComparisonData;
+
+        if (options.includeCategories && options.includeCategories.length > 0) {
+          const selectedIds = new Set(options.includeCategories);
+          filteredExpenseCategories = expenseCategories.filter((cat) =>
+            selectedIds.has(cat.id)
+          );
+          filteredCategoryComparison = categoryComparisonData.filter((cat) =>
+            selectedIds.has(cat.categoryId)
+          );
+        }
+
         // Prepare export data from current page state
         const exportData: ReportExportData = prepareReportExportData(
           {
@@ -325,8 +342,8 @@ export default function ReportPageEnhanced() {
             currency: summaryData.currency,
           },
           trendData,
-          expenseCategories,
-          compareWithPrevious ? categoryComparisonData : undefined,
+          filteredExpenseCategories,
+          compareWithPrevious ? filteredCategoryComparison : undefined,
           selectedPeriod,
           dateRange,
         );
