@@ -630,7 +630,7 @@
 //       aria-labelledby={modal.type ? `modal-title-${modal.type}` : undefined}
 //     >
 //       <div
-//         className="bg-fg p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain"
+//         className="bg-neutral-50 p-5 rounded-lg drop-shadow-round max-w-md w-full mx-4 overscroll-contain"
 //         onClick={(e) => e.stopPropagation()}
 //       >
 //         {modal.type !== ModalType.SUCCESS && (
@@ -644,7 +644,7 @@
 //               </h2>
 //               <Button
 //                 type={ButtonType.IMG}
-//                 src={`${resources}/close.png`}
+//                 src={`${resources}/close.svg`}
 //                 onClick={handleClose}
 //                 aria-label="Close modal"
 //               />
@@ -757,7 +757,7 @@
 //         {error &&
 //           modal.type !== ModalType.CONFIRM &&
 //           modal.type !== ModalType.DELETE_WALLET && (
-//             <div className="text-lred mb-2 text-sm">{error}</div>
+//             <div className="text-danger-600 mb-2 text-sm">{error}</div>
 //           )}
 
 //         {modal.type !== ModalType.CONFIRM &&

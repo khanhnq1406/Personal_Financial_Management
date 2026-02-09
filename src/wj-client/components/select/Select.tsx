@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { cn } from "@/lib/utils/cn";
+import { XIcon, ChevronDownIcon, LoadingSpinnerIcon } from "@/components/icons";
 
 /**
  * Option type for the Select component.
@@ -286,7 +287,7 @@ export function Select<T extends string = string>({
   };
 
   const dropdownClassName =
-    "absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto";
+    "absolute z-50 w-full mt-1 bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg shadow-lg dark:shadow-dark-dropdown max-h-60 overflow-auto transition-colors duration-200";
 
   const defaultRenderOption = (
     option: SelectOption<T>,
@@ -308,11 +309,19 @@ export function Select<T extends string = string>({
         tabIndex={-1}
         className={cn(
           "px-3 py-2 cursor-pointer text-sm",
+          // Light mode
           isHighlighted
-            ? "bg-hgreen text-white"
+            ? "bg-primary-500 text-white"
             : isSelected
-              ? "bg-green-50 font-semibold"
-              : "hover:bg-gray-100",
+              ? "bg-green-50 font-semibold text-green-900"
+              : "hover:bg-gray-100 text-gray-900",
+          // Dark mode
+          isHighlighted
+            ? "bg-primary-600 text-white"
+            : isSelected
+              ? "dark:bg-green-900/30 dark:font-semibold dark:text-green-400"
+              : "dark:hover:bg-dark-surface-hover dark:text-dark-text",
+          "transition-colors duration-150"
         )}
       >
         {option.render ? option.render(option) : option.label}
@@ -322,7 +331,7 @@ export function Select<T extends string = string>({
 
   const dropdownContent =
     filteredOptions.length === 0 ? (
-      <div className="p-2 text-gray-500 text-sm">No options found</div>
+      <div className="p-2 text-gray-500 dark:text-dark-text-tertiary text-sm">No options found</div>
     ) : (
       filteredOptions.map((option, index) => {
         const isSelected = value === option.value;
@@ -368,7 +377,13 @@ export function Select<T extends string = string>({
           autoComplete="off"
           spellCheck={false}
           className={cn(
-            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2",
+            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            // Light mode
+            "bg-white text-neutral-900",
+            // Dark mode
+            "dark:bg-dark-surface dark:text-dark-text dark:focus-visible:ring-offset-dark-background",
+            // Transitions
+            "transition-colors duration-200",
             disableInput && "cursor-pointer",
           )}
           role="combobox"
@@ -385,16 +400,10 @@ export function Select<T extends string = string>({
             <button
               type="button"
               onClick={handleClear}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-hgreen rounded-full p-0.5"
+              className="text-gray-400 hover:text-gray-600 dark:text-dark-text-tertiary dark:hover:text-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-150"
               aria-label="Clear selection"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <XIcon size="sm" decorative />
             </button>
           )}
 
@@ -412,52 +421,22 @@ export function Select<T extends string = string>({
                 }
                 inputRef.current?.focus();
               }}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-hgreen rounded-full p-0.5"
+              className="text-gray-500 hover:text-gray-700 dark:text-dark-text-tertiary dark:hover:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-150"
               aria-label={isOpen ? "Close dropdown" : "Open dropdown"}
               aria-expanded={isOpen}
             >
-              <svg
-                className={cn(
-                  "w-4 h-4 transition-transform",
-                  isOpen && "rotate-180",
-                )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <ChevronDownIcon
+                size="sm"
+                className={cn("transition-transform", isOpen && "rotate-180")}
+                decorative
+              />
             </button>
           )}
 
           {/* Loading spinner */}
           {isLoading && (
             <div className="pointer-events-none">
-              <svg
-                className="animate-spin h-4 w-4 text-hgreen"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <LoadingSpinnerIcon size="sm" className="text-primary-500" />
             </div>
           )}
         </div>

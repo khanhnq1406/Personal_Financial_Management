@@ -90,6 +90,7 @@ func RegisterRoutes(
 		// Specific routes must come before :id parameterized route
 		transactions.GET("/available-years", h.Transaction.GetAvailableYears)
 		transactions.GET("/financial-report", h.Transaction.GetFinancialReport)
+		transactions.GET("/category-breakdown", h.Transaction.GetCategoryBreakdown)
 		// Parameterized routes
 		transactions.GET("/:id", h.Transaction.GetTransaction)
 		transactions.PUT("/:id", h.Transaction.UpdateTransaction)
@@ -175,5 +176,16 @@ func RegisterRoutes(
 	portfolioSummary.Use(AuthMiddleware())
 	{
 		portfolioSummary.GET("", h.Investment.GetAggregatedPortfolioSummary)
+	}
+
+	// Historical portfolio values route (protected)
+	// This is a top-level route for getting historical portfolio values for charts
+	portfolio := v1.Group("/portfolio")
+	if rateLimiter != nil {
+		portfolio.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	portfolio.Use(AuthMiddleware())
+	{
+		portfolio.GET("/historical-values", h.Investment.GetHistoricalPortfolioValues)
 	}
 }

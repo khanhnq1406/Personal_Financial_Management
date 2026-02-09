@@ -2,21 +2,10 @@
 
 import { memo, useState } from "react";
 import {
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Bar,
-} from "recharts";
-import {
   useQueryGetBalanceHistory,
   useQueryListWallets,
 } from "@/utils/generated/hooks";
-import { ChartSkeleton } from "@/components/loading/Skeleton";
+import { LineChart, ChartWrapper } from "@/components/charts";
 import { formatTickValue } from "@/utils/number-formatter";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -40,7 +29,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
     { refetchOnMount: "always" },
   );
 
-  // Fetch balance history - run in parallel with wallets query (async-parallel optimization)
+  // Fetch balance history - run in parallel with wallets query
   const { data: balanceHistory, isLoading: balanceLoading } =
     useQueryGetBalanceHistory(
       {
@@ -62,72 +51,51 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
       expense: point.expense,
     })) ?? [];
 
-  if (walletsLoading || balanceLoading) {
-    return (
-      <div className="w-full aspect-video p-1">
-        <ChartSkeleton />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full aspect-video p-1">
-      <div className="text-sm">
-        <select
-          className="border-solid border rounded-md p-1 m-2"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-        >
-          {availableYears.map((year) => {
-            return (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            );
-          })}
-        </select>
-        <select
-          className="border-solid border rounded-md p-1"
-          value={selectedWalletId ?? ""}
-          onChange={(e) =>
-            setSelectedWalletId(
-              e.target.value ? parseInt(e.target.value) : undefined,
-            )
-          }
-        >
-          <option value="">All Wallets</option>
-          {walletsData?.wallets?.map((wallet) => {
-            return (
-              <option key={wallet.id} value={wallet.id}>
-                {wallet.walletName}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-      <ResponsiveContainer>
-        <ComposedChart
-          data={chartData}
-          margin={{ top: 10, right: 30, left: 15, bottom: 10 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" />
-          <YAxis tickFormatter={formatTickValue} />
-          <Tooltip
-            formatter={(value: number) => formatCurrency(value, currency)}
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="balance"
-            stroke="#5579eb"
-            name="Total Balance"
-            strokeWidth={2}
-          />
-          <Bar dataKey="income" fill="#35d3ac" name="Income" />
-          <Bar dataKey="expense" fill="#ff7188" name="Expense" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    <ChartWrapper
+      isLoading={walletsLoading || balanceLoading}
+      yearSelector={{
+        value: selectedYear,
+        options: availableYears,
+        onChange: setSelectedYear,
+      }}
+      walletSelector={{
+        value: selectedWalletId,
+        options:
+          walletsData?.wallets?.map((w) => ({
+            id: w.id,
+            name: w.walletName,
+          })) ?? [],
+        onChange: setSelectedWalletId,
+      }}
+    >
+      <LineChart
+        data={chartData}
+        xAxisKey="label"
+        series={[
+          {
+            dataKey: "balance",
+            name: "Total Balance",
+            chartType: "line",
+            color: "#5579eb",
+            strokeWidth: 2,
+          },
+          {
+            dataKey: "income",
+            name: "Income",
+            chartType: "bar",
+            color: "#35d3ac",
+          },
+          {
+            dataKey: "expense",
+            name: "Expense",
+            chartType: "bar",
+            color: "#ff7188",
+          },
+        ]}
+        yAxisFormatter={formatTickValue}
+        tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
+      />
+    </ChartWrapper>
   );
 });

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutationCreateBudget } from "@/utils/generated/hooks";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
@@ -78,7 +78,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}

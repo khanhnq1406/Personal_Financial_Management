@@ -26,7 +26,7 @@ func NewHandlers(services *service.Services) *AllHandlers {
 		Transaction: NewTransactionHandlers(services.Transaction),
 		Category:    NewCategoryHandlers(services.Category),
 		Budget:      NewBudgetHandlers(services.Budget),
-		Investment:  NewInvestmentHandlers(services.Investment),
+		Investment:  NewInvestmentHandlers(services.Investment, services.PortfolioHistory),
 		Gold:        NewGoldHandler(),
 		Silver:      NewSilverHandler(),
 	}

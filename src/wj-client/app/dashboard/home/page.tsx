@@ -32,6 +32,11 @@ type ModalType = "add-transaction" | "transfer-money" | "create-wallet" | null;
 export default function Home() {
   const queryClient = useQueryClient();
   const [modalType, setModalType] = useState<ModalType>(null);
+  // Mobile collapsible sections state
+  const [expandedSections, setExpandedSections] = useState({
+    analytics: false,
+    quickActions: false,
+  });
 
   const getListWallets = useQueryListWallets(
     {
@@ -82,59 +87,149 @@ export default function Home() {
     }
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   return (
-    <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2">
-      <div className="lg:hidden bg-[linear-gradient(to_bottom,#008148_50%,#F7F8FC_50%)] border-none flex justify-center px-4">
-        <div className="w-full max-w-md">
+    <div className="lg:grid lg:grid-cols-[70%_30%] lg:divide-x-2 lg:min-h-0 !border-l-0">
+      {/* Mobile-optimized header with Total Balance */}
+      {/* Top Section: Always visible - Most important */}
+      <div className="lg:hidden bg-gradient-to-b from-primary-50 to-neutral-50 px-3 py-4 mb-2 rounded-lg">
+        <div className="w-full max-w-md mx-auto">
           <TotalBalance />
         </div>
       </div>
-      <div className="flex justify-center py-2 sm:py-4 border-none px-3 sm:px-4">
-        <div className="w-full max-w-4xl mb-3">
-          <div className="font-semibold my-2 text-sm sm:text-base">
-            My Wallets
+
+      {/* Main content area - mobile-optimized spacing */}
+      <div className="flex justify-center px-3 py-2 lg:py-4 lg:px-4 pb-20 lg:pb-4 ">
+        <div className="w-full max-w-4xl">
+          {/* Top Section: My Wallets - always visible (highest priority) */}
+          <section className="mb-3 lg:mb-4">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-neutral-800 mb-2">
+              My Wallets
+            </h2>
+            <BaseCard mobileOptimized>
+              <Wallets getListWallets={getListWallets} />
+            </BaseCard>
+          </section>
+
+          {/* Mobile Quick Actions Section - Horizontal scroll for buttons */}
+          <section className="mb-3 lg:hidden">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button
+                onClick={() => setModalType("add-transaction")}
+                className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium shadow-sm active:shadow-md transition-shadow"
+              >
+                + Add Transaction
+              </button>
+              <button
+                onClick={() => setModalType("transfer-money")}
+                className="flex-shrink-0 px-4 py-2 bg-white text-neutral-700 rounded-lg text-sm font-medium shadow-sm active:shadow-md transition-shadow border border-neutral-200"
+              >
+                Transfer
+              </button>
+              <button
+                onClick={() => setModalType("create-wallet")}
+                className="flex-shrink-0 px-4 py-2 bg-white text-neutral-700 rounded-lg text-sm font-medium shadow-sm active:shadow-md transition-shadow border border-neutral-200"
+              >
+                New Wallet
+              </button>
+            </div>
+          </section>
+
+          {/* Middle Section: Balance Trend - Always visible but compact on mobile */}
+          <section className="mb-3 lg:mb-4">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-neutral-800 mb-2">
+              Balance Trend
+            </h2>
+            <BaseCard mobileOptimized>
+              <Balance availableYears={availableYears} />
+            </BaseCard>
+          </section>
+
+          {/* Bottom Section: Analytics - Collapsible on mobile, always visible on desktop */}
+          {/* <details
+            className="lg:open group mb-3 lg:mb-4"
+            open={expandedSections.analytics}
+          >
+            <summary
+              className="cursor-pointer list-none"
+              onClick={(e) => {
+                // Only toggle manually on mobile to prevent double-toggle
+                if (window.innerWidth < 1024) {
+                  e.preventDefault();
+                  toggleSection("analytics");
+                }
+              }}
+            >
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold text-neutral-800 mb-2 flex items-center justify-between">
+                Analytics
+                <svg
+                  className={`w-5 h-5 lg:hidden transition-transform ${
+                    expandedSections.analytics ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </h2>
+            </summary>
+            {expandedSections.analytics || window.innerWidth >= 1024 ? ( */}
+          <div className="space-y-3 lg:space-y-4">
+            {/* Dominance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Dominance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <Dominance availableYears={availableYears} />
+              </BaseCard>
+            </div>
+
+            {/* Monthly Dominance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Monthly Dominance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <MonthlyDominance availableYears={availableYears} />
+              </BaseCard>
+            </div>
+
+            {/* Account Balance */}
+            <div>
+              <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-neutral-700 mb-2">
+                Account Balance
+              </h3>
+              <BaseCard mobileOptimized noMobileMargin>
+                <AccountBalance availableYears={availableYears} />
+              </BaseCard>
+            </div>
           </div>
-          <BaseCard>
-            <Wallets getListWallets={getListWallets} />
-          </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
-            Total balance fluctuation
-          </div>
-          <BaseCard>
-            <Balance availableYears={availableYears} />
-          </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
-            Dominance
-          </div>
-          <BaseCard>
-            <Dominance availableYears={availableYears} />
-          </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
-            Monthly Dominance
-          </div>
-          <BaseCard>
-            <MonthlyDominance availableYears={availableYears} />
-          </BaseCard>
-          <div className="font-semibold mt-3 sm:mt-4 mb-2 text-sm sm:text-base">
-            Account Balance
-          </div>
-          <BaseCard>
-            <AccountBalance availableYears={availableYears} />
-          </BaseCard>
+          {/* ) : null}
+          </details> */}
         </div>
       </div>
-      <div className="px-3 sm:px-4 ">
-        <div className="grid divide-y-2">
+
+      {/* Desktop sidebar - hidden on mobile */}
+      <div className="hidden lg:block px-4">
+        <div className="grid divide-y-2 sticky top-4">
           <User />
           <TotalBalance />
           <FunctionalButton onOpenModal={(type) => setModalType(type)} />
         </div>
       </div>
-
-      {/* Mobile Functional Buttons */}
-      {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-3 z-40">
-        <FunctionalButton onOpenModal={(type) => setModalType(type)} />
-      </div> */}
 
       {/* Modals */}
       <BaseModal

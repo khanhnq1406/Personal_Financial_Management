@@ -85,33 +85,34 @@ export const routes = {
   portfolio: `/dashboard/portfolio`,
 };
 
-export const resources =
-  "https://raw.githubusercontent.com/khanhnq1406/resources/main/wealthjourney/";
+export const resources = "/resources/icons/";
 
+// Green-based fintech chart colors - professional pastel palette
 export const chartColors = [
-  "#66bfff", // Pastel Blue (similar to #0090FF)
-  "#95a8ff", // Pastel Indigo
-  "#66ffcc", // Pastel Teal
-  "#95e6ff", // Pastel Sky Blue
-  "#d1a9ff", // Pastel Lavender
-  "#66cfff", // Light Pastel Aqua
-  "#66d6ff", // Pastel Cyan (similar to #00BCFF)
-  "#b5d1ff", // Soft Pastel Blue
-  "#a1bfff", // Pastel Periwinkle
-  "#b495ff", // Pastel Violet (similar to #8C52FF)
+  "#22C55E", // Primary green (success, growth)
+  "#14B8A6", // Teal accent (modern, tech-forward)
+  "#86EFAC", // Light green (optimistic)
+  "#5EEAD4", // Mint fresh (clean)
+  "#10B981", // Emerald green (wealth)
+  "#2DD4BF", // Sea green (calm)
+  "#A7F3D0", // Sage green (natural)
+  "#6EE7B7", // Pale green (subtle)
+  "#84CC16", // Lime accent (energetic)
+  "#06B6D4", // Cyan highlight (balance)
 ];
 
+// Pie chart colors - harmonized with green theme
 export const pieChartColors = [
-  "#1E90FF",
-  "#32CD32",
-  "#FF6347",
-  "#8A2BE2",
-  "#FF1493",
-  "#00FA9A",
-  "#FFD700",
-  "#FF4500",
-  "#FFD700",
-  "#ADFF2F",
+  "#22C55E", // Primary green
+  "#14B8A6", // Teal
+  "#10B981", // Emerald
+  "#84CC16", // Lime
+  "#06B6D4", // Cyan
+  "#DC2626", // Red (expenses/losses - contrast)
+  "#F59E0B", // Orange (warning)
+  "#8B5CF6", // Purple (alternative category)
+  "#EC4899", // Pink (another category)
+  "#6366F1", // Indigo (final category)
 ];
 
 export const ButtonType = {

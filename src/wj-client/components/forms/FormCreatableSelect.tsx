@@ -35,7 +35,7 @@ export const FormCreatableSelect = ({
   } = useController(props);
 
   return (
-    <div className={cn("mb-2", className)}>
+    <div className={cn("mb-3 sm:mb-4", className)}>
       <Label htmlFor={props.name} required={required}>
         {label}
       </Label>
@@ -47,7 +47,7 @@ export const FormCreatableSelect = ({
         placeholder={placeholder}
         disabled={disabled}
         isLoading={loading}
-        className="mt-1"
+        className="mt-1 sm:mt-1.5"
       />
       {error && (
         <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>

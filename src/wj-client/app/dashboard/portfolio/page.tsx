@@ -1,27 +1,24 @@
 "use client";
 
 /**
- * Optimized Portfolio Page
+ * Enhanced Portfolio Page with Pull-to-Refresh and Mobile-First Layout
  *
- * Implements Vercel React Best Practices:
- * - bundle-dynamic-imports: Heavy modal loaded dynamically
- * - bundle-preload: Modal preloaded on row hover for perceived speed
- * - rerender-memo: Components memoized to prevent unnecessary re-renders
- * - rerender-functional-setState: Use functional setState for stable callbacks
- * - rendering-hoist-jsx: Static JSX extracted outside component
+ * Phase 5 Refactoring: Data visualization and mobile-optimized analytics
+ *
+ * Features:
+ * - Pull-to-refresh for price updates
+ * - Enhanced PortfolioSummary with animations and charts
+ * - Enhanced InvestmentCard with expandable details
+ * - Mobile-first responsive layout
+ * - Touch-friendly interactions
  */
 
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  startTransition,
-  memo,
-} from "react";
+import { useState, useMemo, useCallback, startTransition } from "react";
 import { BaseCard } from "@/components/BaseCard";
-import { Button } from "@/components/Button";
-import { ButtonType } from "@/app/constants";
-import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
+import {
+  StatsCardSkeleton,
+  TableSkeleton,
+} from "@/components/loading/Skeleton";
 import {
   useQueryListWallets,
   useQueryListUserInvestments,
@@ -33,26 +30,26 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
-import {
-  formatPercent,
-  formatQuantity,
-  getInvestmentTypeLabel,
-  formatTimeAgo,
-  formatPrice,
-} from "./helpers";
 import { Select, SelectOption } from "@/components/select/Select";
-import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   CreateWalletForm,
   AddInvestmentForm,
   InvestmentDetailModal,
   preloadInvestmentDetailModal,
-  TanStackTable,
 } from "@/components/lazy/OptimizedComponents";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { MobileTable } from "@/components/table/MobileTable";
-import type { ColumnDef } from "@tanstack/react-table";
+import { PortfolioSummaryEnhanced } from "./components/PortfolioSummaryEnhanced";
+import { InvestmentList } from "./components/InvestmentList";
+import { InvestmentCardEnhanced } from "./components/InvestmentCardEnhanced";
+import {
+  EmptyInvestmentsState,
+  EmptyWalletsState,
+  UpdateProgressBanner,
+  UpdateSuccessBanner,
+  WalletCashBalanceCard,
+} from "./components";
+import { TabType } from "@/components/modals/InvestmentDetailModal";
 
 const ModalType = {
   CREATE_WALLET: "CREATE_WALLET",
@@ -60,515 +57,8 @@ const ModalType = {
   INVESTMENT_DETAIL: "INVESTMENT_DETAIL",
 } as const;
 
-// Hoist static empty state outside component (rendering-hoist-jsx)
-const EmptyInvestmentWalletsState = memo(
-  ({ onOpenModal }: { onOpenModal: () => void }) => (
-    <div className="flex flex-col items-center justify-center h-full gap-4">
-      <div className="text-center">
-        <p className="text-lg font-semibold text-gray-700">
-          No Investment Wallets
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Create an investment wallet to start tracking your portfolio
-        </p>
-      </div>
-      <Button
-        type={ButtonType.PRIMARY}
-        onClick={onOpenModal}
-        className="w-fit px-4"
-      >
-        Create Investment Wallet
-      </Button>
-    </div>
-  ),
-);
-EmptyInvestmentWalletsState.displayName = "EmptyInvestmentWalletsState";
-
-// Memoized portfolio summary cards to prevent re-renders
-// Prefers display fields (converted to user's preferred currency) when available
-const PortfolioSummaryCards = memo(
-  ({
-    portfolioSummary,
-    userCurrency,
-  }: {
-    portfolioSummary: any;
-    userCurrency: string;
-  }) => {
-    // Use display fields if available, otherwise fall back to base values
-    const displayValue =
-      portfolioSummary.displayTotalValue?.amount ??
-      portfolioSummary.totalValue ??
-      0;
-    const displayCost =
-      portfolioSummary.displayTotalCost?.amount ??
-      portfolioSummary.totalCost ??
-      0;
-    const displayPnl =
-      portfolioSummary.displayTotalPnl?.amount ??
-      portfolioSummary.totalPnl ??
-      0;
-    const displayCurrency =
-      portfolioSummary.displayCurrency ||
-      portfolioSummary.currency ||
-      userCurrency;
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total Value</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
-            {formatCurrency(displayValue, displayCurrency)}
-          </div>
-        </BaseCard>
-
-        <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total Cost</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
-            {formatCurrency(displayCost, displayCurrency)}
-          </div>
-        </BaseCard>
-
-        <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Total PNL</div>
-          <div
-            className={`text-lg sm:text-2xl font-bold mt-1 ${
-              displayPnl >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {formatCurrency(displayPnl, displayCurrency)}
-          </div>
-        </BaseCard>
-
-        <BaseCard className="p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-gray-600">Holdings</div>
-          <div className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
-            {portfolioSummary.totalInvestments || 0}
-          </div>
-        </BaseCard>
-      </div>
-    );
-  },
-);
-PortfolioSummaryCards.displayName = "PortfolioSummaryCards";
-
-// Investment data type for TanStackTable
-type InvestmentData = {
-  id: number;
-  symbol: string;
-  name: string;
-  type: number;
-  quantity: number;
-  averageCost?: number;
-  currentPrice?: number;
-  currentValue?: number;
-  unrealizedPnl?: number;
-  unrealizedPnlPercent?: number;
-  updatedAt?: number;
-  // Native currency of the investment
-  currency?: string;
-  // Purchase unit for display (gold/silver)
-  purchaseUnit?: string;
-  // Display fields (converted to user's preferred currency)
-  displayCurrentValue?: { amount: number; currency: string };
-  displayUnrealizedPnl?: { amount: number; currency: string };
-  displayCurrentPrice?: { amount: number; currency: string };
-  displayAverageCost?: { amount: number; currency: string };
-  displayCurrency?: string;
-  // Wallet name for "All Wallets" view
-  walletName?: string;
-};
-
-// Column definitions for TanStackTable (memoized to prevent recreation)
-const useInvestmentColumns = (
-  onRowClick: (investmentId: number) => void,
-  currency: string,
-  showWalletColumn: boolean,
-): ColumnDef<InvestmentData>[] => {
-  return useMemo(
-    () => [
-      {
-        accessorKey: "symbol",
-        header: "Symbol",
-        cell: (info) => (
-          <span className="font-medium">{info.getValue<string>()}</span>
-        ),
-      },
-      {
-        accessorKey: "name",
-        header: "Name",
-      },
-      // Conditionally include wallet column
-      ...(showWalletColumn
-        ? [
-            {
-              accessorKey: "walletName" as const,
-              header: "Wallet",
-              cell: (info: any) => (
-                <span className="text-gray-600">{info.getValue()}</span>
-              ),
-            },
-          ]
-        : []),
-      {
-        accessorKey: "type",
-        header: "Type",
-        cell: (info) => getInvestmentTypeLabel(info.getValue<number>() as any),
-      },
-      {
-        accessorKey: "quantity",
-        header: "Quantity",
-        cell: (info) => {
-          const row = info.row.original;
-          return formatQuantity(
-            row.quantity,
-            row.type as any,
-            row.purchaseUnit,
-          );
-        },
-      },
-      {
-        accessorKey: "averageCost",
-        header: "Avg Cost",
-        cell: (info) => {
-          const row = info.row.original;
-          const nativeCurrency = row.currency || "USD";
-          const price = (info.getValue() as number | undefined) || 0;
-          return (
-            <div>
-              <span className="font-medium">
-                {formatPrice(
-                  price,
-                  row.type as any,
-                  nativeCurrency,
-                  row.purchaseUnit,
-                )}
-              </span>
-              {row.displayAverageCost && row.displayCurrency && (
-                <span className="text-xs text-gray-500 block">
-                  ≈{" "}
-                  {formatPrice(
-                    row.displayAverageCost.amount || 0,
-                    row.type as any,
-                    row.displayCurrency,
-                    row.purchaseUnit,
-                  )}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "currentPrice",
-        header: "Current Price",
-        cell: (info) => {
-          const row = info.row.original;
-          const nativeCurrency = row.currency || "USD";
-          const price = (info.getValue() as number | undefined) || 0;
-          return (
-            <div>
-              <span className="font-medium">
-                {formatPrice(
-                  price,
-                  row.type as any,
-                  nativeCurrency,
-                  row.purchaseUnit,
-                )}
-              </span>
-              {row.displayCurrentPrice && row.displayCurrency && (
-                <span className="text-xs text-gray-500 block">
-                  ≈{" "}
-                  {formatPrice(
-                    row.displayCurrentPrice.amount || 0,
-                    row.type as any,
-                    row.displayCurrency,
-                    row.purchaseUnit,
-                  )}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "currentValue",
-        header: "Current Value",
-        cell: (info) => {
-          const row = info.row.original;
-          const nativeCurrency = row.currency || "USD";
-          const value = (info.getValue() as number | undefined) || 0;
-          return (
-            <div>
-              <span className="font-medium">
-                {formatCurrency(value, nativeCurrency)}
-              </span>
-              {row.displayCurrentValue && row.displayCurrency && (
-                <span className="text-xs text-gray-500 block">
-                  ≈{" "}
-                  {formatCurrency(
-                    row.displayCurrentValue.amount || 0,
-                    row.displayCurrency,
-                  )}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "unrealizedPnl",
-        header: "PNL",
-        cell: (info) => {
-          const row = info.row.original;
-          const nativeCurrency = row.currency || "USD";
-          const value = (info.getValue() as number | undefined) || 0;
-          return (
-            <div>
-              <span
-                className={`font-medium ${
-                  value >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {formatCurrency(value, nativeCurrency)}
-              </span>
-              {row.displayUnrealizedPnl && row.displayCurrency && (
-                <span className="text-xs text-gray-500 block">
-                  ≈{" "}
-                  {formatCurrency(
-                    row.displayUnrealizedPnl.amount || 0,
-                    row.displayCurrency,
-                  )}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "unrealizedPnlPercent",
-        header: "PNL %",
-        cell: (info) => (
-          <span
-            className={`font-medium ${
-              ((info.getValue() as number | undefined) || 0) >= 0
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
-          >
-            {formatPercent((info.getValue() as number | undefined) || 0)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "updatedAt",
-        header: "Last Updated",
-        cell: (info) => {
-          const timestamp = info.getValue<number>();
-          const { text, colorClass } = formatTimeAgo(timestamp || 0);
-          return <span className={`text-xs ${colorClass}`}>{text}</span>;
-        },
-      },
-      {
-        id: "actions",
-        header: "",
-        cell: (info) => {
-          const investmentId = info.row.original.id;
-          return (
-            <button
-              onClick={() => onRowClick(investmentId)}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
-              aria-label="View investment details"
-            >
-              View Details
-            </button>
-          );
-        },
-      },
-    ],
-    [onRowClick, currency, showWalletColumn],
-  );
-};
-
-// Mobile columns for MobileTable
-const useMobileInvestmentColumns = (
-  onRowClick: (investmentId: number) => void,
-  currency: string,
-  showWalletColumn: boolean,
-) => {
-  return useMemo(
-    () => [
-      {
-        id: "symbol",
-        header: "Symbol",
-        accessorFn: (row: InvestmentData) => row.symbol,
-      },
-      {
-        id: "name",
-        header: "Name",
-        accessorFn: (row: InvestmentData) => row.name,
-      },
-      // Conditionally include wallet column
-      ...(showWalletColumn
-        ? [
-            {
-              id: "walletName",
-              header: "Wallet",
-              accessorFn: (row: InvestmentData) => row.walletName || "",
-            },
-          ]
-        : []),
-      {
-        id: "type",
-        header: "Type",
-        accessorFn: (row: InvestmentData) =>
-          getInvestmentTypeLabel(row.type as any),
-      },
-      {
-        id: "quantity",
-        header: "Quantity",
-        accessorFn: (row: InvestmentData) =>
-          formatQuantity(row.quantity, row.type as any),
-      },
-      {
-        id: "averageCost",
-        header: "Avg Cost",
-        accessorFn: (row: InvestmentData) =>
-          formatPrice(
-            row.averageCost || 0,
-            row.type as any,
-            row.currency || "USD",
-          ),
-      },
-      {
-        id: "currentPrice",
-        header: "Current Price",
-        accessorFn: (row: InvestmentData) =>
-          formatPrice(
-            row.currentPrice || 0,
-            row.type as any,
-            row.currency || "USD",
-          ),
-      },
-      {
-        id: "currentValue",
-        header: "Current Value",
-        accessorFn: (row: InvestmentData) => {
-          const nativeCurrency = row.currency || "USD";
-          const native = formatCurrency(row.currentValue || 0, nativeCurrency);
-          if (row.displayCurrentValue && row.displayCurrency) {
-            const converted = formatCurrency(
-              row.displayCurrentValue.amount || 0,
-              row.displayCurrency,
-            );
-            return `${native} (≈ ${converted})`;
-          }
-          return native;
-        },
-      },
-      {
-        id: "unrealizedPnl",
-        header: "PNL",
-        accessorFn: (row: InvestmentData) => {
-          const nativeCurrency = row.currency || "USD";
-          const native = formatCurrency(row.unrealizedPnl || 0, nativeCurrency);
-          if (row.displayUnrealizedPnl && row.displayCurrency) {
-            const converted = formatCurrency(
-              row.displayUnrealizedPnl.amount || 0,
-              row.displayCurrency,
-            );
-            return `${native} (≈ ${converted})`;
-          }
-          return native;
-        },
-      },
-      {
-        id: "unrealizedPnlPercent",
-        header: "PNL %",
-        accessorFn: (row: InvestmentData) =>
-          formatPercent(row.unrealizedPnlPercent || 0),
-      },
-      {
-        id: "updatedAt",
-        header: "Last Updated",
-        accessorFn: (row: InvestmentData) => {
-          const { text, colorClass } = formatTimeAgo(row.updatedAt || 0);
-          return <span className={`text-xs ${colorClass}`}>{text}</span>;
-        },
-      },
-    ],
-    [currency, showWalletColumn],
-  );
-};
-
-// Memoized holdings table wrapper with TanStackTable and MobileTable
-const HoldingsTable = memo(
-  ({
-    investments,
-    onRowClick,
-    onRowHover,
-    currency,
-    showWalletColumn = false,
-  }: {
-    investments: InvestmentData[];
-    onRowClick: (investmentId: number) => void;
-    onRowHover?: () => void;
-    currency: string;
-    showWalletColumn?: boolean;
-  }) => {
-    const columns = useInvestmentColumns(
-      onRowClick,
-      currency,
-      showWalletColumn,
-    );
-    const mobileColumns = useMobileInvestmentColumns(
-      onRowClick,
-      currency,
-      showWalletColumn,
-    );
-
-    return (
-      <>
-        {/* Desktop Table */}
-        <div
-          className="hidden sm:block overflow-x-auto"
-          onMouseEnter={onRowHover}
-        >
-          {/* Cast TanStackTable to any to bypass generic type constraint */}
-          <TanStackTable
-            data={investments}
-            columns={columns as any}
-            emptyMessage="No investments yet. Add your first investment to get started."
-          />
-        </div>
-
-        {/* Mobile Table */}
-        <div className="sm:hidden">
-          <MobileTable
-            data={investments}
-            columns={mobileColumns}
-            getKey={(investment) => investment.id}
-            renderActions={(investment) => (
-              <button
-                onClick={() => onRowClick(investment.id)}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                aria-label="View investment details"
-              >
-                View Details
-              </button>
-            )}
-            emptyMessage="No investments yet. Add your first investment to get started."
-          />
-        </div>
-      </>
-    );
-  },
-);
-HoldingsTable.displayName = "HoldingsTable";
-
-// Wallet filter value: "all" for all wallets, or wallet ID as string
 type WalletFilterValue = "all" | string;
 
-// Type filter options
 const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
   { value: "0", label: "All Types" },
   {
@@ -597,24 +87,30 @@ const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
   { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 
-export default function PortfolioPage() {
+const SORT_OPTIONS: SelectOption<string>[] = [
+  { value: "name", label: "Name (A-Z)" },
+  { value: "value", label: "Value (High-Low)" },
+  { value: "pnl", label: "PnL (High-Low)" },
+  { value: "pnlPercent", label: "PnL % (High-Low)" },
+];
+
+export default function PortfolioPageEnhanced() {
   const { currency } = useCurrency();
-  // "all" for all wallets, or wallet ID as string
   const [selectedWallet, setSelectedWallet] =
     useState<WalletFilterValue>("all");
-  // Type filter (0 = all types)
   const [typeFilter, setTypeFilter] = useState<string>("0");
+  const [sortBy, setSortBy] = useState<string>("name");
   const [modalType, setModalType] = useState<keyof typeof ModalType | null>(
     null,
   );
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     number | null
   >(null);
-  // UI state for price update feedback
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>();
 
-  // Fetch user's wallets
+  // Fetch data
   const getListWallets = useQueryListWallets(
     {
       pagination: {
@@ -627,7 +123,6 @@ export default function PortfolioPage() {
     { refetchOnMount: "always" },
   );
 
-  // Filter for investment wallets (memoized)
   const investmentWallets = useMemo(() => {
     if (!getListWallets.data?.wallets) return [];
     return getListWallets.data.wallets.filter(
@@ -635,7 +130,6 @@ export default function PortfolioPage() {
     );
   }, [getListWallets.data]);
 
-  // Build wallet filter options
   const walletOptions = useMemo((): SelectOption<string>[] => {
     const options: SelectOption<string>[] = [
       { value: "all", label: "All Investment Wallets" },
@@ -649,7 +143,6 @@ export default function PortfolioPage() {
     return options;
   }, [investmentWallets]);
 
-  // Computed values for API calls
   const walletIdForApi = useMemo(() => {
     if (selectedWallet === "all") return 0;
     return parseInt(selectedWallet, 10);
@@ -664,7 +157,6 @@ export default function PortfolioPage() {
 
   const isAllWalletsView = selectedWallet === "all";
 
-  // Fetch portfolio summary (uses aggregated endpoint)
   const getPortfolioSummary = useQueryGetAggregatedPortfolioSummary(
     {
       walletId: walletIdForApi,
@@ -676,7 +168,6 @@ export default function PortfolioPage() {
     },
   );
 
-  // Fetch investments (uses user investments endpoint)
   const getListInvestments = useQueryListUserInvestments(
     {
       walletId: walletIdForApi,
@@ -689,8 +180,30 @@ export default function PortfolioPage() {
     },
   );
 
-  // Get selected wallet balance and currency for AddInvestmentForm validation
-  // Only available when a specific wallet is selected (not "all")
+  // Sort investments
+  const sortedInvestments = useMemo(() => {
+    const investments = getListInvestments.data?.investments || [];
+    return [...investments].sort((a, b) => {
+      switch (sortBy) {
+        case "value":
+          return (
+            (b.displayCurrentValue?.amount || b.currentValue || 0) -
+            (a.displayCurrentValue?.amount || a.currentValue || 0)
+          );
+        case "pnl":
+          return (
+            (b.displayUnrealizedPnl?.amount || b.unrealizedPnl || 0) -
+            (a.displayUnrealizedPnl?.amount || a.unrealizedPnl || 0)
+          );
+        case "pnlPercent":
+          return (b.unrealizedPnlPercent || 0) - (a.unrealizedPnlPercent || 0);
+        case "name":
+        default:
+          return a.symbol.localeCompare(b.symbol);
+      }
+    });
+  }, [getListInvestments.data?.investments, sortBy]);
+
   const selectedWalletBalance = useMemo(() => {
     if (isAllWalletsView) return 0;
     const walletId = parseInt(selectedWallet, 10);
@@ -705,21 +218,29 @@ export default function PortfolioPage() {
     return wallet?.balance?.currency || "USD";
   }, [selectedWallet, investmentWallets, isAllWalletsView]);
 
-  // Query client for invalidating queries
   const queryClient = useQueryClient();
+
+  // Refetch all data
+  const refetchAllData = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentListUserInvestments],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
+      }),
+    ]);
+  }, [queryClient]);
 
   // Update prices mutation
   const updatePricesMutation = useMutationUpdatePrices({
-    onSuccess: (data) => {
-      // Show update in progress banner
+    onSuccess: async (data) => {
       setShowUpdateBanner(true);
       console.log(`Price update started: ${data.message}`);
 
-      // Polling mechanism to check for updated prices
-      // We'll check every 2 seconds for up to 15 seconds (max 7 attempts)
       let pollAttempts = 0;
       const maxPollAttempts = 7;
-      const pollInterval = 2000; // 2 seconds
+      const pollInterval = 2000;
 
       const pollForUpdates = () => {
         pollAttempts++;
@@ -727,37 +248,18 @@ export default function PortfolioPage() {
           `Checking for price updates (attempt ${pollAttempts}/${maxPollAttempts})...`,
         );
 
-        // Refetch data
-        queryClient
-          .invalidateQueries({
-            queryKey: [EVENT_InvestmentListUserInvestments],
-          })
-          .then(() => {
-            return queryClient.invalidateQueries({
-              queryKey: [EVENT_InvestmentGetAggregatedPortfolioSummary],
-            });
-          });
+        refetchAllData();
 
-        // Check if we should continue polling or show success
         if (pollAttempts >= maxPollAttempts) {
-          // Max attempts reached, assume complete
           setShowUpdateBanner(false);
           setShowSuccessBanner(true);
-          console.log(
-            "Price update polling complete (max attempts reached). Showing success.",
-          );
-
-          // Auto-hide success banner after 4 seconds
-          setTimeout(() => {
-            setShowSuccessBanner(false);
-          }, 4000);
+          console.log("Price update polling complete. Showing success.");
+          setTimeout(() => setShowSuccessBanner(false), 4000);
         } else {
-          // Continue polling
           setTimeout(pollForUpdates, pollInterval);
         }
       };
 
-      // Start polling after initial delay (give backend time to start processing)
       setTimeout(pollForUpdates, 2000);
     },
     onError: (error: any) => {
@@ -766,7 +268,6 @@ export default function PortfolioPage() {
     },
   });
 
-  // Memoize modal title
   const modalTitle = useMemo(() => {
     switch (modalType) {
       case ModalType.CREATE_WALLET:
@@ -780,7 +281,6 @@ export default function PortfolioPage() {
     }
   }, [modalType]);
 
-  // Use startTransition for non-urgent state updates (rerender-transitions)
   const handleOpenModal = useCallback(
     (type: keyof typeof ModalType, investmentId?: number) => {
       startTransition(() => {
@@ -800,28 +300,59 @@ export default function PortfolioPage() {
 
   const handleModalSuccess = useCallback(() => {
     startTransition(() => {
-      getListWallets.refetch();
-      getPortfolioSummary.refetch();
-      getListInvestments.refetch();
+      refetchAllData();
       handleCloseModal();
     });
-  }, [
-    getListWallets,
-    getPortfolioSummary,
-    getListInvestments,
-    handleCloseModal,
-  ]);
+  }, [refetchAllData, handleCloseModal]);
 
-  // Preload modal on hover for perceived speed (bundle-preload)
   const handleRowHover = useCallback(() => {
     preloadInvestmentDetailModal();
   }, []);
 
+  const handleRefreshPrices = useCallback(() => {
+    updatePricesMutation.mutate({
+      investmentIds: [],
+      forceRefresh: true,
+    });
+  }, [updatePricesMutation]);
+
+  const handleBuyMore = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("overview");
+    },
+    [handleOpenModal],
+  );
+
+  const handleSell = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("add-transaction");
+    },
+    [handleOpenModal],
+  );
+
+  const handleEdit = useCallback(
+    (investmentId: number) => {
+      handleOpenModal(ModalType.INVESTMENT_DETAIL, investmentId);
+      setActiveTab("transactions");
+    },
+    [handleOpenModal],
+  );
+
   // Loading state
   if (getListWallets.isLoading || getListWallets.isPending) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner text="Loading portfolio..." />
+      <div className="flex flex-col gap-6 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="h-8 w-48 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-10 w-40 bg-neutral-200 rounded animate-pulse" />
+        </div>
+        <StatsCardSkeleton cards={4} />
+        <div className="bg-white rounded-lg shadow-card p-4 sm:p-6">
+          <div className="h-6 w-32 bg-neutral-200 rounded animate-pulse mb-4" />
+          <TableSkeleton rows={5} showAvatar={false} />
+        </div>
       </div>
     );
   }
@@ -830,7 +361,7 @@ export default function PortfolioPage() {
   if (getListWallets.error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-lred text-center">
+        <div className="text-danger-600 text-center">
           <p className="text-lg font-semibold">Error loading portfolio</p>
           <p className="text-sm">{getListWallets.error.message}</p>
         </div>
@@ -838,15 +369,14 @@ export default function PortfolioPage() {
     );
   }
 
-  const portfolioSummary = getPortfolioSummary.data;
-  const investments = (getListInvestments.data?.investments ||
-    []) as InvestmentData[];
+  const portfolioSummary = getPortfolioSummary.data?.data;
+  const investments = sortedInvestments;
 
-  // No investment wallets - render empty state with modal
+  // No investment wallets
   if (investmentWallets.length === 0) {
     return (
       <>
-        <EmptyInvestmentWalletsState
+        <EmptyWalletsState
           onOpenModal={() => handleOpenModal(ModalType.CREATE_WALLET)}
         />
         <BaseModal
@@ -867,23 +397,24 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <div className="flex justify-center py-3 sm:py-4 px-3 sm:px-6">
-        <div className="w-full space-y-3 sm:space-y-4">
+      <div className="flex justify-center w-full">
+        <div className="w-full max-w-7xl space-y-3 sm:space-y-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
-            <h1 className="text-lg sm:text-xl font-bold">Investment Portfolio</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900">
+              Investment Portfolio
+            </h1>
 
             {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              {/* Wallet Selector */}
               <div className="w-full sm:w-56 md:w-fit">
                 <Select
                   options={walletOptions}
                   value={selectedWallet}
                   onChange={(value) => {
-                    startTransition(() => {
-                      setSelectedWallet(value as WalletFilterValue);
-                    });
+                    startTransition(() =>
+                      setSelectedWallet(value as WalletFilterValue),
+                    );
                   }}
                   placeholder="Select Wallet"
                   clearable={false}
@@ -891,17 +422,27 @@ export default function PortfolioPage() {
                 />
               </div>
 
-              {/* Type Filter */}
-              <div className="w-full sm:w-full md:w-48">
+              <div className="w-full sm:w-full md:w-40">
                 <Select
                   options={TYPE_FILTER_OPTIONS}
                   value={typeFilter}
                   onChange={(value) => {
-                    startTransition(() => {
-                      setTypeFilter(value);
-                    });
+                    startTransition(() => setTypeFilter(value));
                   }}
                   placeholder="Filter by Type"
+                  clearable={false}
+                  disableFilter={true}
+                />
+              </div>
+
+              <div className="w-full sm:w-full md:w-40">
+                <Select
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(value) => {
+                    startTransition(() => setSortBy(value));
+                  }}
+                  placeholder="Sort by"
                   clearable={false}
                   disableFilter={true}
                 />
@@ -911,216 +452,79 @@ export default function PortfolioPage() {
 
           {/* Portfolio Summary Cards */}
           {getPortfolioSummary.isLoading || getPortfolioSummary.isPending ? (
-            <div className="flex items-center justify-center h-48">
-              <LoadingSpinner text="Loading summary..." />
-            </div>
-          ) : portfolioSummary?.data ? (
-            <PortfolioSummaryCards
-              portfolioSummary={portfolioSummary.data}
+            <StatsCardSkeleton cards={4} />
+          ) : portfolioSummary ? (
+            <PortfolioSummaryEnhanced
+              portfolioSummary={portfolioSummary}
               userCurrency={currency}
+              onRefreshPrices={handleRefreshPrices}
+              onAddInvestment={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
+              isRefreshing={updatePricesMutation.isPending || showUpdateBanner}
             />
           ) : null}
 
-          {/* Update Banner - Shows during price update */}
-          {showUpdateBanner && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
-              <svg
-                className="animate-spin h-5 w-5 text-blue-600"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900">
-                  Fetching latest prices from market...
-                </p>
-                <p className="text-xs text-blue-700">
-                  This may take 5-15 seconds. We're checking for updates every 2
-                  seconds.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Update Banner */}
+          {showUpdateBanner && <UpdateProgressBanner />}
 
-          {/* Success Banner - Shows after successful update */}
-          {showSuccessBanner && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
-              <svg
-                className="h-5 w-5 text-green-600"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-900">
-                  Prices updated successfully!
-                </p>
-                <p className="text-xs text-green-700">
-                  Your portfolio is now showing the latest market prices.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Success Banner */}
+          {showSuccessBanner && <UpdateSuccessBanner />}
 
           {/* Wallet Cash Balance */}
-          {selectedWallet &&
-            selectedWallet !== "all" &&
-            (() => {
-              const wallet = investmentWallets.find(
+          {!isAllWalletsView && (
+            <WalletCashBalanceCard
+              wallet={investmentWallets.find(
                 (w) => w.id === Number(selectedWallet),
-              );
-              if (!wallet) return null;
-              return (
-                <BaseCard className="p-4 mb-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="text-sm text-gray-600">
-                        Available Cash
-                      </div>
-                      <div className="text-xl font-bold text-bg">
-                        {formatCurrency(
-                          wallet.displayBalance?.amount ??
-                            wallet.balance?.amount ??
-                            0,
-                          wallet.displayCurrency ||
-                            wallet.balance?.currency ||
-                            currency,
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Ready to invest
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-600">
-                        Total Wallet Value
-                      </div>
-                      <div className="text-xl font-bold">
-                        {formatCurrency(
-                          wallet.displayTotalValue?.amount ??
-                            wallet.totalValue?.amount ??
-                            0,
-                          wallet.displayCurrency ||
-                            wallet.totalValue?.currency ||
-                            currency,
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Cash + Investments
-                      </div>
-                    </div>
-                  </div>
-                </BaseCard>
-              );
-            })()}
+              )}
+              userCurrency={currency}
+            />
+          )}
 
-          {/* Holdings Table */}
+          {/* Holdings - Mobile Card View */}
           <BaseCard className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Holdings</h2>
-              <div className="flex gap-2">
-                <Button
-                  type={ButtonType.SECONDARY}
-                  onClick={() =>
-                    updatePricesMutation.mutate({
-                      investmentIds: [], // Empty = update all investments
-                      forceRefresh: true, // Bypass cache for fresh data
-                    })
-                  }
-                  disabled={
-                    updatePricesMutation.isPending ||
-                    showUpdateBanner ||
-                    investmentWallets.length === 0
-                  }
-                  className="w-auto px-4"
-                >
-                  <svg
-                    className={`w-4 h-4 mr-2 ${
-                      updatePricesMutation.isPending || showUpdateBanner
-                        ? "animate-spin"
-                        : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  {updatePricesMutation.isPending || showUpdateBanner
-                    ? "Updating..."
-                    : "Refresh Prices"}
-                </Button>
-                <Button
-                  type={ButtonType.PRIMARY}
-                  onClick={() => handleOpenModal(ModalType.ADD_INVESTMENT)}
-                  className="w-auto px-4"
-                >
-                  Add Investment
-                </Button>
-              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-800">
+                Holdings
+              </h2>
             </div>
 
             {getListInvestments.isLoading || getListInvestments.isPending ? (
-              <div className="flex items-center justify-center h-48">
-                <LoadingSpinner text="Loading holdings..." />
-              </div>
+              <TableSkeleton rows={5} showAvatar={false} />
             ) : investments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>
-                  No investments yet. Add your first investment to get started.
-                </p>
-              </div>
+              <EmptyInvestmentsState />
             ) : (
-              <HoldingsTable
-                investments={investments}
-                onRowClick={(id) =>
-                  handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
-                }
-                onRowHover={handleRowHover}
-                currency={currency}
-                showWalletColumn={isAllWalletsView}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {investments.map((investment) => (
+                  <InvestmentCardEnhanced
+                    key={investment.id}
+                    investment={investment}
+                    userCurrency={currency}
+                    onClick={(id) =>
+                      handleOpenModal(ModalType.INVESTMENT_DETAIL, id)
+                    }
+                    // onRowHover={handleRowHover} // Not supported in InvestmentCardEnhanced
+                    showWallet={isAllWalletsView}
+                    onBuyMore={handleBuyMore}
+                    onSell={handleSell}
+                    onEdit={handleEdit}
+                  />
+                ))}
+              </div>
             )}
           </BaseCard>
         </div>
       </div>
 
-      {/* Modal - InvestmentDetailModal handles its own BaseModal */}
+      {/* Modals */}
       {modalType === ModalType.INVESTMENT_DETAIL && selectedInvestmentId && (
         <InvestmentDetailModal
           isOpen={modalType === ModalType.INVESTMENT_DETAIL}
           onClose={handleCloseModal}
           investmentId={selectedInvestmentId}
           onSuccess={handleModalSuccess}
+          activeTabProp={activeTab}
         />
       )}
 
-      {/* BaseModal for other modals */}
       <BaseModal
         isOpen={modalType !== null && modalType !== ModalType.INVESTMENT_DETAIL}
         onClose={handleCloseModal}

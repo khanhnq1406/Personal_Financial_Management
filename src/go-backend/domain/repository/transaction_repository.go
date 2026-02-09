@@ -264,3 +264,123 @@ func (r *transactionRepository) TransferToWallet(ctx context.Context, fromWallet
 
 	return nil
 }
+
+// GetCategoryBreakdown retrieves category-wise transaction summary grouped by currency
+func (r *transactionRepository) GetCategoryBreakdown(ctx context.Context, userID int32, filter TransactionFilter) ([]*CategoryBreakdownByCurrency, error) {
+	query := r.db.DB.WithContext(ctx).Table("transaction t").
+		Select(
+			"t.category_id as category_id",
+			"c.name as category_name",
+			"c.type as type",
+			"w.currency as currency",
+			"COALESCE(SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END), 0) as income",
+			"COALESCE(SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END), 0) as total",
+			"COUNT(t.id) as transaction_count",
+		).
+		Joins("JOIN category c ON t.category_id = c.id").
+		Joins("JOIN wallet w ON w.id = t.wallet_id").
+		Where("w.user_id = ? AND w.status = 1 AND t.deleted_at IS NULL", userID)
+
+	// Apply wallet filter with clear precedence
+	if len(filter.WalletIDs) > 0 {
+		// Use WalletIDs array if provided
+		query = query.Where("t.wallet_id IN ?", filter.WalletIDs)
+	} else if filter.WalletID != nil {
+		// Fall back to single WalletID if WalletIDs is not provided
+		query = query.Where("t.wallet_id = ?", *filter.WalletID)
+	}
+	if filter.StartDate != nil {
+		query = query.Where("t.date >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		query = query.Where("t.date <= ?", *filter.EndDate)
+	}
+
+	// Filter by category type if specified
+	if filter.Type != nil {
+		var categoryType int32
+		switch *filter.Type {
+		case v1.TransactionType_TRANSACTION_TYPE_INCOME:
+			categoryType = int32(v1.CategoryType_CATEGORY_TYPE_INCOME)
+		case v1.TransactionType_TRANSACTION_TYPE_EXPENSE:
+			categoryType = int32(v1.CategoryType_CATEGORY_TYPE_EXPENSE)
+		default:
+			categoryType = 0
+		}
+		if categoryType != 0 {
+			query = query.Where("c.type = ?", categoryType)
+		}
+	}
+
+	// Group by category and currency to aggregate per-currency amounts
+	query = query.Group("t.category_id, c.name, c.type, w.currency")
+
+	rows, err := query.Rows()
+	if err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to get category breakdown", err)
+	}
+	defer rows.Close()
+
+	// First, collect all raw breakdown items
+	type rawBreakdownItem struct {
+		CategoryID       int32
+		CategoryName     string
+		Type             int32
+		Currency         string
+		Income           int64
+		Total            int64
+		TransactionCount int32
+	}
+
+	var rawItems []rawBreakdownItem
+	for rows.Next() {
+		var item rawBreakdownItem
+		if err := rows.Scan(&item.CategoryID, &item.CategoryName, &item.Type, &item.Currency, &item.Income, &item.Total, &item.TransactionCount); err != nil {
+			return nil, apperrors.NewInternalErrorWithCause("failed to scan category breakdown", err)
+		}
+		rawItems = append(rawItems, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("error iterating category breakdown", err)
+	}
+
+	// Aggregate by category, combining multiple currencies into a map
+	categoryMap := make(map[int32]*CategoryBreakdownByCurrency)
+	for _, raw := range rawItems {
+		if existing, ok := categoryMap[raw.CategoryID]; ok {
+			// Add to existing category's currency map
+			if existing.AmountsByCurrency == nil {
+				existing.AmountsByCurrency = make(map[string]int64)
+			}
+			// Determine the amount based on category type
+			amount := raw.Total
+			if raw.Type == int32(v1.CategoryType_CATEGORY_TYPE_INCOME) {
+				amount = raw.Income
+			}
+			existing.AmountsByCurrency[raw.Currency] += amount
+			existing.TransactionCount += raw.TransactionCount
+		} else {
+			// Create new category entry
+			amount := raw.Total
+			if raw.Type == int32(v1.CategoryType_CATEGORY_TYPE_INCOME) {
+				amount = raw.Income
+			}
+			categoryMap[raw.CategoryID] = &CategoryBreakdownByCurrency{
+				CategoryID:        raw.CategoryID,
+				CategoryName:      raw.CategoryName,
+				Type:              raw.Type,
+				AmountsByCurrency: map[string]int64{raw.Currency: amount},
+				TransactionCount:  raw.TransactionCount,
+			}
+		}
+	}
+
+	// Convert map to slice
+	results := make([]*CategoryBreakdownByCurrency, 0, len(categoryMap))
+	for _, item := range categoryMap {
+		results = append(results, item)
+	}
+
+	return results, nil
+}

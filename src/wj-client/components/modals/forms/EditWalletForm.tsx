@@ -8,7 +8,7 @@ import {
   useMutationUpdateWallet,
   useMutationAdjustBalance,
 } from "@/utils/generated/hooks";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
@@ -217,7 +217,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}

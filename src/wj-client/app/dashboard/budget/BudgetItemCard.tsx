@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { BudgetItem } from "@/gen/protobuf/v1/budget";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -22,6 +23,9 @@ interface BudgetItemCardProps {
   onEditItem: (budgetId: number, item: BudgetItem) => void;
 }
 
+/**
+ * Enhanced BudgetItemCard with improved spacing and better visual hierarchy.
+ */
 export function BudgetItemCard({
   item,
   budgetId,
@@ -79,47 +83,79 @@ export function BudgetItemCard({
   const isPending =
     updateBudgetItemMutation.isPending || deleteBudgetItemMutation.isPending;
 
+  const isChecked = item.checked ?? false;
+  const itemAmount = item.displayTotal?.amount ?? item.total?.amount ?? 0;
+
   return (
     <>
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
-        <div className="flex items-center gap-3 flex-1">
-          <Checkbox
-            checked={item.checked ?? false}
-            onChange={handleCheckedChange}
-            disabled={isPending}
-          />
-          <div className="flex flex-col">
-            <span
-              className={`font-semibold text-sm ${item.checked ? "line-through text-gray-400" : ""}`}
-            >
-              {item.name}
-            </span>
-            <span className="text-xs text-gray-500">
-              {formatCurrency(item.displayTotal?.amount ?? item.total?.amount ?? 0, currency)}
-            </span>
+      <motion.div
+        layout
+        initial={{ opacity: 0, x: -16 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 16 }}
+        transition={{ duration: 0.2 }}
+        className={`group flex items-center gap-3 py-2.5 px-3 rounded-lg border transition-all duration-200 ${
+          isChecked
+            ? "bg-gray-50 border-gray-200"
+            : "bg-white border-gray-200 hover:border-primary-600 hover:bg-gray-50/50"
+        }`}
+      >
+        {/* Checkbox */}
+        <Checkbox
+          checked={isChecked}
+          onChange={handleCheckedChange}
+          disabled={isPending}
+          className="shrink-0"
+        />
+
+        {/* Item Info */}
+        <div className="flex-1 min-w-0">
+          <div
+            className={`text-sm font-medium truncate transition-colors ${
+              isChecked ? "text-gray-400 line-through" : "text-gray-900"
+            }`}
+          >
+            {item.name}
+          </div>
+          <div
+            className={`text-xs mt-0.5 transition-colors ${
+              isChecked ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            {formatCurrency(itemAmount, currency)}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Actions - Visible on Hover */}
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             type={ButtonType.IMG}
-            src={`${resources}/editing.png`}
+            src={`${resources}/editing.svg`}
             onClick={() => onEditItem(budgetId, item)}
             disabled={isPending}
+            className="p-1.5 hover:bg-primary-50 rounded-md transition-colors"
           />
           <Button
             type={ButtonType.IMG}
-            src={`${resources}/remove.png`}
+            src={`${resources}/remove.svg`}
             onClick={handleDeleteItem}
             disabled={isPending}
+            className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
           />
         </div>
-      </div>
+      </motion.div>
 
       {showDeleteDialog && (
         <ConfirmationDialog
           title="Delete Budget Item"
-          message={`Are you sure you want to delete "${item.name}"?`}
+          message={
+            <div className="flex flex-col gap-1.5">
+              <p>{`Are you sure you want to delete "${item.name}"?`}</p>
+              <p className="text-sm text-gray-500">
+                This action cannot be undone.
+              </p>
+            </div>
+          }
           confirmText="Delete"
           cancelText="Cancel"
           onConfirm={confirmDeleteItem}

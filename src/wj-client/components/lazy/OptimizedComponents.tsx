@@ -33,7 +33,7 @@ function TableLoadingFallback() {
 function ModalLoadingFallback() {
   return (
     <div className="flex items-center justify-center p-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hgreen"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
     </div>
   );
 }
@@ -136,6 +136,23 @@ export const preloadCharts = () => {
   import("../../app/dashboard/home/AccountBalance");
 };
 
+export const preloadTransactionForms = () => {
+  import("../modals/forms/AddTransactionForm");
+  import("../modals/forms/EditTransactionForm");
+  import("../modals/forms/TransferMoneyForm");
+};
+
+export const preloadBudgetForms = () => {
+  import("../modals/forms/CreateBudgetForm");
+  import("../modals/forms/EditBudgetForm");
+  import("../modals/forms/CreateBudgetItemForm");
+  import("../modals/forms/EditBudgetItemForm");
+};
+
+export const preloadInvestmentForms = () => {
+  import("../modals/forms/AddInvestmentForm");
+};
+
 /**
  * Form Components - lazy loaded for modals
  * Rule: bundle-conditional - Load only when modal opens
@@ -177,6 +194,61 @@ export const AddInvestmentForm = dynamic(
   () =>
     import("../modals/forms/AddInvestmentForm").then(
       (mod) => mod.AddInvestmentForm
+    ),
+  {
+    loading: () => <ModalLoadingFallback />,
+    ssr: false,
+  }
+);
+
+export const EditTransactionForm = dynamic(
+  () =>
+    import("../modals/forms/EditTransactionForm").then(
+      (mod) => mod.EditTransactionForm
+    ),
+  {
+    loading: () => <ModalLoadingFallback />,
+    ssr: false,
+  }
+);
+
+export const CreateBudgetForm = dynamic(
+  () =>
+    import("../modals/forms/CreateBudgetForm").then(
+      (mod) => mod.CreateBudgetForm
+    ),
+  {
+    loading: () => <ModalLoadingFallback />,
+    ssr: false,
+  }
+);
+
+export const EditBudgetForm = dynamic(
+  () =>
+    import("../modals/forms/EditBudgetForm").then(
+      (mod) => mod.EditBudgetForm
+    ),
+  {
+    loading: () => <ModalLoadingFallback />,
+    ssr: false,
+  }
+);
+
+export const CreateBudgetItemForm = dynamic(
+  () =>
+    import("../modals/forms/CreateBudgetItemForm").then(
+      (mod) => mod.CreateBudgetItemForm
+    ),
+  {
+    loading: () => <ModalLoadingFallback />,
+    ssr: false,
+  }
+);
+
+export const EditBudgetItemForm = dynamic(
+  () =>
+    import("../modals/forms/EditBudgetItemForm").then(
+      (mod) => mod.EditBudgetItemForm
     ),
   {
     loading: () => <ModalLoadingFallback />,

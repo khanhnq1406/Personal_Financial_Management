@@ -1454,6 +1454,15 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 		investmentsByTypeSlice = append(investmentsByTypeSlice, typeSummary)
 	}
 
+	// Calculate top and worst performers
+	topPerformers, worstPerformers, err := s.calculatePerformers(ctx, userID, investments, preferredCurrency)
+	if err != nil {
+		log.Printf("Warning: failed to calculate performers: %v", err)
+		// Don't fail - continue with empty performers
+		topPerformers = []*investmentv1.InvestmentPerformance{}
+		worstPerformers = []*investmentv1.InvestmentPerformance{}
+	}
+
 	return &investmentv1.GetPortfolioSummaryResponse{
 		Success: true,
 		Message: "Portfolio summary retrieved successfully",
@@ -1469,6 +1478,8 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 			// Currency fields - summary is in user's preferred currency
 			Currency:        preferredCurrency,
 			DisplayCurrency: preferredCurrency,
+			TopPerformers:  topPerformers,
+			WorstPerformers: worstPerformers,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
@@ -2061,6 +2072,15 @@ func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, u
 		investmentsByTypeSlice = append(investmentsByTypeSlice, typeSummary)
 	}
 
+	// Calculate top and worst performers
+	topPerformers, worstPerformers, err := s.calculatePerformers(ctx, userID, investments, preferredCurrency)
+	if err != nil {
+		log.Printf("Warning: failed to calculate performers: %v", err)
+		// Don't fail - continue with empty performers
+		topPerformers = []*investmentv1.InvestmentPerformance{}
+		worstPerformers = []*investmentv1.InvestmentPerformance{}
+	}
+
 	return &investmentv1.GetPortfolioSummaryResponse{
 		Success: true,
 		Message: "Aggregated portfolio summary retrieved successfully",
@@ -2074,10 +2094,179 @@ func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, u
 			TotalInvestments:  int32(len(investments)),
 			InvestmentsByType: investmentsByTypeSlice,
 			// Currency fields - summary is in user's preferred currency
-			Currency:        preferredCurrency,
-			DisplayCurrency: preferredCurrency,
+			Currency:          preferredCurrency,
+			DisplayCurrency:   preferredCurrency,
+			TopPerformers:     topPerformers,
+			WorstPerformers:   worstPerformers,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// ListInvestmentWallets retrieves all investment wallets for a user.
+func (s *investmentService) ListInvestmentWallets(ctx context.Context, userID int32) ([]*models.Wallet, error) {
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Get all wallets for the user
+	wallets, _, err := s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+		Limit: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter to only investment wallets
+	var investmentWallets []*models.Wallet
+	for _, wallet := range wallets {
+		if walletv1.WalletType(wallet.Type) == walletv1.WalletType_INVESTMENT {
+			investmentWallets = append(investmentWallets, wallet)
+		}
+	}
+
+	return investmentWallets, nil
+}
+
+// calculatePerformers computes top and worst performing investments based on unrealized PNL percentage.
+// Returns top 3 and worst 3 performers.
+func (s *investmentService) calculatePerformers(ctx context.Context, userID int32, investments []*models.Investment, preferredCurrency string) (topPerformers, worstPerformers []*investmentv1.InvestmentPerformance, err error) {
+	// Build list of investments with their performance
+	type investmentPerformance struct {
+		investment         *models.Investment
+		unrealizedPNL      int64
+		unrealizedPNLPercent float64
+	}
+
+	var performances []investmentPerformance
+
+	for _, inv := range investments {
+		// Skip investments with zero cost (no PNL calculation possible)
+		if inv.TotalCost == 0 {
+			continue
+		}
+
+		// Convert to preferred currency if needed
+		unrealizedPNL := inv.UnrealizedPNL
+		if inv.Currency != preferredCurrency {
+			var err error
+			unrealizedPNL, err = s.fxRateSvc.ConvertAmount(ctx, inv.UnrealizedPNL, inv.Currency, preferredCurrency)
+			if err != nil {
+				// Use original value if conversion fails
+				unrealizedPNL = inv.UnrealizedPNL
+			}
+		}
+
+		// Calculate PNL percentage
+		unrealizedPNLPercent := (float64(unrealizedPNL) / float64(inv.TotalCost)) * 100
+
+		performances = append(performances, investmentPerformance{
+			investment:           inv,
+			unrealizedPNL:        unrealizedPNL,
+			unrealizedPNLPercent: unrealizedPNLPercent,
+		})
+	}
+
+	// Sort by PNL percentage (descending for top performers, ascending for worst)
+	// For top performers: highest PNL first
+	// For worst performers: lowest PNL first (most negative)
+
+	// Separate positive and negative performers
+	var positivePerformers []investmentPerformance
+	var negativePerformers []investmentPerformance
+
+	for _, p := range performances {
+		if p.unrealizedPNLPercent >= 0 {
+			positivePerformers = append(positivePerformers, p)
+		} else {
+			negativePerformers = append(negativePerformers, p)
+		}
+	}
+
+	// Sort positive performers by PNL percent descending
+	for i := 0; i < len(positivePerformers); i++ {
+		for j := i + 1; j < len(positivePerformers); j++ {
+			if positivePerformers[j].unrealizedPNLPercent > positivePerformers[i].unrealizedPNLPercent {
+				positivePerformers[i], positivePerformers[j] = positivePerformers[j], positivePerformers[i]
+			}
+		}
+	}
+
+	// Sort negative performers by PNL percent ascending (most negative first)
+	for i := 0; i < len(negativePerformers); i++ {
+		for j := i + 1; j < len(negativePerformers); j++ {
+			if negativePerformers[j].unrealizedPNLPercent < negativePerformers[i].unrealizedPNLPercent {
+				negativePerformers[i], negativePerformers[j] = negativePerformers[j], negativePerformers[i]
+			}
+		}
+	}
+
+	// Take top 3 from each list
+	maxPerfomers := 3
+	if len(positivePerformers) > maxPerfomers {
+		positivePerformers = positivePerformers[:maxPerfomers]
+	}
+	if len(negativePerformers) > maxPerfomers {
+		negativePerformers = negativePerformers[:maxPerfomers]
+	}
+
+	// Convert to protobuf format
+	topPerformers = make([]*investmentv1.InvestmentPerformance, 0, len(positivePerformers))
+	for _, p := range positivePerformers {
+		displayUnrealizedPNL := p.unrealizedPNL
+		displayCurrency := preferredCurrency
+
+		// If investment currency differs from preferred, convert for display
+		if p.investment.Currency != preferredCurrency {
+			converted, err := s.fxRateSvc.ConvertAmount(ctx, p.investment.UnrealizedPNL, p.investment.Currency, preferredCurrency)
+			if err == nil {
+				displayUnrealizedPNL = converted
+			}
+		}
+
+		topPerformers = append(topPerformers, &investmentv1.InvestmentPerformance{
+			InvestmentId:       p.investment.ID,
+			Symbol:             p.investment.Symbol,
+			Name:               p.investment.Name,
+			Type:               investmentv1.InvestmentType(p.investment.Type),
+			UnrealizedPnl:      p.unrealizedPNL,
+			UnrealizedPnlPercent: p.unrealizedPNLPercent,
+			DisplayUnrealizedPnl: &investmentv1.Money{
+				Amount:   displayUnrealizedPNL,
+				Currency: displayCurrency,
+			},
+			DisplayCurrency: displayCurrency,
+		})
+	}
+
+	worstPerformers = make([]*investmentv1.InvestmentPerformance, 0, len(negativePerformers))
+	for _, p := range negativePerformers {
+		displayUnrealizedPNL := p.unrealizedPNL
+		displayCurrency := preferredCurrency
+
+		// If investment currency differs from preferred, convert for display
+		if p.investment.Currency != preferredCurrency {
+			converted, err := s.fxRateSvc.ConvertAmount(ctx, p.investment.UnrealizedPNL, p.investment.Currency, preferredCurrency)
+			if err == nil {
+				displayUnrealizedPNL = converted
+			}
+		}
+
+		worstPerformers = append(worstPerformers, &investmentv1.InvestmentPerformance{
+			InvestmentId:       p.investment.ID,
+			Symbol:             p.investment.Symbol,
+			Name:               p.investment.Name,
+			Type:               investmentv1.InvestmentType(p.investment.Type),
+			UnrealizedPnl:      p.unrealizedPNL,
+			UnrealizedPnlPercent: p.unrealizedPNLPercent,
+			DisplayUnrealizedPnl: &investmentv1.Money{
+				Amount:   displayUnrealizedPNL,
+				Currency: displayCurrency,
+			},
+			DisplayCurrency: displayCurrency,
+		})
+	}
+
+	return topPerformers, worstPerformers, nil
 }
 

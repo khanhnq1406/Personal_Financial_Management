@@ -59,6 +59,13 @@ service TransactionService {
       get: "/api/v1/transactions/financial-report"
     };
   }
+
+  // Get category breakdown for a date range
+  rpc GetCategoryBreakdown(GetCategoryBreakdownRequest) returns (GetCategoryBreakdownResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/transactions/category-breakdown"
+    };
+  }
 }
 
 // Category service for category management operations.
@@ -351,4 +358,31 @@ message GetFinancialReportResponse {
   repeated WalletFinancialData walletData = 4 [json_name = "walletData"];
   repeated MonthlyFinancialData totals = 5 [json_name = "totals"]; // Total across all wallets per month
   string timestamp = 6 [json_name = "timestamp"];
+}
+
+// GetCategoryBreakdown request
+message GetCategoryBreakdownRequest {
+  int64 startDate = 1 [json_name = "startDate"];  // Unix timestamp
+  int64 endDate = 2 [json_name = "endDate"];      // Unix timestamp
+  repeated int32 walletIds = 3 [json_name = "walletIds"];  // Optional: filter by wallets
+  optional CategoryType categoryType = 4 [json_name = "categoryType"];  // Optional: filter by type
+}
+
+// Category breakdown data
+message CategoryBreakdownItem {
+  int32 categoryId = 1 [json_name = "categoryId"];
+  string categoryName = 2 [json_name = "categoryName"];
+  CategoryType type = 3 [json_name = "type"];
+  wealthjourney.common.v1.Money totalAmount = 4 [json_name = "totalAmount"];
+  wealthjourney.common.v1.Money displayAmount = 5 [json_name = "displayAmount"];  // In user's preferred currency
+  int32 transactionCount = 6 [json_name = "transactionCount"];
+}
+
+// GetCategoryBreakdown response
+message GetCategoryBreakdownResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated CategoryBreakdownItem categories = 3 [json_name = "categories"];
+  string currency = 4 [json_name = "currency"];  // User's preferred currency
+  string timestamp = 5 [json_name = "timestamp"];
 }

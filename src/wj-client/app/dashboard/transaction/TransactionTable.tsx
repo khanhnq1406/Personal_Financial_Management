@@ -4,6 +4,10 @@ import Image from "next/image";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useMemo, useCallback, memo } from "react";
 import { TanStackTable } from "../../../components/table/TanStackTable";
+import {
+  VirtualizedTransactionList,
+  useTransactionDisplayData,
+} from "../../../components/table/VirtualizedTransactionList";
 import { resources } from "@/app/constants";
 import { Transaction } from "@/gen/protobuf/v1/transaction";
 import { formatCurrency } from "@/utils/currency-formatter";
@@ -17,6 +21,16 @@ interface TransactionTableProps {
   onDelete: (transactionId: number) => void;
   isLoading?: boolean;
   className?: string;
+  /**
+   * Enable virtualization for large datasets (recommended for 50+ items)
+   * @default true
+   */
+  enableVirtualization?: boolean;
+  /**
+   * Height of the virtualized list container (only used when virtualization is enabled)
+   * @default "calc(100vh - 350px)"
+   */
+  virtualizedHeight?: number | string;
 }
 
 // Memoized action button component to prevent re-renders
@@ -45,7 +59,7 @@ const TransactionActions = memo(function TransactionActions({
         aria-label="Edit transaction"
       >
         <Image
-          src={`${resources}/editing.png`}
+          src={`${resources}/editing.svg`}
           width={24}
           height={24}
           alt="Edit transaction"
@@ -58,7 +72,7 @@ const TransactionActions = memo(function TransactionActions({
         aria-label="Delete transaction"
       >
         <Image
-          src={`${resources}/remove.png`}
+          src={`${resources}/remove.svg`}
           width={24}
           height={24}
           alt="Delete transaction"
@@ -77,6 +91,8 @@ export const TransactionTable = memo(function TransactionTable({
   onDelete,
   isLoading = false,
   className,
+  enableVirtualization = true,
+  virtualizedHeight = "calc(100vh - 350px)",
 }: TransactionTableProps) {
   const columnHelper = createColumnHelper<Transaction>();
   const { currency } = useCurrency();
@@ -145,6 +161,39 @@ export const TransactionTable = memo(function TransactionTable({
     [columnHelper, getCategoryName, getWalletName, formatDate, onEdit, onDelete, currency],
   );
 
+  // Prepare display data for virtualized list
+  const displayData = useTransactionDisplayData(
+    transactions,
+    getCategoryName,
+    getWalletName,
+    currency
+  );
+
+  const actions = useMemo(
+    () => ({
+      onEdit,
+      onDelete,
+    }),
+    [onEdit, onDelete]
+  );
+
+  // Use virtualized list for large datasets when enabled
+  const shouldUseVirtualization = enableVirtualization && transactions.length >= 20;
+
+  if (shouldUseVirtualization) {
+    return (
+      <VirtualizedTransactionList
+        transactions={displayData}
+        actions={actions}
+        isLoading={isLoading}
+        className={className}
+        height={virtualizedHeight}
+        restoreScroll
+      />
+    );
+  }
+
+  // Fall back to regular table for smaller datasets or when virtualization is disabled
   return (
     <TanStackTable
       data={transactions}

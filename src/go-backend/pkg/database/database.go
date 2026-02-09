@@ -67,6 +67,7 @@ func New(cfg *config.Config) (*Database, error) {
 		&models.InvestmentTransaction{},
 		&models.InvestmentLot{},
 		&models.MarketData{},
+		&models.PortfolioHistory{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -88,6 +89,21 @@ func New(cfg *config.Config) (*Database, error) {
 // These are idempotent and safe to run on every startup
 func runPostMigrations(db *gorm.DB) error {
 	// 1. Create performance indexes (idempotent with IF NOT EXISTS)
+
+	// Portfolio history composite indexes for historical data queries
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_portfolio_history_user_timestamp
+		ON portfolio_history(user_id, timestamp DESC)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_portfolio_history_user_timestamp: %w", err)
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_portfolio_history_wallet_timestamp
+		ON portfolio_history(wallet_id, timestamp DESC)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_portfolio_history_wallet_timestamp: %w", err)
+	}
 
 	// Category composite index for type lookups
 	if err := db.Exec(`

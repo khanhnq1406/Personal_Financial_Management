@@ -1,6 +1,7 @@
 "use client";
 
 import { useController, UseControllerProps } from "react-hook-form";
+import { useState, useEffect, useRef } from "react";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
 import { cn } from "@/lib/utils/cn";
@@ -15,6 +16,9 @@ interface FormTextareaProps extends Omit<UseControllerProps, "control"> {
   rows?: number;
   maxLength?: number;
   showCharacterCount?: boolean;
+  helperText?: string;
+  autoResize?: boolean;
+  maxHeight?: number;
 }
 
 export const FormTextarea = ({
@@ -26,6 +30,9 @@ export const FormTextarea = ({
   rows = 3,
   maxLength = 500,
   showCharacterCount = false,
+  helperText,
+  autoResize = false,
+  maxHeight = 200,
   ...props
 }: FormTextareaProps) => {
   const {
@@ -33,34 +40,114 @@ export const FormTextarea = ({
     fieldState: { error },
   } = useController(props);
 
-  const currentLength = String(field.value || "").length;
+  // Internal ref for auto-resize functionality
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+
+  // Extract field properties without ref
+  const { ref: fieldRef, onChange: fieldOnChange, onBlur: fieldOnBlur, name: fieldName, value: fieldValue } = field;
+
+  // Merge refs to support both the field.ref from useController and our internal ref
+  const setRef = (ref: HTMLTextAreaElement | null) => {
+    // Set the field ref (from react-hook-form)
+    if (typeof fieldRef === "function") {
+      fieldRef(ref);
+    } else if (fieldRef) {
+      (fieldRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = ref;
+    }
+    // Set our internal ref
+    internalRef.current = ref;
+  };
+
+  const currentLength = String(fieldValue || "").length;
+  const isNearLimit = maxLength && currentLength > maxLength * 0.9;
+  const isAtLimit = maxLength && currentLength >= maxLength;
+  const hasError = !!error;
+
+  const errorId = `${props.name}-error`;
+  const helperId = `${props.name}-helper`;
+
+  // Auto-resize functionality
+  useEffect(() => {
+    if (autoResize && internalRef.current) {
+      const textarea = internalRef.current;
+      textarea.style.height = "auto";
+      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [fieldValue, autoResize, maxHeight]);
 
   return (
-    <div className={cn("mb-2", className)}>
-      <Label htmlFor={props.name} required={required}>
-        {label}
-        {showCharacterCount && (
-          <span className="text-xs text-gray-500 ml-2">
+    <div className={cn("mb-3 sm:mb-4", className)}>
+      <div className="flex justify-between items-start">
+        <Label htmlFor={props.name} required={required}>
+          {label}
+        </Label>
+        {showCharacterCount && maxLength && (
+          <span
+            className={cn(
+              "text-xs ml-2 transition-colors",
+              isAtLimit
+                ? "text-danger-600 dark:text-danger-400 font-medium"
+                : isNearLimit
+                ? "text-warning-600 dark:text-warning-400"
+                : "text-neutral-500 dark:text-dark-text-tertiary"
+            )}
+            aria-live="polite"
+          >
             {currentLength}/{maxLength}
           </span>
         )}
-      </Label>
-      <textarea
-        id={props.name}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={rows}
-        maxLength={maxLength}
-        {...field}
-        className={cn(
-          "p-2 drop-shadow-round rounded-lg w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed resize-none",
-          error && "border-2 border-lred"
-        )}
-        aria-invalid={error ? "true" : "false"}
-        aria-describedby={error ? `${props.name}-error` : undefined}
-      />
+      </div>
+      <div className="relative mt-1 sm:mt-1.5">
+        <textarea
+          ref={setRef}
+          id={props.name}
+          name={fieldName}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={rows}
+          maxLength={maxLength}
+          value={fieldValue}
+          onChange={fieldOnChange}
+          onBlur={fieldOnBlur}
+          className={cn(
+            "w-full text-sm sm:text-base min-h-[44px] sm:min-h-[48px]",
+            "px-3 sm:px-4 py-2.5 sm:py-3",
+            "rounded-lg",
+            "border transition-all duration-200",
+            "bg-white dark:bg-dark-surface",
+            "text-neutral-900 dark:text-dark-text",
+            "placeholder:text-neutral-400 dark:placeholder:text-dark-text-tertiary",
+            // Focus states - single ring (clean, modern)
+            "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+            // Error states
+            hasError && "border-danger-500 focus:ring-danger-500 focus:border-transparent",
+            !hasError && "border-neutral-300 dark:border-dark-border hover:border-neutral-400 dark:hover:border-dark-border-hover",
+            // Disabled states
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-neutral-50 dark:disabled:bg-dark-surface-hover",
+            // Resize
+            autoResize ? "resize-none overflow-hidden" : "resize-y"
+          )}
+          style={
+            autoResize
+              ? { minHeight: `${Math.max(rows * 24, 44)}px`, maxHeight: `${maxHeight}px` }
+              : undefined
+          }
+          aria-invalid={hasError ? "true" : "false"}
+          aria-describedby={cn(
+            hasError && errorId,
+            helperText && !hasError && helperId
+          )}
+        />
+      </div>
+      {/* Helper text */}
+      {helperText && !hasError && (
+        <p id={helperId} className="mt-1.5 text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
+          {helperText}
+        </p>
+      )}
       {error && (
-        <ErrorMessage id={`${props.name}-error`}>{error.message}</ErrorMessage>
+        <ErrorMessage id={errorId}>{error.message}</ErrorMessage>
       )}
     </div>
   );

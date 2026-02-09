@@ -50,7 +50,7 @@ export default function LandingHowItWorks() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
-    <section id="how-it-works" className="py-20 bg-fg [scroll-margin-top:5rem]">
+    <section id="how-it-works" className="py-20 bg-neutral-50 [scroll-margin-top:5rem]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -80,7 +80,7 @@ export default function LandingHowItWorks() {
               variants={itemVariants}
               className="flex items-start gap-6"
             >
-              <div className="flex-shrink-0 w-16 h-16 bg-bg text-white rounded-full flex items-center justify-center text-xl font-bold">
+              <div className="flex-shrink-0 w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
                 {step.number}
               </div>
               <div className="flex-1 pt-2">

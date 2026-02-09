@@ -14,15 +14,19 @@ html {
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-  --btn-green: #00a445;
-  --white: #f5f7fd;
+  --foreground: #0F172A;
+  --btn-green: #008148; /* Updated to primary fintech green */
+  --btn-green-hover: #006638; /* Darker green for hover */
+  --white: #ffffff;
+  --primary-green: #008148;
+  --accent-green: #22C55E;
+  --teal-accent: #14B8A6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #F8FAFC;
   }
 }
 
@@ -34,6 +38,62 @@ body {
   touch-action: manipulation;
 }
 
+/* Dark mode styles */
+.dark {
+  color-scheme: dark;
+}
+
+/* Smooth color transitions for theme switching */
+* {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Disable transitions for theme toggle button to avoid jarring animations */
+.theme-toggle,
+.theme-toggle * {
+  transition: none !important;
+}
+
+/* Custom scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Light mode scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
 .custom-input {
   padding: 10px;
   border-radius: 10px;
@@ -41,6 +101,12 @@ body {
   border: none;
   margin-top: 5px;
   margin-bottom: 10px;
+}
+
+.dark .custom-input {
+  background-color: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #334155;
 }
 
 .custom-btn {
@@ -51,6 +117,10 @@ body {
   font-weight: 600;
   margin: 10px 0px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.25);
+}
+
+.custom-btn:hover {
+  background-color: var(--btn-green-hover);
 }
 
 .btn-transaction {
@@ -72,8 +142,12 @@ body {
 }
 
 .required {
-  color: #c3151c;
+  color: #DC2626;
   font-size: 0.9em;
+}
+
+.dark .required {
+  color: #F87171;
 }
 
 /* Screen reader only utility */
@@ -110,6 +184,25 @@ body {
   display: none;  /* Chrome, Safari and Opera */
 }
 
+/* Safe area insets for devices with home indicators/notches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.px-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.py-safe {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Fade in animation for notification banners */
 @keyframes fade-in {
   from {
@@ -124,4 +217,152 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* Fade in with scale animation for dropdowns */
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.15s ease-out;
+}
+
+/* Shimmer animation for skeleton loading states */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Honor reduced motion preferences for shimmer */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none;
+  }
+
+  .skeleton-shimmer {
+    opacity: 0.7;
+  }
+}
+
+/* Tabular numbers for financial data */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-md {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-tabular-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Financial display typography */
+.text-display-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-sm {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-md {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.text-display-lg {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.text-display-xl {
+  font-size: 2rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.text-display-2xl {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.text-display-3xl {
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Safe area bottom padding for mobile bottom navigation */
+.pb-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+}
+
+/* Touch-friendly utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-lg {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Green focus ring for accessibility */
+*:focus-visible {
+  outline: 2px solid #008148;
+  outline-offset: 2px;
 }

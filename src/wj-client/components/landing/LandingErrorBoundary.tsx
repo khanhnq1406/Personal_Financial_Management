@@ -30,7 +30,7 @@ export default class LandingErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="min-h-screen flex items-center justify-center bg-fg">
+          <div className="min-h-screen flex items-center justify-center bg-neutral-50">
             <div className="text-center">
               <h1 className="text-2xl font-bold text-gray-900 mb-4">
                 Something went wrong
@@ -40,7 +40,7 @@ export default class LandingErrorBoundary extends Component<Props, State> {
               </p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-6 py-2 bg-bg text-white rounded-md hover:bg-hgreen transition-colors focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2"
+                className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-500 transition-colors focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
               >
                 Refresh Page
               </button>

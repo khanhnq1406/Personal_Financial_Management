@@ -11,7 +11,7 @@ import LandingErrorBoundary from "@/components/landing/LandingErrorBoundary";
 export default function LandingPage() {
   return (
     <LandingErrorBoundary>
-      <div className="min-h-screen bg-fg">
+      <div className="min-h-screen bg-neutral-50">
         <LandingNavbar />
         <main id="main-content">
           <LandingHero />

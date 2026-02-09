@@ -23,7 +23,8 @@ const CURRENCY_CONFIG: Record<
  */
 export function formatCurrency(
   amount: number | bigint,
-  currency: string = "VND"
+  currency: string = "VND",
+  currencyDisplay?: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry,
 ): string {
   const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND;
 
@@ -39,6 +40,7 @@ export function formatCurrency(
     minimumFractionDigits: config.decimals,
     maximumFractionDigits: config.decimals,
     trailingZeroDisplay: "stripIfInteger",
+    currencyDisplay: currencyDisplay,
   });
 
   return formatter.format(value);
@@ -51,6 +53,61 @@ export function formatCurrency(
  */
 export function getCurrencySymbol(currency: string = "VND"): string {
   return CURRENCY_CONFIG[currency]?.symbol || currency;
+}
+
+/**
+ * Format currency for chart axes with compact notation (K, M, B)
+ * @param amount - Amount in smallest currency unit
+ * @param currency - ISO 4217 currency code (default: "VND")
+ * @returns Compact formatted string (e.g., "₫200K" instead of "₫200,000")
+ */
+export function formatCurrencyCompact(
+  amount: number | bigint,
+  currency: string = "VND",
+): string {
+  const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND;
+  const symbol = getCurrencySymbol(currency);
+
+  // Convert from smallest unit to major unit
+  const value =
+    config.decimals > 0
+      ? Number(amount) / Math.pow(10, config.decimals)
+      : Number(amount);
+
+  const absValue = Math.abs(value);
+
+  // Determine the scale
+  let scaledValue: number;
+  let suffix: string;
+
+  if (absValue >= 1_000_000_000) {
+    // Billions
+    scaledValue = value / 1_000_000_000;
+    suffix = "B";
+  } else if (absValue >= 1_000_000) {
+    // Millions
+    scaledValue = value / 1_000_000;
+    suffix = "M";
+  } else if (absValue >= 1_000) {
+    // Thousands
+    scaledValue = value / 1_000;
+    suffix = "K";
+  } else {
+    // Less than 1000, no scaling
+    const formattedSmall = Math.abs(value).toLocaleString(config.locale, { maximumFractionDigits: 0 });
+    return value < 0 ? `-${symbol}${formattedSmall}` : `${symbol}${formattedSmall}`;
+  }
+
+  // Format with appropriate precision (use absolute value for precision check)
+  const absScaledValue = Math.abs(scaledValue);
+  const precision = absScaledValue >= 100 ? 0 : absScaledValue >= 10 ? 1 : 1;
+  const formattedValue = Math.abs(scaledValue).toLocaleString(config.locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: precision,
+  });
+
+  // Return with proper negative sign placement
+  return scaledValue < 0 ? `-${symbol}${formattedValue}${suffix}` : `${symbol}${formattedValue}${suffix}`;
 }
 
 /**

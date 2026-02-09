@@ -1,0 +1,242 @@
+"use client";
+
+import { memo, useCallback, ReactNode } from "react";
+import { cn } from "@/lib/utils/cn";
+
+export interface WizardStep {
+  id: string;
+  title: string;
+  description?: string;
+  content: ReactNode;
+  isValid?: boolean;
+}
+
+export interface FormWizardProps {
+  steps: WizardStep[];
+  currentStepIndex: number;
+  onNext: () => void;
+  onPrevious: () => void;
+  onStepChange?: (stepIndex: number) => void;
+  onFinish?: () => void;
+  isNextDisabled?: boolean;
+  isPreviousDisabled?: boolean;
+  isLoading?: boolean;
+  className?: string;
+  hideProgress?: boolean; // Hide progress on desktop
+}
+
+/**
+ * Multi-step wizard component for complex forms.
+ * Mobile-first with progress indicators and smooth transitions.
+ */
+export const FormWizard = memo(function FormWizard({
+  steps,
+  currentStepIndex,
+  onNext,
+  onPrevious,
+  onStepChange,
+  onFinish,
+  isNextDisabled = false,
+  isPreviousDisabled = false,
+  isLoading = false,
+  className,
+  hideProgress = false,
+}: FormWizardProps) {
+  const currentStep = steps[currentStepIndex];
+  const isLastStep = currentStepIndex === steps.length - 1;
+  const isFirstStep = currentStepIndex === 0;
+
+  const handleStepClick = useCallback(
+    (stepIndex: number) => {
+      if (onStepChange) {
+        // Only allow clicking on completed steps or the next step
+        if (stepIndex <= currentStepIndex) {
+          onStepChange(stepIndex);
+        }
+      }
+    },
+    [currentStepIndex, onStepChange]
+  );
+
+  return (
+    <div className={cn("flex flex-col", className)}>
+      {/* Progress Indicator - Hidden on desktop when hideProgress is true */}
+      {!hideProgress && (
+        <div className="mb-6 hidden sm:block">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const isCompleted = index < currentStepIndex;
+              const isCurrent = index === currentStepIndex;
+              const isAccessible = index <= currentStepIndex;
+
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  {/* Step circle */}
+                  <button
+                    type="button"
+                    onClick={() => handleStepClick(index)}
+                    disabled={!isAccessible || !onStepChange}
+                    className={cn(
+                      "flex items-center justify-center w-10 h-10 rounded-full font-semibold transition-all duration-200",
+                      "focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+                      isCurrent
+                        ? "bg-primary-600 text-white shadow-md"
+                        : isCompleted
+                        ? "bg-success-500 text-white"
+                        : "bg-gray-200 dark:bg-dark-surface-hover text-gray-500 dark:text-dark-text-tertiary",
+                      !isAccessible && !isCurrent && "cursor-not-allowed opacity-50"
+                    )}
+                    aria-label={`Go to step ${index + 1}: ${step.title}`}
+                    aria-current={isCurrent ? "step" : undefined}
+                  >
+                    {isCompleted ? (
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      index + 1
+                    )}
+                  </button>
+
+                  {/* Step title */}
+                  <div className="ml-3 text-left">
+                    <div
+                      className={cn(
+                        "text-sm font-medium",
+                        isCurrent
+                          ? "text-gray-900 dark:text-dark-text"
+                          : isCompleted
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-gray-500 dark:text-dark-text-tertiary"
+                      )}
+                    >
+                      {step.title}
+                    </div>
+                    {step.description && (
+                      <div className="text-xs text-gray-500 dark:text-dark-text-tertiary">
+                        {step.description}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Connector line */}
+                  {index < steps.length - 1 && (
+                    <div
+                      className={cn(
+                        "flex-1 h-0.5 mx-4",
+                        isCompleted
+                          ? "bg-success-500"
+                          : "bg-gray-200 dark:bg-dark-border"
+                      )}
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Progress Dots */}
+      <div className="sm:hidden mb-4 flex justify-center gap-2">
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className={cn(
+              "h-2 rounded-full transition-all duration-200",
+              index === currentStepIndex
+                ? "w-8 bg-primary-600"
+                : index < currentStepIndex
+                ? "w-2 bg-success-500"
+                : "w-2 bg-gray-300 dark:bg-dark-border"
+            )}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+
+      {/* Step Content */}
+      <div className="flex-1 min-h-0">
+        <div className="animate-fade-in">
+          {/* Mobile step title */}
+          <div className="sm:hidden mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
+              Step {currentStepIndex + 1} of {steps.length}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-dark-text-tertiary">
+              {currentStep.title}
+            </p>
+          </div>
+
+          {currentStep.content}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="mt-6 flex gap-3 pt-4 border-t border-gray-200 dark:border-dark-border">
+        {/* Previous Button */}
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={isPreviousDisabled || isFirstStep}
+          className={cn(
+            "flex-1 min-h-[48px] px-4 py-3 rounded-lg font-medium transition-all duration-150",
+            "focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            isFirstStep || isPreviousDisabled
+              ? "bg-gray-100 dark:bg-dark-surface-hover text-gray-400 dark:text-dark-text-tertiary cursor-not-allowed"
+              : "bg-white dark:bg-dark-surface text-gray-700 dark:text-dark-text border border-gray-300 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-surface-hover active:bg-gray-100 dark:active:bg-dark-surface-active"
+          )}
+          aria-label="Go to previous step"
+        >
+          Previous
+        </button>
+
+        {/* Next/Finish Button */}
+        <button
+          type={isLastStep && onFinish ? "submit" : "button"}
+          onClick={isLastStep && onFinish ? undefined : onNext}
+          disabled={isNextDisabled || (currentStep.isValid === false)}
+          className={cn(
+            "flex-1 min-h-[48px] px-4 py-3 rounded-lg font-medium transition-all duration-150",
+            "focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            isNextDisabled || currentStep.isValid === false
+              ? "bg-gray-300 dark:bg-dark-surface-hover text-gray-500 dark:text-dark-text-tertiary cursor-not-allowed"
+              : "bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-md hover:shadow-lg",
+            isLoading && "opacity-70 cursor-wait"
+          )}
+          aria-label={isLastStep ? "Finish" : "Go to next step"}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Processing...
+            </span>
+          ) : isLastStep ? (
+            "Finish"
+          ) : (
+            "Next"
+          )}
+        </button>
+      </div>
+    </div>
+  );
+});

@@ -1,38 +1,37 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
 
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates make bash
+
+# Set working directory
 WORKDIR /app
 
-# Install build tools
-RUN apk add --no-cache make git bash
-
-# Install Go protobuf tools
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
-    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
-
-# Copy only the go-backend source files
-COPY src/go-backend/ ./
-
-# Copy go mod files and download
+# Copy go mod files
+COPY src/go-backend/go.mod src/go-backend/go.sum ./
 RUN go mod download
 
-# Build the application
-RUN make build
+# Copy source code
+COPY src/go-backend/ ./
 
-# Runtime stage
-FROM golang:1.24-alpine
+# Build the application with size optimization
+# -ldflags="-s -w" strips debug info to reduce binary size
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/server ./cmd/server/main.go
 
-WORKDIR /app
+# Final stage: use distroless for minimal size
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Install ca-certificates for HTTPS calls
-RUN apk add --no-cache ca-certificates tzdata
+# Copy CA certificates for HTTPS requests
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 # Copy the binary from builder
-COPY --from=builder /app/bin/server /app/server
+COPY --from=builder /app/bin/server /server
 
-# Expose HTTP port (Railway will detect this automatically)
+# Use non-root user (distroless includes nonroot user)
+USER nonroot:nonroot
+
+# Expose port (Railway detects this automatically)
 EXPOSE 8080
 
-# Run the application
-CMD ["/app/server"]
+# Run the binary
+ENTRYPOINT ["/server"]

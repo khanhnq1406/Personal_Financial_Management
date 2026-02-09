@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Enhanced Budget Page with Data Visualization
+ *
+ * Combines the original working budget item management functionality
+ * with enhanced visual design from the redesign.
+ */
+
 import { useState, useCallback } from "react";
 import {
   EVENT_BudgetGetBudgetItems,
@@ -10,15 +17,18 @@ import { LoadingSpinner } from "@/components/loading/LoadingSpinner";
 import { ButtonType, resources } from "@/app/constants";
 import { Button } from "@/components/Button";
 import Image from "next/image";
-import { BudgetCard } from "@/app/dashboard/budget/BudgetCard";
+import { BudgetCard } from "./BudgetCard";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { CreateBudgetForm } from "@/components/modals/forms/CreateBudgetForm";
-import { EditBudgetForm } from "@/components/modals/forms/EditBudgetForm";
-import { CreateBudgetItemForm } from "@/components/modals/forms/CreateBudgetItemForm";
-import { EditBudgetItemForm } from "@/components/modals/forms/EditBudgetItemForm";
+import {
+  CreateBudgetForm,
+  EditBudgetForm,
+  CreateBudgetItemForm,
+  EditBudgetItemForm,
+} from "@/components/lazy/OptimizedComponents";
 import { useQueryClient } from "@tanstack/react-query";
 import { EVENT_BudgetListBudgets } from "@/utils/generated/hooks";
 import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
+import { PlusIcon } from "@/components/icons";
 
 type ModalState =
   | { type: "create-budget" }
@@ -123,12 +133,7 @@ export default function BudgetPage() {
           className="px-4 py-2 rounded-md drop-shadow-round"
         >
           <div className="flex items-center gap-2">
-            <Image
-              src={`${resources}/plus.png`}
-              alt="Add"
-              width={20}
-              height={20}
-            />
+            <PlusIcon />
             <span className="hidden sm:inline">Create budget</span>
             <span className="sm:hidden">New budget</span>
           </div>
@@ -139,7 +144,9 @@ export default function BudgetPage() {
       {budgets.length === 0 ? (
         <BaseCard className="p-6 sm:p-8">
           <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
-            <div className="text-gray-500 text-base sm:text-lg">No budgets yet</div>
+            <div className="text-gray-500 text-base sm:text-lg">
+              No budgets yet
+            </div>
             <div className="text-gray-400 text-sm sm:text-base text-center">
               Create your first budget to start tracking
             </div>

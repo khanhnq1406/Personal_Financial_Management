@@ -10,6 +10,8 @@ interface CheckboxProps {
   className?: string;
   id?: string;
   label?: string;
+  description?: string;
+  size?: "sm" | "md" | "lg";
   "aria-label"?: string;
 }
 
@@ -20,10 +22,18 @@ export function Checkbox({
   className = "",
   id,
   label,
+  description,
+  size = "md",
   "aria-label": ariaLabel,
 }: CheckboxProps) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.checked);
+  };
+
+  const sizeClasses = {
+    sm: "w-5 h-5", // 20px
+    md: "w-6 h-6", // 24px (minimum touch target)
+    lg: "w-7 h-7", // 28px
   };
 
   const checkbox = (
@@ -35,24 +45,45 @@ export function Checkbox({
       onChange={handleChange}
       disabled={disabled}
       className={cn(
-        "w-5 h-5 rounded border-gray-300 text-bg focus:ring-bg focus:ring-2 focus:ring-offset-0 cursor-pointer",
-        disabled && "opacity-50 cursor-not-allowed",
+        "rounded border-neutral-300 dark:border-neutral-600",
+        "text-primary-500 dark:text-primary-400",
+        "focus:ring-2 focus:ring-primary-500 focus:ring-offset-0",
+        "dark:focus:ring-primary-400 dark:focus:ring-offset-dark-background",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        "cursor-pointer transition-colors duration-200",
+        "dark:bg-dark-surface dark:checked:bg-primary-500",
+        sizeClasses[size],
         className
       )}
       aria-label={ariaLabel || label}
       aria-checked={checked}
+      aria-describedby={description ? `${id}-description` : undefined}
     />
   );
 
   // If label is provided, wrap checkbox with label for larger hit target
   if (label) {
     return (
-      <label className={cn(
-        "flex items-center gap-2 cursor-pointer",
-        disabled && "opacity-50 cursor-not-allowed"
-      )}>
-        {checkbox}
-        <span className="text-sm">{label}</span>
+      <label
+        className={cn(
+          "inline-flex items-start gap-3 cursor-pointer min-h-[44px]",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <div className="flex-shrink-0 pt-0.5">{checkbox}</div>
+        <div className="flex-1">
+          <span className="text-sm font-medium text-neutral-900 dark:text-dark-text">
+            {label}
+          </span>
+          {description && (
+            <p
+              id={`${id}-description`}
+              className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"
+            >
+              {description}
+            </p>
+          )}
+        </div>
       </label>
     );
   }

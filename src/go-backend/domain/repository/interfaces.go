@@ -132,6 +132,28 @@ type TransactionRepository interface {
 
 	// TransferToWallet transfers all transactions from one wallet to another.
 	TransferToWallet(ctx context.Context, fromWalletID, toWalletID int32) error
+
+	// GetCategoryBreakdown retrieves category-wise transaction summary grouped by currency.
+	GetCategoryBreakdown(ctx context.Context, userID int32, filter TransactionFilter) ([]*CategoryBreakdownByCurrency, error)
+}
+
+// CategoryBreakdownItem represents category-wise transaction summary
+type CategoryBreakdownItem struct {
+	CategoryID       int32
+	CategoryName     string
+	Type             int32
+	TotalAmount      int64
+	TransactionCount int32
+	Currency         string // Currency of the total amount
+}
+
+// CategoryBreakdownByCurrency represents category-wise transaction summary grouped by currency
+type CategoryBreakdownByCurrency struct {
+	CategoryID        int32
+	CategoryName      string
+	Type              int32
+	AmountsByCurrency map[string]int64 // Map of currency code to amount
+	TransactionCount  int32
 }
 
 // CategoryRepository defines the interface for category data operations.

@@ -22,6 +22,20 @@ export interface TanStackTableProps<T> {
   emptyDescription?: string;
   isLoading?: boolean;
   loadingRowCount?: number;
+  /**
+   * Enable expandable rows on mobile. When true, rows can be expanded to show all columns.
+   * On mobile, only the first few columns are shown by default.
+   */
+  enableMobileExpansion?: boolean;
+  /**
+   * Number of columns to show in collapsed view on mobile (default: 2)
+   */
+  mobileVisibleColumnCount?: number;
+  /**
+   * Optional mobile breakpoint. Below this width, expandable mode is enabled.
+   * Default: 768px (md breakpoint)
+   */
+  mobileBreakpoint?: number;
 }
 
 export interface TablePaginationProps {
@@ -98,7 +112,7 @@ export const TablePagination = memo(({
                 name="rows-per-page"
                 value={pageSize.toString()}
                 onChange={handlePageSizeChange}
-                className="appearance-none bg-fg border-2 border-black/50 rounded px-3 py-1 pr-8 text-gray-900 text-sm font-bold cursor-pointer focus-visible:ring-2 focus-visible:ring-hgreen focus-visible:ring-offset-2 focus:border-bg"
+                className="appearance-none bg-neutral-50 border-2 border-black/50 rounded px-3 py-1 pr-8 text-gray-900 text-sm font-bold cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus:border-primary-600"
               >
                 {memoizedPageSizeOptions.map((size) => (
                   <option key={size} value={size}>
@@ -107,7 +121,7 @@ export const TablePagination = memo(({
                 ))}
               </select>
               <Image
-                src={`${resources}/down.png`}
+                src={`${resources}/down.svg`}
                 width={12}
                 height={12}
                 alt="Rows per page dropdown"
@@ -146,7 +160,77 @@ export const TablePagination = memo(({
 TablePagination.displayName = "TablePagination";
 
 /**
- * Generic TanStack Table component with built-in sorting (memoized to prevent unnecessary re-renders)
+ * Chevron icon for expandable rows
+ */
+const ChevronIcon = memo(({ isOpen }: { isOpen: boolean }) => (
+  <svg
+    className={cn(
+      "w-5 h-5 transition-transform duration-200 ease-in-out",
+      isOpen && "rotate-180"
+    )}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M19 9l-7 7-7-7"
+    />
+  </svg>
+));
+ChevronIcon.displayName = "ChevronIcon";
+
+/**
+ * Expandable row content for mobile view - displays all column data in stacked format
+ */
+const MobileExpandedRow = memo(function MobileExpandedRow<T>({
+  row,
+  allCells,
+  startIndex,
+}: {
+  row: T;
+  allCells: any[];
+  startIndex: number;
+}) {
+  return (
+    <tr className="sm:hidden">
+      <td colSpan={999} className="p-0 border-0">
+        <div className="p-4 bg-neutral-50 border-t border-neutral-200 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="space-y-3">
+            {allCells.slice(startIndex).map((cell, cellIndex) => {
+              const column = cell.column;
+              const headerText =
+                typeof column.columnDef.header === "string"
+                  ? column.columnDef.header
+                  : column.id || `Column ${startIndex + cellIndex}`;
+
+              return (
+                <div key={`${column.id}-${cellIndex}`} className="flex flex-col">
+                  <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1">
+                    {headerText}
+                  </span>
+                  <span className="text-sm text-neutral-900 font-medium">
+                    {flexRender(column.columnDef.cell, cell.getContext())}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}) as <T>(props: {
+  row: T;
+  allCells: any[];
+  startIndex: number;
+}) => React.ReactElement;
+
+/**
+ * Generic TanStack Table component with built-in sorting and mobile expandable rows (memoized to prevent unnecessary re-renders)
  * @template T - The shape of the row data
  */
 export const TanStackTable = memo(function TanStackTable<T>({
@@ -157,8 +241,43 @@ export const TanStackTable = memo(function TanStackTable<T>({
   emptyDescription = "Try adjusting your filters or search criteria",
   isLoading = false,
   loadingRowCount = 5,
+  enableMobileExpansion = true,
+  mobileVisibleColumnCount = 2,
+  mobileBreakpoint = 768,
 }: TanStackTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < mobileBreakpoint : false);
+
+  // Handle window resize for mobile detection
+  const handleResize = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const mobile = window.innerWidth < mobileBreakpoint;
+    setIsMobile(mobile);
+    // Clear expanded rows when switching to desktop
+    if (!mobile) {
+      setExpandedRows(new Set());
+    }
+  }, [mobileBreakpoint]);
+
+  React.useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [handleResize]);
+
+  // Toggle row expansion
+  const toggleRowExpansion = useCallback((rowId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  }, []);
 
   const table = useReactTable({
     data,
@@ -267,29 +386,66 @@ export const TanStackTable = memo(function TanStackTable<T>({
                   ) : null}
                 </th>
               ))}
+              {/* Add extra column for expand chevron on mobile when enabled */}
+              {enableMobileExpansion && isMobile && columns.length > mobileVisibleColumnCount && (
+                <th className="w-12 sm:hidden" aria-hidden="true" />
+              )}
             </tr>
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row, index) => (
-            <tr
-              key={row.id}
-              className={
-                index < table.getRowModel().rows.length - 1
-                  ? "border-b border-gray-200"
-                  : ""
-              }
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className="py-3 px-4 text-gray-900 text-base font-light"
+          {table.getRowModel().rows.map((row, index) => {
+            const isExpanded = expandedRows.has(row.id);
+            const showExpandable = enableMobileExpansion && isMobile && columns.length > mobileVisibleColumnCount;
+            const visibleColumnCount = showExpandable ? mobileVisibleColumnCount : columns.length;
+
+            return (
+              <React.Fragment key={row.id}>
+                <tr
+                  className={cn(
+                    index < table.getRowModel().rows.length - 1 && "border-b border-gray-200",
+                    showExpandable && "cursor-pointer hover:bg-neutral-50 transition-colors duration-150"
+                  )}
+                  onClick={() => showExpandable && toggleRowExpansion(row.id)}
+                  aria-expanded={isExpanded}
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
+                  {row.getVisibleCells().slice(0, visibleColumnCount).map((cell) => (
+                    <td
+                      key={cell.id}
+                      className="py-3 px-4 text-gray-900 text-base font-light"
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                  {/* Expandable chevron column for mobile */}
+                  {showExpandable && (
+                    <td className="py-3 px-2 sm:hidden">
+                      <button
+                        type="button"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-600 hover:text-primary-600 transition-colors duration-200 rounded-full hover:bg-neutral-100"
+                        aria-label={isExpanded ? "Collapse row" : "Expand row"}
+                        aria-expanded={isExpanded}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleRowExpansion(row.id);
+                        }}
+                      >
+                        <ChevronIcon isOpen={isExpanded} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+                {/* Expanded row content for mobile */}
+                {showExpandable && isExpanded && (
+                  <MobileExpandedRow
+                    row={row.original}
+                    allCells={row.getVisibleCells()}
+                    startIndex={mobileVisibleColumnCount}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

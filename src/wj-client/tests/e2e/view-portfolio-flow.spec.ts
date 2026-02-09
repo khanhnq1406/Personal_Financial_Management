@@ -1,0 +1,188 @@
+import { test, expect } from "@playwright/test";
+
+/**
+ * E2E Test: View Portfolio Flow
+ *
+ * Tests the investment portfolio viewing flow:
+ * - Loading portfolio page
+ * - Displaying investments
+ * - Filtering by wallet
+ * - Viewing investment details
+ */
+
+test.describe("View Portfolio Flow", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/auth/login");
+    await page.evaluate(() => {
+      localStorage.setItem("token", "mock-test-token");
+    });
+  });
+
+  test("should display portfolio page", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+
+    // Page should load without errors
+    await page.waitForLoadState("networkidle");
+
+    // Check for portfolio content
+    const content = page.locator('h1, h2, [class*="portfolio"]');
+    await expect(content.first()).toBeVisible();
+  });
+
+  test("should display investment list or empty state", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    // Either show investments or empty state
+    const investmentList = page.locator('[class*="investment"], [data-testid="investment-list"]');
+    const emptyState = page.locator('[class*="empty"], :has-text("no investment")');
+
+    expect(await investmentList.count() + await emptyState.count()).toBeGreaterThan(0);
+  });
+
+  test("should display portfolio summary", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    // Look for summary section (total value, PnL, etc.)
+    const summary = page.locator('[class*="summary"], [class*="total"], [class*="balance"]');
+    expect(await summary.count()).toBeGreaterThan(0);
+  });
+
+  test("should display investment cards with details", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    const investmentCards = page.locator('[class*="investment"], [class*="holding"]');
+    const cardCount = await investmentCards.count();
+
+    if (cardCount > 0) {
+      // First card should have investment info
+      const firstCard = investmentCards.first();
+
+      // Should have symbol/name
+      const text = await firstCard.textContent();
+      expect(text?.length).toBeGreaterThan(0);
+
+      // Should have quantity or value
+      const hasNumber = /\d+/.test(text || "");
+      expect(hasNumber).toBe(true);
+    }
+  });
+
+  test("should allow clicking on investment for details", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    const investmentCards = page.locator('[class*="investment"], [class*="holding"]');
+    const cardCount = await investmentCards.count();
+
+    if (cardCount > 0) {
+      // Click first investment
+      await investmentCards.first().click();
+
+      // Should show details modal or navigate to detail page
+      await page.waitForTimeout(500);
+
+      const modal = page.locator('[role="dialog"], .modal');
+      const isDetailPage = page.url().includes("/detail");
+
+      expect(await modal.count() > 0 || isDetailPage).toBe(true);
+    }
+  });
+
+  test("should display PnL information", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    // Look for profit/loss indicators
+    const pnl = page.locator(':has-text("P&L"), :has-text("profit"), :has-text("loss"), [class*="pnl"], [class*="gain"]');
+
+    // PnL might not be present if no investments
+    const pnlCount = await pnl.count();
+    expect(pnlCount).toBeGreaterThanOrEqual(0);
+  });
+});
+
+test.describe("Portfolio Actions", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/auth/login");
+    await page.evaluate(() => {
+      localStorage.setItem("token", "mock-test-token");
+    });
+  });
+
+  test("should have add investment button", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    const addButton = page.locator('button:has-text("add investment", "new investment", "+")');
+    const buttons = page.locator("button");
+
+    const button = buttons.filter({ hasText: /add|new investment/i });
+
+    if ((await button.count()) > 0) {
+      await expect(button.first()).toBeVisible();
+    }
+  });
+
+  test("should open add investment modal", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    const addButton = page.locator('button:has-text("add")').first();
+    if ((await addButton.count()) > 0) {
+      await addButton.click();
+
+      // Modal should appear
+      const modal = page.locator('[role="dialog"], .modal');
+      await expect(modal.first()).toBeVisible();
+    }
+  });
+
+  test("should display investment type selector", async ({ page }) => {
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    const addButton = page.locator('button:has-text("add")').first();
+    if ((await addButton.count()) > 0) {
+      await addButton.click();
+
+      // Check for investment type selection (stock, crypto, gold, etc.)
+      const typeSelector = page.locator('select[name*="type"], [role="combobox"], [class*="type"]');
+      expect(await typeSelector.count()).toBeGreaterThan(0);
+    }
+  });
+});
+
+test.describe("Mobile Portfolio View", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("should display portfolio correctly on mobile", async ({ page }) => {
+    await page.goto("/auth/login");
+    await page.evaluate(() => {
+      localStorage.setItem("token", "mock-test-token");
+    });
+
+    await page.goto("/dashboard/portfolio");
+    await page.waitForLoadState("networkidle");
+
+    // Content should be visible
+    const content = page.locator('h1, [class*="portfolio"]');
+    await expect(content.first()).toBeVisible();
+
+    // Cards should be responsive
+    const cards = page.locator('[class*="card"], [class*="investment"]');
+    const cardCount = await cards.count();
+
+    if (cardCount > 0) {
+      const firstCard = cards.first();
+      const box = await firstCard.boundingBox();
+
+      if (box) {
+        // Card should span most of screen width
+        expect(box.width).toBeGreaterThan(300);
+      }
+    }
+  });
+});

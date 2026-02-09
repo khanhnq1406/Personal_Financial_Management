@@ -1,0 +1,64 @@
+"use client";
+
+import { memo } from "react";
+import { Icon, standardSvgProps, type IconProps } from "./Icon";
+
+export const HomeIcon = memo(function HomeIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Home"}>
+      <svg {...standardSvgProps}>
+        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    </Icon>
+  );
+});
+
+export const TransactionIcon = memo(function TransactionIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Transactions"}>
+      <svg {...standardSvgProps}>
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    </Icon>
+  );
+});
+
+export const WalletIcon = memo(function WalletIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Wallets"}>
+      <svg {...standardSvgProps}>
+        <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    </Icon>
+  );
+});
+
+export const PortfolioIcon = memo(function PortfolioIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Portfolio"}>
+      <svg {...standardSvgProps}>
+        <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    </Icon>
+  );
+});
+
+export const ReportsIcon = memo(function ReportsIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Reports"}>
+      <svg {...standardSvgProps}>
+        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    </Icon>
+  );
+});
+
+export const BudgetIcon = memo(function BudgetIcon(props: Omit<IconProps, "children">) {
+  return (
+    <Icon {...props} ariaLabel={props.ariaLabel || "Budget"}>
+      <svg {...standardSvgProps}>
+        <path d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+      </svg>
+    </Icon>
+  );
+});

@@ -28,6 +28,11 @@ import (
 	investmentv1 "wealthjourney/protobuf/v1"
 )
 
+const (
+	dbKeepAliveInterval     = 2 * time.Minute
+	dbKeepAliveStartupDelay = 10 * time.Second
+)
+
 func main() {
 	// Load configuration
 	cfg, err := config.Load()
@@ -64,6 +69,7 @@ func main() {
 		InvestmentTransaction: repository.NewInvestmentTransactionRepository(db),
 		MarketData:            repository.NewMarketDataRepository(db),
 		FXRate:                repository.NewFXRateRepository(db),
+		PortfolioHistory:      repository.NewPortfolioHistoryRepository(db.DB),
 	}
 
 	// Initialize redis (single instance for both handlers and auth server)
@@ -161,6 +167,115 @@ func main() {
 
 			case <-backgroundCtx.Done():
 				log.Println("Background price update job stopped (shutting down)")
+				return
+			}
+		}
+	}()
+
+	// Initialize background portfolio snapshot job
+	// This runs every hour to create portfolio value snapshots for historical charts
+	// Snapshots are stored in portfolio_history table and used for sparkline charts
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(10 * time.Second)
+
+		log.Println("Background portfolio snapshot job started (runs every hour)")
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("Running portfolio snapshot job...")
+
+				ctx := context.Background()
+
+				// Get all users from the system
+				users, _, err := repos.User.List(ctx, repository.ListOptions{
+					Limit: 10000, // Large limit to get all users
+				})
+
+				if err != nil {
+					log.Printf("Error fetching users for portfolio snapshot: %v", err)
+					continue
+				}
+
+				log.Printf("Creating portfolio snapshots for %d users...", len(users))
+
+				successCount := 0
+				errorCount := 0
+				skippedCount := 0
+
+				// Create snapshot for each user
+				for _, user := range users {
+					// Check if user has any investment wallets
+					wallets, _, err := repos.Wallet.ListByUserID(ctx, user.ID, repository.ListOptions{
+						Limit: 1000,
+					})
+					if err != nil {
+						log.Printf("Warning: failed to list wallets for user %d: %v", user.ID, err)
+						errorCount++
+						continue
+					}
+
+					// Check for investment wallets
+					hasInvestmentWallets := false
+					for _, wallet := range wallets {
+						if wallet.Type == int32(investmentv1.WalletType_INVESTMENT) {
+							hasInvestmentWallets = true
+							break
+						}
+					}
+
+					if !hasInvestmentWallets {
+						skippedCount++
+						continue
+					}
+
+					// Create aggregated snapshot for all investment wallets
+					if err := services.PortfolioHistory.CreateAggregatedSnapshot(ctx, user.ID); err != nil {
+						log.Printf("Error: failed to create portfolio snapshot for user %d: %v", user.ID, err)
+						errorCount++
+						continue
+					}
+
+					successCount++
+				}
+
+				log.Printf("Portfolio snapshot job completed: %d successful, %d skipped, %d errors", successCount, skippedCount, errorCount)
+
+			case <-backgroundCtx.Done():
+				log.Println("Background portfolio snapshot job stopped (shutting down)")
+				return
+			}
+		}
+	}()
+
+	// Initialize database keep-alive job
+	// This runs every 2 minutes to prevent Railway PostgreSQL from sleeping
+	// Railway free tier puts idle databases to sleep after ~5 minutes of no activity
+	// This lightweight query keeps the connection pool active
+	go func() {
+		ticker := time.NewTicker(dbKeepAliveInterval)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(dbKeepAliveStartupDelay)
+
+		log.Printf("Database keep-alive job started (runs every %v)", dbKeepAliveInterval)
+
+		for {
+			select {
+			case <-ticker.C:
+				// Execute lightweight health check query
+				// This uses the existing Ping() method which executes PingContext
+				if err := db.Ping(); err != nil {
+					log.Printf("Database keep-alive ping failed: %v", err)
+				}
+
+			case <-backgroundCtx.Done():
+				log.Println("Database keep-alive job stopped (shutting down)")
 				return
 			}
 		}

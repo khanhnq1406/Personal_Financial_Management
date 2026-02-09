@@ -6,9 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { SelectOption } from "@/components/forms/FormSelect";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { ErrorMessage } from "@/components/forms/ErrorMessage";
 import {
   useMutationAddInvestmentTransaction,
@@ -67,15 +67,15 @@ interface AddInvestmentTransactionFormProps {
 
 const transactionTypeOptions: SelectOption[] = [
   {
-    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
+    value: String(InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY),
     label: "Buy",
   },
   {
-    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL,
+    value: String(InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_SELL),
     label: "Sell",
   },
   {
-    value: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+    value: String(InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
     label: "Dividend",
   },
 ];
@@ -448,7 +448,6 @@ export function AddInvestmentTransactionForm({
         placeholder="Select transaction type"
         required
         disabled={isSubmitting}
-        disableFilter
       />
 
       {/* Quantity */}
@@ -518,7 +517,7 @@ export function AddInvestmentTransactionForm({
           htmlFor="transactionDate"
           className="block text-sm font-medium text-gray-700 mb-1"
         >
-          Transaction Date <span className="text-lred">*</span>
+          Transaction Date <span className="text-danger-600">*</span>
         </label>
         <input
           id="transactionDate"

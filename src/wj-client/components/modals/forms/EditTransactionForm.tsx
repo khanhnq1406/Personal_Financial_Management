@@ -16,7 +16,7 @@ import {
 } from "@/gen/protobuf/v1/transaction";
 import { FormToggle } from "@/components/forms/FormToggle";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { FormCreatableSelect } from "@/components/forms/FormCreatableSelect";
 import { FormDateTimePicker } from "@/components/forms/FormDateTimePicker";
 import { FormTextarea } from "@/components/forms/FormTextarea";
@@ -197,7 +197,7 @@ export function EditTransactionForm({
   if (transactionLoading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hgreen"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
       </div>
     );
   }
@@ -205,7 +205,7 @@ export function EditTransactionForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}

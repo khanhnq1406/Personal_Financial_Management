@@ -7,9 +7,9 @@ import {
   useQueryListWallets,
   useMutationCreateWallet,
 } from "@/utils/generated/hooks";
-import { FormInput } from "@/components/forms/FormInput";
+import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
-import { FormSelect } from "@/components/forms/FormSelect";
+import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
 import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
@@ -63,8 +63,8 @@ export function CreateWalletForm({
   });
 
   const walletTypeOptions: SelectOption[] = [
-    { value: WalletType.BASIC, label: "Basic" },
-    { value: WalletType.INVESTMENT, label: "Investment" },
+    { value: String(WalletType.BASIC), label: "Basic" },
+    { value: String(WalletType.INVESTMENT), label: "Investment" },
   ];
 
   const onSubmit = (data: CreateWalletFormOutput) => {
@@ -104,7 +104,7 @@ export function CreateWalletForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       {errorMessage && (
-        <div className="bg-red-50 text-lred p-3 rounded mb-4">
+        <div className="bg-red-50 text-danger-600 p-3 rounded mb-4">
           {errorMessage}
         </div>
       )}
@@ -130,7 +130,7 @@ export function CreateWalletForm({
         label="Wallet Type"
         options={walletTypeOptions}
         placeholder="Select wallet type"
-        disableFilter
+        portal
       />
 
       <div className="mt-4">

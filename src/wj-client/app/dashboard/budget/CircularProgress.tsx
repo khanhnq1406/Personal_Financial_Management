@@ -21,7 +21,12 @@ export function CircularProgress({
   const offset = circumference - (normalizedPercentage / 100) * circumference;
 
   return (
-    <div className={cn("relative inline-flex items-center justify-center", className)}>
+    <div
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        className,
+      )}
+    >
       <svg width={size} height={size} className="transform -rotate-90">
         {/* Background circle */}
         <circle
@@ -37,7 +42,7 @@ export function CircularProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#00a445"
+          stroke="#008148"
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}

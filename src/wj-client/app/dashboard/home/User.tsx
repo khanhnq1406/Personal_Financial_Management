@@ -15,7 +15,7 @@ export const User = memo(function User() {
     <div className="flex flex-wrap justify-center items-center gap-3 my-5">
       <div>
         <img
-          src={user.picture !== null ? user.picture : `${resources}/user.png`}
+          src={user.picture !== null ? user.picture : `${resources}/user.svg`}
           alt=""
           className="rounded-full h-12"
         />
@@ -27,7 +27,7 @@ export const User = memo(function User() {
       <div>
         <Button
           type={ButtonType.IMG}
-          src={`${resources}/logout.png`}
+          src={`${resources}/logout.svg`}
           onClick={handleLogout}
         />
       </div>

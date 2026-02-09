@@ -105,12 +105,49 @@ message PortfolioSummary {
   wealthjourney.common.v1.Money displayRealizedPnl = 13 [json_name = "displayRealizedPnl"];  // Realized PNL in user's preferred currency
   wealthjourney.common.v1.Money displayUnrealizedPnl = 14 [json_name = "displayUnrealizedPnl"];  // Unrealized PNL in user's preferred currency
   string displayCurrency = 15 [json_name = "displayCurrency"];  // User's preferred currency code
+  repeated InvestmentPerformance topPerformers = 16 [json_name = "topPerformers"]; // Top 3 performing investments
+  repeated InvestmentPerformance worstPerformers = 17 [json_name = "worstPerformers"]; // Bottom 3 performing investments
 }
 
 message InvestmentByType {
   InvestmentType type = 1 [json_name = "type"];
   int64 totalValue = 2 [json_name = "totalValue"];
   int32 count = 3 [json_name = "count"];
+}
+
+// InvestmentPerformance represents top/worst performing investments
+message InvestmentPerformance {
+  int32 investmentId = 1 [json_name = "investmentId"];
+  string symbol = 2 [json_name = "symbol"];
+  string name = 3 [json_name = "name"];
+  InvestmentType type = 4 [json_name = "type"];
+  int64 unrealizedPnl = 5 [json_name = "unrealizedPnl"];
+  double unrealizedPnlPercent = 6 [json_name = "unrealizedPnlPercent"];
+  wealthjourney.common.v1.Money displayUnrealizedPnl = 7 [json_name = "displayUnrealizedPnl"];
+  string displayCurrency = 8 [json_name = "displayCurrency"];
+}
+
+// HistoricalPortfolioValue represents a single portfolio value snapshot
+message HistoricalPortfolioValue {
+  int64 timestamp = 1 [json_name = "timestamp"];      // Unix timestamp when snapshot was taken
+  int64 totalValue = 2 [json_name = "totalValue"];    // Total portfolio value in base currency
+  wealthjourney.common.v1.Money displayTotalValue = 3 [json_name = "displayTotalValue"]; // Value in user's preferred currency
+}
+
+// GetHistoricalPortfolioValuesRequest for fetching historical data
+message GetHistoricalPortfolioValuesRequest {
+  int32 walletId = 1 [json_name = "walletId"];       // 0 or omitted = all investment wallets
+  InvestmentType typeFilter = 2 [json_name = "typeFilter"]; // Optional filter by investment type
+  int32 days = 3 [json_name = "days"];               // Number of days of history (default: 30, max: 365)
+  int32 points = 4 [json_name = "points"];           // Number of data points to return (default: 10, max: 100)
+}
+
+// GetHistoricalPortfolioValuesResponse with historical portfolio values
+message GetHistoricalPortfolioValuesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated HistoricalPortfolioValue data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
 }
 
 // GoldTypeCode represents a gold type available for investment
@@ -275,6 +312,13 @@ service InvestmentService {
   rpc GetSilverTypeCodes(GetSilverTypeCodesRequest) returns (GetSilverTypeCodesResponse) {
     option (google.api.http) = {
       get: "/api/v1/investments/silver-types"
+    };
+  }
+
+  // GetHistoricalPortfolioValues returns historical portfolio value snapshots
+  rpc GetHistoricalPortfolioValues(GetHistoricalPortfolioValuesRequest) returns (GetHistoricalPortfolioValuesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/portfolio/historical-values"
     };
   }
 }

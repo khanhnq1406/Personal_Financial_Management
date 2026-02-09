@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
+import { ListTransactionsResponse } from "@/gen/protobuf/v1/transaction";
 import {
   useQueryListTransactions,
   useQueryListCategories,
@@ -9,67 +12,175 @@ import {
   useMutationDeleteTransaction,
 } from "@/utils/generated/hooks";
 import { SortField } from "@/gen/protobuf/v1/transaction";
-import { BaseCard } from "@/components/BaseCard";
-import { Select } from "@/components/select/Select";
-import { TransactionTable } from "@/app/dashboard/transaction/TransactionTable";
-import { TablePagination } from "@/components/table/TanStackTable";
-import { MobileTable } from "@/components/table/MobileTable";
+import { TransactionType } from "@/gen/protobuf/v1/transaction";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { resources } from "@/app/constants";
 import { useDebounce } from "@/hooks";
 import Image from "next/image";
 import { BaseModal } from "@/components/modals/BaseModal";
-import { EditTransactionForm } from "@/components/modals/forms/EditTransactionForm";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
+import {
+  TransactionFilterModal,
+  TransactionFilters,
+} from "./TransactionFilterModal";
+import { ActiveFilterChips } from "./ActiveFilterChips";
+import { TransactionCard, getDateGroupLabel } from "./TransactionCard";
+import { QuickFilterChips, QuickFilterType } from "./QuickFilterChips";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { cn } from "@/lib/utils/cn";
+import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
+import { Button } from "@/components/Button";
+import { useExportTransactions } from "@/hooks/useExportTransactions";
 
-const displayImgList = [`${resources}/unhide.png`, `${resources}/hide.png`];
+// Date range helpers for quick filters
+function getDateRangeForFilter(filter: QuickFilterType): {
+  startDate?: number;
+  endDate?: number;
+  type?: TransactionType;
+} {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
 
-type ModalState =
-  | { type: "edit-transaction"; transactionId: number }
-  | { type: "delete-confirmation"; transactionId: number }
-  | null;
+  switch (filter) {
+    case "income":
+      return { type: TransactionType.TRANSACTION_TYPE_INCOME };
+    case "expense":
+      return { type: TransactionType.TRANSACTION_TYPE_EXPENSE };
+    case "today":
+      return {
+        startDate: Math.floor(today.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    case "week":
+      // Start of week (Sunday)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return {
+        startDate: Math.floor(startOfWeek.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    case "month":
+      // Start of month
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return {
+        startDate: Math.floor(startOfMonth.getTime() / 1000),
+        endDate: Math.floor(endOfDay.getTime() / 1000),
+      };
+    default:
+      return {};
+  }
+}
+
+const displayImgList = [`${resources}/unhide.svg`, `${resources}/hide.svg`];
+
+type ModalState = { type: "delete-confirmation"; transactionId: number } | null;
+
+// Lazy load EditTransactionForm
+const EditTransactionForm = dynamic(
+  () =>
+    import("@/components/lazy/OptimizedComponents").then(
+      (mod) => mod.EditTransactionForm,
+    ),
+  { ssr: false },
+);
 
 export default function TransactionPage() {
   const { currency } = useCurrency();
+  const queryClient = useQueryClient();
+
+  // State
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<string>("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
   const [isHideBalance, setHideBalance] = useState(false);
   const [displayImg, setDisplayImg] = useState(displayImgList[0]);
   const [modalState, setModalState] = useState<ModalState>(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Additional filter states
+  const [amountMin, setAmountMin] = useState<number>(0);
+  const [amountMax, setAmountMax] = useState<number>(0);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(
+    undefined,
+  );
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(
+    undefined,
+  );
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Fetch data - use memoized filter to prevent re-renders on every keystroke
-  const filter = useMemo(
-    () => ({
+  // Fetch data
+  const filter = useMemo(() => {
+    const quickFilterParams = getDateRangeForFilter(quickFilter);
+    // Determine decimal places based on currency (VND = 0, USD = 2, etc.)
+    const currencyDecimals = currency === "VND" || currency === "JPY" ? 0 : 2;
+    const multiplier = Math.pow(10, currencyDecimals);
+
+    // Use custom date range if set, otherwise use quick filter date range
+    let startDate = quickFilterParams.startDate;
+    let endDate = quickFilterParams.endDate;
+
+    // If custom date range is set (from modal), use it instead
+    if (customStartDate) {
+      startDate = Math.floor(customStartDate.getTime() / 1000);
+    }
+    if (customEndDate) {
+      endDate = Math.floor(customEndDate.getTime() / 1000);
+    }
+
+    return {
       searchNote: debouncedSearchQuery || undefined,
       walletId: selectedWallet ? parseInt(selectedWallet) : undefined,
       categoryId: categoryFilter ? parseInt(categoryFilter) : undefined,
-    }),
-    [debouncedSearchQuery, selectedWallet, categoryFilter],
-  );
+      type: quickFilterParams.type,
+      startDate,
+      endDate,
+      minAmount: amountMin > 0 ? amountMin * multiplier : undefined,
+      maxAmount: amountMax > 0 ? amountMax * multiplier : undefined,
+    };
+  }, [
+    debouncedSearchQuery,
+    selectedWallet,
+    categoryFilter,
+    quickFilter,
+    amountMin,
+    amountMax,
+    currency,
+    customStartDate,
+    customEndDate,
+  ]);
 
-  // Memoize pagination config
   const paginationConfig = useMemo(
     () => ({
-      page: currentPage,
+      page: 1,
       pageSize: rowsPerPage,
       orderBy: sortField,
       order: sortOrder,
     }),
-    [currentPage, rowsPerPage, sortField, sortOrder],
+    [rowsPerPage, sortField, sortOrder],
   );
 
   const {
     data: transactionsData,
     isLoading,
     refetch,
-  } = useQueryListTransactions(
+    isFetching,
+  } = useQueryListTransactions<ListTransactionsResponse>(
     {
       pagination: paginationConfig,
       filter,
@@ -79,30 +190,50 @@ export default function TransactionPage() {
     { refetchOnMount: "always" },
   );
 
-  const { data: categoriesData, refetch: refetchListCategories } =
-    useQueryListCategories({
-      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-    });
+  const { data: categoriesData } = useQueryListCategories({
+    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+  });
 
-  const { data: walletsData, refetch: refetchListWallets } =
-    useQueryListWallets({
-      pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
-    });
+  const { data: walletsData } = useQueryListWallets({
+    pagination: { page: 1, pageSize: 100, orderBy: "id", order: "asc" },
+  });
 
   const { data: totalBalanceData, refetch: refetchTotalBalance } =
     useQueryGetTotalBalance({});
 
   const deleteTransactionMutation = useMutationDeleteTransaction({
     onSuccess: () => {
-      refetchListWallets();
-      refetchListCategories();
-      refetchTotalBalance();
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["ListTransactions"] });
+      queryClient.invalidateQueries({ queryKey: ["ListWallets"] });
+      queryClient.invalidateQueries({ queryKey: ["ListCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["GetTotalBalance"] });
       setModalState(null);
     },
   });
 
-  // Get category name by ID - memoized with proper dependency
+  // Infinite scroll
+  const { containerRef, isLoadingMore, loadMore, setIsLoadingMore } =
+    useInfiniteScroll({
+      threshold: 200,
+      enabled: !isLoading && !isFetching,
+      hasMore:
+        transactionsData?.pagination && transactionsData.transactions
+          ? transactionsData.transactions.length <
+            transactionsData.pagination.totalCount
+          : false,
+    });
+
+  // Load more handler
+  useEffect(() => {
+    if (isLoadingMore) {
+      // Fetch more data by refetching
+      refetch().then(() => {
+        setIsLoadingMore(false);
+      });
+    }
+  }, [isLoadingMore, refetch, setIsLoadingMore]);
+
+  // Memoized helpers
   const getCategoryName = useMemo(() => {
     const categoryMap = new Map<number, string>();
     categoriesData?.categories?.forEach((cat) => {
@@ -111,7 +242,6 @@ export default function TransactionPage() {
     return (id: number) => categoryMap.get(id) || "Uncategorized";
   }, [categoriesData]);
 
-  // Get wallet name by ID - memoized with proper dependency
   const getWalletName = useMemo(() => {
     const walletMap = new Map<number, string>();
     walletsData?.wallets?.forEach((wallet) => {
@@ -120,25 +250,30 @@ export default function TransactionPage() {
     return (id: number) => walletMap.get(id) || "Unknown Wallet";
   }, [walletsData]);
 
-  // Format date - memoized
-  const formatDate = useCallback((timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  // Group transactions by date
+  const groupedTransactions = useMemo(() => {
+    const transactions = transactionsData?.transactions || [];
+    const groups: Record<string, typeof transactions> = {};
+
+    transactions.forEach((transaction) => {
+      const groupLabel = getDateGroupLabel(transaction.date);
+      if (!groups[groupLabel]) {
+        groups[groupLabel] = [];
+      }
+      groups[groupLabel].push(transaction);
     });
-  }, []);
 
-  // Handle actions - memoized callbacks
-  const handleEditTransaction = useCallback((transactionId: number) => {
-    setModalState({ type: "edit-transaction", transactionId });
-  }, []);
+    return groups;
+  }, [transactionsData]);
 
+  // Handlers
   const handleDeleteTransaction = useCallback((transactionId: number) => {
     setModalState({ type: "delete-confirmation", transactionId });
+  }, []);
+
+  const handleEditTransaction = useCallback((transactionId: number) => {
+    // Handle edit - could open a modal or navigate
+    console.log("Edit transaction:", transactionId);
   }, []);
 
   const handleConfirmDelete = useCallback(() => {
@@ -153,36 +288,102 @@ export default function TransactionPage() {
     setModalState(null);
   }, []);
 
-  const handleModalSuccess = useCallback(() => {
-    refetchListWallets();
-    refetchListCategories();
-    refetchTotalBalance();
-    refetch();
-    handleCloseModal();
-  }, [refetch, handleCloseModal]);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetch();
+    await refetchTotalBalance();
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [refetch, refetchTotalBalance]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    selectedWallet,
-    debouncedSearchQuery,
-    categoryFilter,
-    sortField,
-    sortOrder,
-  ]);
+  // Filter handlers
+  const handleOpenFilterModal = useCallback(() => {
+    setIsFilterModalOpen(true);
+  }, []);
 
-  const totalBalance =
-    totalBalanceData?.displayNetWorth?.amount ??
-    totalBalanceData?.displayValue?.amount ??
-    totalBalanceData?.data?.amount ??
-    0;
-  const formattedBalance = useMemo(() => {
-    return formatCurrency(totalBalance, currency);
-  }, [totalBalance, currency]);
-  const transactions = transactionsData?.transactions || [];
-  const totalCount =
-    transactionsData?.pagination?.totalCount ?? transactions.length;
+  const handleCloseFilterModal = useCallback(() => {
+    setIsFilterModalOpen(false);
+  }, []);
+
+  const handleApplyFilters = useCallback((filters: TransactionFilters) => {
+    setSelectedWallet(filters.walletId);
+    setCategoryFilter(filters.categoryFilter);
+    setSortField(filters.sortField);
+    setSortOrder(filters.sortOrder);
+    setSearchQuery(filters.searchQuery);
+    // Handle amount range
+    setAmountMin(filters.amountRange?.min || 0);
+    setAmountMax(filters.amountRange?.max || 0);
+    // Handle date range - convert string dates to Date objects
+    if (filters.dateRange?.start) {
+      setCustomStartDate(new Date(filters.dateRange.start));
+    } else {
+      setCustomStartDate(undefined);
+    }
+    if (filters.dateRange?.end) {
+      // Set to end of the day
+      const endDate = new Date(filters.dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      setCustomEndDate(endDate);
+    } else {
+      setCustomEndDate(undefined);
+    }
+    // Reset quick filter when using custom date range from modal
+    if (filters.dateRange) {
+      setQuickFilter("all");
+    }
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedWallet(null);
+    setCategoryFilter("");
+    setSearchQuery("");
+    setSortField("date");
+    setSortOrder("desc");
+    setAmountMin(0);
+    setAmountMax(0);
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
+    setQuickFilter("all");
+  }, []);
+
+  const handleRemoveSingleFilter = useCallback(
+    (filterType: keyof TransactionFilters) => {
+      switch (filterType) {
+        case "walletId":
+          setSelectedWallet(null);
+          break;
+        case "categoryFilter":
+          setCategoryFilter("");
+          break;
+        case "searchQuery":
+          setSearchQuery("");
+          break;
+        case "sortField":
+        case "sortOrder":
+          setSortField("date");
+          setSortOrder("desc");
+          break;
+        case "amountRange":
+          setAmountMin(0);
+          setAmountMax(0);
+          break;
+        case "dateRange":
+          setCustomStartDate(undefined);
+          setCustomEndDate(undefined);
+          setQuickFilter("all");
+          break;
+      }
+    },
+    [],
+  );
+
+  // Quick filter handler - Updates the quick filter state which is used in the filter useMemo
+  const handleQuickFilterChange = useCallback((filter: QuickFilterType) => {
+    setQuickFilter(filter);
+    // Clear custom date range when using quick filters
+    setCustomStartDate(undefined);
+    setCustomEndDate(undefined);
+  }, []);
 
   const handleHideBalance = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -193,7 +394,24 @@ export default function TransactionPage() {
     [isHideBalance],
   );
 
-  // Prepare filter options - memoized
+  // Handle export transactions
+  const { exportTransactions, isExporting } = useExportTransactions({
+    onError: (error) => {
+      alert(error.message);
+    },
+    onSuccess: () => {
+      console.log("Transactions exported successfully");
+    },
+  });
+
+  const handleExportTransactions = useCallback(
+    async (options: ExportOptions) => {
+      await exportTransactions(options);
+    },
+    [exportTransactions],
+  );
+
+  // Prepare options
   const walletOptions = useMemo(
     () =>
       walletsData?.wallets?.map((w) => ({
@@ -216,80 +434,71 @@ export default function TransactionPage() {
     () => [
       { value: "date-desc", label: "Newest first" },
       { value: "date-asc", label: "Oldest first" },
+      { value: "amount-desc", label: "Highest first" },
+      { value: "amount-asc", label: "Lowest first" },
     ],
     [],
   );
 
-  // Memoize mobile table columns to avoid recreating on every render
-  const mobileColumns = useMemo(
-    () => [
-      {
-        id: "category",
-        header: "Category",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          getCategoryName(row.categoryId),
+  const currentFilters: TransactionFilters = useMemo(
+    () => ({
+      walletId: selectedWallet,
+      categoryFilter,
+      sortField,
+      sortOrder,
+      searchQuery,
+      amountRange: {
+        min: amountMin > 0 ? amountMin : undefined,
+        max: amountMax > 0 ? amountMax : undefined,
       },
-      {
-        id: "wallet",
-        header: "Wallet",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          getWalletName(row.walletId),
+      dateRange: {
+        start: customStartDate?.toISOString().split("T")[0],
+        end: customEndDate?.toISOString().split("T")[0],
       },
-      {
-        id: "amount",
-        header: "Amount",
-        accessorFn: (row: (typeof transactions)[number]) => {
-          const amountValue =
-            row.displayAmount?.amount ?? row.amount?.amount ?? 0;
-          const numericAmount =
-            typeof amountValue === "number"
-              ? amountValue
-              : Number(amountValue) || 0;
-          return formatCurrency(
-            numericAmount,
-            row.displayAmount ? currency : row.currency,
-          );
-        },
-      },
-      {
-        id: "date",
-        header: "Date & Time",
-        accessorFn: (row: (typeof transactions)[number]) =>
-          formatDate(row.date),
-      },
-      {
-        id: "note",
-        header: "Note",
-        accessorFn: (row: (typeof transactions)[number]) => row.note || "-",
-      },
+    }),
+    [
+      selectedWallet,
+      categoryFilter,
+      sortField,
+      sortOrder,
+      searchQuery,
+      amountMin,
+      amountMax,
+      customStartDate,
+      customEndDate,
     ],
-    [getCategoryName, getWalletName, formatDate, currency],
   );
+
+  // Calculate totals
+  const totalBalance =
+    totalBalanceData?.displayNetWorth?.amount ??
+    totalBalanceData?.displayValue?.amount ??
+    totalBalanceData?.data?.amount ??
+    0;
+  const formattedBalance = useMemo(() => {
+    return formatCurrency(totalBalance, currency);
+  }, [totalBalance, currency]);
 
   return (
     <div className="h-full flex flex-col">
-      {/* Unified Responsive Header */}
-      <div className="flex-shrink-0 bg-bg sm:bg-white border-b sm:border-b-gray-300">
+      {/* Header with Balance */}
+      <div className="flex-shrink-0 bg-primary-600 rounded-md sm:bg-transparent border-b sm:border-b-gray-300">
         <div className="p-3 sm:p-4 md:px-6">
-          {/* Title and Balance Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-0">
-            <h1 className="text-white sm:text-gray-900 text-2xl sm:text-xl font-bold">
+            <h1 className="text-white sm:text-gray-900 text-2xl sm:text-3xl lg:text-4xl font-bold">
               Transactions
             </h1>
 
-            {/* Balance and Controls */}
             <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-              {/* Balance Display */}
               <div className="flex flex-col items-start sm:items-center">
-                <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-bold">
-                  {totalBalanceData ? "Total balance" : "Balance"}
+                <p className="text-white sm:text-gray-400 text-xs sm:text-sm font-medium">
+                  Total balance
                 </p>
-                <p className="text-white sm:text-gray-900 text-xl sm:text-lg font-bold">
+                <p className="text-white sm:text-gray-900 text-lg sm:text-xl lg:text-2xl font-semibold">
                   {isHideBalance ? "*****" : formattedBalance}
                 </p>
               </div>
 
-              {/* Hide Balance Button */}
               <button
                 className="w-10 h-10 sm:w-8 sm:h-8 flex-shrink-0"
                 aria-label="Toggle balance visibility"
@@ -304,230 +513,228 @@ export default function TransactionPage() {
                 />
               </button>
             </div>
-
-            {/* Wallet Selector */}
-            {walletsData &&
-              walletsData.wallets &&
-              walletsData.wallets.length > 0 && (
-                <div className="w-40 sm:w-48">
-                  <Select
-                    value={selectedWallet || ""}
-                    onChange={(val) => setSelectedWallet(val || null)}
-                    options={walletOptions}
-                    placeholder="All Wallets"
-                    clearable={true}
-                  />
-                </div>
-              )}
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
       <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-shrink-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
-          {/* Search Bar */}
-          <div className="relative flex-1">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-fg rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:border-bg placeholder:text-gray-400"
+        {/* Search Bar */}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            name="search"
+            placeholder="Search transactions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-neutral-50 rounded-lg px-4 py-2.5 pl-10 pr-10 text-sm drop-shadow-round focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-gray-400 dark:bg-dark-surface-hover dark:text-dark-text"
+          />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          </svg>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Clear search"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Quick Filters & Mobile Filter Button */}
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
+          {/* Quick Filter Chips */}
+
+          {/* Export Button - Hidden on very small screens, visible on sm+ */}
+          <div className="flex gap-2 justify-between items-center w-full sm:w-fit">
+            <div className="flex-1 overflow-x-auto scrollbar-thin max-w-full overflow-auto">
+              <QuickFilterChips
+                activeFilter={quickFilter}
+                onFilterChange={handleQuickFilterChange}
               />
-            </svg>
-            {/* Clear button */}
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Clear search"
+            </div>
+            <Button
+              onClick={handleOpenFilterModal}
+              className="w-fit h-fit"
+              aria-label="Open filters"
+              variant="ghost"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+              {(selectedWallet || categoryFilter) && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
+              )}
+            </Button>
+          </div>
+
+          <ExportButton
+            onExport={handleExportTransactions}
+            categories={categoryOptions.map((c) => ({
+              id: c.value,
+              name: c.label,
+            }))}
+            isExporting={isExporting}
+          />
+        </div>
+      </div>
+
+      {/* Active Filter Chips */}
+      <ActiveFilterChips
+        filters={currentFilters}
+        walletOptions={walletOptions}
+        categoryOptions={categoryOptions}
+        onRemoveFilter={handleRemoveSingleFilter}
+        onClearAll={handleClearFilters}
+      />
+
+      {/* Transaction List with Pull-to-Refresh and Infinite Scroll */}
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        className="flex-1 min-h-0"
+      >
+        <div ref={containerRef} className="h-full overflow-auto">
+          <div className="px-3 sm:px-6 pb-6">
+            {isLoading &&
+            (!transactionsData ||
+              (transactionsData as any).transactions?.length === 0) ? (
+              // Loading skeleton
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-dark-surface rounded-lg p-4 animate-pulse"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/3" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      </div>
+                      <div className="h-6 bg-gray-200 rounded w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : Object.keys(groupedTransactions).length === 0 ? (
+              // Empty state
+              <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-dark-text-tertiary">
+                <svg
+                  className="w-16 h-16 mb-4 opacity-50"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                   />
                 </svg>
-              </button>
+                <p className="text-lg font-medium">No transactions found</p>
+                <p className="text-sm">
+                  Add your first transaction or adjust filters
+                </p>
+              </div>
+            ) : (
+              // Transaction list with groups
+              <div className="space-y-4">
+                {Object.entries(groupedTransactions).map(
+                  ([groupLabel, transactions]) => (
+                    <div key={groupLabel}>
+                      {/* Group Header */}
+                      <TransactionCard
+                        transaction={null as any}
+                        categoryName=""
+                        walletName=""
+                        currency=""
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        isGroupHeader={true}
+                        groupLabel={groupLabel}
+                      />
+
+                      {/* Transactions in group */}
+                      <div className="space-y-2">
+                        {transactions.map((transaction) => (
+                          <TransactionCard
+                            key={transaction.id}
+                            transaction={transaction}
+                            categoryName={getCategoryName(
+                              transaction.categoryId,
+                            )}
+                            walletName={getWalletName(transaction.walletId)}
+                            currency={currency}
+                            onEdit={handleEditTransaction}
+                            onDelete={handleDeleteTransaction}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
+
+                {/* Loading more indicator */}
+                {isLoadingMore && (
+                  <div className="flex justify-center py-4">
+                    <svg
+                      className="w-6 h-6 text-primary-600 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-
-          {/* Filter Dropdowns */}
-          <div className="flex gap-3 justify-between">
-            <Select
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              options={categoryOptions}
-              placeholder="All Categories"
-              clearable={true}
-            />
-
-            <div className="relative sm:block">
-              <Select
-                value={`${sortField}-${sortOrder}`}
-                onChange={(val) => {
-                  const [field, order] = val.split("-");
-                  setSortField(field);
-                  setSortOrder(order as "asc" | "desc");
-                }}
-                options={sortOptions}
-                placeholder="Sort transactions"
-                clearable={false}
-                disableInput
-                disableFilter
-              />
-            </div>
-          </div>
         </div>
-      </div>
-
-      {/* Table Section - Scrollable */}
-      <div className="flex-1 min-h-0 px-3 sm:px-6 pb-6 ">
-        {/* Desktop Table */}
-        <BaseCard className="hidden sm:flex sm:flex-col h-full overflow-hidden">
-          <TransactionTable
-            transactions={transactions}
-            getCategoryName={getCategoryName}
-            getWalletName={getWalletName}
-            onEdit={handleEditTransaction}
-            onDelete={handleDeleteTransaction}
-            isLoading={isLoading}
-            className="overflow-auto flex-1 min-h-0"
-          />
-
-          {/* Pagination */}
-          {!isLoading && transactions.length > 0 && (
-            <TablePagination
-              currentPage={currentPage}
-              pageSize={rowsPerPage}
-              totalCount={totalCount}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setRowsPerPage(size);
-                setCurrentPage(1);
-              }}
-              showPageNumbers={true}
-            />
-          )}
-        </BaseCard>
-
-        {/* Mobile Transaction List */}
-        <div className="sm:hidden flex flex-col h-full">
-          <div className="flex-1 overflow-auto p-1">
-            <MobileTable
-              data={transactions}
-              columns={mobileColumns}
-              getKey={(transaction) => transaction.id}
-              renderActions={(transaction) => (
-                <>
-                  <button
-                    onClick={() => handleEditTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
-                    aria-label="Edit transaction"
-                  >
-                    <Image
-                      src={`${resources}/editing.png`}
-                      width={20}
-                      height={20}
-                      alt="Edit transaction"
-                      className="w-full h-full object-contain"
-                    />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTransaction(transaction.id)}
-                    className="w-5 h-5 hover:opacity-70 transition-opacity"
-                    aria-label="Delete transaction"
-                  >
-                    <Image
-                      src={`${resources}/remove.png`}
-                      width={20}
-                      height={20}
-                      alt="Delete transaction"
-                      className="w-full h-full object-contain"
-                    />
-                  </button>
-                </>
-              )}
-              emptyMessage="No transactions found"
-              emptyDescription="Add your first transaction to get started"
-              isLoading={isLoading}
-              maxHeight="calc(100vh - 400px)"
-              showScrollIndicator={transactions.length > 5}
-            />
-          </div>
-
-          {/* Mobile Pagination */}
-          {!isLoading && transactions.length > 0 && (
-            <div className="flex-shrink-0 pt-3">
-              <BaseCard>
-                <div className="flex items-center justify-between px-4 py-3 gap-3">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                    aria-label="Previous page"
-                  >
-                    Previous
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
-                      Page {currentPage} of{" "}
-                      {Math.ceil(totalCount / rowsPerPage)}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) =>
-                        Math.min(Math.ceil(totalCount / rowsPerPage), p + 1),
-                      )
-                    }
-                    disabled={
-                      currentPage >= Math.ceil(totalCount / rowsPerPage)
-                    }
-                    className="w-24 px-4 py-2 rounded-lg bg-bg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-center"
-                    aria-label="Next page"
-                  >
-                    Next
-                  </button>
-                </div>
-              </BaseCard>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Edit Transaction Modal */}
-      {modalState?.type === "edit-transaction" && (
-        <BaseModal
-          isOpen={modalState.type === "edit-transaction"}
-          onClose={handleCloseModal}
-          title="Edit Transaction"
-        >
-          <EditTransactionForm
-            transactionId={modalState.transactionId}
-            onSuccess={handleModalSuccess}
-          />
-        </BaseModal>
-      )}
+      </PullToRefresh>
 
       {/* Delete Confirmation Modal */}
       {modalState?.type === "delete-confirmation" && (
@@ -542,6 +749,18 @@ export default function TransactionPage() {
           variant="danger"
         />
       )}
+
+      {/* Mobile Filter Modal */}
+      <TransactionFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={handleCloseFilterModal}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={currentFilters}
+        walletOptions={walletOptions}
+        categoryOptions={categoryOptions}
+        sortOptions={sortOptions}
+        onClearFilters={handleClearFilters}
+      />
     </div>
   );
 }

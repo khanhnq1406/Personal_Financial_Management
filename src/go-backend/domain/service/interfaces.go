@@ -101,6 +101,9 @@ type TransactionService interface {
 
 	// GetFinancialReport retrieves monthly financial breakdown for wallets in a given year.
 	GetFinancialReport(ctx context.Context, userID int32, req *transactionv1.GetFinancialReportRequest) (*transactionv1.GetFinancialReportResponse, error)
+
+	// GetCategoryBreakdown retrieves category-wise transaction summary for a date range.
+	GetCategoryBreakdown(ctx context.Context, userID int32, req *v1.GetCategoryBreakdownRequest) (*v1.GetCategoryBreakdownResponse, error)
 }
 
 // CategoryService defines the interface for category business logic.
@@ -204,6 +207,9 @@ type InvestmentService interface {
 
 	// GetAggregatedPortfolioSummary retrieves portfolio summary aggregated across all wallets or for specific wallet.
 	GetAggregatedPortfolioSummary(ctx context.Context, userID int32, req *investmentv1.GetAggregatedPortfolioSummaryRequest) (*investmentv1.GetPortfolioSummaryResponse, error)
+
+	// ListInvestmentWallets retrieves all investment wallets for a user.
+	ListInvestmentWallets(ctx context.Context, userID int32) ([]*models.Wallet, error)
 }
 
 // FXRateService defines the interface for foreign exchange rate business logic.
@@ -215,3 +221,15 @@ type FXRateService interface {
 // CurrencyPair represents a from-to currency pair for FX rate lookups.
 // Deprecated: Use fx.CurrencyPair instead.
 type CurrencyPair = fx.CurrencyPair
+
+// PortfolioHistoryService handles historical portfolio data.
+type PortfolioHistoryService interface {
+	// GetHistoricalValues retrieves historical portfolio values for charts.
+	GetHistoricalValues(ctx context.Context, userID int32, req *investmentv1.GetHistoricalPortfolioValuesRequest) (*investmentv1.GetHistoricalPortfolioValuesResponse, error)
+
+	// CreateSnapshot creates a portfolio value snapshot.
+	CreateSnapshot(ctx context.Context, userID, walletID int32) error
+
+	// CreateAggregatedSnapshot creates snapshots for all investment wallets.
+	CreateAggregatedSnapshot(ctx context.Context, userID int32) error
+}

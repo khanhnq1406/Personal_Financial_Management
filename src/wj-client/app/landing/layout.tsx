@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     url: "https://wealthjourney.app",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.svg",
         width: 1200,
         height: 630,
         alt: "WealthJourney Dashboard",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "WealthJourney - Your Trusted Guide to Financial Freedom",
     description: "Track expenses, manage multiple wallets, set budgets, and visualize your financial journey.",
-    images: ["/og-image.png"],
+    images: ["/og-image.svg"],
   },
   robots: {
     index: true,

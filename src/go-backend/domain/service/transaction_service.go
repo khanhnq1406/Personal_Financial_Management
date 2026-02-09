@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"wealthjourney/domain/models"
@@ -112,7 +113,10 @@ func (s *transactionService) CreateTransaction(ctx context.Context, userID int32
 	// Populate currency cache
 	if err := s.populateTransactionCache(ctx, userID, transaction, updatedWallet.Currency); err != nil {
 		// Log error but don't fail - cache population is not critical
-		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", transaction.ID, err)
+		slog.Warn("Failed to populate currency cache",
+			"transaction_id", transaction.ID,
+			"user_id", userID,
+			"error", err)
 	}
 
 	txProto := s.modelToProto(transaction, updatedWallet, category)
@@ -322,10 +326,16 @@ func (s *transactionService) UpdateTransaction(ctx context.Context, transactionI
 
 	// Invalidate and repopulate currency cache
 	if err := s.invalidateTransactionCache(ctx, userID, transactionID); err != nil {
-		fmt.Printf("Warning: failed to invalidate currency cache for transaction %d: %v\n", transactionID, err)
+		slog.Warn("Failed to invalidate currency cache",
+			"transaction_id", transactionID,
+			"user_id", userID,
+			"error", err)
 	}
 	if err := s.populateTransactionCache(ctx, userID, updatedTransaction, updatedWallet.Currency); err != nil {
-		fmt.Printf("Warning: failed to populate currency cache for transaction %d: %v\n", updatedTransaction.ID, err)
+		slog.Warn("Failed to populate currency cache",
+			"transaction_id", updatedTransaction.ID,
+			"user_id", userID,
+			"error", err)
 	}
 
 	txProto := s.modelToProto(updatedTransaction, updatedWallet, category)
@@ -376,7 +386,10 @@ func (s *transactionService) DeleteTransaction(ctx context.Context, transactionI
 
 	// Invalidate currency cache
 	if err := s.invalidateTransactionCache(ctx, userID, transactionID); err != nil {
-		fmt.Printf("Warning: failed to invalidate currency cache for transaction %d: %v\n", transactionID, err)
+		slog.Warn("Failed to invalidate currency cache",
+			"transaction_id", transactionID,
+			"user_id", userID,
+			"error", err)
 	}
 
 	return &v1.DeleteTransactionResponse{
@@ -541,7 +554,11 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 			converted, err := s.fxRateSvc.ConvertAmount(ctx, tx.Amount, walletCurrency, preferredCurrency)
 			if err != nil {
 				// Log error but continue with original amount as fallback
-				fmt.Printf("Warning: failed to convert amount for transaction %d: %v\n", tx.ID, err)
+				slog.Warn("Failed to convert amount for transaction",
+					"transaction_id", tx.ID,
+					"from_currency", walletCurrency,
+					"to_currency", preferredCurrency,
+					"error", err)
 			} else {
 				convertedAmount = converted
 			}
@@ -602,6 +619,157 @@ func (s *transactionService) GetFinancialReport(ctx context.Context, userID int3
 		Year:      req.Year,
 		WalletData: walletDataList,
 		Totals:    totals,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// GetCategoryBreakdown retrieves category-wise transaction summary for a date range.
+func (s *transactionService) GetCategoryBreakdown(ctx context.Context, userID int32, req *v1.GetCategoryBreakdownRequest) (*v1.GetCategoryBreakdownResponse, error) {
+	// Validate date range
+	if req.StartDate <= 0 {
+		return nil, apperrors.NewValidationError("start_date must be greater than 0")
+	}
+	if req.EndDate <= 0 {
+		return nil, apperrors.NewValidationError("end_date must be greater than 0")
+	}
+	if req.StartDate > req.EndDate {
+		return nil, apperrors.NewValidationError("start_date must be less than or equal to end_date")
+	}
+
+	// Convert Unix timestamps to time.Time
+	startDate := time.Unix(req.StartDate, 0)
+	endDate := time.Unix(req.EndDate, 0)
+
+	// Get user's preferred currency for aggregation
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	preferredCurrency := types.VND // Default
+	if user != nil && user.PreferredCurrency != "" {
+		preferredCurrency = user.PreferredCurrency
+	}
+
+	// Build filter
+	filter := repository.TransactionFilter{
+		StartDate: &startDate,
+		EndDate:   &endDate,
+	}
+
+	// Apply wallet filter if provided
+	if len(req.WalletIds) > 0 {
+		filter.WalletIDs = req.WalletIds
+	}
+
+	// Apply category type filter if provided
+	if req.CategoryType != nil {
+		var txType v1.TransactionType
+		switch *req.CategoryType {
+		case v1.CategoryType_CATEGORY_TYPE_INCOME:
+			txType = v1.TransactionType_TRANSACTION_TYPE_INCOME
+		case v1.CategoryType_CATEGORY_TYPE_EXPENSE:
+			txType = v1.TransactionType_TRANSACTION_TYPE_EXPENSE
+		default:
+			txType = v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED
+		}
+		if txType != v1.TransactionType_TRANSACTION_TYPE_UNSPECIFIED {
+			filter.Type = &txType
+		}
+	}
+
+	// Get category breakdown from repository
+	breakdownItems, err := s.txRepo.GetCategoryBreakdown(ctx, userID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build wallet currency lookup map for O(1) access
+	var targetWallets []*models.Wallet
+	if len(req.WalletIds) > 0 {
+		// Get specified wallets
+		for _, walletID := range req.WalletIds {
+			if wallet, err := s.walletRepo.GetByID(ctx, walletID); err == nil && wallet != nil {
+				targetWallets = append(targetWallets, wallet)
+			}
+		}
+	} else {
+		// Get all user wallets
+		targetWallets, _, err = s.walletRepo.ListByUserID(ctx, userID, repository.ListOptions{
+			Limit: 100,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	walletCurrencyMap := make(map[int32]string)
+	for _, wallet := range targetWallets {
+		walletCurrencyMap[wallet.ID] = wallet.Currency
+	}
+
+	// Convert to protobuf format with multi-currency conversion
+	categories := make([]*v1.CategoryBreakdownItem, 0, len(breakdownItems))
+
+	for _, item := range breakdownItems {
+		// Aggregate amounts across all currencies, converting each to preferred currency
+		var totalConvertedAmount int64
+
+		for currency, amount := range item.AmountsByCurrency {
+			// Convert to preferred currency
+			if currency != preferredCurrency && amount != 0 {
+				converted, err := s.fxRateSvc.ConvertAmount(ctx, amount, currency, preferredCurrency)
+				if err != nil {
+					// Non-critical error: continue with original amount
+					// Conversion failures are handled by skipping the currency
+					continue
+				}
+				totalConvertedAmount += converted
+			} else {
+				totalConvertedAmount += amount
+			}
+		}
+
+		// For TotalAmount, use the first currency (or preferred if available)
+		var primaryCurrency string
+		var primaryAmount int64
+		if len(item.AmountsByCurrency) > 0 {
+			// Use the first currency in the map for native amount display
+			for currency, amount := range item.AmountsByCurrency {
+				primaryCurrency = currency
+				primaryAmount = amount
+				break
+			}
+		} else {
+			primaryCurrency = types.VND
+			primaryAmount = 0
+		}
+
+		categories = append(categories, &v1.CategoryBreakdownItem{
+			CategoryId:   item.CategoryID,
+			CategoryName: item.CategoryName,
+			Type:         v1.CategoryType(item.Type),
+			TotalAmount: &v1.Money{
+				Amount:   primaryAmount,
+				Currency: primaryCurrency,
+			},
+			DisplayAmount: &v1.Money{
+				Amount:   totalConvertedAmount,
+				Currency: preferredCurrency,
+			},
+			TransactionCount: item.TransactionCount,
+		})
+	}
+
+	message := "Category breakdown retrieved successfully"
+	if len(categories) == 0 {
+		message = "No category data found for the specified period"
+	}
+
+	return &v1.GetCategoryBreakdownResponse{
+		Success:   true,
+		Message:   message,
+		Categories: categories,
+		Currency:  preferredCurrency,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
 }
@@ -771,7 +939,11 @@ func (s *transactionService) convertTransactionAmount(ctx context.Context, userI
 	// Store in cache (non-blocking, log errors only)
 	go func() {
 		if err := s.currencyCache.SetConvertedValue(context.Background(), userID, "transaction", transaction.ID, user.PreferredCurrency, convertedAmount); err != nil {
-			fmt.Printf("Warning: failed to cache converted amount for transaction %d: %v\n", transaction.ID, err)
+			slog.Warn("Failed to cache converted amount",
+				"transaction_id", transaction.ID,
+				"user_id", userID,
+				"currency", user.PreferredCurrency,
+				"error", err)
 		}
 	}()
 

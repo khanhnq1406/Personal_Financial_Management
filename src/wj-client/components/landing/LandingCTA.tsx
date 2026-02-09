@@ -9,7 +9,7 @@ export default function LandingCTA() {
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <section className="py-20 bg-bg">
+    <section className="py-20 bg-primary-600">
       <motion.div
         ref={ref}
         className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
@@ -27,13 +27,13 @@ export default function LandingCTA() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/auth/register"
-            className="w-full sm:w-auto px-8 py-4 bg-white text-bg rounded-md hover:bg-gray-100 transition-colors duration-200 font-semibold text-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="w-full sm:w-auto px-8 py-4 bg-white text-primary-600 rounded-md hover:bg-gray-100 transition-colors duration-200 font-semibold text-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-600"
           >
             Get Started for Free
           </Link>
           <Link
             href="/auth/login"
-            className="w-full sm:w-auto px-8 py-4 border-2 border-white text-white rounded-md hover:bg-white/10 transition-colors duration-200 font-semibold text-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="w-full sm:w-auto px-8 py-4 border-2 border-white text-white rounded-md hover:bg-white/10 transition-colors duration-200 font-semibold text-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-600"
           >
             Sign In
           </Link>

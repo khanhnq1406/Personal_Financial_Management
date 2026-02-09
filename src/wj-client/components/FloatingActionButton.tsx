@@ -1,148 +1,109 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { resources } from "@/app/constants";
-import { BaseModal } from "@/components/modals/BaseModal";
-import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
-import { TransferMoneyForm } from "@/components/modals/forms/TransferMoneyForm";
-import { useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
-import {
-  EVENT_WalletListWallets,
-  EVENT_WalletGetTotalBalance,
-  EVENT_TransactionListTransactions,
-  EVENT_WalletGetBalanceHistory,
-  EVENT_WalletGetMonthlyDominance,
-  EVENT_TransactionGetFinancialReport,
-} from "@/utils/generated/hooks";
+import { cn } from "@/lib/utils/cn";
+import React, { useState, useCallback } from "react";
+import { ZIndex } from "@/lib/utils/z-index";
+import { XIcon, PlusIcon } from "@/components/icons";
 
-type ModalType = "add-transaction" | "transfer-money" | null;
-
-interface FloatingActionButtonProps {
-  onRefresh?: () => void;
+interface FABAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
 }
 
-/**
- * Floating action button component with Add Transaction and Transfer Money functionality.
- * Uses local state for modal management.
- */
-export function FloatingActionButton({ onRefresh }: FloatingActionButtonProps) {
-  const queryClient = useQueryClient();
-  const [modalType, setModalType] = useState<ModalType>(null);
-  const [extend, setExtend] = useState(false);
-  const transactionButtonRef = useRef<HTMLButtonElement>(null);
-  const transferButtonRef = useRef<HTMLButtonElement>(null);
+interface FABProps {
+  actions: FABAction[];
+}
 
-  const handleExtend = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    setExtend(!extend);
-    if (extend) {
-      if (transferButtonRef.current) {
-        transferButtonRef.current.classList.remove("show");
-      }
-      if (transactionButtonRef.current) {
-        transactionButtonRef.current.classList.remove("show");
-      }
-    } else {
-      if (transferButtonRef.current) {
-        transferButtonRef.current.classList.add("show");
-      }
-      if (transactionButtonRef.current) {
-        transactionButtonRef.current.classList.add("show");
-      }
-    }
-  };
+export function FloatingActionButton({ actions }: FABProps) {
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleModalClose = () => setModalType(null);
-
-  const handleModalSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletListWallets] });
-    queryClient.invalidateQueries({ queryKey: [EVENT_WalletGetTotalBalance] });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_TransactionListTransactions],
-    });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_WalletGetBalanceHistory],
-    });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_WalletGetMonthlyDominance],
-    });
-    queryClient.invalidateQueries({
-      queryKey: [EVENT_TransactionGetFinancialReport],
-    });
-    onRefresh?.();
-    handleModalClose();
-  };
-
-  const getModalTitle = () => {
-    switch (modalType) {
-      case "add-transaction":
-        return "Add Transaction";
-      case "transfer-money":
-        return "Transfer Money";
-      default:
-        return "";
-    }
-  };
+  const handleActionClick = useCallback(
+    (
+      event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+      action: FABAction,
+    ) => {
+      event.preventDefault();
+      action.onClick();
+      setIsOpen(false);
+    },
+    [],
+  );
 
   return (
     <>
-      <div className="fixed bottom-3 right-5 z-40">
-        <div className="">
-          <button
-            className="relative hover:drop-shadow-round z-50"
-            onClick={handleExtend}
-            aria-label="Quick actions menu"
-            aria-expanded={extend}
-          >
-            <Image src={`${resources}/plus.png`} alt="" width={32} height={32} />
-          </button>
-          <button
-            className="btn-transaction fixed hover:drop-shadow-round bottom-8 right-14 bg-bg rounded-full w-8"
-            ref={transactionButtonRef}
-            onClick={() => setModalType("add-transaction")}
-            aria-label="Add transaction"
-          >
-            <Image
-              src={`${resources}/transaction.png`}
-              alt=""
-              width={32}
-              height={32}
-            />
-          </button>
-          <button
-            className="btn-transfer fixed hover:drop-shadow-round bottom-14 right-6 bg-bg rounded-full w-8 p-1"
-            ref={transferButtonRef}
-            onClick={() => setModalType("transfer-money")}
-            aria-label="Transfer money"
-          >
-            <Image
-              src={`${resources}/transfer.png`}
-              alt=""
-              width={32}
-              height={32}
-            />
-          </button>
+      {/* Backdrop when expanded */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-neutral-900/20 sm:hidden transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+        )}
+        style={{ zIndex: ZIndex.floating }}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* FAB Container - only visible on mobile */}
+      <div
+        className="fixed bottom-14 right-3 sm:hidden flex items-end"
+        style={{ zIndex: ZIndex.floating + 1 }}
+      >
+        {/* Action buttons (expand upward) */}
+        <div
+          className={cn(
+            "flex flex-col-reverse gap-3 mb-3 transition-all duration-300",
+            isOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-4 pointer-events-none",
+          )}
+        >
+          {actions.map((action, index) => (
+            <button
+              key={index}
+              onClick={(event) => handleActionClick(event, action)}
+              className={cn(
+                "flex items-center gap-3 bg-white shadow-floating rounded-full",
+                "px-4 py-3 min-h-[56px]",
+                "hover:shadow-xl active:scale-95",
+                "transition-all duration-200",
+                "transform",
+                "relative",
+              )}
+              style={{
+                transitionDelay: isOpen ? `${index * 50}ms` : "0ms",
+              }}
+              aria-label={action.label}
+            >
+              <div className="flex-shrink-0 w-6 h-6 text-primary-600">
+                {action.icon}
+              </div>
+              <span className="font-medium text-neutral-900 whitespace-nowrap pr-2">
+                {action.label}
+              </span>
+            </button>
+          ))}
         </div>
+
+        {/* Main FAB button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "w-14 h-14 bg-primary-600 text-white rounded-full shadow-floating",
+            "flex items-center justify-center",
+            "hover:bg-primary-700 hover:shadow-xl",
+            "active:scale-95",
+            "transition-all duration-200",
+            isOpen && "rotate-45",
+          )}
+          aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
+          aria-expanded={isOpen}
+        >
+          {isOpen ? <XIcon size="xl" className="text-white" decorative /> : <PlusIcon size="xl" className="text-white" decorative />}
+        </button>
       </div>
-
-      {/* Add Transaction Modal */}
-      <BaseModal
-        isOpen={modalType === "add-transaction"}
-        onClose={handleModalClose}
-        title={getModalTitle()}
-      >
-        <AddTransactionForm onSuccess={handleModalSuccess} />
-      </BaseModal>
-
-      {/* Transfer Money Modal */}
-      <BaseModal
-        isOpen={modalType === "transfer-money"}
-        onClose={handleModalClose}
-        title={getModalTitle()}
-      >
-        <TransferMoneyForm onSuccess={handleModalSuccess} />
-      </BaseModal>
     </>
   );
 }
+
+// Re-export for backward compatibility if needed
+export default FloatingActionButton;
