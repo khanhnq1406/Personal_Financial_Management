@@ -18,6 +18,7 @@ const customJestConfig = {
     '**/components/**/*.test.[jt]s?(x)',
     '**/utils/**/*.test.[jt]s?(x)',
     '**/hooks/**/*.test.[jt]s?(x)',
+    '**/app/**/*.test.[jt]s?(x)',
   ],
   testEnvironmentOptions: {
     url: 'http://localhost:3000',
