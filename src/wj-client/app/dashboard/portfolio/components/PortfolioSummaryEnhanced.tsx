@@ -13,6 +13,7 @@ import { ButtonType, resources } from "@/app/constants";
 import Image from "next/image";
 import { usePortfolioHistoricalValues } from "@/hooks/usePortfolioHistoricalValues";
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
+import { PlusIcon, RefreshIcon } from "@/components/icons";
 
 /**
  * Investment type to display name mapping
@@ -219,11 +220,12 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
     userCurrency;
 
   // Use the totalPnlPercent from API if available, otherwise calculate
-  const pnlPercent = portfolioSummary.totalPnlPercent !== undefined
-    ? portfolioSummary.totalPnlPercent
-    : displayCost > 0
-      ? (displayPnl / displayCost) * 100
-      : 0;
+  const pnlPercent =
+    portfolioSummary.totalPnlPercent !== undefined
+      ? portfolioSummary.totalPnlPercent
+      : displayCost > 0
+        ? (displayPnl / displayCost) * 100
+        : 0;
 
   // Animated values
   const animatedValue = useAnimatedNumber(displayValue, 1200);
@@ -261,12 +263,18 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
   const assetAllocationData = useMemo(() => {
     // If provided directly, use it
     if (portfolioSummary.assetAllocation) {
-      console.log("Using direct assetAllocation:", portfolioSummary.assetAllocation);
+      console.log(
+        "Using direct assetAllocation:",
+        portfolioSummary.assetAllocation,
+      );
       return portfolioSummary.assetAllocation;
     }
 
     // Build from investmentsByType API response
-    if (portfolioSummary.investmentsByType && portfolioSummary.investmentsByType.length > 0) {
+    if (
+      portfolioSummary.investmentsByType &&
+      portfolioSummary.investmentsByType.length > 0
+    ) {
       const result = portfolioSummary.investmentsByType.map((item, index) => ({
         name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
         value: item.totalValue,
@@ -301,7 +309,10 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
 
   // Get best performer from API data
   const topPerformer = useMemo(() => {
-    if (portfolioSummary.topPerformers && portfolioSummary.topPerformers.length > 0) {
+    if (
+      portfolioSummary.topPerformers &&
+      portfolioSummary.topPerformers.length > 0
+    ) {
       const best = portfolioSummary.topPerformers[0];
       console.log("Top performer data:", best);
       const result = {
@@ -318,7 +329,10 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
 
   // Get worst performer from API data
   const worstPerformer = useMemo(() => {
-    if (portfolioSummary.worstPerformers && portfolioSummary.worstPerformers.length > 0) {
+    if (
+      portfolioSummary.worstPerformers &&
+      portfolioSummary.worstPerformers.length > 0
+    ) {
       const worst = portfolioSummary.worstPerformers[0];
       console.log("Worst performer data:", worst);
       const result = {
@@ -333,9 +347,15 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
     return null;
   }, [portfolioSummary.worstPerformers]);
 
-  console.log("PortfolioSummaryEnhanced render - assetAllocationData.length:", assetAllocationData.length);
+  console.log(
+    "PortfolioSummaryEnhanced render - assetAllocationData.length:",
+    assetAllocationData.length,
+  );
   console.log("PortfolioSummaryEnhanced render - topPerformer:", topPerformer);
-  console.log("PortfolioSummaryEnhanced render - worstPerformer:", worstPerformer);
+  console.log(
+    "PortfolioSummaryEnhanced render - worstPerformer:",
+    worstPerformer,
+  );
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -389,7 +409,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
                   <span className="text-xs text-green-700 font-medium">
                     Best: {topPerformer.name}
                   </span>
-                  <span className={`text-xs font-bold ${topPerformer.positive ? "text-green-700" : "text-red-700"}`}>
+                  <span
+                    className={`text-xs font-bold ${topPerformer.positive ? "text-green-700" : "text-red-700"}`}
+                  >
                     {topPerformer.value}
                   </span>
                 </div>
@@ -399,7 +421,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
                   <span className="text-xs text-red-700 font-medium">
                     Worst: {worstPerformer.name}
                   </span>
-                  <span className={`text-xs font-bold ${worstPerformer.positive ? "text-green-700" : "text-red-700"}`}>
+                  <span
+                    className={`text-xs font-bold ${worstPerformer.positive ? "text-green-700" : "text-red-700"}`}
+                  >
                     {worstPerformer.value}
                   </span>
                 </div>
@@ -410,19 +434,25 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
           <div className="relative h-64 sm:h-72">
             {(() => {
               try {
-                return <DonutChart
-                  data={assetAllocationData}
-                  innerRadius="60%"
-                  outerRadius="80%"
-                  height={288}
-                  centerLabel={formatCurrency(displayValue, displayCurrency)}
-                  centerSubLabel="Total Portfolio"
-                  showLegend={true}
-                  legendPosition="right"
-                />;
+                return (
+                  <DonutChart
+                    data={assetAllocationData}
+                    innerRadius="60%"
+                    outerRadius="80%"
+                    height={288}
+                    centerLabel={formatCurrency(displayValue, displayCurrency)}
+                    centerSubLabel="Total Portfolio"
+                    showLegend={true}
+                    legendPosition="right"
+                  />
+                );
               } catch (error) {
                 console.error("DonutChart error:", error);
-                return <div className="flex items-center justify-center h-full text-red-500">Chart error</div>;
+                return (
+                  <div className="flex items-center justify-center h-full text-red-500">
+                    Chart error
+                  </div>
+                );
               }
             })()}
           </div>
@@ -438,12 +468,7 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
             className="flex-1"
           >
             <div className="flex items-center justify-center gap-2">
-              <Image
-                src={`${resources}/plus.svg`}
-                alt="Add"
-                width={20}
-                height={20}
-              />
+              <PlusIcon />
               <span>Add Investment</span>
             </div>
           </Button>
@@ -456,12 +481,7 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
             className="flex-1"
           >
             <div className="flex items-center justify-center gap-2">
-              <Image
-                src={`${resources}/refresh.svg`}
-                alt="Refresh"
-                width={20}
-                height={20}
-              />
+              <RefreshIcon />
               <span>Refresh Prices</span>
             </div>
           </Button>

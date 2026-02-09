@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { cn } from "@/lib/utils/cn";
+import { XIcon, ChevronDownIcon, LoadingSpinnerIcon } from "@/components/icons";
 
 /**
  * Option type for the Select component.
@@ -402,13 +403,7 @@ export function Select<T extends string = string>({
               className="text-gray-400 hover:text-gray-600 dark:text-dark-text-tertiary dark:hover:text-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-150"
               aria-label="Clear selection"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <XIcon size="sm" decorative />
             </button>
           )}
 
@@ -430,48 +425,18 @@ export function Select<T extends string = string>({
               aria-label={isOpen ? "Close dropdown" : "Open dropdown"}
               aria-expanded={isOpen}
             >
-              <svg
-                className={cn(
-                  "w-4 h-4 transition-transform",
-                  isOpen && "rotate-180",
-                )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <ChevronDownIcon
+                size="sm"
+                className={cn("transition-transform", isOpen && "rotate-180")}
+                decorative
+              />
             </button>
           )}
 
           {/* Loading spinner */}
           {isLoading && (
             <div className="pointer-events-none">
-              <svg
-                className="animate-spin h-4 w-4 text-primary-500"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <LoadingSpinnerIcon size="sm" className="text-primary-500" />
             </div>
           )}
         </div>

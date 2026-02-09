@@ -48,13 +48,22 @@ export interface QuickActionsProps {
  *
  * @example
  * ```tsx
+ * import { PlusIcon, TransactionIcon, WalletIcon } from "@/components/icons";
+ *
  * const actions = [
  *   {
  *     id: 'add-transaction',
  *     label: 'Add',
- *     icon: <Plus className="w-6 h-6" />,
+ *     icon: <PlusIcon size="lg" />,
  *     onClick: () => openModal('add-transaction'),
  *     ariaLabel: 'Add new transaction',
+ *   },
+ *   {
+ *     id: 'view-wallets',
+ *     label: 'Wallets',
+ *     icon: <WalletIcon size="lg" />,
+ *     onClick: () => router.push('/dashboard/wallets'),
+ *     ariaLabel: 'Go to wallets',
  *   },
  *   // ... more actions
  * ];

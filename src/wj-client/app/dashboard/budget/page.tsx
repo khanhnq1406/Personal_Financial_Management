@@ -28,6 +28,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { EVENT_BudgetListBudgets } from "@/utils/generated/hooks";
 import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
+import { PlusIcon } from "@/components/icons";
 
 type ModalState =
   | { type: "create-budget" }
@@ -132,12 +133,7 @@ export default function BudgetPage() {
           className="px-4 py-2 rounded-md drop-shadow-round"
         >
           <div className="flex items-center gap-2">
-            <Image
-              src={`${resources}/plus.svg`}
-              alt="Add"
-              width={20}
-              height={20}
-            />
+            <PlusIcon />
             <span className="hidden sm:inline">Create budget</span>
             <span className="sm:hidden">New budget</span>
           </div>
@@ -148,7 +144,9 @@ export default function BudgetPage() {
       {budgets.length === 0 ? (
         <BaseCard className="p-6 sm:p-8">
           <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
-            <div className="text-gray-500 text-base sm:text-lg">No budgets yet</div>
+            <div className="text-gray-500 text-base sm:text-lg">
+              No budgets yet
+            </div>
             <div className="text-gray-400 text-sm sm:text-base text-center">
               Create your first budget to start tracking
             </div>

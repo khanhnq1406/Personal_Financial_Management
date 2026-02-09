@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils/cn";
 import React, { useState, useCallback } from "react";
 import { ZIndex } from "@/lib/utils/z-index";
+import { XIcon, PlusIcon } from "@/components/icons";
 
 interface FABAction {
   label: string;
@@ -97,19 +98,7 @@ export function FloatingActionButton({ actions }: FABProps) {
           aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
           aria-expanded={isOpen}
         >
-          <svg
-            className="w-7 h-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
+          {isOpen ? <XIcon size="xl" className="text-white" decorative /> : <PlusIcon size="xl" className="text-white" decorative />}
         </button>
       </div>
     </>
