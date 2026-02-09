@@ -71,7 +71,7 @@ export function ChartWrapper({
   isLoading = false,
   yearSelector,
   walletSelector,
-  className = "w-full aspect-video p-1",
+  className = "w-full p-1",
 }: ChartWrapperProps) {
   // Show loading skeleton
   if (isLoading) {
@@ -106,7 +106,7 @@ export function ChartWrapper({
               value={walletSelector.value ?? ""}
               onChange={(e) =>
                 walletSelector.onChange(
-                  e.target.value ? parseInt(e.target.value) : undefined
+                  e.target.value ? parseInt(e.target.value) : undefined,
                 )
               }
             >

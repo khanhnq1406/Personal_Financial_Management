@@ -170,7 +170,10 @@ export const BarChart = memo(function BarChart({
   };
 
   return (
-    <div className={className} style={{ height: `${height}px` }}>
+    <div
+      className={className || "w-full h-[250px] sm:h-[300px] md:h-[350px]"}
+      style={height ? { height: `${height}px` } : undefined}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <RechartsBarChart
           data={data}

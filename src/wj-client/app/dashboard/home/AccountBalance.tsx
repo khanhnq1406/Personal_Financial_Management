@@ -77,7 +77,6 @@ export const AccountBalance = memo(function AccountBalance({
         ]}
         yAxisFormatter={formatTickValue}
         tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
-        height={300}
       />
     </ChartWrapper>
   );

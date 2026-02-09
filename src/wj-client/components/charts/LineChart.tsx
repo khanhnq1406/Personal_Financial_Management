@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState, useEffect } from "react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -135,6 +135,19 @@ export const LineChart = memo(function LineChart({
   yAxisDomain,
   animate = true,
 }: LineChartProps) {
+  // Responsive margin based on screen size
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 800); // sm breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Determine chart type needed based on series
   const seriesTypes = new Set(
     series.map((s) => {
@@ -196,13 +209,59 @@ export const LineChart = memo(function LineChart({
     );
   };
 
+  // Custom legend rendered outside the chart
+  const renderExternalLegend = () => {
+    if (!showLegend || legendPosition !== "top") return null;
+
+    return (
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-2 px-2">
+        {series.map((s, index) => {
+          const color =
+            s.color ??
+            DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length];
+          return (
+            <div
+              key={`legend-${s.dataKey}`}
+              className="flex items-center gap-2"
+            >
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-xs font-medium text-neutral-700 whitespace-nowrap">
+                {s.name}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
-    <div className={className} style={{ height: `${height}px` }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <ChartComponent
-          data={data}
-          margin={{ top: 40, right: 10, left: 0, bottom: 10 }}
-        >
+    <div className={className || "w-full"}>
+      {renderExternalLegend()}
+      <div
+        style={{
+          height: height
+            ? `${height}px`
+            : isMobile
+              ? "250px"
+              : window.innerWidth >= 1024
+                ? "350px"
+                : "300px",
+        }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <ChartComponent
+            data={data}
+            margin={{
+              top: 10,
+              right: 10,
+              left: isMobile ? 10 : 20,
+              bottom: 10,
+            }}
+          >
           {showGrid && (
             <CartesianGrid
               strokeDasharray="3 3"
@@ -225,18 +284,44 @@ export const LineChart = memo(function LineChart({
             axisLine={false}
             domain={yAxisDomain}
             tickFormatter={yAxisFormatter}
-            width={80}
           />
 
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
 
-          {showLegend && (
+          {showLegend && legendPosition !== "top" && (
             <Legend
               {...(legendLayout as any)}
               iconType="circle"
               wrapperStyle={{
                 fontSize: "12px",
                 fontWeight: 500,
+                paddingBottom: "0px",
+                paddingTop: "0px",
+                paddingLeft: "0px",
+              }}
+              content={(props) => {
+                const { payload } = props;
+                const isBottomPosition = legendPosition === "bottom";
+                return (
+                  <div
+                    className={`flex ${isBottomPosition ? "flex-wrap justify-center gap-4" : "flex-col gap-2"}`}
+                  >
+                    {payload?.map((entry: any, index: number) => (
+                      <div
+                        key={`legend-${index}`}
+                        className="flex items-center gap-2"
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-xs font-medium text-neutral-700">
+                          {entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
               }}
             />
           )}
@@ -304,6 +389,7 @@ export const LineChart = memo(function LineChart({
           })}
         </ChartComponent>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 });

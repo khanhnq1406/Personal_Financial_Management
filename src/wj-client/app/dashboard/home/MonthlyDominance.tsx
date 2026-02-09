@@ -86,7 +86,6 @@ export const MonthlyDominance = memo(function MonthlyDominance({
         }))}
         yAxisFormatter={formatTickValue}
         tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
-        height={300}
       />
     </ChartWrapper>
   );

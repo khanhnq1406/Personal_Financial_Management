@@ -49,7 +49,6 @@ export const Dominance = memo(function Dominance({
         showLegend={true}
         legendPosition="right"
         tooltipFormatter={(value) => formatCurrency(value, currency)}
-        height={300}
       />
     </ChartWrapper>
   );
