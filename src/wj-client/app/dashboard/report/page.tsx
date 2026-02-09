@@ -317,6 +317,14 @@ export default function ReportPageEnhanced() {
   const handleExport = useCallback(
     async (options: ExportOptions) => {
       try {
+        // Validate data exists
+        if (!reportData || reportData.totals?.length === 0) {
+          alert(
+            "No data available to export. Please select a different time range.",
+          );
+          return;
+        }
+
         // Filter categories if specific ones were selected
         let filteredExpenseCategories = expenseCategories;
         let filteredCategoryComparison = categoryComparisonData;
@@ -376,7 +384,12 @@ export default function ReportPageEnhanced() {
             break;
         }
       } catch (error) {
-        alert(error instanceof Error ? error.message : "Failed to export");
+        console.error("Export error:", error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to export. Please try again.",
+        );
       }
     },
     [
