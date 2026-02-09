@@ -23,6 +23,12 @@ import {
   useQueryListCategories,
 } from "@/utils/generated/hooks";
 import { exportFinancialReportToCSV } from "@/utils/csv-export";
+import {
+  exportReportToPDF,
+  exportReportToExcel,
+  type ReportExportData,
+} from "@/utils/export";
+import { prepareReportExportData } from "./export-utils";
 import { PeriodSelector, PeriodType, DateRange } from "./PeriodSelector";
 import { SummaryCards, FinancialSummaryData } from "./SummaryCards";
 import { LineChart, BarChart, DonutChart } from "@/components/charts";
@@ -152,32 +158,6 @@ export default function ReportPageEnhanced() {
       // Refetch will be triggered automatically by dateRange dependency
     },
     [],
-  );
-
-  // Handle export with dialog options
-  const handleExport = useCallback(
-    async (options: ExportOptions) => {
-      try {
-        switch (options.format) {
-          case "csv":
-            if (reportData) {
-              exportFinancialReportToCSV(reportData, reportYear, currency);
-            }
-            break;
-          case "pdf":
-            // TODO: Implement PDF export
-            alert("PDF export coming soon!");
-            break;
-          case "excel":
-            // TODO: Implement Excel export
-            alert("Excel export coming soon!");
-            break;
-        }
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "Failed to export");
-      }
-    },
-    [reportData, reportYear, currency],
   );
 
   // Calculate summary data from API response
@@ -329,6 +309,72 @@ export default function ReportPageEnhanced() {
       };
     });
   }, [categoryBreakdown, previousCategoryBreakdown, compareWithPrevious]);
+
+  // Handle export with dialog options
+  const handleExport = useCallback(
+    async (options: ExportOptions) => {
+      try {
+        // Prepare export data from current page state
+        const exportData: ReportExportData = prepareReportExportData(
+          {
+            totalIncome: summaryData.totalIncome,
+            totalExpenses: summaryData.totalExpenses,
+            netSavings: summaryData.netSavings,
+            savingsRate: summaryData.savingsRate,
+            topExpenseCategory: summaryData.topExpenseCategory || null,
+            currency: summaryData.currency,
+          },
+          trendData,
+          expenseCategories,
+          compareWithPrevious ? categoryComparisonData : undefined,
+          selectedPeriod,
+          dateRange,
+        );
+
+        switch (options.format) {
+          case "csv":
+            // Keep existing CSV export
+            if (reportData) {
+              exportFinancialReportToCSV(reportData, reportYear, currency);
+            }
+            break;
+          case "pdf":
+            // Export to PDF using prepared data
+            exportReportToPDF(exportData, {
+              period: selectedPeriod,
+              startDate: dateRange.start,
+              endDate: dateRange.end,
+              includeCharts: options.includeCharts,
+              customFileName: options.fileName,
+            });
+            break;
+          case "excel":
+            // Export to Excel using prepared data
+            await exportReportToExcel(exportData, {
+              period: selectedPeriod,
+              startDate: dateRange.start,
+              endDate: dateRange.end,
+              customFileName: options.fileName,
+            });
+            break;
+        }
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Failed to export");
+      }
+    },
+    [
+      summaryData,
+      trendData,
+      expenseCategories,
+      categoryComparisonData,
+      compareWithPrevious,
+      selectedPeriod,
+      dateRange,
+      reportData,
+      reportYear,
+      currency,
+    ],
+  );
 
   // Show error state
   if (error) {
