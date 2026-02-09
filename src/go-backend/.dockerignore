@@ -1,0 +1,46 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server
+migrate-investment-wallet-balance
+main
+
+# Test files
+*_test.go
+*.test
+*.out
+tests/
+
+# Documentation
+*.md
+docs/
+
+# Local development files
+.env
+.env.local
+.env.*.local
+*.log
+server.log
+
+# Build artifacts
+.vercel/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile.backup
+docker-compose.yml

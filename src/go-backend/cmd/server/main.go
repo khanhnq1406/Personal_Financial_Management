@@ -28,6 +28,11 @@ import (
 	investmentv1 "wealthjourney/protobuf/v1"
 )
 
+const (
+	dbKeepAliveInterval     = 2 * time.Minute
+	dbKeepAliveStartupDelay = 10 * time.Second
+)
+
 func main() {
 	// Load configuration
 	cfg, err := config.Load()
@@ -242,6 +247,35 @@ func main() {
 
 			case <-backgroundCtx.Done():
 				log.Println("Background portfolio snapshot job stopped (shutting down)")
+				return
+			}
+		}
+	}()
+
+	// Initialize database keep-alive job
+	// This runs every 2 minutes to prevent Railway PostgreSQL from sleeping
+	// Railway free tier puts idle databases to sleep after ~5 minutes of no activity
+	// This lightweight query keeps the connection pool active
+	go func() {
+		ticker := time.NewTicker(dbKeepAliveInterval)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(dbKeepAliveStartupDelay)
+
+		log.Printf("Database keep-alive job started (runs every %v)", dbKeepAliveInterval)
+
+		for {
+			select {
+			case <-ticker.C:
+				// Execute lightweight health check query
+				// This uses the existing Ping() method which executes PingContext
+				if err := db.Ping(); err != nil {
+					log.Printf("Database keep-alive ping failed: %v", err)
+				}
+
+			case <-backgroundCtx.Done():
+				log.Println("Database keep-alive job stopped (shutting down)")
 				return
 			}
 		}

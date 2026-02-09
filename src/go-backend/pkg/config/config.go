@@ -84,13 +84,29 @@ func Load() (*Config, error) {
 	}
 
 	// Database pool settings
-	// Supabase recommends: max 15 connections for Pro tier, 60 for Enterprise
-	maxOpenConns, _ := strconv.Atoi(getEnv("DB_MAX_OPEN_CONNS", "15"))
-	maxIdleConns, _ := strconv.Atoi(getEnv("DB_MAX_IDLE_CONNS", "5"))
-	// Longer lifetime for Supabase to reduce connection churn
-	connMaxLifetime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_LIFETIME", "1h"))
-	// Keep idle connections available but not too long
-	connMaxIdleTime, _ := time.ParseDuration(getEnv("DB_CONN_MAX_IDLE_TIME", "10m"))
+	// Railway Hobby tier (1 CPU, 512MB RAM): use conservative settings to prevent resource exhaustion
+	// These defaults can be overridden via environment variables for other deployments
+	maxOpenConns, err := strconv.Atoi(getEnv("DB_MAX_OPEN_CONNS", "5"))
+	if err != nil || maxOpenConns < 1 {
+		maxOpenConns = 5 // fallback to default on invalid input
+	}
+
+	maxIdleConns, err := strconv.Atoi(getEnv("DB_MAX_IDLE_CONNS", "2"))
+	if err != nil || maxIdleConns < 0 {
+		maxIdleConns = 2 // fallback to default on invalid input
+	}
+
+	// Faster connection rotation prevents stale connections on resource-constrained environments
+	connMaxLifetime, err := time.ParseDuration(getEnv("DB_CONN_MAX_LIFETIME", "30m"))
+	if err != nil || connMaxLifetime <= 0 {
+		connMaxLifetime = 30 * time.Minute // fallback to default on invalid input
+	}
+
+	// Close idle connections faster to free resources on memory-constrained Railway
+	connMaxIdleTime, err := time.ParseDuration(getEnv("DB_CONN_MAX_IDLE_TIME", "5m"))
+	if err != nil || connMaxIdleTime <= 0 {
+		connMaxIdleTime = 5 * time.Minute // fallback to default on invalid input
+	}
 
 	// Rate limit settings
 	requestsPerMinute, _ := strconv.Atoi(getEnv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))

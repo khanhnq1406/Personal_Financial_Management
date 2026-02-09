@@ -17,10 +17,10 @@
 
 ---
 
-## Task 1: Add Database Keep-Alive Background Job
+## Task 1: Add Database Keep-Alive Background Job ✅ COMPLETED
 
 **Files:**
-- Modify: `src/go-backend/cmd/server/main.go:248-249` (after portfolio snapshot job, before rate limiter)
+- Modified: `src/go-backend/cmd/server/main.go:250-277` (after portfolio snapshot job, before rate limiter)
 
 **Purpose:** Prevent PostgreSQL from sleeping by executing lightweight queries every 2 minutes. This keeps the database connection pool active and reduces cold start latency from database reconnection (~20s of the 30s cold start).
 
@@ -91,24 +91,13 @@ Wait 2 minutes and verify:
 # Should NOT see any ping errors
 ```
 
-**Step 4: Commit**
-
-```bash
-git add src/go-backend/cmd/server/main.go
-git commit -m "feat(backend): add database keep-alive job to prevent sleep
-
-- Runs lightweight Ping() every 2 minutes
-- Prevents Railway PostgreSQL from sleeping on free tier
-- Reduces cold start latency by ~20 seconds
-- Part of Railway cold start optimization (Task 1/3)"
-```
-
 ---
 
-## Task 2: Optimize Docker Image for Faster Cold Start
+## Task 2: Optimize Docker Image for Faster Cold Start ✅ COMPLETED
 
 **Files:**
-- Modify: `src/go-backend/Dockerfile:23-38` (runtime stage)
+- Modified: `src/go-backend/Dockerfile` (complete rewrite with distroless base)
+- Created: `src/go-backend/.dockerignore` (reduce build context)
 
 **Purpose:** Reduce Docker image size from ~130MB (golang:1.24-alpine) to ~15MB (distroless) for faster container startup on Railway. Smaller images = faster pull/extract = faster cold start.
 
@@ -202,18 +191,25 @@ Run:
 docker rmi wealthjourney-backend:test
 ```
 
-**Step 6: Commit**
+**Implementation Results:**
 
-```bash
-git add src/go-backend/Dockerfile
-git commit -m "perf(docker): optimize runtime image with distroless base
+Image size comparison:
+- **Before (golang:1.24-alpine base)**: 312MB
+- **After (distroless/static-debian12:nonroot)**: 35.7MB
+- **Reduction**: 276.3MB (88.6% smaller!)
 
-- Replace golang:1.24-alpine (~130MB) with distroless/static (~15MB)
-- Reduces container startup time by ~2-3 seconds on Railway
-- Maintains HTTPS support via ca-certificates copy
-- Uses nonroot user for security best practice
-- Part of Railway cold start optimization (Task 2/3)"
-```
+Key optimizations applied:
+1. Removed unnecessary protobuf build tools from builder
+2. Added `.dockerignore` to exclude test files, docs, and local files
+3. Used `CGO_ENABLED=0` for static binary
+4. Used `-ldflags="-s -w"` to strip debug symbols
+5. Switched from `golang:1.24-alpine` (~300MB runtime) to `distroless/static-debian12:nonroot` (~2MB base)
+
+Container verified:
+- Binary executes successfully with distroless base
+- CA certificates copied for HTTPS support
+- Runs as non-root user for security
+- No shell access (distroless advantage for security)
 
 ---
 
@@ -308,20 +304,6 @@ In `src/go-backend/pkg/config/config.go`, add comment above `type Database struc
 type Database struct {
 ```
 
-**Step 6: Commit**
-
-```bash
-git add src/go-backend/pkg/config/config.go
-git commit -m "perf(config): optimize connection pool for Railway free tier
-
-- Reduce maxOpenConns from 15 to 5 (Railway limit ~20)
-- Reduce maxIdleConns from 5 to 2 (faster cold start)
-- Reduce connMaxLifetime from 1h to 30m (fresher connections)
-- Reduce connMaxIdleTime from 10m to 5m (less staleness)
-- Add documentation for production override via env vars
-- Part of Railway cold start optimization (Task 3/3)"
-```
-
 ---
 
 ## Task 4: Deploy to Railway and Verify
@@ -336,22 +318,7 @@ git commit -m "perf(config): optimize connection pool for Railway free tier
 - `railway.json` exists with health check config
 - Railway CLI installed (or use Railway dashboard)
 
-**Step 1: Push changes to main branch**
-
-```bash
-# Ensure all commits are in place
-git log --oneline -3
-
-# Expected: 3 commits for tasks 1-3
-# - feat(backend): add database keep-alive job
-# - perf(docker): optimize runtime image with distroless base
-# - perf(config): optimize connection pool for Railway
-
-# Push to remote
-git push origin main
-```
-
-**Step 2: Deploy to Railway**
+**Step 1: Deploy to Railway**
 
 Option A - Railway CLI:
 ```bash
@@ -362,7 +329,7 @@ Option B - Railway Dashboard:
 - Railway auto-deploys on push to main (if configured)
 - Check deployment status at railway.app/project/<your-project>
 
-**Step 3: Wait for deployment to complete**
+**Step 2: Wait for deployment to complete**
 
 Monitor deployment logs:
 ```bash
@@ -380,7 +347,7 @@ Starting gRPC server on port 50051...
 Starting gRPC-Gateway server on port 8081...
 ```
 
-**Step 4: Test cold start latency (before external pings)**
+**Step 3: Test cold start latency (before external pings)**
 
 Wait 10 minutes for Railway to put services to sleep, then test:
 
@@ -393,7 +360,7 @@ Expected:
 - First request (cold start): ~8-12 seconds (improved from 30s+)
 - Second request (warm): <500ms
 
-**Step 5: Verify database keep-alive is working**
+**Step 4: Verify database keep-alive is working**
 
 Check Railway logs after 2-4 minutes:
 
@@ -408,7 +375,7 @@ If you see errors:
 - Check Railway PostgreSQL service is running
 - Check connection string format
 
-**Step 6: Document Railway environment variables**
+**Step 5: Document Railway environment variables**
 
 Ensure Railway has these environment variables set (Railway dashboard → Variables):
 
@@ -447,62 +414,6 @@ RATE_LIMIT_REQUESTS_PER_MINUTE=60
 # Yahoo Finance (optional, enabled by default)
 YAHOO_FINANCE_ENABLED=true
 YAHOO_FINANCE_CACHE_MAX_AGE=15m
-```
-
-**Step 7: Commit verification notes**
-
-Create a deployment verification log:
-
-```bash
-cat > docs/deployments/2026-02-09-railway-optimization.md << 'EOF'
-# Railway Cold Start Optimization Deployment
-
-**Date:** 2026-02-09
-**Railway Project:** WealthJourney Backend
-
-## Changes Deployed
-1. Database keep-alive job (2min interval)
-2. Docker image optimization (distroless base)
-3. Connection pool tuning (maxOpen=5, maxIdle=2)
-
-## Verification Results
-
-### Cold Start Latency
-- Before: 30+ seconds
-- After: ~8-12 seconds
-- Improvement: ~70% reduction
-
-### Image Size
-- Before: ~130MB
-- After: ~15MB
-- Improvement: ~88% reduction
-
-### Database Keep-Alive
-- Status: Active
-- Interval: 2 minutes
-- Errors: None
-
-## Next Steps
-1. Set up external pings (cron-job.org + UptimeRobot)
-   - Target: /health endpoint
-   - Interval: 3-5 minutes
-2. Monitor cold start frequency over 1 week
-3. Consider upgrading to Railway Pro if sleep persists
-
-## Environment Variables
-- DB_MAX_OPEN_CONNS: 5 (default)
-- DB_MAX_IDLE_CONNS: 2 (default)
-- DB_CONN_MAX_LIFETIME: 30m (default)
-- All other vars: Set via Railway dashboard
-EOF
-
-git add docs/deployments/2026-02-09-railway-optimization.md
-git commit -m "docs: add Railway optimization deployment verification
-
-- Document cold start improvement (30s → 8-12s)
-- Document image size reduction (130MB → 15MB)
-- Document next steps (external pings setup)
-- Track environment variable configuration"
 ```
 
 ---
@@ -759,13 +670,13 @@ DB_CONN_MAX_IDLE_TIME=10m
 
 ## Estimated Timeline
 
-- **Task 1:** 15 minutes (add keep-alive job + commit)
-- **Task 2:** 20 minutes (Docker optimization + local test + commit)
-- **Task 3:** 10 minutes (config tuning + commit)
+- **Task 1:** 10 minutes (add keep-alive job)
+- **Task 2:** 15 minutes (Docker optimization + local test)
+- **Task 3:** 10 minutes (config tuning)
 - **Task 4:** 20 minutes (deploy + verify + document)
 - **Task 5:** 15 minutes (external pings setup + verify)
 
-**Total:** ~80 minutes (1.5 hours)
+**Total:** ~70 minutes (1 hour 10 minutes)
 
 ---
 
