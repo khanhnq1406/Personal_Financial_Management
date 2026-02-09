@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { SUPPORTED_CURRENCIES } from "@/app/constants";
 import { ZIndex } from "@/lib/utils/z-index";
 import { cn } from "@/lib/utils/cn";
+import { BottomSheet } from "@/components/BottomSheet";
+import { useMobile } from "@/hooks/useMobile";
 
 export function CurrencySelector() {
   const { currency, updateCurrency, isConverting } = useCurrency();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const isMobile = useMobile();
+
+  // Refs for accessibility
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Find current currency info - will update when currency context changes
   const currentCurrency = SUPPORTED_CURRENCIES.find((c) => c.code === currency);
@@ -43,20 +51,80 @@ export function CurrencySelector() {
     setSelectedCurrency("");
   };
 
+  const handleKeyDown = (
+    e: React.KeyboardEvent,
+    currCode: string,
+    index: number
+  ) => {
+    switch (e.key) {
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        handleCurrencyClick(currCode);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        // Focus next item
+        const nextButton = e.currentTarget.parentElement?.children[
+          index + 1
+        ] as HTMLButtonElement;
+        nextButton?.focus();
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        // Focus previous item
+        const prevButton = e.currentTarget.parentElement?.children[
+          index - 1
+        ] as HTMLButtonElement;
+        prevButton?.focus();
+        break;
+      case "Escape":
+        e.preventDefault();
+        // Close dropdown and return focus to trigger
+        triggerRef.current?.focus();
+        break;
+    }
+  };
+
+  const handleMobileOpen = () => {
+    setIsMobileSheetOpen(true);
+  };
+
+  const handleMobileClose = () => {
+    setIsMobileSheetOpen(false);
+    // Return focus to trigger button
+    triggerRef.current?.focus();
+  };
+
   return (
     <>
       <div className="relative group">
         <button
+          ref={triggerRef}
+          onClick={() => {
+            if (isMobile) {
+              handleMobileOpen();
+            }
+          }}
           className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+            "flex items-center gap-2 rounded-lg transition-all duration-200",
             "bg-white dark:bg-dark-surface",
             "border border-neutral-200 dark:border-neutral-700",
             "shadow-sm dark:shadow-dark-card",
+            // Mobile-first: touch-friendly padding
+            "px-3 py-3 min-h-[44px]",
+            // Desktop: slightly smaller
+            "sm:py-2 sm:min-h-[40px]",
             isDisabled
               ? "opacity-60 cursor-not-allowed"
-              : "hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer hover:shadow-md"
+              : "hover:bg-neutral-50 dark:hover:bg-dark-surface-hover cursor-pointer hover:shadow-md active:scale-95"
           )}
+          style={{
+            touchAction: "manipulation",
+          }}
           aria-label="Select currency"
+          aria-expanded={isMobile ? isMobileSheetOpen : undefined}
+          aria-haspopup={isMobile ? "dialog" : "menu"}
           disabled={isDisabled}
           title={
             isConverting
@@ -91,7 +159,7 @@ export function CurrencySelector() {
               {currentCurrency?.symbol || currency}
             </span>
           )}
-          <span className="text-sm text-neutral-600 dark:text-neutral-400 hidden sm:inline">
+          <span className="text-sm text-neutral-600 dark:text-neutral-400">
             {currency}
           </span>
           {!isConverting && (
@@ -111,30 +179,36 @@ export function CurrencySelector() {
           )}
         </button>
 
-        {/* Dropdown menu - only show when not disabled */}
-        {/* Mobile: dropdown below (top-full mt-2), Desktop: dropdown above (sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0) */}
-        {!isDisabled && (
+        {/* Desktop dropdown - only show when not disabled and not mobile */}
+        {!isDisabled && !isMobile && (
           <div
+            ref={dropdownRef}
             className={cn(
-              "absolute right-0 top-full mt-2 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2",
+              "absolute right-0 sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2",
               "bg-white dark:bg-dark-surface",
               "rounded-lg shadow-lg dark:shadow-dark-card",
               "border border-neutral-200 dark:border-neutral-700",
               "py-2 hidden group-hover:block min-w-[200px]"
             )}
             style={{ zIndex: ZIndex.dropdown }}
+            role="menu"
+            aria-label="Currency options"
           >
-            {SUPPORTED_CURRENCIES.map((curr) => (
+            {SUPPORTED_CURRENCIES.map((curr, index) => (
               <button
                 key={curr.code}
                 onClick={() => handleCurrencyClick(curr.code)}
+                onKeyDown={(e) => handleKeyDown(e, curr.code, index)}
                 className={cn(
                   "w-full px-4 py-2 text-left transition-colors flex items-center gap-3",
                   "hover:bg-neutral-100 dark:hover:bg-dark-surface-hover",
                   "text-neutral-900 dark:text-dark-text",
+                  "cursor-pointer",
                   curr.code === currency &&
                     "bg-primary-50 dark:bg-primary-900/20 font-semibold"
                 )}
+                role="menuitem"
+                tabIndex={0}
               >
                 <span className="text-lg w-6">{curr.symbol}</span>
                 <div className="flex flex-col">
@@ -159,6 +233,66 @@ export function CurrencySelector() {
               </button>
             ))}
           </div>
+        )}
+
+        {/* Mobile bottom sheet */}
+        {isMobile && (
+          <BottomSheet
+            isOpen={isMobileSheetOpen}
+            onClose={handleMobileClose}
+            title="Select Currency"
+          >
+            <div className="py-2">
+              {SUPPORTED_CURRENCIES.map((curr, index) => (
+                <button
+                  key={curr.code}
+                  onClick={() => {
+                    handleCurrencyClick(curr.code);
+                    setIsMobileSheetOpen(false);
+                  }}
+                  className={cn(
+                    "w-full px-6 py-4 text-left flex items-center gap-4",
+                    // Mobile-first: touch-friendly sizing
+                    "min-h-[56px]",
+                    "active:bg-neutral-100 dark:active:bg-dark-surface-hover",
+                    "text-neutral-900 dark:text-dark-text",
+                    "active:scale-[0.98]",
+                    "transition-transform",
+                    curr.code === currency &&
+                      "bg-primary-50 dark:bg-primary-900/20 font-semibold",
+                    // Add border separator except for last item
+                    index < SUPPORTED_CURRENCIES.length - 1 &&
+                      "border-b border-neutral-100 dark:border-neutral-800"
+                  )}
+                  style={{
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <span className="text-2xl w-8">{curr.symbol}</span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-base font-medium">{curr.code}</span>
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                      {curr.name}
+                    </span>
+                  </div>
+                  {curr.code === currency && (
+                    <svg
+                      className="w-5 h-5 text-primary-500 dark:text-primary-400 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </BottomSheet>
         )}
       </div>
 
