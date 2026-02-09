@@ -16,7 +16,10 @@ import autoTable from "jspdf-autotable";
 import { formatCurrency as formatCurrencyUtil } from "@/utils/currency-formatter";
 
 // Re-export types from data-utils for convenience
-export type { PeriodType, DateRange } from "@/app/dashboard/report/PeriodSelector";
+export type {
+  PeriodType,
+  DateRange,
+} from "@/app/dashboard/report/PeriodSelector";
 
 /**
  * Summary data for PDF export
@@ -115,7 +118,7 @@ const LAYOUT = {
  * @returns Formatted currency string
  */
 export function formatCurrency(amount: number, currency: string): string {
-  return formatCurrencyUtil(amount, currency);
+  return formatCurrencyUtil(amount, currency, "code");
 }
 
 /**
@@ -154,7 +157,7 @@ function formatDateRange(start: Date, end: Date): string {
 function addHeader(
   pdf: jsPDF,
   period: string,
-  dateRange: { start: Date; end: Date }
+  dateRange: { start: Date; end: Date },
 ): number {
   let yPosition = LAYOUT.margin;
 
@@ -166,8 +169,14 @@ function addHeader(
 
   // Add period label
   pdf.setFontSize(12);
-  pdf.setTextColor(BRAND_COLORS.text.r, BRAND_COLORS.text.g, BRAND_COLORS.text.b);
-  const periodLabel = period.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  pdf.setTextColor(
+    BRAND_COLORS.text.r,
+    BRAND_COLORS.text.g,
+    BRAND_COLORS.text.b,
+  );
+  const periodLabel = period
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
   pdf.text(`Period: ${periodLabel}`, LAYOUT.margin, yPosition);
   yPosition += LAYOUT.lineHeight;
 
@@ -192,7 +201,7 @@ function addHeader(
 function addSummarySection(
   pdf: jsPDF,
   summaryData: SummaryData,
-  yPosition: number
+  yPosition: number,
 ): number {
   // Section title
   pdf.setFontSize(14);
@@ -202,9 +211,18 @@ function addSummarySection(
 
   // Define summary metrics
   const metrics = [
-    { label: "Total Income", value: formatCurrency(summaryData.totalIncome, summaryData.currency) },
-    { label: "Total Expenses", value: formatCurrency(summaryData.totalExpenses, summaryData.currency) },
-    { label: "Net Savings", value: formatCurrency(summaryData.netSavings, summaryData.currency) },
+    {
+      label: "Total Income",
+      value: formatCurrency(summaryData.totalIncome, summaryData.currency),
+    },
+    {
+      label: "Total Expenses",
+      value: formatCurrency(summaryData.totalExpenses, summaryData.currency),
+    },
+    {
+      label: "Net Savings",
+      value: formatCurrency(summaryData.netSavings, summaryData.currency),
+    },
     { label: "Savings Rate", value: `${summaryData.savingsRate}%` },
   ];
 
@@ -218,7 +236,11 @@ function addSummarySection(
 
   // Render metrics in two columns
   pdf.setFontSize(10);
-  pdf.setTextColor(BRAND_COLORS.text.r, BRAND_COLORS.text.g, BRAND_COLORS.text.b);
+  pdf.setTextColor(
+    BRAND_COLORS.text.r,
+    BRAND_COLORS.text.g,
+    BRAND_COLORS.text.b,
+  );
 
   const columnWidth = (LAYOUT.pageWidth - 2 * LAYOUT.margin) / 2;
   metrics.forEach((metric, index) => {
@@ -253,7 +275,7 @@ function addMonthlyBreakdownTable(
   pdf: jsPDF,
   trendData: TrendData[],
   currency: string,
-  yPosition: number
+  yPosition: number,
 ): number {
   // Section title
   pdf.setFontSize(14);
@@ -262,7 +284,9 @@ function addMonthlyBreakdownTable(
   yPosition += LAYOUT.lineHeight + 2;
 
   // Prepare table data
-  const tableHead = [["Month", "Income", "Expenses", "Net Savings", "Savings Rate"]];
+  const tableHead = [
+    ["Month", "Income", "Expenses", "Net Savings", "Savings Rate"],
+  ];
 
   const tableBody = trendData.map((month) => [
     month.month,
@@ -297,9 +321,18 @@ function addMonthlyBreakdownTable(
       4: { cellWidth: 30, halign: "right" }, // Savings Rate
     },
     alternateRowStyles: {
-      fillColor: [BRAND_COLORS.lightGray.r, BRAND_COLORS.lightGray.g, BRAND_COLORS.lightGray.b],
+      fillColor: [
+        BRAND_COLORS.lightGray.r,
+        BRAND_COLORS.lightGray.g,
+        BRAND_COLORS.lightGray.b,
+      ],
     },
-    margin: { top: LAYOUT.margin, left: LAYOUT.margin, right: LAYOUT.margin, bottom: LAYOUT.margin },
+    margin: {
+      top: LAYOUT.margin,
+      left: LAYOUT.margin,
+      right: LAYOUT.margin,
+      bottom: LAYOUT.margin,
+    },
   });
 
   // Return Y position after table
@@ -319,7 +352,7 @@ function addExpenseCategoriesSection(
   pdf: jsPDF,
   expenseCategories: ExpenseCategoryData[],
   currency: string,
-  yPosition: number
+  yPosition: number,
 ): number {
   // Check if we need a new page
   if (yPosition > pdf.internal.pageSize.getHeight() - 60) {
@@ -336,7 +369,11 @@ function addExpenseCategoriesSection(
   if (expenseCategories.length === 0) {
     pdf.setFontSize(10);
     pdf.setTextColor(100, 100, 100);
-    pdf.text("No expense data available for this period.", LAYOUT.margin, yPosition);
+    pdf.text(
+      "No expense data available for this period.",
+      LAYOUT.margin,
+      yPosition,
+    );
     return yPosition + LAYOUT.lineHeight + LAYOUT.sectionSpacing;
   }
 
@@ -352,8 +389,8 @@ function addExpenseCategoriesSection(
     cat.percentage !== undefined
       ? `${cat.percentage}%`
       : total > 0
-      ? `${((cat.value / total) * 100).toFixed(1)}%`
-      : "0.0%",
+        ? `${((cat.value / total) * 100).toFixed(1)}%`
+        : "0.0%",
   ]);
 
   // Add table using autoTable
@@ -379,9 +416,18 @@ function addExpenseCategoriesSection(
       2: { cellWidth: 40, halign: "right" }, // Percentage
     },
     alternateRowStyles: {
-      fillColor: [BRAND_COLORS.lightGray.r, BRAND_COLORS.lightGray.g, BRAND_COLORS.lightGray.b],
+      fillColor: [
+        BRAND_COLORS.lightGray.r,
+        BRAND_COLORS.lightGray.g,
+        BRAND_COLORS.lightGray.b,
+      ],
     },
-    margin: { top: LAYOUT.margin, left: LAYOUT.margin, right: LAYOUT.margin, bottom: LAYOUT.margin },
+    margin: {
+      top: LAYOUT.margin,
+      left: LAYOUT.margin,
+      right: LAYOUT.margin,
+      bottom: LAYOUT.margin,
+    },
   });
 
   // Return Y position after table
@@ -401,7 +447,7 @@ function addCategoryComparisonSection(
   pdf: jsPDF,
   comparisonData: CategoryComparisonData[],
   currency: string,
-  yPosition: number
+  yPosition: number,
 ): number {
   if (!comparisonData || comparisonData.length === 0) {
     return yPosition;
@@ -416,11 +462,17 @@ function addCategoryComparisonSection(
   // Section title
   pdf.setFontSize(14);
   pdf.setTextColor(...BRAND_COLORS.greenRgb);
-  pdf.text("Category Comparison (Current vs Previous)", LAYOUT.margin, yPosition);
+  pdf.text(
+    "Category Comparison (Current vs Previous)",
+    LAYOUT.margin,
+    yPosition,
+  );
   yPosition += LAYOUT.lineHeight + 2;
 
   // Prepare table data
-  const tableHead = [["Category", "Current Period", "Previous Period", "Change", "Change %"]];
+  const tableHead = [
+    ["Category", "Current Period", "Previous Period", "Change", "Change %"],
+  ];
 
   const tableBody = comparisonData.map((cat) => [
     cat.category,
@@ -455,9 +507,18 @@ function addCategoryComparisonSection(
       4: { cellWidth: 30, halign: "right" }, // Change %
     },
     alternateRowStyles: {
-      fillColor: [BRAND_COLORS.lightGray.r, BRAND_COLORS.lightGray.g, BRAND_COLORS.lightGray.b],
+      fillColor: [
+        BRAND_COLORS.lightGray.r,
+        BRAND_COLORS.lightGray.g,
+        BRAND_COLORS.lightGray.b,
+      ],
     },
-    margin: { top: LAYOUT.margin, left: LAYOUT.margin, right: LAYOUT.margin, bottom: LAYOUT.margin },
+    margin: {
+      top: LAYOUT.margin,
+      left: LAYOUT.margin,
+      right: LAYOUT.margin,
+      bottom: LAYOUT.margin,
+    },
   });
 
   // Return Y position after table
@@ -481,7 +542,11 @@ function addFooter(pdf: jsPDF): void {
     // Page number
     const pageText = `Page ${i} of ${pageCount}`;
     const pageTextWidth = pdf.getTextWidth(pageText);
-    pdf.text(pageText, LAYOUT.pageWidth / 2 - pageTextWidth / 2, pageHeight - 7);
+    pdf.text(
+      pageText,
+      LAYOUT.pageWidth / 2 - pageTextWidth / 2,
+      pageHeight - 7,
+    );
 
     // Generated date
     const generatedText = `Generated on ${new Date().toLocaleDateString()}`;
@@ -490,7 +555,11 @@ function addFooter(pdf: jsPDF): void {
     // Brand text
     const brandText = "WealthJourney Financial Report";
     const brandTextWidth = pdf.getTextWidth(brandText);
-    pdf.text(brandText, LAYOUT.pageWidth - LAYOUT.margin - brandTextWidth, pageHeight - 7);
+    pdf.text(
+      brandText,
+      LAYOUT.pageWidth - LAYOUT.margin - brandTextWidth,
+      pageHeight - 7,
+    );
   }
 }
 
@@ -509,10 +578,17 @@ function addFooter(pdf: jsPDF): void {
  */
 export function generateReportPDF(
   data: ReportExportData,
-  options: ReportPDFExportOptions = {}
+  options: ReportPDFExportOptions = {},
 ): jsPDF {
-  const { summaryData, trendData, expenseCategories, categoryComparisonData, period, dateRange, currency } =
-    data;
+  const {
+    summaryData,
+    trendData,
+    expenseCategories,
+    categoryComparisonData,
+    period,
+    dateRange,
+    currency,
+  } = data;
 
   // Create new PDF document (A4 size, portrait)
   const pdf = new jsPDF({
@@ -525,11 +601,21 @@ export function generateReportPDF(
   let yPosition = addHeader(pdf, period, dateRange);
   yPosition = addSummarySection(pdf, summaryData, yPosition);
   yPosition = addMonthlyBreakdownTable(pdf, trendData, currency, yPosition);
-  yPosition = addExpenseCategoriesSection(pdf, expenseCategories, currency, yPosition);
+  yPosition = addExpenseCategoriesSection(
+    pdf,
+    expenseCategories,
+    currency,
+    yPosition,
+  );
 
   // Add category comparison if available
   if (categoryComparisonData && categoryComparisonData.length > 0) {
-    yPosition = addCategoryComparisonSection(pdf, categoryComparisonData, currency, yPosition);
+    yPosition = addCategoryComparisonSection(
+      pdf,
+      categoryComparisonData,
+      currency,
+      yPosition,
+    );
   }
 
   // Add footer to all pages
@@ -560,7 +646,7 @@ export function generateReportPDFFilename(
   period: string,
   startDate: Date,
   endDate: Date,
-  customFileName?: string
+  customFileName?: string,
 ): string {
   if (customFileName) {
     // Remove .pdf extension if already present
@@ -614,14 +700,18 @@ export function downloadPDF(pdf: jsPDF, filename: string): void {
  */
 export function exportReportToPDF(
   data: ReportExportData,
-  options: ReportPDFExportOptions & { period: string; startDate: Date; endDate: Date }
+  options: ReportPDFExportOptions & {
+    period: string;
+    startDate: Date;
+    endDate: Date;
+  },
 ): void {
   const pdf = generateReportPDF(data, options);
   const filename = generateReportPDFFilename(
     options.period,
     options.startDate,
     options.endDate,
-    options.customFileName
+    options.customFileName,
   );
   downloadPDF(pdf, filename);
 }

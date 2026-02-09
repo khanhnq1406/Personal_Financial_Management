@@ -10,6 +10,7 @@ import {
   WalletIcon,
   PortfolioIcon,
   ReportsIcon,
+  BudgetIcon,
 } from "@/components/icons";
 
 export interface NavItem {
@@ -76,7 +77,7 @@ export const BottomNav = memo(function BottomNav({
               onClick={(e) => handleClick(e, item.href)}
               className={cn(
                 "flex flex-col items-center justify-center",
-                "min-h-[48px] w-full max-w-[20%]", // 20% width for 5 items
+                "min-h-[48px] w-full max-w-[16.66%]", // 16.66% width for 6 items
                 "transition-all duration-200 ease-out",
                 "text-neutral-600",
                 isActive
@@ -161,6 +162,12 @@ export const createNavItems = (
       label: "Reports",
       ariaLabel: "Go to reports",
       icon: <ReportsIcon size="md" decorative />,
+    },
+    {
+      href: routes.budget,
+      label: "Budget",
+      ariaLabel: "Go to budget",
+      icon: <BudgetIcon size="md" decorative />,
     },
   ];
 };
