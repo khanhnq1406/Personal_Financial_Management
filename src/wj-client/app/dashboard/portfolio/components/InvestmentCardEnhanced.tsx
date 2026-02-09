@@ -15,6 +15,7 @@ import { resources } from "@/app/constants";
 import Image from "next/image";
 import { Sparkline } from "@/components/charts";
 import { motion, AnimatePresence } from "framer-motion";
+import { IconProps, PlusIcon } from "@/components/icons";
 
 /**
  * Enhanced investment data type for card display
@@ -59,7 +60,7 @@ export interface InvestmentCardEnhancedProps {
  * Quick action button component
  */
 interface QuickActionButtonProps {
-  icon: string;
+  icon: string | React.ReactNode;
   label: string;
   onClick: (e: React.MouseEvent) => void;
   bgColor: string;
@@ -78,7 +79,11 @@ const QuickActionButton = memo(function QuickActionButton({
       onClick={onClick}
       className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg ${bgColor} ${textColor} hover:opacity-90 transition-opacity`}
     >
-      <Image src={icon} alt={label} width={20} height={20} />
+      {typeof icon === "string" ? (
+        <Image src={icon} alt={label} width={20} height={20} />
+      ) : (
+        <>{icon}</>
+      )}
       <span className="text-xs font-medium">{label}</span>
     </button>
   );
@@ -138,11 +143,12 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
     : [];
 
   const handleCardClick = () => {
-    if (!isExpanded) {
-      setIsExpanded(true);
-    } else {
-      onClick?.(id);
-    }
+    // if (!isExpanded) {
+    //   setIsExpanded(true);
+    // } else {
+    //   onClick?.(id);
+    // }
+    setIsExpanded(!isExpanded);
   };
 
   const handleBuyMore = (e: React.MouseEvent) => {
@@ -333,7 +339,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
 
               <div className="flex gap-2 pt-3 border-t border-neutral-100">
                 <QuickActionButton
-                  icon={`${resources}/plus.svg`}
+                  icon={<PlusIcon />}
                   label="More"
                   onClick={handleBuyMore}
                   bgColor="bg-green-100"

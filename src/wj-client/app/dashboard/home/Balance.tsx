@@ -114,7 +114,7 @@ export const Balance = memo(function Balance({ availableYears }: BalanceProps) {
           <XAxis dataKey="label" />
           <YAxis tickFormatter={formatTickValue} />
           <Tooltip
-            formatter={(value: number) => formatCurrency(value, currency)}
+            formatter={(value: number | undefined) => formatCurrency(value ?? 0, currency)}
           />
           <Legend />
           <Line

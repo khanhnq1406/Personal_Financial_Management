@@ -50,7 +50,7 @@ export interface DonutChartProps {
   /** Sub-label to show below center label (e.g., "Total Portfolio") */
   centerSubLabel?: string;
   /** Custom formatter for tooltip values */
-  tooltipFormatter?: (value: number, name: string) => [string, string];
+  tooltipFormatter?: (value: number, name: string | undefined) => [string, string];
   /** Whether to animate on load (default: true) */
   animate?: boolean;
 }
@@ -155,13 +155,13 @@ export const DonutChart = memo(function DonutChart({
                 fontSize: "12px",
                 padding: "8px 12px",
               }}
-              formatter={(value: number, name: string) => {
+              formatter={(value: number | undefined, name?: string) => {
                 if (tooltipFormatter) {
-                  return tooltipFormatter(value, name);
+                  return tooltipFormatter(value ?? 0, name ?? "");
                 }
                 return [
-                  typeof value === "number" ? value.toLocaleString() : value,
-                  name,
+                  typeof value === "number" ? value.toLocaleString() : (value ?? 0).toLocaleString(),
+                  name ?? "",
                 ];
               }}
             />

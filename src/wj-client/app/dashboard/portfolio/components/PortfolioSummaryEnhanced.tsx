@@ -8,6 +8,7 @@ import {
   useAnimatedPercentage,
 } from "@/components/charts/useAnimatedNumber";
 import { Sparkline, DonutChart } from "@/components/charts";
+import { DonutChartSVG } from "@/components/charts/DonutChartSVG";
 import { Button } from "@/components/Button";
 import { ButtonType, resources } from "@/app/constants";
 import Image from "next/image";
@@ -167,7 +168,7 @@ const StatCard = memo(function StatCard({
       )}
 
       {showSparkline && sparklineData && sparklineData.length > 1 && (
-        <div className="mt-2">
+        <div className="mt-2 w-full">
           <Sparkline data={sparklineData} height={40} />
         </div>
       )}
@@ -245,7 +246,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
     }
     // Fallback to mock trend data if no historical data available yet
     if (portfolioSummary.historicalValues) {
-      return portfolioSummary.historicalValues.map((v) => ({ value: v.value }));
+      return portfolioSummary.historicalValues.map((v) => ({
+        value: v.value,
+      }));
     }
     // Generate mock trend data based on current value as last resort
     const currentValue = displayValue;
@@ -263,10 +266,6 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
   const assetAllocationData = useMemo(() => {
     // If provided directly, use it
     if (portfolioSummary.assetAllocation) {
-      console.log(
-        "Using direct assetAllocation:",
-        portfolioSummary.assetAllocation,
-      );
       return portfolioSummary.assetAllocation;
     }
 
@@ -275,31 +274,26 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.investmentsByType &&
       portfolioSummary.investmentsByType.length > 0
     ) {
-      const result = portfolioSummary.investmentsByType.map((item, index) => ({
+      return portfolioSummary.investmentsByType.map((item, index) => ({
         name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
         value: item.totalValue,
         color: ASSET_COLORS[index % ASSET_COLORS.length],
       }));
-      console.log("Built assetAllocation from investmentsByType:", result);
-      return result;
     }
 
     // Fallback: mock data based on holdings count (for empty portfolios)
     const holdings = portfolioSummary.totalInvestments || 0;
     if (holdings === 0) {
-      console.log("No holdings, returning empty assetAllocation");
       return [];
     }
 
     const types = ["Stocks", "Crypto", "ETFs", "Gold"];
     const avgPerType = displayValue / Math.max(holdings, 1);
-    const mockResult = types.map((type, i) => ({
+    return types.map((type, i) => ({
       name: type,
       value: Math.round(avgPerType * (0.5 + Math.random() * 1)),
       color: ASSET_COLORS[i % ASSET_COLORS.length],
     }));
-    console.log("Using mock assetAllocation:", mockResult);
-    return mockResult;
   }, [
     displayValue,
     portfolioSummary.assetAllocation,
@@ -314,16 +308,12 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.topPerformers.length > 0
     ) {
       const best = portfolioSummary.topPerformers[0];
-      console.log("Top performer data:", best);
-      const result = {
+      return {
         name: best.symbol || best.name,
         value: `${best.unrealizedPnlPercent >= 0 ? "+" : ""}${best.unrealizedPnlPercent.toFixed(2)}%`,
         positive: best.unrealizedPnlPercent >= 0,
       };
-      console.log("Formatted top performer:", result);
-      return result;
     }
-    console.log("No top performers found");
     return null;
   }, [portfolioSummary.topPerformers]);
 
@@ -334,28 +324,14 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.worstPerformers.length > 0
     ) {
       const worst = portfolioSummary.worstPerformers[0];
-      console.log("Worst performer data:", worst);
-      const result = {
+      return {
         name: worst.symbol || worst.name,
         value: `${worst.unrealizedPnlPercent >= 0 ? "+" : ""}${worst.unrealizedPnlPercent.toFixed(2)}%`,
         positive: worst.unrealizedPnlPercent >= 0,
       };
-      console.log("Formatted worst performer:", result);
-      return result;
     }
-    console.log("No worst performers found");
     return null;
   }, [portfolioSummary.worstPerformers]);
-
-  console.log(
-    "PortfolioSummaryEnhanced render - assetAllocationData.length:",
-    assetAllocationData.length,
-  );
-  console.log("PortfolioSummaryEnhanced render - topPerformer:", topPerformer);
-  console.log(
-    "PortfolioSummaryEnhanced render - worstPerformer:",
-    worstPerformer,
-  );
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -391,38 +367,38 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
 
       {/* Asset Allocation Card */}
       {assetAllocationData.length > 0 ? (
-        <BaseCard className="p-4 sm:p-6">
-          <div className="flex justify-between items-start mb-4">
+        <BaseCard className="p-3 sm:p-4 md:p-6 ">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
             <div>
-              <h3 className="text-lg font-bold text-neutral-900">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-900">
                 Asset Allocation
               </h3>
-              <p className="text-sm text-neutral-600 mt-1">
+              <p className="text-xs sm:text-sm text-neutral-600 mt-0.5 sm:mt-1">
                 Distribution by investment type
               </p>
             </div>
 
             {/* Performers display */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
               {topPerformer && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100">
-                  <span className="text-xs text-green-700 font-medium">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-100">
+                  <span className="text-[10px] sm:text-xs text-green-700 font-medium truncate max-w-[80px] sm:max-w-none">
                     Best: {topPerformer.name}
                   </span>
                   <span
-                    className={`text-xs font-bold ${topPerformer.positive ? "text-green-700" : "text-red-700"}`}
+                    className={`text-[10px] sm:text-xs font-bold flex-shrink-0 ${topPerformer.positive ? "text-green-700" : "text-red-700"}`}
                   >
                     {topPerformer.value}
                   </span>
                 </div>
               )}
               {worstPerformer && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100">
-                  <span className="text-xs text-red-700 font-medium">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-red-100">
+                  <span className="text-[10px] sm:text-xs text-red-700 font-medium truncate max-w-[80px] sm:max-w-none">
                     Worst: {worstPerformer.name}
                   </span>
                   <span
-                    className={`text-xs font-bold ${worstPerformer.positive ? "text-green-700" : "text-red-700"}`}
+                    className={`text-[10px] sm:text-xs font-bold flex-shrink-0 ${worstPerformer.positive ? "text-green-700" : "text-red-700"}`}
                   >
                     {worstPerformer.value}
                   </span>
@@ -431,15 +407,15 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
             </div>
           </div>
 
-          <div className="relative h-64 sm:h-72">
+          <div className="w-full">
             {(() => {
               try {
                 return (
-                  <DonutChart
+                  <DonutChartSVG
                     data={assetAllocationData}
-                    innerRadius="60%"
-                    outerRadius="80%"
-                    height={288}
+                    innerRadiusPercent={60}
+                    outerRadiusPercent={80}
+                    height={260}
                     centerLabel={formatCurrency(displayValue, displayCurrency)}
                     centerSubLabel="Total Portfolio"
                     showLegend={true}
@@ -447,9 +423,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
                   />
                 );
               } catch (error) {
-                console.error("DonutChart error:", error);
+                console.error("DonutChartSVG error:", error);
                 return (
-                  <div className="flex items-center justify-center h-full text-red-500">
+                  <div className="flex items-center justify-center h-52 text-red-500 text-sm">
                     Chart error
                   </div>
                 );

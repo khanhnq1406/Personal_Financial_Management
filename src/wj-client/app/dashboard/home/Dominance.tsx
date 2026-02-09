@@ -16,13 +16,13 @@ import { formatCurrency } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 type CustomizedLabelType = {
-  cx: number;
-  cy: number;
-  midAngle: number | string;
-  innerRadius: number;
-  outerRadius: number;
-  percent: number;
-  index: number | string;
+  cx?: number;
+  cy?: number;
+  midAngle?: number | string;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+  index?: number | string;
 };
 
 interface DominanceProps {
@@ -67,20 +67,20 @@ export const Dominance = memo(function Dominance({
     outerRadius,
     percent,
   }: CustomizedLabelType) => {
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.45;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const radius = (innerRadius ?? 0) + ((outerRadius ?? 0) - (innerRadius ?? 0)) * 0.45;
+    const x = (cx ?? 0) + radius * Math.cos(-(typeof midAngle === "number" ? midAngle : 0) * RADIAN);
+    const y = (cy ?? 0) + radius * Math.sin(-(typeof midAngle === "number" ? midAngle : 0) * RADIAN);
 
     return (
       <text
         x={x}
         y={y}
         fill="white"
-        textAnchor={x > cx ? "start" : "end"}
+        textAnchor={x > (cx ?? 0) ? "start" : "end"}
         dominantBaseline="central"
         className="sm:text-base text-sm"
       >
-        {`${(percent * 100).toFixed(0)}%`}
+        {`${((percent ?? 0) * 100).toFixed(0)}%`}
       </text>
     );
   };

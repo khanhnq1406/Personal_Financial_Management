@@ -20,6 +20,11 @@ export type {
   DonutChartDataPoint,
 } from "./DonutChart";
 
+export { DonutChartSVG } from "./DonutChartSVG";
+export type {
+  DonutChartSVGProps,
+} from "./DonutChartSVG";
+
 export { LineChart } from "./LineChart";
 export type {
   LineChartProps,

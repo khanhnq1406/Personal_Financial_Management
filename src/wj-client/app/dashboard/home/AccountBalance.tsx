@@ -83,10 +83,10 @@ export const AccountBalance = memo(function AccountBalance({
           <XAxis dataKey="label" />
           <YAxis tickFormatter={formatTickValue} />
           <Tooltip
-            formatter={(value: number, name: string) => {
+            formatter={(value: number | undefined, name?: string) => {
               // Format with dynamic currency
-              const formatted = formatCurrency(value, currency);
-              return [formatted, name];
+              const formatted = formatCurrency(value ?? 0, currency);
+              return [formatted, name ?? ""];
             }}
           />
           <Legend />

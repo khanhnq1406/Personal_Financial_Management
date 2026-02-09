@@ -1,14 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
-import {
-  LineChart as RechartsLineChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  YAxis,
-  XAxis,
-} from "recharts";
+import React, { memo, useState, useEffect, useRef } from "react";
 
 /**
  * Data point for sparkline chart
@@ -45,13 +37,7 @@ export interface SparklineProps {
 /**
  * Sparkline component - Mini trend indicator for cards
  *
- * Displays a small line chart showing trends over time.
- * Automatically determines color based on trend (first to last value).
- *
- * @example
- * ```tsx
- * <Sparkline data={[{value: 100}, {value: 120}, {value: 115}, {value: 130}]} />
- * ```
+ * Pure SVG implementation without Recharts dependency
  */
 export const Sparkline = memo(function Sparkline({
   data,
@@ -63,81 +49,131 @@ export const Sparkline = memo(function Sparkline({
   className = "",
   showGradient = true,
 }: SparklineProps) {
-  // Determine trend color if not provided
-  const trendColor = color ?? (() => {
-    if (data.length < 2) return "#10b981"; // Default green
-    const first = data[0].value;
-    const last = data[data.length - 1].value;
-    return last >= first ? "#10b981" : "#ef4444"; // Green if up, red if down
-  })();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(300);
 
-  // Gradient ID for this instance
+  // Measure container width on mount and resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        if (containerWidth > 0) {
+          setWidth(containerWidth);
+        }
+      }
+    };
+
+    // Initial measurement
+    setTimeout(updateWidth, 0);
+
+    // Set up ResizeObserver for dynamic resizing
+    const resizeObserver = new ResizeObserver(updateWidth);
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Determine trend color if not provided
+  const trendColor =
+    color ??
+    (() => {
+      if (data.length < 2) return "#10b981"; // Default green
+      const first = data[0].value;
+      const last = data[data.length - 1].value;
+      return last >= first ? "#10b981" : "#ef4444"; // Green if up, red if down
+    })();
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  // Calculate min and max values for scaling
+  const values = data.map((d) => d.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const valueRange = maxValue - minValue || 1; // Avoid division by zero
+
+  // Generate SVG path
+  const padding = 5;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const points = data.map((point, index) => {
+    const x = padding + (chartWidth * index) / (data.length - 1 || 1);
+    const y =
+      padding +
+      chartHeight -
+      ((point.value - minValue) / valueRange) * chartHeight;
+    return { x, y, value: point.value };
+  });
+
+  // Create SVG path string
+  const pathData = points
+    .map((point, index) => {
+      return `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`;
+    })
+    .join(" ");
+
+  // Create area fill path (for gradient)
+  const areaPath = showGradient
+    ? `${pathData} L ${points[points.length - 1].x} ${height - padding} L ${padding} ${height - padding} Z`
+    : "";
+
   const gradientId = `sparkline-gradient-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
-    <div className={className} style={{ height: `${height}px` }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart
-          data={data}
-          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ width: "100%", height: `${height}px` }}
+    >
+      {width > 0 && (
+        <svg
+          width={width}
+          height={height}
+          style={{ display: "block" }}
         >
           {showGradient && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={trendColor}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={trendColor}
-                  stopOpacity={0}
-                />
+                <stop offset="0%" stopColor={trendColor} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={trendColor} stopOpacity={0} />
               </linearGradient>
             </defs>
           )}
 
-          <XAxis
-            dataKey="label"
-            hide={!showTooltip}
-            tick={{ fontSize: 10 }}
-            tickLine={false}
-            axisLine={false}
-          />
-
-          <YAxis
-            hide={!showTooltip}
-            tick={{ fontSize: 10 }}
-            tickLine={false}
-            axisLine={false}
-            domain={["auto", "auto"]}
-          />
-
-          {showTooltip && (
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                border: "1px solid #e5e7eb",
-                borderRadius: "6px",
-                fontSize: "12px",
-                padding: "6px 10px",
-              }}
-              formatter={(value: number) => [value.toLocaleString(), "Value"]}
-            />
+          {/* Area fill */}
+          {showGradient && areaPath && (
+            <path d={areaPath} fill={`url(#${gradientId})`} />
           )}
 
-          <Line
-            type="monotone"
-            dataKey="value"
+          {/* Line */}
+          <path
+            d={pathData}
+            fill="none"
             stroke={trendColor}
             strokeWidth={strokeWidth}
-            dot={showDots ? { r: 3, fill: trendColor } : false}
-            activeDot={showDots || showTooltip ? { r: 4, fill: trendColor } : false}
-            fill={showGradient ? `url(#${gradientId})` : undefined}
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-        </RechartsLineChart>
-      </ResponsiveContainer>
+
+          {/* Dots */}
+          {showDots &&
+            points.map((point, index) => (
+              <circle
+                key={index}
+                cx={point.x}
+                cy={point.y}
+                r={3}
+                fill={trendColor}
+              />
+            ))}
+        </svg>
+      )}
     </div>
   );
 });

@@ -16,7 +16,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { BaseCard } from "@/components/BaseCard";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrency, formatCurrencyCompact } from "@/utils/currency-formatter";
 import {
   useQueryGetFinancialReport,
   useQueryGetCategoryBreakdown,
@@ -26,6 +26,7 @@ import { exportFinancialReportToCSV } from "@/utils/csv-export";
 import { PeriodSelector, PeriodType, DateRange } from "./PeriodSelector";
 import { SummaryCards, FinancialSummaryData } from "./SummaryCards";
 import { LineChart, BarChart, DonutChart } from "@/components/charts";
+import { DonutChartSVG } from "@/components/charts/DonutChartSVG";
 import { motion } from "framer-motion";
 import { ExportOptions, ExportButton } from "@/components/export/ExportDialog";
 import { FullPageLoading } from "@/components/loading/FullPageLoading";
@@ -430,24 +431,18 @@ export default function ReportPageEnhanced() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <BaseCard className="p-4">
-            <h3 className="text-lg font-bold text-neutral-900 mb-4">
+          <BaseCard className="p-3 sm:p-4">
+            <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-3 sm:mb-4">
               Expense Breakdown
             </h3>
-            <div className="h-72">
-              <DonutChart
-                data={expenseCategories}
-                innerRadius="50%"
-                outerRadius="75%"
-                height={288}
-                showLegend={true}
-                legendPosition="right"
-                tooltipFormatter={(value) => [
-                  formatCurrency(value, currency),
-                  "Amount",
-                ]}
-              />
-            </div>
+            <DonutChartSVG
+              data={expenseCategories}
+              innerRadiusPercent={50}
+              outerRadiusPercent={75}
+              height={260}
+              showLegend={true}
+              legendPosition="right"
+            />
           </BaseCard>
         </motion.div>
 
@@ -457,41 +452,40 @@ export default function ReportPageEnhanced() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <BaseCard className="p-4">
-            <h3 className="text-lg font-bold text-neutral-900 mb-4">
+          <BaseCard className="p-3 sm:p-4">
+            <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-3 sm:mb-4">
               Category Comparison
               {compareWithPrevious && (
-                <span className="text-sm font-normal text-neutral-600 ml-2">
+                <span className="text-xs sm:text-sm font-normal text-neutral-600 ml-2">
                   vs Previous Period
                 </span>
               )}
             </h3>
-            <div className="h-72">
-              <BarChart
-                data={categoryComparisonData}
-                xAxisKey="category"
-                series={[
-                  {
-                    dataKey: "thisMonth",
-                    name: "This Month",
-                    color: "#008148",
-                  },
-                  ...(compareWithPrevious
-                    ? [
-                        {
-                          dataKey: "lastMonth",
-                          name: "Last Month",
-                          color: "#94A3B8",
-                        } as const,
-                      ]
-                    : []),
-                ]}
-                height={288}
-                showLegend={true}
-                yAxisFormatter={(value) => formatCurrency(value, currency)}
-                xAxisFormatter={(label) => label}
-              />
-            </div>
+            <BarChart
+              data={categoryComparisonData}
+              xAxisKey="category"
+              series={[
+                {
+                  dataKey: "thisMonth",
+                  name: "This Month",
+                  color: "#008148",
+                },
+                ...(compareWithPrevious
+                  ? [
+                      {
+                        dataKey: "lastMonth",
+                        name: "Last Month",
+                        color: "#94A3B8",
+                      } as const,
+                    ]
+                  : []),
+              ]}
+              height={260}
+              showLegend={true}
+              yAxisFormatter={(value) => formatCurrencyCompact(value, currency)}
+              tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
+              xAxisFormatter={(label) => label}
+            />
           </BaseCard>
         </motion.div>
       </div>
@@ -502,45 +496,44 @@ export default function ReportPageEnhanced() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <BaseCard className="p-4">
-          <h3 className="text-lg font-bold text-neutral-900 mb-4">
+        <BaseCard className="p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-3 sm:mb-4">
             Income vs Expenses Trend
           </h3>
-          <div className="h-80">
-            <LineChart
-              data={trendData}
-              xAxisKey="month"
-              series={[
-                {
-                  dataKey: "income",
-                  name: "Income",
-                  color: "#22C55E",
-                  showArea: true,
-                  curveType: "monotone",
-                },
-                {
-                  dataKey: "expenses",
-                  name: "Expenses",
-                  color: "#DC2626",
-                  showArea: true,
-                  curveType: "monotone",
-                },
-                {
-                  dataKey: "net",
-                  name: "Net Savings",
-                  color: "#008148",
-                  showArea: false,
-                  curveType: "monotone",
-                  strokeWidth: 3,
-                },
-              ]}
-              height={320}
-              showGrid={true}
-              showTooltip={true}
-              showLegend={true}
-              yAxisFormatter={(value) => formatCurrency(value, currency)}
-            />
-          </div>
+          <LineChart
+            data={trendData}
+            xAxisKey="month"
+            series={[
+              {
+                dataKey: "income",
+                name: "Income",
+                color: "#22C55E",
+                showArea: true,
+                curveType: "monotone",
+              },
+              {
+                dataKey: "expenses",
+                name: "Expenses",
+                color: "#DC2626",
+                showArea: true,
+                curveType: "monotone",
+              },
+              {
+                dataKey: "net",
+                name: "Net Savings",
+                color: "#008148",
+                showArea: false,
+                curveType: "monotone",
+                strokeWidth: 3,
+              },
+            ]}
+            height={280}
+            showGrid={true}
+            showTooltip={true}
+            showLegend={true}
+            yAxisFormatter={(value) => formatCurrencyCompact(value, currency)}
+            tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
+          />
         </BaseCard>
       </motion.div>
 
@@ -550,27 +543,27 @@ export default function ReportPageEnhanced() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <BaseCard className="p-4">
-          <h3 className="text-lg font-bold text-neutral-900 mb-4">
+        <BaseCard className="p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-bold text-neutral-900 mb-3 sm:mb-4">
             Monthly Summary
           </h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-neutral-200">
-                  <th className="text-left py-3 px-4 font-semibold text-neutral-700">
+                  <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-neutral-700">
                     Month
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-neutral-700">
+                  <th className="text-right py-2 sm:py-3 px-2 sm:px-4 font-semibold text-neutral-700">
                     Income
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-neutral-700">
+                  <th className="text-right py-2 sm:py-3 px-2 sm:px-4 font-semibold text-neutral-700">
                     Expenses
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-neutral-700">
+                  <th className="text-right py-2 sm:py-3 px-2 sm:px-4 font-semibold text-neutral-700">
                     Net Savings
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-neutral-700">
+                  <th className="text-right py-2 sm:py-3 px-2 sm:px-4 font-semibold text-neutral-700">
                     Savings Rate
                   </th>
                 </tr>
@@ -581,19 +574,19 @@ export default function ReportPageEnhanced() {
                     key={index}
                     className="border-b border-neutral-100 hover:bg-neutral-50"
                   >
-                    <td className="py-3 px-4 font-medium text-neutral-900">
+                    <td className="py-2 sm:py-3 px-2 sm:px-4 font-medium text-neutral-900">
                       {row.month}
                     </td>
-                    <td className="py-3 px-4 text-right text-success-600 font-medium">
+                    <td className="py-2 sm:py-3 px-2 sm:px-4 text-right text-success-600 font-medium">
                       {formatCurrency(row.income, currency)}
                     </td>
-                    <td className="py-3 px-4 text-right text-danger-600 font-medium">
+                    <td className="py-2 sm:py-3 px-2 sm:px-4 text-right text-danger-600 font-medium">
                       {formatCurrency(row.expenses, currency)}
                     </td>
-                    <td className="py-3 px-4 text-right text-primary-900 font-medium">
+                    <td className="py-2 sm:py-3 px-2 sm:px-4 text-right text-primary-900 font-medium">
                       {formatCurrency(row.net, currency)}
                     </td>
-                    <td className="py-3 px-4 text-right text-neutral-600">
+                    <td className="py-2 sm:py-3 px-2 sm:px-4 text-right text-neutral-600">
                       {row.income > 0
                         ? `${((row.net / row.income) * 100).toFixed(1)}%`
                         : "0.0%"}
