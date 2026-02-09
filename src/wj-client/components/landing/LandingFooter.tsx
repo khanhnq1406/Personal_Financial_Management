@@ -24,7 +24,7 @@ export default function LandingFooter() {
   // };
 
   return (
-    <footer className="bg-gray-900 text-gray-400 py-12">
+    <footer className="bg-gray-900 text-gray-400 py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
           {/* Brand */}
@@ -102,13 +102,17 @@ export default function LandingFooter() {
           <div className="flex items-center space-x-6 mt-4 sm:mt-0">
             <a
               href="https://github.com/khanhnq1406/Personal_Financial_Management"
-              className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-md px-2 py-1"
+              className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-md px-2 py-1 min-h-[44px] flex items-center"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               GitHub
             </a>
             <a
               href="http://linkedin.com/in/khanhnq146/"
-              className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-md px-2 py-1"
+              className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-bg focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-md px-2 py-1 min-h-[44px] flex items-center"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               LinkedIn
             </a>

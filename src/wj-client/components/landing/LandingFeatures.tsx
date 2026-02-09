@@ -3,59 +3,280 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
-const features = [
+interface Feature {
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+const features: Feature[] = [
   {
-    name: "Multiple Wallets",
-    description: "Manage BASIC and INVESTMENT wallets. Transfer funds easily between accounts.",
+    name: "Multi-Wallet Management",
+    description:
+      "Create unlimited BASIC and INVESTMENT wallets. Transfer funds seamlessly between accounts with real-time balance updates.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Multi-Wallet Management"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+        />
       </svg>
     ),
   },
   {
-    name: "Transaction Tracking",
-    description: "Categorize income and expenses. Filter, sort, and search your transaction history.",
+    name: "Investment Portfolio Tracking",
+    description:
+      "Track stocks, crypto, ETFs, bonds, mutual funds, and commodities with real-time Yahoo Finance market data integration.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Investment Portfolio Tracking"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+        />
       </svg>
     ),
   },
   {
-    name: "Visual Analytics",
-    description: "Beautiful charts showing balance history, income vs expenses, and wallet distribution.",
+    name: "Mobile-First Responsive Design",
+    description:
+      "Fully responsive layout optimized for mobile, tablet, and desktop. Touch-friendly interactions with pull-to-refresh and smooth animations.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Mobile-First Responsive Design"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+        />
       </svg>
     ),
   },
   {
-    name: "Budget Planning",
-    description: "Set budgets with visual progress indicators. Track spending and stay on target.",
+    name: "Gold & Silver Investments",
+    description:
+      "Specialized support for Vietnamese SJC gold (10 varieties), world gold (XAU), and silver with automatic tael/gram/ounce conversions.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Gold & Silver Investments"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
     ),
   },
   {
-    name: "Financial Reports",
-    description: "Monthly breakdowns per wallet with running balances. Export to CSV for analysis.",
+    name: "Smart Transaction Tracking",
+    description:
+      "Categorize income and expenses with custom categories. Advanced filtering by wallet, date range, amount, and text search.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Smart Transaction Tracking"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
       </svg>
     ),
   },
   {
-    name: "Secure Authentication",
-    description: "Sign up with Google OAuth. JWT tokens with Redis whitelist for maximum security.",
+    name: "Advanced Analytics Dashboard",
+    description:
+      "Beautiful charts showing balance history, income vs expenses, wallet distribution, and portfolio performance with interactive tooltips.",
     icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Advanced Analytics Dashboard"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Financial Reports & Export",
+    description:
+      "Generate period-based reports with comparison analysis. Export to CSV, PDF, or Excel with category-specific filtering.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Financial Reports & Export"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Budget Planning & Tracking",
+    description:
+      "Create custom budgets with multiple items. Visual progress indicators and completion tracking to stay on target.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Budget Planning & Tracking"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Multi-Currency Support",
+    description:
+      "Support for 12+ global currencies (USD, VND, EUR, GBP, JPY, HKD, AUD, CAD, SGD) with automatic FX conversion.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Multi-Currency Support"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Real-Time Market Data",
+    description:
+      "Live price updates from Yahoo Finance API with 15-minute caching. Symbol search autocomplete for stocks, crypto, and ETFs.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Real-Time Market Data"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "Secure Google OAuth",
+    description:
+      "One-click sign-up with Google OAuth. JWT tokens with Redis whitelist for maximum security. No passwords to remember.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="Secure Google OAuth"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "FIFO Cost Basis Accounting",
+    description:
+      "Professional-grade First-In-First-Out accounting for accurate realized and unrealized profit/loss calculations.",
+    icon: (
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        role="img"
+        aria-label="FIFO Cost Basis Accounting"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+        />
       </svg>
     ),
   },
@@ -85,7 +306,10 @@ export default function LandingFeatures() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
-    <section id="features" className="py-20 bg-white [scroll-margin-top:5rem]">
+    <section
+      id="features"
+      className="py-16 sm:py-20 bg-white [scroll-margin-top:5rem]"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -95,16 +319,17 @@ export default function LandingFeatures() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Everything You Need to Manage Your Finances
+            Everything You Need, All-In-One Platform
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Powerful tools designed to help you track, analyze, and optimize your
-            financial life.
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto px-4">
+            From expense tracking to multi-asset portfolio management. Track
+            stocks, ETFs, mutual funds, crypto, gold, and silver with FIFO
+            accounting, real-time market data, and powerful analytics - all in
+            one unified platform.
           </p>
         </motion.div>
 
         <motion.div
-          ref={ref}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
           variants={containerVariants}
           initial="hidden"

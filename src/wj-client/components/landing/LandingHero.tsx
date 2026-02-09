@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -28,6 +28,7 @@ const itemVariants = {
 // Dashboard Preview Component
 function DashboardPreview() {
   const [origin, setOrigin] = useState("");
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -48,7 +49,10 @@ function DashboardPreview() {
       </div>
 
       {/* Content */}
-      <div>
+      <div className="relative">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-b-lg" />
+        )}
         <Image
           src={"/dashboard.svg"}
           alt="dashboard"
@@ -56,6 +60,9 @@ function DashboardPreview() {
           height={0}
           sizes="100vw"
           className="w-full h-full"
+          priority
+          loading="eager"
+          onLoad={() => setImageLoaded(true)}
         />
       </div>
     </div>
@@ -63,8 +70,25 @@ function DashboardPreview() {
 }
 
 export default function LandingHero() {
+  const prefersReducedMotion = useReducedMotion();
+
+  // Create motion variants that respect reduced motion preferences
+  const safeVariants = prefersReducedMotion
+    ? {
+        hidden: { opacity: 1 },
+        visible: { opacity: 1 },
+      }
+    : containerVariants;
+
+  const safeItemVariants = prefersReducedMotion
+    ? {
+        hidden: { opacity: 1 },
+        visible: { opacity: 1 },
+      }
+    : itemVariants;
+
   return (
-    <section className="relative pt-20 pb-12 sm:pt-32 sm:pb-20 md:pt-40 md:pb-32 overflow-hidden">
+    <section className="relative pt-16 pb-8 sm:pt-24 sm:pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 overflow-hidden">
       {/* Background Pattern */}
       <div
         className="absolute inset-0 bg-gradient-to-br from-primary-600/5 via-transparent to-primary-600/10"
@@ -72,29 +96,31 @@ export default function LandingHero() {
       />
 
       <motion.div
-        className="relative max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8"
-        variants={containerVariants}
+        className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        variants={safeVariants}
         initial="hidden"
         animate="visible"
       >
         <div className="text-center">
-          <motion.div variants={itemVariants}>
+          <motion.div variants={safeItemVariants}>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
-              Your Trusted Guide to{" "}
-              <span className="text-primary-600">Financial Freedom</span>
+              Your <span className="text-primary-600">All-In-One</span>{" "}
+              Investment & Finance Platform
             </h1>
           </motion.div>
 
           <motion.p
-            variants={itemVariants}
-            className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-4"
+            variants={safeItemVariants}
+            className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-3xl mx-auto px-4 leading-relaxed"
           >
-            Track expenses, manage multiple wallets, set budgets, and visualize
-            your complete financial journey in one powerful platform.
+            Track{" "}
+            <strong>stocks, ETFs, mutual funds, crypto, gold & silver</strong>{" "}
+            in one unified portfolio. Plus budgets, expenses, and real-time
+            market data - everything you need in one place.
           </motion.p>
 
           <motion.div
-            variants={itemVariants}
+            variants={safeItemVariants}
             className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0"
           >
             <Link
@@ -112,7 +138,7 @@ export default function LandingHero() {
           </motion.div>
 
           <motion.div
-            variants={itemVariants}
+            variants={safeItemVariants}
             className="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-gray-500 px-4"
           >
             <div className="flex items-center gap-2">
@@ -158,12 +184,63 @@ export default function LandingHero() {
               <span>Free forever plan</span>
             </div>
           </motion.div>
+
+          {/* All-in-One Stats Section */}
+          <motion.div
+            variants={safeItemVariants}
+            className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto px-4"
+          >
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600">
+                6+
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                Asset Classes
+              </div>
+              <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                In One Platform
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600">
+                12+
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                Currencies
+              </div>
+              <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                Multi-Currency
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600">
+                ∞
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                Unified View
+              </div>
+              <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                All Assets Together
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-primary-600">
+                100%
+              </div>
+              <div className="text-xs sm:text-sm text-gray-600 mt-1">
+                Free Forever
+              </div>
+              <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                No Hidden Fees
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Dashboard Preview */}
-        <motion.div variants={itemVariants} className="mt-10 sm:mt-12 md:mt-16 px-2 sm:px-4">
+        {/* <motion.div variants={safeItemVariants} className="mt-10 sm:mt-12 md:mt-16 px-2 sm:px-4">
           <DashboardPreview />
-        </motion.div>
+        </motion.div> */}
       </motion.div>
     </section>
   );

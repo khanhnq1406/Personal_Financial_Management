@@ -11,18 +11,23 @@ const steps = [
   },
   {
     number: "02",
-    name: "Create Your First Wallet",
-    description: "Set up BASIC or INVESTMENT wallets. Add your initial balance.",
+    name: "Create Your Wallets",
+    description: "Set up BASIC or INVESTMENT wallets. Add your initial balance to get started.",
   },
   {
     number: "03",
-    name: "Start Tracking Transactions",
-    description: "Add income and expenses with custom categories for better organization.",
+    name: "Add Investments & Transactions",
+    description: "Track stocks, crypto, gold, and more. Record buys, sells, and dividends automatically.",
   },
   {
     number: "04",
-    name: "Gain Financial Insights",
-    description: "View charts, reports, and analytics to understand your spending patterns.",
+    name: "Monitor Performance & Insights",
+    description: "View real-time PNL, portfolio allocation, and detailed analytics for informed decisions.",
+  },
+  {
+    number: "05",
+    name: "Export & Analyze",
+    description: "Export your data to CSV for deeper analysis. Keep your financial data portable.",
   },
 ];
 
@@ -50,7 +55,7 @@ export default function LandingHowItWorks() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
-    <section id="how-it-works" className="py-20 bg-neutral-50 [scroll-margin-top:5rem]">
+    <section id="how-it-works" className="py-16 sm:py-20 bg-neutral-50 [scroll-margin-top:5rem]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -63,7 +68,7 @@ export default function LandingHowItWorks() {
             Get Started in Minutes
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Simple setup process to start managing your finances today.
+            From sign-up to tracking your investments in just 5 simple steps.
           </p>
         </motion.div>
 
@@ -78,16 +83,16 @@ export default function LandingHowItWorks() {
             <motion.div
               key={step.number}
               variants={itemVariants}
-              className="flex items-start gap-6"
+              className="flex flex-col sm:flex-row items-start gap-6 bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="flex-shrink-0 w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
+              <div className="flex-shrink-0 w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
                 {step.number}
               </div>
-              <div className="flex-1 pt-2">
+              <div className="flex-1 pt-1">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {step.name}
                 </h3>
-                <p className="text-gray-600">{step.description}</p>
+                <p className="text-gray-600 leading-relaxed">{step.description}</p>
               </div>
             </motion.div>
           ))}

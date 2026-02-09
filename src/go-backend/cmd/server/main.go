@@ -272,6 +272,8 @@ func main() {
 				// This uses the existing Ping() method which executes PingContext
 				if err := db.Ping(); err != nil {
 					log.Printf("Database keep-alive ping failed: %v", err)
+				} else {
+					log.Printf("Database keep-alive ping success")
 				}
 
 			case <-backgroundCtx.Done():

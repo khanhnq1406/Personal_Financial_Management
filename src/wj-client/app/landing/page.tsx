@@ -2,6 +2,9 @@
 
 import LandingHero from "@/components/landing/LandingHero";
 import LandingFeatures from "@/components/landing/LandingFeatures";
+import LandingInvestmentFeatures from "@/components/landing/LandingInvestmentFeatures";
+import LandingComparison from "@/components/landing/LandingComparison";
+import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
 import LandingCTA from "@/components/landing/LandingCTA";
 import LandingNavbar from "@/components/landing/LandingNavbar";
@@ -13,9 +16,12 @@ export default function LandingPage() {
     <LandingErrorBoundary>
       <div className="min-h-screen bg-neutral-50">
         <LandingNavbar />
-        <main id="main-content">
+        <main id="main-content" className="pt-14 sm:pt-16">
           <LandingHero />
           <LandingFeatures />
+          <LandingInvestmentFeatures />
+          <LandingComparison />
+          {/* <LandingTestimonials /> */}
           <LandingHowItWorks />
           <LandingCTA />
         </main>
