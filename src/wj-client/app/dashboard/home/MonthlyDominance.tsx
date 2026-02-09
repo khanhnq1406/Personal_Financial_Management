@@ -1,17 +1,8 @@
 "use client";
 
 import { memo, useState, useMemo } from "react";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  Tooltip,
-  CartesianGrid,
-  YAxis,
-  XAxis,
-} from "recharts";
-import { ChartSkeleton } from "@/components/loading/Skeleton";
 import { useQueryGetMonthlyDominance } from "@/utils/generated/hooks";
+import { LineChart, ChartWrapper } from "@/components/charts";
 import { chartColors } from "@/app/constants";
 import { formatTickValue } from "@/utils/number-formatter";
 import { formatCurrency } from "@/utils/currency-formatter";
@@ -72,101 +63,31 @@ export const MonthlyDominance = memo(function MonthlyDominance({
   // Get wallet list from data
   const wallets = useMemo(() => dominanceData?.data ?? [], [dominanceData]);
 
-  // Generate unique gradient IDs for each wallet
-  const gradients = useMemo(
-    () =>
-      wallets.map((wallet) => {
-        const color = chartColors[wallets.indexOf(wallet) % chartColors.length];
-        return {
-          id: `color${wallet.walletId}`,
-          color,
-        };
-      }),
-    [wallets],
-  );
-
-  if (isLoading) {
-    return (
-      <div className="w-full aspect-video p-1">
-        <ChartSkeleton />
-      </div>
-    );
-  }
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-2 border rounded shadow">
-          <p className="font-semibold">{payload[0].payload.month}</p>
-          {payload.map((entry: any, index: number) => {
-            const walletId = entry.dataKey.replace("wallet_", "");
-            const walletName = entry.payload[`wallet_name_${walletId}`];
-            return (
-              <p key={index} className="text-sm" style={{ color: entry.color }}>
-                {walletName}: {formatCurrency(entry.value, currency)}
-              </p>
-            );
-          })}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="w-full aspect-video p-1">
-      <div className="text-sm">
-        <select
-          className="border-solid border rounded-md p-1 m-2"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-        >
-          {availableYears.map((year) => {
-            return (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
-          data={chartData}
-          margin={{ top: 10, right: 30, left: 15, bottom: 0 }}
-        >
-          <defs>
-            {gradients.map((grad) => (
-              <linearGradient
-                key={grad.id}
-                id={grad.id}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor={grad.color} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={grad.color} stopOpacity={0.1} />
-              </linearGradient>
-            ))}
-          </defs>
-          <XAxis dataKey="month" />
-          <YAxis tickFormatter={formatTickValue} />
-          <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip content={<CustomTooltip />} />
-          {wallets.map((wallet, index) => (
-            <Area
-              key={wallet.walletId}
-              type="monotone"
-              dataKey={`wallet_${wallet.walletId}`}
-              stackId="1"
-              stroke={chartColors[index % chartColors.length]}
-              fillOpacity={1}
-              fill={`url(#color${wallet.walletId})`}
-            />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <ChartWrapper
+      isLoading={isLoading}
+      yearSelector={{
+        value: selectedYear,
+        options: availableYears,
+        onChange: setSelectedYear,
+      }}
+    >
+      <LineChart
+        data={chartData}
+        xAxisKey="month"
+        series={wallets.map((wallet, index) => ({
+          dataKey: `wallet_${wallet.walletId}`,
+          name: wallet.walletName,
+          chartType: "area",
+          showArea: true,
+          color: chartColors[index % chartColors.length],
+          stackId: "1",
+          curveType: "monotone",
+        }))}
+        yAxisFormatter={formatTickValue}
+        tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
+        height={300}
+      />
+    </ChartWrapper>
   );
 });

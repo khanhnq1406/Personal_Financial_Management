@@ -38,6 +38,12 @@ export interface DonutChartSVGProps {
   centerLabel?: string;
   /** Sub-label to show below center label (e.g., "Total Portfolio") */
   centerSubLabel?: string;
+  /** Whether to show percentage labels on segments (default: false) */
+  showPercentageLabels?: boolean;
+  /** Position of percentage labels: "inside" or "outside" (default: "inside") */
+  labelPosition?: "inside" | "outside";
+  /** Custom tooltip formatter function */
+  tooltipFormatter?: (value: number, name: string) => string;
   /** Whether to animate on load (default: true) */
   animate?: boolean;
 }
@@ -87,6 +93,9 @@ export const DonutChartSVG = memo(function DonutChartSVG({
   className = "",
   centerLabel,
   centerSubLabel,
+  showPercentageLabels = false,
+  labelPosition = "inside",
+  tooltipFormatter,
   animate = true,
 }: DonutChartSVGProps) {
   // Assign colors to segments
@@ -165,12 +174,23 @@ export const DonutChartSVG = memo(function DonutChartSVG({
 
     currentAngle = endAngle;
 
+    // Calculate label position (mid-angle of slice)
+    const midAngle = (startAngle + endAngle) / 2;
+    const midRad = (midAngle * Math.PI) / 180;
+    const labelRadius = labelPosition === "inside"
+      ? (innerRadius + radius) / 2
+      : radius + 20;
+    const labelX = centerX + labelRadius * Math.cos(midRad);
+    const labelY = centerY + labelRadius * Math.sin(midRad);
+
     return {
       path,
       color: item.color,
       name: item.name,
       value: item.value,
       percentage,
+      labelX,
+      labelY,
     };
   });
 
@@ -213,8 +233,30 @@ export const DonutChartSVG = memo(function DonutChartSVG({
                         animationDelay: `${index * 50}ms`,
                       }}
                     >
-                      <title>{`${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`}</title>
+                      <title>
+                        {tooltipFormatter
+                          ? `${slice.name}: ${tooltipFormatter(slice.value, slice.name)}`
+                          : `${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
+                        }
+                      </title>
                     </path>
+                    {/* Percentage label */}
+                    {showPercentageLabels && slice.percentage >= 0.05 && (
+                      <text
+                        x={slice.labelX}
+                        y={slice.labelY}
+                        fill={labelPosition === "inside" ? "white" : "#374151"}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="text-sm font-medium pointer-events-none"
+                        style={{
+                          animation: animate ? "donut-enter 0.5s ease-out forwards" : "none",
+                          animationDelay: `${index * 50 + 200}ms`,
+                        }}
+                      >
+                        {(slice.percentage * 100).toFixed(0)}%
+                      </text>
+                    )}
                   </g>
                 ))}
               </>
@@ -226,8 +268,26 @@ export const DonutChartSVG = memo(function DonutChartSVG({
                     fill={slice.color}
                     className="hover:opacity-80 cursor-pointer transition-opacity"
                   >
-                    <title>{`${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`}</title>
+                    <title>
+                      {tooltipFormatter
+                        ? `${slice.name}: ${tooltipFormatter(slice.value, slice.name)}`
+                        : `${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
+                      }
+                    </title>
                   </path>
+                  {/* Percentage label */}
+                  {showPercentageLabels && slice.percentage >= 0.05 && (
+                    <text
+                      x={slice.labelX}
+                      y={slice.labelY}
+                      fill={labelPosition === "inside" ? "white" : "#374151"}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="text-sm font-medium pointer-events-none"
+                    >
+                      {(slice.percentage * 100).toFixed(0)}%
+                    </text>
+                  )}
                 </g>
               ))
             )}

@@ -38,3 +38,10 @@ export type {
   BarChartDataPoint,
   BarChartSeries,
 } from "./BarChart";
+
+export { ChartWrapper } from "./ChartWrapper";
+export type {
+  ChartWrapperProps,
+  YearSelectorConfig,
+  WalletSelectorConfig,
+} from "./ChartWrapper";

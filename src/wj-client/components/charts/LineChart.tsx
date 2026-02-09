@@ -12,6 +12,8 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart as RechartsAreaChart,
+  Bar,
+  ComposedChart as RechartsComposedChart,
 } from "recharts";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { chartColors } from "@/app/constants";
@@ -36,8 +38,12 @@ export interface LineChartSeries {
   name: string;
   /** Color for this series (line and fill) */
   color?: string;
-  /** Whether to show as area chart (filled) */
+  /** Chart type for this series: "line", "area", or "bar" */
+  chartType?: "line" | "area" | "bar";
+  /** Whether to show as area chart (filled) - deprecated, use chartType: "area" */
   showArea?: boolean;
+  /** Stack ID for stacking multiple series (for area/bar charts) */
+  stackId?: string | number;
   /** Type of line: "monotone" | "linear" | "step" | "stepBefore" | "stepAfter" */
   curveType?: "monotone" | "linear" | "step" | "stepBefore" | "stepAfter";
   /** Whether to show dots at data points */
@@ -125,8 +131,23 @@ export const LineChart = memo(function LineChart({
   yAxisDomain,
   animate = true,
 }: LineChartProps) {
-  // Determine if any series uses area fill
-  const hasAreaSeries = series.some((s) => s.showArea);
+  // Determine chart type needed based on series
+  const seriesTypes = new Set(
+    series.map((s) => {
+      if (s.chartType) return s.chartType;
+      return s.showArea ? "area" : "line";
+    })
+  );
+
+  const hasMultipleTypes = seriesTypes.size > 1 || seriesTypes.has("bar");
+  const hasAreaSeries = seriesTypes.has("area");
+
+  // Choose appropriate chart component
+  const ChartComponent = hasMultipleTypes
+    ? RechartsComposedChart
+    : hasAreaSeries
+      ? RechartsAreaChart
+      : RechartsLineChart;
 
   // Legend layout
   const getLegendLayout = () => {
@@ -170,8 +191,6 @@ export const LineChart = memo(function LineChart({
       </div>
     );
   };
-
-  const ChartComponent = hasAreaSeries ? RechartsAreaChart : RechartsLineChart;
 
   return (
     <div className={className} style={{ height: `${height}px` }}>
@@ -219,11 +238,30 @@ export const LineChart = memo(function LineChart({
 
           {series.map((s, index) => {
             const color = s.color ?? DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length];
+            const type = s.chartType || (s.showArea ? "area" : "line");
             const gradientId = `area-gradient-${s.dataKey}-${index}`;
 
+            // Render Bar for bar chart type
+            if (type === "bar") {
+              return (
+                <Bar
+                  key={s.dataKey}
+                  dataKey={s.dataKey}
+                  name={s.name}
+                  fill={color}
+                  stackId={s.stackId}
+                  isAnimationActive={animate}
+                  animationBegin={index * 100}
+                  animationDuration={750}
+                  radius={[4, 4, 0, 0]}
+                />
+              );
+            }
+
+            // Render Area/Line for area/line chart types
             return (
               <React.Fragment key={s.dataKey}>
-                {s.showArea && (
+                {type === "area" && (
                   <defs>
                     <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={color} stopOpacity={0.3} />
@@ -236,8 +274,9 @@ export const LineChart = memo(function LineChart({
                   name={s.name}
                   stroke={color}
                   strokeWidth={s.strokeWidth ?? 2}
-                  fill={s.showArea ? `url(#${gradientId})` : "none"}
+                  fill={type === "area" ? `url(#${gradientId})` : "none"}
                   type={s.curveType ?? "monotone"}
+                  stackId={s.stackId}
                   dot={
                     s.showDots
                       ? { r: 4, fill: color, strokeWidth: 2, stroke: "white" }
