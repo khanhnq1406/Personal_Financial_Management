@@ -14,12 +14,12 @@ import (
 	"github.com/gin-gonic/gin"
 	redisv8 "github.com/go-redis/redis/v8"
 
-	"wealthjourney/handlers"
 	"wealthjourney/domain/auth"
 	gateway "wealthjourney/domain/gateway"
 	grpcserver "wealthjourney/domain/grpcserver"
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
+	"wealthjourney/handlers"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
 	appmiddleware "wealthjourney/pkg/middleware"
@@ -307,6 +307,13 @@ func main() {
 
 	// Health check endpoint (no rate limiting)
 	app.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "wealthjourney-api",
+			"version": "2.0.0",
+		})
+	})
+	app.HEAD("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"service": "wealthjourney-api",
