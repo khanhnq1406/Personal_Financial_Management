@@ -26,6 +26,16 @@ const nextConfig: NextConfig = {
     } : false,
   },
 
+  // Memory optimization settings
+  experimental: {
+    // Reduce memory usage during compilation
+    optimizePackageImports: ['recharts', '@tanstack/react-query', '@tanstack/react-table'],
+    // Optimize server actions
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+
   // Explicit turbopack config for Next.js 16
   turbopack: {},
 };

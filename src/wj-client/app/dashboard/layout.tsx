@@ -18,6 +18,11 @@ import { ZIndex } from "@/lib/utils/z-index";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { AddTransactionForm } from "@/components/modals/forms/AddTransactionForm";
 import { TransferMoneyForm } from "@/components/modals/forms/TransferMoneyForm";
+import { useSidebarState } from "@/hooks/useSidebarState";
+import { SidebarToggle } from "@/components/navigation/SidebarToggle";
+import { NavItem } from "@/components/navigation/NavItem";
+import { NavTooltip } from "@/components/navigation/NavTooltip";
+import { cn } from "@/lib/utils/cn";
 
 export default function DashboardLayout({
   children,
@@ -29,6 +34,7 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [modalType, setModalType] = useState<string | null>(null);
+  const { isExpanded, toggle } = useSidebarState();
 
   store.subscribe(() => {
     if (!user.picture) {
@@ -215,50 +221,262 @@ export default function DashboardLayout({
         <CurrencyConversionProgress />
 
         <div className="h-screen bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
-          {/* Desktop Sidebar */}
-          <aside className="hidden sm:flex sm:w-64 lg:w-72 flex-col bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface min-h-screen fixed left-0 top-0 z-sidebar">
-            {/* Logo */}
-            <div className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    id="Layer_1"
-                    data-name="Layer 1"
-                    viewBox="0 0 35 35"
-                  >
-                    <circle cx="17.5" cy="17.5" r="17.5" fill="white" />
-
-                    <path
-                      d="m12,13c-.442,0-.8-.358-.8-.8v-.4h-.2c-.711,0-1.348-.325-1.77-.833-.418-.504-.063-1.266.592-1.266h.076c.227,0,.434.107.588.274.128.139.312.226.515.226h2.103c.278,0,.532-.187.586-.46.063-.318-.146-.615-.451-.677l-2.791-.559c-1.112-.223-1.888-1.281-1.725-2.439.152-1.08,1.108-1.866,2.199-1.866h.28v-.4c0-.442.358-.8.8-.8s.8.358.8.8v.4h.2c.711,0,1.348.324,1.77.833.418.504.063,1.266-.592,1.266h-.076c-.227,0-.434-.107-.588-.274-.128-.139-.312-.226-.515-.226h-2.102c-.278,0-.532.186-.587.458-.064.318.146.617.449.678l2.792.559c1.112.222,1.889,1.282,1.725,2.439-.153,1.08-1.108,1.865-2.199,1.865h-.28v.4c0,.442-.358.8-.8.8Zm11.908,4.425c-1.862,5.301-7.44,6.575-10.908,6.575h-2c-2.469,0-8.412-.601-10.888-6.521-.225-.537-.147-1.149.207-1.637.417-.573,1.128-.884,1.861-.835,4.506.368,7.232,2.448,8.82,4.354v-3.431c-3.94-.495-7-3.859-7-7.931C4,3.589,7.589,0,12,0s8,3.589,8,8c0,4.072-3.06,7.436-7,7.931v3.43c1.588-1.906,4.314-3.986,8.82-4.354.708-.046,1.397.242,1.812.782.372.482.473,1.078.276,1.636Zm-11.908-3.425c3.309,0,6-2.691,6-6s-2.691-6-6-6-6,2.691-6,6,2.691,6,6,6Zm-1.541,8.05c-.985-1.713-3.371-4.609-8.37-5.043,1.95,4.246,6.155,4.972,8.37,5.043Zm11.463-5.021c-5.012.439-7.396,3.318-8.381,5.023,2.298-.058,6.712-.748,8.381-5.023Z"
-                      fill="#008148"
-                      transform="translate(5.5, 5.5)"
-                    />
-                  </svg>
+          {/* Desktop Sidebar - Collapsible */}
+          <aside
+            className={`hidden sm:flex flex-col bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface min-h-screen fixed left-0 top-0 z-sidebar transition-all duration-300 ease-in-out ${
+              isExpanded ? "sm:w-64 lg:w-72" : "sm:w-20"
+            }`}
+          >
+            {/* Logo & Toggle Section */}
+            <div className={cn(isExpanded ? "p-6" : "px-0 py-6")}>
+              <div className="flex items-center justify-between">
+                <div
+                  className={`flex items-center gap-3 transition-opacity duration-300 ${
+                    isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      id="Layer_1"
+                      data-name="Layer 1"
+                      viewBox="0 0 35 35"
+                    >
+                      <circle cx="17.5" cy="17.5" r="17.5" fill="white" />
+                      <path
+                        d="m12,13c-.442,0-.8-.358-.8-.8v-.4h-.2c-.711,0-1.348-.325-1.77-.833-.418-.504-.063-1.266.592-1.266h.076c.227,0,.434.107.588.274.128.139.312.226.515.226h2.103c.278,0,.532-.187.586-.46.063-.318-.146-.615-.451-.677l-2.791-.559c-1.112-.223-1.888-1.281-1.725-2.439.152-1.08,1.108-1.866,2.199-1.866h.28v-.4c0-.442.358-.8.8-.8s.8.358.8.8v.4h.2c.711,0,1.348.324,1.77.833.418.504.063,1.266-.592,1.266h-.076c-.227,0-.434-.107-.588-.274-.128-.139-.312-.226-.515-.226h-2.102c-.278,0-.532.186-.587.458-.064.318.146.617.449.678l2.792.559c1.112.222,1.889,1.282,1.725,2.439-.153,1.08-1.108,1.865-2.199,1.865h-.28v.4c0,.442-.358.8-.8.8Zm11.908,4.425c-1.862,5.301-7.44,6.575-10.908,6.575h-2c-2.469,0-8.412-.601-10.888-6.521-.225-.537-.147-1.149.207-1.637.417-.573,1.128-.884,1.861-.835,4.506.368,7.232,2.448,8.82,4.354v-3.431c-3.94-.495-7-3.859-7-7.931C4,3.589,7.589,0,12,0s8,3.589,8,8c0,4.072-3.06,7.436-7,7.931v3.43c1.588-1.906,4.314-3.986,8.82-4.354.708-.046,1.397.242,1.812.782.372.482.473,1.078.276,1.636Zm-11.908-3.425c3.309,0,6-2.691,6-6s-2.691-6-6-6-6,2.691-6,6,2.691,6,6,6Zm-1.541,8.05c-.985-1.713-3.371-4.609-8.37-5.043,1.95,4.246,6.155,4.972,8.37,5.043Zm11.463-5.021c-5.012.439-7.396,3.318-8.381,5.023,2.298-.058,6.712-.748,8.381-5.023Z"
+                        fill="#008148"
+                        transform="translate(5.5, 5.5)"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-white font-bold text-lg">
+                      WealthJourney
+                    </h1>
+                    <p className="text-primary-200 text-xs">
+                      Financial Management
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-white font-bold text-lg">
-                    WealthJourney
-                  </h1>
-                  <p className="text-primary-200 text-xs">
-                    Financial Management
-                  </p>
-                </div>
+                {!isExpanded && (
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg mx-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      id="Layer_1"
+                      data-name="Layer 1"
+                      viewBox="0 0 35 35"
+                    >
+                      <circle cx="17.5" cy="17.5" r="17.5" fill="white" />
+                      <path
+                        d="m12,13c-.442,0-.8-.358-.8-.8v-.4h-.2c-.711,0-1.348-.325-1.77-.833-.418-.504-.063-1.266.592-1.266h.076c.227,0,.434.107.588.274.128.139.312.226.515.226h2.103c.278,0,.532-.187.586-.46.063-.318-.146-.615-.451-.677l-2.791-.559c-1.112-.223-1.888-1.281-1.725-2.439.152-1.08,1.108-1.866,2.199-1.866h.28v-.4c0-.442.358-.8.8-.8s.8.358.8.8v.4h.2c.711,0,1.348.324,1.77.833.418.504.063,1.266-.592,1.266h-.076c-.227,0-.434-.107-.588-.274-.128-.139-.312-.226-.515-.226h-2.102c-.278,0-.532.186-.587.458-.064.318.146.617.449.678l2.792.559c1.112.222,1.889,1.282,1.725,2.439-.153,1.08-1.108,1.865-2.199,1.865h-.28v.4c0,.442-.358.8-.8.8Zm11.908,4.425c-1.862,5.301-7.44,6.575-10.908,6.575h-2c-2.469,0-8.412-.601-10.888-6.521-.225-.537-.147-1.149.207-1.637.417-.573,1.128-.884,1.861-.835,4.506.368,7.232,2.448,8.82,4.354v-3.431c-3.94-.495-7-3.859-7-7.931C4,3.589,7.589,0,12,0s8,3.589,8,8c0,4.072-3.06,7.436-7,7.931v3.43c1.588-1.906,4.314-3.986,8.82-4.354.708-.046,1.397.242,1.812.782.372.482.473,1.078.276,1.636Zm-11.908-3.425c3.309,0,6-2.691,6-6s-2.691-6-6-6-6,2.691-6,6,2.691,6,6,6Zm-1.541,8.05c-.985-1.713-3.371-4.609-8.37-5.043,1.95,4.246,6.155,4.972,8.37,5.043Zm11.463-5.021c-5.012.439-7.396,3.318-8.381,5.023,2.298-.058,6.712-.748,8.381-5.023Z"
+                        fill="#008148"
+                        transform="translate(5.5, 5.5)"
+                      />
+                    </svg>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Navigation */}
             <nav
-              className="flex-1 overflow-y-auto px-3"
+              className="flex-1 overflow-y-auto px-3 overflow-x-hidden"
               aria-label="Main navigation"
             >
-              {navigationItems}
+              <div className="flex flex-col gap-1">
+                <NavItem
+                  href={routes.home}
+                  label="Home"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={0}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
+                  href={routes.transaction}
+                  label="Transactions"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={30}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
+                  href={routes.wallets}
+                  label="Wallets"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={60}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
+                  href={routes.portfolio}
+                  label="Portfolio"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={90}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
+                  href={routes.report}
+                  label="Reports"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={120}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
+                  href={routes.budget}
+                  label="Budget"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={150}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                  }
+                />
+
+                <div className="my-2 border-t border-white/20" />
+
+                <NavTooltip content="Logout" disabled={isExpanded}>
+                  <button
+                    onClick={logout}
+                    className={cn(
+                      "flex items-center py-2.5 rounded-lg text-white transition-all duration-300 ease-in-out touch-target w-full",
+                      "hover:bg-white/10 active:scale-95",
+                      isExpanded ? "gap-3 px-3 text-left" : "justify-center px-0 gap-0"
+                    )}
+                    aria-label="Logout"
+                  >
+                    <div
+                      className={cn(
+                        "w-5 h-5 flex-shrink-0 transition-transform duration-300 ease-in-out",
+                        !isExpanded && "mx-auto scale-110"
+                      )}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                    </div>
+                    <span
+                      className={cn(
+                        "font-medium transition-all duration-300 ease-in-out",
+                        isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"
+                      )}
+                    >
+                      Logout
+                    </span>
+                  </button>
+                </NavTooltip>
+              </div>
             </nav>
+
+            {/* Sidebar Toggle */}
+            <div className="w-full flex items-center justify-center p-5">
+              <SidebarToggle isExpanded={isExpanded} onToggle={toggle} />
+            </div>
 
             {/* User Section */}
             <div className="p-4 border-t border-white/20">
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+              <div
+                className={cn(
+                  "flex items-center py-2 transition-all duration-300 ease-in-out",
+                  isExpanded ? "gap-3 px-3" : "justify-center px-0"
+                )}
+              >
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
                   {user.picture ? (
                     <NextImage
                       src={user.picture}
@@ -283,16 +501,26 @@ export default function DashboardLayout({
                     </svg>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">
-                    {user.fullname || "User"}
-                  </p>
-                  <p className="text-primary-200 text-xs truncate">
-                    {user.email || "user@example.com"}
-                  </p>
-                </div>
+                <div
+                  className={cn(
+                    "flex-1 min-w-0 transition-all duration-300 ease-in-out",
+                    isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"
+                  )}
+                >
+                    <p className="text-white font-medium text-sm truncate">
+                      {user.fullname || "User"}
+                    </p>
+                    <p className="text-primary-200 text-xs truncate">
+                      {user.email || "user@example.com"}
+                    </p>
+                  </div>
               </div>
-              <div className="mt-3 px-3 space-y-2">
+              <div
+                className={cn(
+                  "mt-3 px-3 space-y-2 transition-all duration-300 ease-in-out",
+                  isExpanded ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"
+                )}
+              >
                 <CurrencySelector />
                 {/* <ConnectionStatus /> */}
               </div>
@@ -479,7 +707,11 @@ export default function DashboardLayout({
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 sm:ml-64 lg:ml-72 overflow-y-auto">
+          <main
+            className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${
+              isExpanded ? "sm:ml-64 lg:ml-72" : "sm:ml-20"
+            }`}
+          >
             <div className="h-full p-4 sm:p-6 lg:p-8 pb-14 sm:pb-8 overflow-y-auto">
               {children}
             </div>
