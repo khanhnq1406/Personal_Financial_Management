@@ -20,7 +20,7 @@ export const SidebarToggle = memo(function SidebarToggle({
     <button
       onClick={onToggle}
       className={cn(
-        "hidden sm:flex items-center justify-center h-8 rounded-lg bg-white/10 hover:bg-white/20 transition-colors touch-target duration-300 ease-in-out",
+        "hidden sm:flex items-center justify-center h-8 rounded-lg bg-white/10 hover:bg-white/20 hover:scale-105 active:scale-95 transition-all touch-target duration-300 ease-in-out",
         isExpanded ? "w-full" : "w-8",
       )}
       aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
@@ -28,7 +28,7 @@ export const SidebarToggle = memo(function SidebarToggle({
       title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
     >
       <svg
-        className="w-5 h-5 text-white transition-transform duration-200"
+        className="w-5 h-5 text-white transition-transform duration-300 ease-in-out"
         style={{
           transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
         }}

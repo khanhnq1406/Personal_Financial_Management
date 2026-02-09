@@ -29,17 +29,12 @@ export const NavItem = memo(function NavItem({
   animationDelay = 0,
 }: NavItemProps) {
   const linkContent = (
-    <div
-      className={cn("transition-all duration-300 ease-in-out")}
-      style={{
-        transitionDelay: `${animationDelay}ms`,
-      }}
-    >
+    <div className="relative">
       <ActiveLink
         href={href}
         className={cn(
           "flex items-center py-2.5 rounded-lg text-white transition-all duration-300 ease-in-out touch-target",
-          "hover:bg-white/10 active:scale-95",
+          "hover:bg-white/10 hover:shadow-sm active:scale-95",
           isExpanded ? "gap-3 px-3" : "justify-center px-0 gap-0",
         )}
       >
@@ -53,9 +48,14 @@ export const NavItem = memo(function NavItem({
         </div>
         <span
           className={cn(
-            "font-medium transition-all duration-300 ease-in-out",
-            isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden",
+            "font-medium whitespace-nowrap transition-all duration-300 ease-in-out",
+            isExpanded
+              ? "opacity-100 w-auto translate-x-0"
+              : "opacity-0 w-0 overflow-hidden -translate-x-2",
           )}
+          style={{
+            transitionDelay: isExpanded ? `${animationDelay}ms` : "0ms",
+          }}
         >
           {label}
         </span>

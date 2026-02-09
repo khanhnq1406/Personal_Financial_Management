@@ -23,6 +23,7 @@ import { SidebarToggle } from "@/components/navigation/SidebarToggle";
 import { NavItem } from "@/components/navigation/NavItem";
 import { NavTooltip } from "@/components/navigation/NavTooltip";
 import { cn } from "@/lib/utils/cn";
+import { useCallback } from "react";
 
 export default function DashboardLayout({
   children,
@@ -32,6 +33,7 @@ export default function DashboardLayout({
   const path = usePathname();
   const [user, setUser] = useState(store.getState().setAuthReducer);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [modalType, setModalType] = useState<string | null>(null);
   const { isExpanded, toggle } = useSidebarState();
@@ -66,12 +68,33 @@ export default function DashboardLayout({
     return formattedWord;
   }, [path]);
 
+  const toggleMobileMenu = useCallback(() => {
+    if (isMobileMenuOpen) {
+      // Start closing animation
+      setIsClosing(true);
+      // Wait for animation to finish before removing from DOM
+      setTimeout(() => {
+        setIsMobileMenuOpen(false);
+        setIsClosing(false);
+      }, 300); // Match animation duration
+    } else {
+      setIsMobileMenuOpen(true);
+    }
+  }, [isMobileMenuOpen]);
+
+  // Close menu when clicking nav item (mobile)
+  const handleNavClick = useCallback(() => {
+    if (isMobileMenuOpen) {
+      toggleMobileMenu();
+    }
+  }, [isMobileMenuOpen, toggleMobileMenu]);
+
   const navigationItems = useMemo(() => {
     return (
       <div className="flex flex-col gap-1 px-3">
         <ActiveLink
           href={routes.home}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -90,7 +113,7 @@ export default function DashboardLayout({
         </ActiveLink>
         <ActiveLink
           href={routes.transaction}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -109,7 +132,7 @@ export default function DashboardLayout({
         </ActiveLink>
         <ActiveLink
           href={routes.wallets}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -128,7 +151,7 @@ export default function DashboardLayout({
         </ActiveLink>
         <ActiveLink
           href={routes.portfolio}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -147,7 +170,7 @@ export default function DashboardLayout({
         </ActiveLink>
         <ActiveLink
           href={routes.report}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -166,7 +189,7 @@ export default function DashboardLayout({
         </ActiveLink>
         <ActiveLink
           href={routes.budget}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
           <svg
             className="w-5 h-5"
@@ -188,7 +211,7 @@ export default function DashboardLayout({
 
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors touch-target w-full text-left"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target w-full text-left"
           aria-label="Logout"
         >
           <svg
@@ -208,11 +231,7 @@ export default function DashboardLayout({
         </button>
       </div>
     );
-  }, [path]);
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
-  };
+  }, [handleNavClick]);
 
   return (
     <AuthCheck>
@@ -228,14 +247,17 @@ export default function DashboardLayout({
             }`}
           >
             {/* Logo & Toggle Section */}
-            <div className={cn(isExpanded ? "p-6" : "px-0 py-6")}>
+            <div className={cn("transition-all duration-300 ease-in-out", isExpanded ? "p-6" : "px-0 py-6")}>
               <div className="flex items-center justify-between">
                 <div
-                  className={`flex items-center gap-3 transition-opacity duration-300 ${
-                    isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-                  }`}
+                  className={cn(
+                    "flex items-center gap-3 transition-all duration-300 ease-in-out",
+                    isExpanded
+                      ? "opacity-100 scale-100 translate-x-0"
+                      : "opacity-0 w-0 overflow-hidden scale-95 -translate-x-2"
+                  )}
                 >
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       id="Layer_1"
@@ -250,17 +272,17 @@ export default function DashboardLayout({
                       />
                     </svg>
                   </div>
-                  <div>
-                    <h1 className="text-white font-bold text-lg">
+                  <div className="transition-all duration-300 ease-in-out">
+                    <h1 className="text-white font-bold text-lg transition-all duration-300 ease-in-out">
                       WealthJourney
                     </h1>
-                    <p className="text-primary-200 text-xs">
+                    <p className="text-primary-200 text-xs transition-all duration-300 ease-in-out">
                       Financial Management
                     </p>
                   </div>
                 </div>
                 {!isExpanded && (
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg mx-auto">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg mx-auto transition-all duration-300 ease-in-out animate-scale-in hover:shadow-xl">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       id="Layer_1"
@@ -418,7 +440,7 @@ export default function DashboardLayout({
                   }
                 />
 
-                <div className="my-2 border-t border-white/20" />
+                <div className="my-2 border-t border-white/20 transition-all duration-300 ease-in-out" />
 
                 <NavTooltip content="Logout" disabled={isExpanded}>
                   <button
@@ -426,14 +448,16 @@ export default function DashboardLayout({
                     className={cn(
                       "flex items-center py-2.5 rounded-lg text-white transition-all duration-300 ease-in-out touch-target w-full",
                       "hover:bg-white/10 active:scale-95",
-                      isExpanded ? "gap-3 px-3 text-left" : "justify-center px-0 gap-0"
+                      isExpanded
+                        ? "gap-3 px-3 text-left"
+                        : "justify-center px-0 gap-0",
                     )}
                     aria-label="Logout"
                   >
                     <div
                       className={cn(
                         "w-5 h-5 flex-shrink-0 transition-transform duration-300 ease-in-out",
-                        !isExpanded && "mx-auto scale-110"
+                        !isExpanded && "mx-auto scale-110",
                       )}
                     >
                       <svg
@@ -453,7 +477,9 @@ export default function DashboardLayout({
                     <span
                       className={cn(
                         "font-medium transition-all duration-300 ease-in-out",
-                        isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"
+                        isExpanded
+                          ? "opacity-100 w-auto"
+                          : "opacity-0 w-0 overflow-hidden",
                       )}
                     >
                       Logout
@@ -469,14 +495,14 @@ export default function DashboardLayout({
             </div>
 
             {/* User Section */}
-            <div className="p-4 border-t border-white/20">
+            <div className="p-4 border-t border-white/20 transition-all duration-300 ease-in-out">
               <div
                 className={cn(
                   "flex items-center py-2 transition-all duration-300 ease-in-out",
-                  isExpanded ? "gap-3 px-3" : "justify-center px-0"
+                  isExpanded ? "gap-3 px-3" : "justify-center px-0",
                 )}
               >
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0 transition-all duration-300 ease-in-out">
                   {user.picture ? (
                     <NextImage
                       src={user.picture}
@@ -504,22 +530,32 @@ export default function DashboardLayout({
                 <div
                   className={cn(
                     "flex-1 min-w-0 transition-all duration-300 ease-in-out",
-                    isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"
+                    isExpanded
+                      ? "opacity-100 w-auto translate-x-0"
+                      : "opacity-0 w-0 overflow-hidden -translate-x-2",
                   )}
+                  style={{
+                    transitionDelay: isExpanded ? "100ms" : "0ms",
+                  }}
                 >
-                    <p className="text-white font-medium text-sm truncate">
-                      {user.fullname || "User"}
-                    </p>
-                    <p className="text-primary-200 text-xs truncate">
-                      {user.email || "user@example.com"}
-                    </p>
-                  </div>
+                  <p className="text-white font-medium text-sm truncate">
+                    {user.fullname || "User"}
+                  </p>
+                  <p className="text-primary-200 text-xs truncate">
+                    {user.email || "user@example.com"}
+                  </p>
+                </div>
               </div>
               <div
                 className={cn(
                   "mt-3 px-3 space-y-2 transition-all duration-300 ease-in-out",
-                  isExpanded ? "opacity-100 max-h-20" : "opacity-0 max-h-0 overflow-hidden"
+                  isExpanded
+                    ? "opacity-100 max-h-20 translate-y-0"
+                    : "opacity-0 max-h-0 overflow-hidden -translate-y-2",
                 )}
+                style={{
+                  transitionDelay: isExpanded ? "150ms" : "0ms",
+                }}
               >
                 <CurrencySelector />
                 {/* <ConnectionStatus /> */}
@@ -605,13 +641,24 @@ export default function DashboardLayout({
             {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
               <>
+                {/* Backdrop with fade animation */}
                 <div
-                  className="fixed inset-0 bg-black/50 z-[45] sm:hidden"
+                  className={`fixed inset-0 bg-black/50 z-[45] sm:hidden transition-opacity duration-300 ${
+                    isClosing ? "animate-fade-out" : "animate-fade-in"
+                  }`}
                   onClick={toggleMobileMenu}
                   aria-hidden="true"
                   style={{ zIndex: ZIndex.modalBackdrop }}
                 />
-                <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface z-modal sm:hidden overflow-y-auto animate-slide-in-right">
+                {/* Slide-in menu from left */}
+                <div
+                  className={`fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface z-modal sm:hidden overflow-y-auto ${
+                    isClosing
+                      ? "animate-slide-out-left"
+                      : "animate-slide-in-left"
+                  }`}
+                  style={{ zIndex: ZIndex.modal }}
+                >
                   {/* Close Button */}
                   <div className="flex items-center justify-between p-4 border-b border-white/20">
                     <div className="flex items-center gap-3">
@@ -636,7 +683,7 @@ export default function DashboardLayout({
                     </div>
                     <button
                       onClick={toggleMobileMenu}
-                      className="p-2 -mr-2 rounded-lg hover:bg-white/10 transition-colors touch-target"
+                      className="p-2 -mr-2 rounded-lg hover:bg-white/10 transition-colors duration-200 touch-target"
                       aria-label="Close menu"
                     >
                       <svg
@@ -708,11 +755,12 @@ export default function DashboardLayout({
 
           {/* Main Content */}
           <main
-            className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${
+            className={cn(
+              "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
               isExpanded ? "sm:ml-64 lg:ml-72" : "sm:ml-20"
-            }`}
+            )}
           >
-            <div className="h-full p-4 sm:p-6 lg:p-8 pb-14 sm:pb-8 overflow-y-auto">
+            <div className="h-full p-4 sm:p-6 lg:p-8 pb-14 sm:pb-8 overflow-y-auto transition-all duration-300 ease-in-out">
               {children}
             </div>
           </main>
