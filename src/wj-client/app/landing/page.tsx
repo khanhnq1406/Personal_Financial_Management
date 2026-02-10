@@ -15,7 +15,7 @@ import { PWAInstallPrompt } from "@/components/pwa";
 export default function LandingPage() {
   return (
     <LandingErrorBoundary>
-      <div className="landing-scroll-container h-full overflow-y-auto min-h-screen bg-neutral-50">
+      <div className="landing-scroll-container overflow-y-auto min-h-screen bg-neutral-50">
         <LandingNavbar />
         <main id="main-content" className="pt-14 sm:pt-16">
           <LandingHero />
