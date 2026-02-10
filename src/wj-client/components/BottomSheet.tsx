@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
 import { ZIndex } from "@/lib/utils/z-index";
 
@@ -11,6 +11,11 @@ interface BottomSheetProps {
   children: React.ReactNode;
 }
 
+// Swipe threshold to close (in pixels)
+const SWIPE_THRESHOLD = 100;
+// Minimum velocity to close (pixels per millisecond)
+const MIN_VELOCITY = 0.3;
+
 export function BottomSheet({
   isOpen,
   onClose,
@@ -18,6 +23,12 @@ export function BottomSheet({
   children,
 }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Swipe gesture state
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ y: number; time: number } | null>(null);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -49,7 +60,72 @@ export function BottomSheet({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Reset drag state when sheet opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDragOffset(0);
+      setIsDragging(false);
+      touchStartRef.current = null;
+    }
+  }, [isOpen]);
+
+  // Touch start - begin tracking swipe
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      y: touch.clientY,
+      time: Date.now(),
+    };
+    setIsDragging(false);
+    setDragOffset(0);
+  }, []);
+
+  // Touch move - track drag position
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    // Only allow dragging downward (positive deltaY)
+    if (deltaY > 0) {
+      setIsDragging(true);
+      setDragOffset(deltaY);
+
+      // Prevent content from scrolling while dragging the sheet
+      if (deltaY > 10) {
+        e.preventDefault();
+      }
+    }
+  }, []);
+
+  // Touch end - determine if we should close
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+    const velocity = deltaY / deltaTime;
+
+    // Close if dragged past threshold OR has sufficient downward velocity
+    if (deltaY > SWIPE_THRESHOLD || (deltaY > 30 && velocity > MIN_VELOCITY)) {
+      onClose();
+    } else {
+      // Animate back to position
+      setDragOffset(0);
+      setIsDragging(false);
+    }
+
+    touchStartRef.current = null;
+    setIsDragging(false);
+  }, [onClose]);
+
   if (!isOpen) return null;
+
+  const transformValue = dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined;
+  const transitionClass = isDragging ? "" : "transition-transform duration-300 ease-out";
+  const opacityValue = dragOffset > 0 ? Math.max(0, 1 - dragOffset / 300) : undefined;
 
   return (
     <>
@@ -61,7 +137,10 @@ export function BottomSheet({
           isOpen ? "opacity-100" : "opacity-0"
         )}
         onClick={handleBackdropClick}
-        style={{ zIndex: ZIndex.modalBackdrop }}
+        style={{
+          zIndex: ZIndex.modalBackdrop,
+          opacity: opacityValue,
+        }}
         aria-hidden="true"
       />
 
@@ -73,20 +152,23 @@ export function BottomSheet({
           "bg-white dark:bg-dark-surface",
           "rounded-t-3xl shadow-2xl dark:shadow-dark-modal",
           "max-h-[85vh] overflow-hidden",
-          "pb-16 sm:pb-0", // Add padding for mobile nav bar (64px / 4rem)
-          "transition-transform duration-300 ease-out",
-          isOpen ? "translate-y-0" : "translate-y-full"
+          "pb-16 sm:pb-0",
+          transitionClass
         )}
         style={{
           zIndex: ZIndex.modal,
+          transform: transformValue,
           willChange: isOpen ? "transform" : "auto",
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bottom-sheet-title"
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-2">
+        {/* Handle bar - visual indicator for swipe */}
+        <div className="flex justify-center pt-3 pb-2 touch-none">
           <div className="w-12 h-1.5 bg-neutral-300 dark:bg-neutral-600 rounded-full" />
         </div>
 
@@ -102,9 +184,10 @@ export function BottomSheet({
 
         {/* Content */}
         <div
+          ref={contentRef}
           className="px-4 sm:px-0 overflow-y-auto max-h-[calc(85vh-144px)] sm:max-h-[calc(85vh-80px)] overscroll-contain"
           style={{
-            overscrollBehavior: "contain",
+            overscrollBehavior: isDragging ? "none" : "contain",
             WebkitOverflowScrolling: "touch",
           }}
         >
