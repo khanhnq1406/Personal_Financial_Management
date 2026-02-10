@@ -90,12 +90,11 @@ export function BaseModal({
   const [isClosing, setIsClosing] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const startY = useRef(0);
+  const startX = useRef(0);
   const currentY = useRef(0);
   const startTime = useRef(0);
   const rafId = useRef<number | null>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -287,6 +286,7 @@ export function BaseModal({
     // Only enable swipe on mobile (touch) devices
     const touch = e.touches[0];
     startY.current = touch.clientY;
+    startX.current = touch.clientX;
     currentY.current = touch.clientY;
     startTime.current = Date.now();
     setIsDragging(true);
@@ -305,7 +305,7 @@ export function BaseModal({
       const touch = e.touches[0];
       currentY.current = touch.clientY;
       const deltaY = currentY.current - startY.current;
-      const deltaX = Math.abs(touch.clientX - (e.touches[0]?.clientX || 0));
+      const deltaX = Math.abs(touch.clientX - startX.current);
 
       // If horizontal movement is greater, it's likely a scroll, not a swipe
       if (deltaX > Math.abs(deltaY)) {
