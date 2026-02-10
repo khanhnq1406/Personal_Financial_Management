@@ -8,7 +8,15 @@ import {
  * Zod schema for investment creation
  */
 
-const investmentTypeEnum = z.nativeEnum(InvestmentType);
+const investmentTypeEnum = z
+  .union([
+    z.nativeEnum(InvestmentType),
+    z.string().transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) ? val : num;
+    }),
+  ])
+  .pipe(z.nativeEnum(InvestmentType));
 
 export const createInvestmentSchema = z
   .object({
@@ -45,9 +53,19 @@ export const createInvestmentSchema = z
     { message: "Quantity must be greater than 0", path: ["initialQuantity"] },
   );
 
+const investmentTransactionTypeEnum = z
+  .union([
+    z.nativeEnum(InvestmentTransactionType),
+    z.string().transform((val) => {
+      const num = parseInt(val, 10);
+      return isNaN(num) ? val : num;
+    }),
+  ])
+  .pipe(z.nativeEnum(InvestmentTransactionType));
+
 // Dynamic validation schema based on investment type (crypto vs others)
 export const addTransactionSchema = z.object({
-  type: z.nativeEnum(InvestmentTransactionType),
+  type: investmentTransactionTypeEnum,
   quantity: z.number().min(0.00000001, "Quantity must be greater than 0"),
   price: z.number().min(0, "Price must be non-negative"),
   fees: z.number().min(0, "Fees must be non-negative"),
