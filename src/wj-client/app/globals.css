@@ -36,6 +36,9 @@ body {
   font-family: var(--font-jakarta-sans);
   height: 100vh;
   touch-action: manipulation;
+  /* Prevent iOS from resizing when virtual keyboard appears */
+  position: relative;
+  overflow: hidden;
 }
 
 /* Dark mode styles */

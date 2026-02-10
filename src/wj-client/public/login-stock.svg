@@ -62,7 +62,7 @@
   <rect x="460" y="460" width="100" height="40" rx="4" fill="#008148" opacity="0.2"/>
   <rect x="290" y="510" width="100" height="8" rx="4" fill="#008148" opacity="0.3"/>
 
-  <!-- Logo -->
+  <!-- Logo
   <circle cx="400" cy="80" r="40" fill="#008148"/>
-  <path d="M380 60 L380 100 L392 100 L392 80 L400 88 L408 80 L408 100 L420 100 L420 60" fill="white"/>
+  <path stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M18 12h8m0 0v8m0-8l-8 8-4-4-6 6" /> -->
 </svg>

@@ -167,15 +167,25 @@ export function BaseModal({
     }
   }, [isOpen]);
 
-  // Handle virtual keyboard on mobile
+  // Handle virtual keyboard on mobile - with smooth transition
   useEffect(() => {
     if (!isOpen) return;
 
+    let keyboardTimeout: NodeJS.Timeout;
+
     const handleVisualViewportResize = () => {
       if (window.visualViewport) {
-        const keyboardThreshold = window.innerHeight * 0.3; // 30% height change indicates keyboard
+        // Clear any pending timeout
+        if (keyboardTimeout) clearTimeout(keyboardTimeout);
+
+        const keyboardThreshold = window.innerHeight * 0.25; // 25% height change indicates keyboard
         const heightChange = window.innerHeight - window.visualViewport.height;
-        setIsKeyboardVisible(heightChange > keyboardThreshold);
+        const isKeyboard = heightChange > keyboardThreshold;
+
+        // Debounce state updates to prevent rapid changes
+        keyboardTimeout = setTimeout(() => {
+          setIsKeyboardVisible(isKeyboard);
+        }, 50);
       }
     };
 
@@ -185,15 +195,19 @@ export function BaseModal({
         "resize",
         handleVisualViewportResize,
       );
+      // Initial check
+      handleVisualViewportResize();
+
       return () => {
         window.visualViewport?.removeEventListener(
           "resize",
           handleVisualViewportResize,
         );
+        if (keyboardTimeout) clearTimeout(keyboardTimeout);
       };
     }
 
-    // Fallback: listen for window resize and focus events
+    // Fallback: listen for focus events on form inputs
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
       if (
@@ -201,13 +215,28 @@ export function BaseModal({
         target?.tagName === "TEXTAREA" ||
         target?.tagName === "SELECT"
       ) {
-        setIsKeyboardVisible(true);
+        // Delay to allow keyboard animation to start
+        keyboardTimeout = setTimeout(() => {
+          setIsKeyboardVisible(true);
+          // Scroll focused input into view after keyboard appears
+          requestAnimationFrame(() => {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+          });
+        }, 150);
       }
     };
 
     const handleFocusOut = () => {
+      // Clear any pending timeout
+      if (keyboardTimeout) clearTimeout(keyboardTimeout);
       // Delay to allow keyboard animation to complete
-      setTimeout(() => setIsKeyboardVisible(false), 100);
+      keyboardTimeout = setTimeout(() => {
+        setIsKeyboardVisible(false);
+      }, 150);
     };
 
     document.addEventListener("focusin", handleFocusIn);
@@ -216,6 +245,7 @@ export function BaseModal({
     return () => {
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("focusout", handleFocusOut);
+      if (keyboardTimeout) clearTimeout(keyboardTimeout);
     };
   }, [isOpen]);
 
@@ -371,15 +401,24 @@ export function BaseModal({
         id={id}
         tabIndex={-1}
         className={cn(
-          "fixed inset-0 flex justify-center px-safe mx-2 sm:p-4sm:mx-0",
-          // Variant positioning
+          "fixed flex justify-center px-safe mx-2 sm:p-4 sm:mx-0",
+          // Use visual viewport height on mobile to prevent jumping
+          "top-0 left-0 right-0",
+          // Variant positioning with smooth transition
+          "transition-all duration-300 ease-out",
           variant === "bottom" && "items-end sm:items-center",
           variant === "center" && "items-center",
           variant === "full" && "items-center",
-          // Adjust position when keyboard is visible on mobile
-          isKeyboardVisible && "items-end",
+          // Keep modal at bottom when keyboard is visible on mobile
+          isKeyboardVisible && "sm:items-center",
         )}
-        style={{ zIndex }}
+        style={{
+          zIndex,
+          // Use visual viewport height on mobile to prevent modal jumping
+          height: isKeyboardVisible
+            ? `${window.visualViewport?.height || window.innerHeight}px`
+            : "100vh",
+        }}
       >
         <div
           ref={modalContentRef}
@@ -433,11 +472,11 @@ export function BaseModal({
                 : fullScreenOnMobile
                   ? "h-[100dvh] sm:max-h-[90vh]"
                   : "max-h-[85vh] sm:max-h-[90vh]"),
-            // Adjust height when keyboard is visible
+            // Adjust height when keyboard is visible - use dynamic height
             isKeyboardVisible &&
               !fullScreenOnMobile &&
               variant !== "full" &&
-              "max-h-[50vh]",
+              "!max-h-[70vh]",
             // Prevent touch actions like browser zoom/scroll during swipe
             isDragging && "touch-none",
           )}
@@ -522,7 +561,15 @@ export function BaseModal({
               )}
             </div>
 
-            <div className="max-h-[calc(100vh-250px)] sm:max-h-[calc(90vh-150px)] overflow-y-auto overflow-x-hidden -mx-1 px-1">
+            <div
+              className={cn(
+                "overflow-y-auto overflow-x-hidden -mx-1 px-1 transition-all duration-300",
+                // Dynamic max-height based on keyboard visibility
+                isKeyboardVisible
+                  ? "max-h-[calc(70vh-200px)]"
+                  : "max-h-[calc(100vh-250px)] sm:max-h-[calc(90vh-150px)]",
+              )}
+            >
               {children}
             </div>
 

@@ -21,7 +21,9 @@ export default function Login() {
   const login = useMutationLogin({
     onError(error) {
       console.error("Login error:", error);
-      setError(error.message || "Oops, something went wrong. Please try again.");
+      setError(
+        error.message || "Oops, something went wrong. Please try again.",
+      );
       setIsLoading(false);
     },
     onSuccess(data) {
@@ -35,7 +37,7 @@ export default function Login() {
             email: data.data.email,
             fullname: data.data.fullname,
             picture: data.data.picture,
-          })
+          }),
         );
         router.push(routes.home);
       }
@@ -106,9 +108,7 @@ export default function Login() {
             {/* Google Login Button */}
             <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
               <GoogleOAuthProvider
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
-                }
+                clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
               >
                 <div className="flex justify-center">
                   <GoogleLogin
@@ -194,14 +194,14 @@ export default function Login() {
           <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary text-center">
             By signing in, you agree to our{" "}
             <Link
-              href="/terms"
+              href="#terms"
               className="underline hover:text-neutral-700 dark:hover:text-dark-text-secondary transition-colors"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
-              href="/privacy"
+              href="#privacy"
               className="underline hover:text-neutral-700 dark:hover:text-dark-text-secondary transition-colors"
             >
               Privacy Policy

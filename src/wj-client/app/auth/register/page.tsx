@@ -36,7 +36,7 @@ export default function Register() {
             email: email,
             fullname: fullname,
             picture: picture,
-          })
+          }),
         );
 
         router.push(routes.home);
@@ -148,9 +148,7 @@ export default function Register() {
             {/* Google Register Button */}
             <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
               <GoogleOAuthProvider
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""
-                }
+                clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
               >
                 <div className="flex justify-center">
                   <GoogleLogin
@@ -236,14 +234,14 @@ export default function Register() {
           <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary text-center">
             By creating an account, you agree to our{" "}
             <Link
-              href="/terms"
+              href="#terms"
               className="underline hover:text-neutral-700 dark:hover:text-dark-text-secondary transition-colors"
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
-              href="/privacy"
+              href="#privacy"
               className="underline hover:text-neutral-700 dark:hover:text-dark-text-secondary transition-colors"
             >
               Privacy Policy
