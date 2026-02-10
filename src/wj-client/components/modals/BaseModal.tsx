@@ -94,6 +94,8 @@ export function BaseModal({
   const startTime = useRef(0);
   const rafId = useRef<number | null>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -265,6 +267,23 @@ export function BaseModal({
 
   // Swipe gesture handlers for mobile with smooth 60fps animations
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const contentDiv = modalContentRef.current?.querySelector('[class*="overflow-y-auto"]');
+
+    // Check if touch started inside scrollable content
+    const isInsideScrollableContent = contentDiv?.contains(target);
+
+    // If inside scrollable content and content can scroll, allow native scroll
+    if (isInsideScrollableContent && contentDiv) {
+      const canScroll = contentDiv.scrollHeight > contentDiv.clientHeight;
+      const isAtTop = contentDiv.scrollTop === 0;
+
+      // Only enable swipe when at top of scroll AND dragging down
+      if (canScroll && !isAtTop) {
+        return; // Let native scroll handle it
+      }
+    }
+
     // Only enable swipe on mobile (touch) devices
     const touch = e.touches[0];
     startY.current = touch.clientY;
@@ -286,8 +305,23 @@ export function BaseModal({
       const touch = e.touches[0];
       currentY.current = touch.clientY;
       const deltaY = currentY.current - startY.current;
+      const deltaX = Math.abs(touch.clientX - (e.touches[0]?.clientX || 0));
 
-      // Only allow dragging downward (positive delta)
+      // If horizontal movement is greater, it's likely a scroll, not a swipe
+      if (deltaX > Math.abs(deltaY)) {
+        setIsDragging(false);
+        return;
+      }
+
+      // Check if user is scrolling content
+      const contentDiv = modalContentRef.current?.querySelector('[class*="overflow-y-auto"]');
+      if (contentDiv && contentDiv.scrollTop > 0 && deltaY < 0) {
+        // User is scrolling up inside content, disable swipe
+        setIsDragging(false);
+        return;
+      }
+
+      // Only allow dragging downward (positive delta) AND when at top of scroll
       if (deltaY > 0) {
         // Use requestAnimationFrame for smooth 60fps updates
         if (rafId.current === null) {
@@ -297,7 +331,7 @@ export function BaseModal({
           });
         }
 
-        // Prevent default scrolling during drag
+        // Prevent default scrolling during drag (only when dragging > 10px)
         if (e.cancelable && deltaY > 10) {
           e.preventDefault();
         }
