@@ -371,7 +371,7 @@ export function BaseModal({
         id={id}
         tabIndex={-1}
         className={cn(
-          "fixed inset-0 flex justify-center p-0 sm:p-4",
+          "fixed inset-0 flex justify-center px-safe mx-2 sm:p-4sm:mx-0",
           // Variant positioning
           variant === "bottom" && "items-end sm:items-center",
           variant === "center" && "items-center",
@@ -480,11 +480,11 @@ export function BaseModal({
             className={cn(
               // Responsive padding based on padding prop
               padding === "none" && "px-0 py-0 sm:px-0 sm:py-0",
-              padding === "sm" && "px-2 sm:px-3 py-2 sm:py-3",
+              padding === "sm" && "px-3 sm:px-3 py-2 sm:py-3",
               padding === "md" &&
                 (fullScreenOnMobile
                   ? "px-4 sm:px-6 py-4 sm:py-5"
-                  : "px-3 sm:px-5 pb-4 sm:pb-5"),
+                  : "px-4 sm:px-5 pb-4 sm:pb-5"),
               padding === "lg" && "px-6 sm:px-8 py-6 sm:py-8",
               // Extra top padding when no drag handle (full screen mode)
               (fullScreenOnMobile || variant === "full") &&

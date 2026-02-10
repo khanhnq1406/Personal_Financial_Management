@@ -173,9 +173,10 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
     const showFloatingLabel = floatingLabel && label && (isFocused || hasValue);
 
     // Size classes - unified with design system
+    // IMPORTANT: Mobile font size must be at least 16px (text-base) to prevent iOS auto-zoom
     const sizeClasses = {
-      sm: "min-h-[40px] px-3 text-sm",
-      md: "min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 text-sm sm:text-base",
+      sm: "min-h-[40px] px-3 text-base sm:text-sm",
+      md: "min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 text-base sm:text-base",
       lg: "min-h-[48px] sm:min-h-[56px] px-4 sm:px-5 text-base sm:text-lg",
     };
 

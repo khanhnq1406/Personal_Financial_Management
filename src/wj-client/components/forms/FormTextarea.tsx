@@ -111,7 +111,8 @@ export const FormTextarea = ({
           onChange={fieldOnChange}
           onBlur={fieldOnBlur}
           className={cn(
-            "w-full text-sm sm:text-base min-h-[44px] sm:min-h-[48px]",
+            // IMPORTANT: Font size must be at least 16px (text-base) to prevent iOS auto-zoom
+            "w-full text-base sm:text-base min-h-[44px] sm:min-h-[48px]",
             "px-3 sm:px-4 py-2.5 sm:py-3",
             "rounded-lg",
             "border transition-all duration-200",

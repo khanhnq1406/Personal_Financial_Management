@@ -308,7 +308,7 @@ export function Select<T extends string = string>({
         onMouseDown={(e) => e.preventDefault()}
         tabIndex={-1}
         className={cn(
-          "px-3 py-2 cursor-pointer text-sm",
+          "px-3 py-2 cursor-pointer text-base sm:text-sm",
           // Light mode
           isHighlighted
             ? "bg-primary-500 text-white"
@@ -331,7 +331,7 @@ export function Select<T extends string = string>({
 
   const dropdownContent =
     filteredOptions.length === 0 ? (
-      <div className="p-2 text-gray-500 dark:text-dark-text-tertiary text-sm">No options found</div>
+      <div className="p-2 text-gray-500 dark:text-dark-text-tertiary text-base sm:text-sm">No options found</div>
     ) : (
       filteredOptions.map((option, index) => {
         const isSelected = value === option.value;
@@ -378,6 +378,8 @@ export function Select<T extends string = string>({
           spellCheck={false}
           className={cn(
             "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            // IMPORTANT: Font size must be at least 16px (text-base) to prevent iOS auto-zoom
+            "text-base sm:text-sm",
             // Light mode
             "bg-white text-neutral-900",
             // Dark mode

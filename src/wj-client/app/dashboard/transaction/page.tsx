@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils/cn";
 import { ExportButton, ExportOptions } from "@/components/export/ExportDialog";
 import { Button } from "@/components/Button";
 import { useExportTransactions } from "@/hooks/useExportTransactions";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 
 // Date range helpers for quick filters
 function getDateRangeForFilter(filter: QuickFilterType): {
@@ -83,8 +84,6 @@ function getDateRangeForFilter(filter: QuickFilterType): {
   }
 }
 
-const displayImgList = [`${resources}/unhide.svg`, `${resources}/hide.svg`];
-
 type ModalState = { type: "delete-confirmation"; transactionId: number } | null;
 
 // Lazy load EditTransactionForm
@@ -108,7 +107,6 @@ export default function TransactionPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [isHideBalance, setHideBalance] = useState(false);
-  const [displayImg, setDisplayImg] = useState(displayImgList[0]);
   const [modalState, setModalState] = useState<ModalState>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
@@ -389,9 +387,8 @@ export default function TransactionPage() {
     (event: React.MouseEvent<HTMLElement>) => {
       event.preventDefault();
       setHideBalance((prev) => !prev);
-      setDisplayImg(displayImgList[Number(isHideBalance)]);
     },
-    [isHideBalance],
+    [],
   );
 
   // Handle export transactions
@@ -504,13 +501,9 @@ export default function TransactionPage() {
                 aria-label="Toggle balance visibility"
                 onClick={handleHideBalance}
               >
-                <Image
-                  src={displayImg}
-                  width={40}
-                  height={40}
-                  alt="Toggle balance"
-                  className="w-full h-full object-contain"
-                />
+                <div className="text-white">
+                  {isHideBalance ? <EyeOffIcon /> : <EyeIcon />}
+                </div>
               </button>
             </div>
           </div>

@@ -334,7 +334,8 @@ export function ShareDialog({
                 onChange={(e) => setEmailRecipients(e.target.value)}
                 placeholder="john@example.com, jane@example.com"
                 className={cn(
-                  "w-full px-3 py-2 rounded-lg border text-sm",
+                  // IMPORTANT: Font size must be at least 16px (text-base) to prevent iOS auto-zoom
+                  "w-full px-3 py-2 rounded-lg border text-base sm:text-sm",
                   "bg-white dark:bg-dark-surface-hover",
                   "border-neutral-300 dark:border-dark-border",
                   "text-neutral-900 dark:text-dark-text",
@@ -356,7 +357,8 @@ export function ShareDialog({
                 placeholder="Add a personal message to your report..."
                 rows={3}
                 className={cn(
-                  "w-full px-3 py-2 rounded-lg border text-sm resize-none",
+                  // IMPORTANT: Font size must be at least 16px (text-base) to prevent iOS auto-zoom
+                  "w-full px-3 py-2 rounded-lg border text-base sm:text-sm resize-none",
                   "bg-white dark:bg-dark-surface-hover",
                   "border-neutral-300 dark:border-dark-border",
                   "text-neutral-900 dark:text-dark-text",

@@ -69,7 +69,7 @@ export function BottomSheet({
       <div
         ref={sheetRef}
         className={cn(
-          "fixed bottom-0 left-0 right-0",
+          "fixed bottom-0 left-0 right-0 px-safe",
           "bg-white dark:bg-dark-surface",
           "rounded-t-3xl shadow-2xl dark:shadow-dark-modal",
           "max-h-[85vh] overflow-hidden",
@@ -91,7 +91,7 @@ export function BottomSheet({
         </div>
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-200 dark:border-dark-border">
+        <div className="px-5 sm:px-6 py-4 border-b border-neutral-200 dark:border-dark-border">
           <h2
             id="bottom-sheet-title"
             className="text-lg font-semibold text-neutral-900 dark:text-dark-text"
@@ -102,7 +102,7 @@ export function BottomSheet({
 
         {/* Content */}
         <div
-          className="overflow-y-auto max-h-[calc(85vh-144px)] sm:max-h-[calc(85vh-80px)] overscroll-contain"
+          className="px-4 sm:px-0 overflow-y-auto max-h-[calc(85vh-144px)] sm:max-h-[calc(85vh-80px)] overscroll-contain"
           style={{
             overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",

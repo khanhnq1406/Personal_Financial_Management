@@ -8,99 +8,60 @@ import {
   ReactNode,
 } from "react";
 
-type Theme = "light" | "dark" | "system";
+// Dark mode temporarily disabled
+type Theme = "light"; // "dark" | "system" removed - only light theme available
 
 export interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: "light" | "dark";
+  resolvedTheme: "light"; // Always light now
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = "wealthjourney-theme";
+// THEME_STORAGE_KEY temporarily unused while dark mode is disabled
+// const THEME_STORAGE_KEY = "wealthjourney-theme";
 
 interface ThemeProviderProps {
   children: ReactNode;
   defaultTheme?: Theme;
-  storageKey?: string;
+  // storageKey temporarily unused while dark mode is disabled
+  // storageKey?: string;
 }
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  storageKey = THEME_STORAGE_KEY,
+  // Props temporarily unused while dark mode is disabled
+  // defaultTheme = "light",
+  // storageKey temporarily unused while dark mode is disabled
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Initialize from localStorage during SSR/hydration
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  // Dark mode temporarily disabled - always use light theme
+  const [theme] = useState<Theme>("light");
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const resolvedTheme: "light" = "light";
 
   // Update theme in localStorage and apply to document
+  // Dark mode temporarily disabled - always use light theme
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    let effectiveTheme: "light" | "dark";
-
-    if (theme === "system") {
-      // Check system preference
-      effectiveTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-    } else {
-      effectiveTheme = theme;
-    }
-
-    root.classList.add(effectiveTheme);
-    setResolvedTheme(effectiveTheme);
+    root.classList.remove("dark"); // Remove dark class if present
+    root.classList.add("light");
+    // resolvedTheme is always "light" now, no state update needed
   }, [theme]);
 
-  // Listen for system theme changes when theme is set to "system"
-  useEffect(() => {
-    if (theme !== "system") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      const root = window.document.documentElement;
-      root.classList.remove("light", "dark");
-      const newTheme = e.matches ? "dark" : "light";
-      root.classList.add(newTheme);
-      setResolvedTheme(newTheme);
-    };
-
-    // Add event listener
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, [theme]);
+  // Listen for system theme changes - DISABLED
+  // Dark mode temporarily disabled, so we don't need to listen for system changes
 
   // Prevent flash of wrong theme on page load
+  // Dark mode temporarily disabled - always use light theme
   useEffect(() => {
-    // Inject script to set theme before page loads
+    // Inject script to set light theme before page loads
     const script = document.createElement("script");
     script.textContent = `
       (function() {
-        const theme = localStorage.getItem('${storageKey}') || '${defaultTheme}';
         const root = document.documentElement;
-
-        let effectiveTheme;
-        if (theme === 'system') {
-          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        } else {
-          effectiveTheme = theme;
-        }
-
-        root.classList.remove('light', 'dark');
-        root.classList.add(effectiveTheme);
+        root.classList.remove('dark');
+        root.classList.add('light');
       })();
     `;
     script.id = "theme-script";
@@ -109,11 +70,12 @@ export function ThemeProvider({
     return () => {
       document.head.removeChild(script);
     };
-  }, [defaultTheme, storageKey]);
+  }, []);
 
-  const setTheme = (newTheme: Theme) => {
-    localStorage.setItem(storageKey, newTheme);
-    setThemeState(newTheme);
+  // Dark mode temporarily disabled - setTheme does nothing but keeps API compatibility
+  const setTheme = (_newTheme: Theme) => {
+    // No-op - theme is always light
+    // Keep function for API compatibility with existing code
   };
 
   const value: ThemeContextType = {

@@ -28,7 +28,9 @@ const queryClient = new QueryClient({
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <ThemeProvider defaultTheme="system" storageKey="wealthjourney-theme">
+      {/* TO-DO: improve the dark theme feature then re-enable this */}
+      {/* <ThemeProvider defaultTheme="system" storageKey="wealthjourney-theme"> */}
+      <ThemeProvider defaultTheme="light">
         <NotificationProvider>
           <QueryClientProvider client={queryClient}>
             {children}
