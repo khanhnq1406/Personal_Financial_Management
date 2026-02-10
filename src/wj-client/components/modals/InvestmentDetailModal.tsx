@@ -26,12 +26,19 @@ import {
 import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { InvestmentTransactionType } from "@/gen/protobuf/v1/investment";
 import { AddInvestmentTransactionForm } from "@/components/modals/forms/AddInvestmentTransactionForm";
+import { UpdateInvestmentPriceForm } from "@/components/modals/forms/UpdateInvestmentPriceForm";
 import { formatCurrency } from "@/lib/utils/units";
-import { formatQuantity, formatPrice } from "@/app/dashboard/portfolio/helpers";
+import {
+  formatQuantity,
+  formatPrice,
+  isCustomInvestment,
+  formatInvestmentPrice,
+  formatUnrealizedPNL,
+} from "@/app/dashboard/portfolio/helpers";
 import { isGoldType } from "@/lib/utils/gold-calculator";
 import { isSilverType } from "@/lib/utils/silver-calculator";
 
-export type TabType = "overview" | "transactions" | "add-transaction";
+export type TabType = "overview" | "transactions" | "add-transaction" | "set-price";
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -108,6 +115,25 @@ export function InvestmentDetailModal({
   );
 
   const investment = getInvestment.data?.data;
+
+  // Check if this is a custom investment
+  const isCustom = investment
+    ? isCustomInvestment({
+        currentPrice: investment.currentPrice || 0,
+        symbol: investment.symbol,
+        type: investment.type,
+      })
+    : false;
+
+  // Format unrealized PNL for custom investments
+  const pnlDisplay = investment
+    ? formatUnrealizedPNL(
+        investment.unrealizedPnl || 0,
+        investment.unrealizedPnlPercent || 0,
+        investment.currency || "USD",
+        isCustom
+      )
+    : { text: "N/A", colorClass: "text-gray-500" };
 
   // Fetch wallet balance and currency for balance validation in AddInvestmentTransactionForm
   const getWallet = useQueryGetWallet(
@@ -520,11 +546,33 @@ export function InvestmentDetailModal({
             >
               Add Transaction
             </button>
+            <button
+              onClick={() => setActiveTab("set-price")}
+              className={`whitespace-nowrap px-3 py-2 font-medium text-sm sm:px-4 sm:text-base ${
+                activeTab === "set-price"
+                  ? "border-b-2 border-primary-500 text-primary-500"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Set Price
+            </button>
           </div>
 
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <div className="space-y-3">
+              {/* Investment header with custom badge */}
+              {isCustom && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200 flex items-center gap-2">
+                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                    Custom Investment
+                  </span>
+                  <span className="text-sm text-blue-700">
+                    No market data available
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Symbol</span>
                 <span className="font-semibold">{investment.symbol}</span>
@@ -563,19 +611,40 @@ export function InvestmentDetailModal({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600">Current Price</span>
+                  {!isCustomInvestment(investment) && (
+                    <button
+                      onClick={() =>
+                        updatePricesMutation.mutate({
+                          investmentIds: [investment.id],
+                          forceRefresh: true,
+                        })
+                      }
+                      disabled={updatePricesMutation.isPending}
+                      className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 transition-colors"
+                      title="Refresh price"
+                    >
+                      <svg
+                        className={`w-4 h-4 text-gray-500 ${updatePricesMutation.isPending ? "animate-spin" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                    </button>
+                  )}
                   <button
-                    onClick={() =>
-                      updatePricesMutation.mutate({
-                        investmentIds: [investment.id],
-                        forceRefresh: true,
-                      })
-                    }
-                    disabled={updatePricesMutation.isPending}
-                    className="p-1 hover:bg-gray-100 rounded disabled:opacity-50 transition-colors"
-                    title="Refresh price"
+                    onClick={() => setActiveTab("set-price")}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Set price manually"
                   >
                     <svg
-                      className={`w-4 h-4 text-gray-500 ${updatePricesMutation.isPending ? "animate-spin" : ""}`}
+                      className="w-4 h-4 text-gray-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -584,19 +653,26 @@ export function InvestmentDetailModal({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                       />
                     </svg>
                   </button>
                 </div>
                 <div className="text-right">
                   <span>
-                    {formatPrice(
-                      investment.currentPrice || 0,
-                      investment.type,
-                      investment.currency || "USD",
-                      investment.purchaseUnit,
-                    )}
+                    {isCustomInvestment(investment)
+                      ? formatInvestmentPrice(
+                          investment.currentPrice || 0,
+                          investment.currency || "USD",
+                          true
+                        )
+                      : formatPrice(
+                          investment.currentPrice || 0,
+                          investment.type,
+                          investment.currency || "USD",
+                          investment.purchaseUnit,
+                        )
+                    }
                   </span>
                   <div className="mt-1">
                     {(() => {
@@ -637,6 +713,16 @@ export function InvestmentDetailModal({
                   </div>
                 </div>
               </div>
+
+              {/* Show warning message for custom investments without price */}
+              {isCustomInvestment(investment) && investment.currentPrice === 0 && (
+                <div className="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ This is a custom investment without a set price.
+                    Click &quot;Set Price&quot; tab to update the current value.
+                  </p>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Cost</span>
                 <div className="text-right">
@@ -680,46 +766,59 @@ export function InvestmentDetailModal({
                 </div>
               </div>
               <div className="border-t pt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Unrealized PNL</span>
-                  <div className="text-right">
-                    <span
-                      className={`font-semibold ${
-                        (investment.unrealizedPnl || 0) >= 0
-                          ? "text-primary-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {formatCurrency(
-                        investment.unrealizedPnl || 0,
-                        investment.currency || "USD",
-                      )}
-                    </span>
-                    {investment.displayUnrealizedPnl &&
-                      investment.displayCurrency && (
-                        <span className="text-xs text-gray-500 block">
-                          ≈{" "}
+                {/* Only show PNL if not custom or price is set */}
+                {(!isCustomInvestment(investment) || investment.currentPrice > 0) && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Unrealized PNL</span>
+                      <div className="text-right">
+                        <span
+                          className={`font-semibold ${
+                            (investment.unrealizedPnl || 0) >= 0
+                              ? "text-primary-600"
+                              : "text-red-600"
+                          }`}
+                        >
                           {formatCurrency(
-                            investment.displayUnrealizedPnl.amount || 0,
-                            investment.displayCurrency,
+                            investment.unrealizedPnl || 0,
+                            investment.currency || "USD",
                           )}
                         </span>
-                      )}
+                        {investment.displayUnrealizedPnl &&
+                          investment.displayCurrency && (
+                            <span className="text-xs text-gray-500 block">
+                              ≈{" "}
+                              {formatCurrency(
+                                investment.displayUnrealizedPnl.amount || 0,
+                                investment.displayCurrency,
+                              )}
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Unrealized PNL %</span>
+                      <span
+                        className={`font-semibold ${
+                          (investment.unrealizedPnlPercent || 0) >= 0
+                            ? "text-primary-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {investment.unrealizedPnlPercent >= 0 ? "+" : ""}
+                        {investment.unrealizedPnlPercent?.toFixed(2)}%
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* Show N/A message for custom investments without price */}
+                {isCustomInvestment(investment) && investment.currentPrice === 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Unrealized PNL</span>
+                    <span className="text-gray-500">N/A (Price not set)</span>
                   </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Unrealized PNL %</span>
-                  <span
-                    className={`font-semibold ${
-                      (investment.unrealizedPnlPercent || 0) >= 0
-                        ? "text-primary-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {investment.unrealizedPnlPercent >= 0 ? "+" : ""}
-                    {investment.unrealizedPnlPercent?.toFixed(2)}%
-                  </span>
-                </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Realized PNL</span>
                   <div className="text-right">
@@ -835,8 +934,25 @@ export function InvestmentDetailModal({
             />
           )}
 
+          {/* Set Price Tab */}
+          {activeTab === "set-price" && investment && (
+            <UpdateInvestmentPriceForm
+              investmentId={investment.id}
+              currentSymbol={investment.symbol}
+              currentName={investment.name}
+              currentPrice={investment.currentPrice}
+              currency={investment.currency || "USD"}
+              investmentType={investment.type}
+              onSuccess={() => {
+                // Refresh investment data and switch back to overview tab
+                getInvestment.refetch();
+                setActiveTab("overview");
+              }}
+            />
+          )}
+
           {/* Close button for overview and transactions tabs */}
-          {activeTab !== "add-transaction" && (
+          {activeTab !== "add-transaction" && activeTab !== "set-price" && (
             <div className="pt-4">
               <Button type={ButtonType.PRIMARY} onClick={onClose}>
                 Close

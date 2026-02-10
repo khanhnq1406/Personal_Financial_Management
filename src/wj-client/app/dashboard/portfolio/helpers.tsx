@@ -272,3 +272,57 @@ export function getInvestmentUnitLabelFull(unit: string, investmentType?: Invest
   }
 }
 
+/**
+ * Check if an investment is a custom investment (no market data)
+ * Custom investments have currentPrice = 0 and no market data API support
+ */
+export function isCustomInvestment(investment: {
+  currentPrice: number;
+  symbol: string;
+  type: InvestmentType;
+}): boolean {
+  // If price is 0, assume it's custom
+  // In future, could add explicit flag to investment model
+  return investment.currentPrice === 0;
+}
+
+/**
+ * Format price with custom investment handling
+ */
+export function formatInvestmentPrice(
+  price: number,
+  currency: string,
+  isCustom: boolean,
+): string {
+  if (isCustom && price === 0) {
+    return "Price not set";
+  }
+
+  return formatCurrency(price, currency);
+}
+
+/**
+ * Format unrealized PNL with custom investment handling
+ */
+export function formatUnrealizedPNL(
+  unrealizedPnl: number,
+  unrealizedPnlPercent: number,
+  currency: string,
+  isCustom: boolean,
+): { text: string; colorClass: string } {
+  if (isCustom) {
+    return {
+      text: "N/A (Price not set)",
+      colorClass: "text-gray-500",
+    };
+  }
+
+  const sign = unrealizedPnl >= 0 ? "+" : "";
+  const colorClass = unrealizedPnl >= 0 ? "text-green-600" : "text-red-600";
+
+  return {
+    text: `${sign}${formatCurrency(unrealizedPnl, currency)} (${sign}${unrealizedPnlPercent.toFixed(2)}%)`,
+    colorClass,
+  };
+}
+

@@ -15,7 +15,17 @@ export const createInvestmentSchema = z
     symbol: z
       .string()
       .min(1, "Symbol is required")
-      .max(20, "Symbol must be 20 characters or less"),
+      .max(20, "Symbol must be 20 characters or less")
+      .refine(
+        (val) => {
+          // Allow uppercase alphanumeric, dots, hyphens, and underscores
+          return /^[A-Za-z0-9._-]+$/.test(val);
+        },
+        {
+          message:
+            "Symbol should contain only letters, numbers, dots, underscores, and hyphens",
+        },
+      ),
     name: z
       .string()
       .min(1, "Name is required")
@@ -25,7 +35,8 @@ export const createInvestmentSchema = z
     initialCost: z.number().min(0, "Initial cost must be 0 or greater"),
     currency: z
       .string()
-      .length(3, "Currency must be a 3-letter ISO code"),
+      .length(3, "Currency must be a 3-letter ISO code")
+      .regex(/^[A-Z]{3}$/, "Currency must be 3 uppercase letters"),
   })
   .refine(
     (data) => {

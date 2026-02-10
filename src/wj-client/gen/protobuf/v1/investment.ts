@@ -500,6 +500,19 @@ export interface GetInvestmentResponse {
   timestamp: string;
 }
 
+/**
+ * CreateInvestmentRequest creates a new investment holding.
+ *
+ * For market-based investments (isCustom=false, default):
+ * - Symbol must exist in market data APIs (Yahoo Finance, vang.today)
+ * - Currency is validated against market data
+ * - Current price fetched from market APIs
+ *
+ * For custom investments (isCustom=true):
+ * - Symbol can be any user-defined string
+ * - Currency must be provided manually
+ * - Current price defaults to 0 (can be set manually later via UpdateInvestment)
+ */
 export interface CreateInvestmentRequest {
   walletId: number;
   symbol: string;
@@ -516,6 +529,8 @@ export interface CreateInvestmentRequest {
   initialQuantityDecimal: number;
   /** Total cost as decimal (e.g., 1500.50 for $1,500.50) */
   initialCostDecimal: number;
+  /** If true, skip market data validation and allow currentPrice=0 */
+  isCustom: boolean;
   /** User's input unit ("tael", "kg", "oz", "gram") */
   purchaseUnit: string;
 }
@@ -3802,6 +3817,7 @@ function createBaseCreateInvestmentRequest(): CreateInvestmentRequest {
     currency: "",
     initialQuantityDecimal: 0,
     initialCostDecimal: 0,
+    isCustom: false,
     purchaseUnit: "",
   };
 }
@@ -3834,6 +3850,9 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     }
     if (message.initialCostDecimal !== 0) {
       writer.uint32(73).double(message.initialCostDecimal);
+    }
+    if (message.isCustom !== false) {
+      writer.uint32(80).bool(message.isCustom);
     }
     if (message.purchaseUnit !== "") {
       writer.uint32(106).string(message.purchaseUnit);
@@ -3920,6 +3939,14 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
           message.initialCostDecimal = reader.double();
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.isCustom = reader.bool();
+          continue;
+        }
         case 13: {
           if (tag !== 106) {
             break;
@@ -3950,6 +3977,7 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
         ? globalThis.Number(object.initialQuantityDecimal)
         : 0,
       initialCostDecimal: isSet(object.initialCostDecimal) ? globalThis.Number(object.initialCostDecimal) : 0,
+      isCustom: isSet(object.isCustom) ? globalThis.Boolean(object.isCustom) : false,
       purchaseUnit: isSet(object.purchaseUnit) ? globalThis.String(object.purchaseUnit) : "",
     };
   },
@@ -3983,6 +4011,9 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     if (message.initialCostDecimal !== 0) {
       obj.initialCostDecimal = message.initialCostDecimal;
     }
+    if (message.isCustom !== false) {
+      obj.isCustom = message.isCustom;
+    }
     if (message.purchaseUnit !== "") {
       obj.purchaseUnit = message.purchaseUnit;
     }
@@ -4003,6 +4034,7 @@ export const CreateInvestmentRequest: MessageFns<CreateInvestmentRequest> = {
     message.currency = object.currency ?? "";
     message.initialQuantityDecimal = object.initialQuantityDecimal ?? 0;
     message.initialCostDecimal = object.initialCostDecimal ?? 0;
+    message.isCustom = object.isCustom ?? false;
     message.purchaseUnit = object.purchaseUnit ?? "";
     return message;
   },

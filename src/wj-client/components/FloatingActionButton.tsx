@@ -60,31 +60,32 @@ export function FloatingActionButton({ actions }: FABProps) {
               : "opacity-0 translate-y-4 pointer-events-none",
           )}
         >
-          {actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={(event) => handleActionClick(event, action)}
-              className={cn(
-                "flex items-center gap-3 bg-white shadow-floating rounded-full",
-                "px-4 py-3 min-h-[56px]",
-                "hover:shadow-xl active:scale-95",
-                "transition-all duration-200",
-                "transform",
-                "relative",
-              )}
-              style={{
-                transitionDelay: isOpen ? `${index * 50}ms` : "0ms",
-              }}
-              aria-label={action.label}
-            >
-              <div className="flex-shrink-0 w-6 h-6 text-primary-600">
-                {action.icon}
-              </div>
-              <span className="font-medium text-neutral-900 whitespace-nowrap pr-2">
-                {action.label}
-              </span>
-            </button>
-          ))}
+          {isOpen &&
+            actions.map((action, index) => (
+              <button
+                key={index}
+                onClick={(event) => handleActionClick(event, action)}
+                className={cn(
+                  "flex items-center gap-3 bg-white shadow-floating rounded-full",
+                  "px-4 py-3 min-h-[56px]",
+                  "hover:shadow-xl active:scale-95",
+                  "transition-all duration-200",
+                  "transform",
+                  "relative",
+                )}
+                style={{
+                  transitionDelay: isOpen ? `${index * 50}ms` : "0ms",
+                }}
+                aria-label={action.label}
+              >
+                <div className="flex-shrink-0 w-6 h-6 text-primary-600">
+                  {action.icon}
+                </div>
+                <span className="font-medium text-neutral-900 whitespace-nowrap pr-2">
+                  {action.label}
+                </span>
+              </button>
+            ))}
         </div>
 
         {/* Main FAB button */}

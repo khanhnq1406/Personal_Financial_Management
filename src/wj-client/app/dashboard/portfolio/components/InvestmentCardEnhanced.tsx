@@ -10,12 +10,16 @@ import {
   getInvestmentTypeLabel,
   formatPrice,
   formatTimeAgo,
+  isCustomInvestment,
+  formatInvestmentPrice,
+  formatUnrealizedPNL,
 } from "../helpers";
 import { resources } from "@/app/constants";
 import Image from "next/image";
 import { Sparkline } from "@/components/charts";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconProps, PlusIcon } from "@/components/icons";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * Enhanced investment data type for card display
@@ -65,6 +69,7 @@ interface QuickActionButtonProps {
   onClick: (e: React.MouseEvent) => void;
   bgColor: string;
   textColor: string;
+  className?: string;
 }
 
 const QuickActionButton = memo(function QuickActionButton({
@@ -73,11 +78,15 @@ const QuickActionButton = memo(function QuickActionButton({
   onClick,
   bgColor,
   textColor,
+  className,
 }: QuickActionButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg ${bgColor} ${textColor} hover:opacity-90 transition-opacity`}
+      className={cn(
+        `flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg ${bgColor} ${textColor} hover:opacity-90 transition-opacity`,
+        className,
+      )}
     >
       {typeof icon === "string" ? (
         <Image src={icon} alt={label} width={20} height={20} />
@@ -131,12 +140,34 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
   const pnl = unrealizedPnl || 0;
   const pnlPercent = unrealizedPnlPercent || 0;
 
+  const isCustom = isCustomInvestment({
+    currentPrice: currentPrice || 0,
+    symbol,
+    type,
+  });
+  const pnlDisplay = formatUnrealizedPNL(
+    pnl,
+    pnlPercent,
+    nativeCurrency,
+    isCustom,
+  );
+
   const isProfit = pnl >= 0;
-  const pnlColor = isProfit ? "text-green-600" : "text-red-600";
-  const pnlBgColor = isProfit ? "bg-green-50" : "bg-red-50";
-  const pnlBadgeColor = isProfit
-    ? "bg-green-100 text-green-800"
-    : "bg-red-100 text-red-800";
+  const pnlColor = isCustom
+    ? "text-gray-500"
+    : isProfit
+      ? "text-green-600"
+      : "text-red-600";
+  const pnlBgColor = isCustom
+    ? "bg-gray-50"
+    : isProfit
+      ? "bg-green-50"
+      : "bg-red-50";
+  const pnlBadgeColor = isCustom
+    ? "bg-gray-100 text-gray-800"
+    : isProfit
+      ? "bg-green-100 text-green-800"
+      : "bg-red-100 text-red-800";
 
   const sparklineData = priceHistory
     ? priceHistory.map((p) => ({ value: p.value }))
@@ -178,7 +209,12 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
               <h3 className="text-lg font-bold text-neutral-900 truncate">
                 {symbol}
               </h3>
-              {sparklineData.length > 0 && (
+              {isCustom && (
+                <span className="inline-block px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                  Custom
+                </span>
+              )}
+              {!isCustom && sparklineData.length > 0 && (
                 <div className="w-16 h-8">
                   <Sparkline
                     data={sparklineData}
@@ -194,12 +230,14 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
               {getInvestmentTypeLabel(type)}
             </span>
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${pnlBadgeColor}`}
-            >
-              {isProfit ? "+" : ""}
-              {formatPercent(pnlPercent)}
-            </span>
+            {!isCustom && (
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${pnlBadgeColor}`}
+              >
+                {isProfit ? "+" : ""}
+                {formatPercent(pnlPercent)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -226,9 +264,15 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
 
           <div className={`px-3 py-2 rounded-lg ${pnlBgColor}`}>
             <div className="text-xs text-neutral-600 mb-1">Total PnL</div>
-            <div className={`text-lg font-bold ${pnlColor}`}>
-              {isProfit ? "+" : ""}
-              {formatCurrency(Math.abs(pnl), nativeCurrency)}
+            <div className={`text-sm font-bold ${pnlDisplay.colorClass}`}>
+              {isCustom ? (
+                "N/A"
+              ) : (
+                <>
+                  {isProfit ? "+" : ""}
+                  {formatCurrency(Math.abs(pnl), nativeCurrency)}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -307,14 +351,20 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                     Current Price
                   </div>
                   <div className="text-sm font-semibold text-neutral-900">
-                    {formatPrice(
-                      currentPrice || 0,
-                      type,
-                      nativeCurrency,
-                      purchaseUnit,
-                    )}
+                    {isCustom
+                      ? formatInvestmentPrice(
+                          currentPrice || 0,
+                          nativeCurrency,
+                          isCustom,
+                        )
+                      : formatPrice(
+                          currentPrice || 0,
+                          type,
+                          nativeCurrency,
+                          purchaseUnit,
+                        )}
                   </div>
-                  {displayCurrentPrice && displayCurrency && (
+                  {!isCustom && displayCurrentPrice && displayCurrency && (
                     <div className="text-xs text-neutral-500">
                       ≈{" "}
                       {formatPrice(
@@ -337,13 +387,14 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-3 border-t border-neutral-100">
+              <div className="flex gap-2 pt-3 border-t border-neutral-100 ">
                 <QuickActionButton
                   icon={<PlusIcon />}
                   label="More"
                   onClick={handleBuyMore}
                   bgColor="bg-green-100"
                   textColor="text-green-700"
+                  className="w-full"
                 />
                 {/* <QuickActionButton
                   icon={`${resources}/remove.svg`}

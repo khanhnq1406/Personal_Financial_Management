@@ -382,6 +382,17 @@ message GetInvestmentResponse {
   string timestamp = 4 [json_name = "timestamp"];
 }
 
+// CreateInvestmentRequest creates a new investment holding.
+//
+// For market-based investments (isCustom=false, default):
+// - Symbol must exist in market data APIs (Yahoo Finance, vang.today)
+// - Currency is validated against market data
+// - Current price fetched from market APIs
+//
+// For custom investments (isCustom=true):
+// - Symbol can be any user-defined string
+// - Currency must be provided manually
+// - Current price defaults to 0 (can be set manually later via UpdateInvestment)
 message CreateInvestmentRequest {
   int32 walletId = 1 [json_name = "walletId"];
   string symbol = 2 [json_name = "symbol"];
@@ -395,6 +406,7 @@ message CreateInvestmentRequest {
   // If provided, these take precedence over initialQuantity/initialCost
   double initialQuantityDecimal = 8 [json_name = "initialQuantityDecimal"];
   double initialCostDecimal = 9 [json_name = "initialCostDecimal"];  // Total cost as decimal (e.g., 1500.50 for $1,500.50)
+  bool isCustom = 10 [json_name = "isCustom"];  // If true, skip market data validation and allow currentPrice=0
   string purchaseUnit = 13 [json_name = "purchaseUnit"];  // User's input unit ("tael", "kg", "oz", "gram")
 }
 

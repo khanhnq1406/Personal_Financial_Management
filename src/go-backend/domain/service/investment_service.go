@@ -9,8 +9,8 @@ import (
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
-	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/cache"
+	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/gold"
 	"wealthjourney/pkg/silver"
 	"wealthjourney/pkg/types"
@@ -168,6 +168,23 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		averageCost = units.CalculateAverageCost(initialCost, initialQuantity, req.Type)
 	}
 
+	// 5.5. Custom investment handling
+	// Custom investments (isCustom=true):
+	// - Skip market data API validation
+	// - Allow currentPrice = 0 (user can update manually later)
+	// - Require manual currency selection
+	// Market-based investments (isCustom=false):
+	// - Set currentPrice to averageCost initially
+	// - Fetch updates from market data APIs
+	var currentPrice int64
+	if req.IsCustom {
+		// Custom investments: allow currentPrice = 0, skip market data validation
+		currentPrice = 0
+	} else {
+		// Market-based investments: set currentPrice to averageCost as before
+		currentPrice = averageCost
+	}
+
 	// 6. Create investment model
 	investment := &models.Investment{
 		WalletID:     req.WalletId,
@@ -178,7 +195,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		AverageCost:  averageCost,
 		TotalCost:    initialCost,
 		Currency:     req.Currency,
-		CurrentPrice: averageCost, // Set to average cost initially
+		CurrentPrice: currentPrice, // 0 for custom investments, averageCost for market-based
 		RealizedPNL:  0,
 		PurchaseUnit: req.PurchaseUnit, // Store user's purchase unit for display
 	}
@@ -691,7 +708,7 @@ func (s *investmentService) processBuyTransaction(ctx context.Context, investmen
 	tx := &models.InvestmentTransaction{
 		InvestmentID:      investment.ID,
 		WalletID:          investment.WalletID,
-		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
+		Type:              int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_BUY),
 		Quantity:          req.Quantity,
 		Price:             req.Price,
 		Cost:              cost,
@@ -817,7 +834,7 @@ func (s *investmentService) processSellTransaction(ctx context.Context, investme
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
 		WalletID:        investment.WalletID,
-		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL),
+		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_SELL),
 		Quantity:        req.Quantity,
 		Price:           req.Price,
 		Cost:            totalProceeds,
@@ -906,7 +923,7 @@ func (s *investmentService) processDividendTransaction(ctx context.Context, inve
 	tx := &models.InvestmentTransaction{
 		InvestmentID:    investment.ID,
 		WalletID:        investment.WalletID,
-		Type: int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
+		Type:            int32(investmentv1.InvestmentTransactionType_INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
 		Quantity:        req.Quantity,
 		Price:           req.Price,
 		Cost:            totalDividend,
@@ -1430,7 +1447,7 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 		invType := investmentv1.InvestmentType(inv.Type)
 		if _, exists := investmentsByType[invType]; !exists {
 			investmentsByType[invType] = &investmentv1.InvestmentByType{
-				Type: invType,
+				Type:       invType,
 				TotalValue: 0,
 				Count:      0,
 			}
@@ -1478,7 +1495,7 @@ func (s *investmentService) GetPortfolioSummary(ctx context.Context, walletID in
 			// Currency fields - summary is in user's preferred currency
 			Currency:        preferredCurrency,
 			DisplayCurrency: preferredCurrency,
-			TopPerformers:  topPerformers,
+			TopPerformers:   topPerformers,
 			WorstPerformers: worstPerformers,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -2048,7 +2065,7 @@ func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, u
 		invType := investmentv1.InvestmentType(inv.Type)
 		if _, exists := investmentsByType[invType]; !exists {
 			investmentsByType[invType] = &investmentv1.InvestmentByType{
-				Type: invType,
+				Type:       invType,
 				TotalValue: 0,
 				Count:      0,
 			}
@@ -2094,10 +2111,10 @@ func (s *investmentService) GetAggregatedPortfolioSummary(ctx context.Context, u
 			TotalInvestments:  int32(len(investments)),
 			InvestmentsByType: investmentsByTypeSlice,
 			// Currency fields - summary is in user's preferred currency
-			Currency:          preferredCurrency,
-			DisplayCurrency:   preferredCurrency,
-			TopPerformers:     topPerformers,
-			WorstPerformers:   worstPerformers,
+			Currency:        preferredCurrency,
+			DisplayCurrency: preferredCurrency,
+			TopPerformers:   topPerformers,
+			WorstPerformers: worstPerformers,
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
@@ -2133,8 +2150,8 @@ func (s *investmentService) ListInvestmentWallets(ctx context.Context, userID in
 func (s *investmentService) calculatePerformers(ctx context.Context, userID int32, investments []*models.Investment, preferredCurrency string) (topPerformers, worstPerformers []*investmentv1.InvestmentPerformance, err error) {
 	// Build list of investments with their performance
 	type investmentPerformance struct {
-		investment         *models.Investment
-		unrealizedPNL      int64
+		investment           *models.Investment
+		unrealizedPNL        int64
 		unrealizedPNLPercent float64
 	}
 
@@ -2225,11 +2242,11 @@ func (s *investmentService) calculatePerformers(ctx context.Context, userID int3
 		}
 
 		topPerformers = append(topPerformers, &investmentv1.InvestmentPerformance{
-			InvestmentId:       p.investment.ID,
-			Symbol:             p.investment.Symbol,
-			Name:               p.investment.Name,
-			Type:               investmentv1.InvestmentType(p.investment.Type),
-			UnrealizedPnl:      p.unrealizedPNL,
+			InvestmentId:         p.investment.ID,
+			Symbol:               p.investment.Symbol,
+			Name:                 p.investment.Name,
+			Type:                 investmentv1.InvestmentType(p.investment.Type),
+			UnrealizedPnl:        p.unrealizedPNL,
 			UnrealizedPnlPercent: p.unrealizedPNLPercent,
 			DisplayUnrealizedPnl: &investmentv1.Money{
 				Amount:   displayUnrealizedPNL,
@@ -2253,11 +2270,11 @@ func (s *investmentService) calculatePerformers(ctx context.Context, userID int3
 		}
 
 		worstPerformers = append(worstPerformers, &investmentv1.InvestmentPerformance{
-			InvestmentId:       p.investment.ID,
-			Symbol:             p.investment.Symbol,
-			Name:               p.investment.Name,
-			Type:               investmentv1.InvestmentType(p.investment.Type),
-			UnrealizedPnl:      p.unrealizedPNL,
+			InvestmentId:         p.investment.ID,
+			Symbol:               p.investment.Symbol,
+			Name:                 p.investment.Name,
+			Type:                 investmentv1.InvestmentType(p.investment.Type),
+			UnrealizedPnl:        p.unrealizedPNL,
 			UnrealizedPnlPercent: p.unrealizedPNLPercent,
 			DisplayUnrealizedPnl: &investmentv1.Money{
 				Amount:   displayUnrealizedPNL,
@@ -2269,4 +2286,3 @@ func (s *investmentService) calculatePerformers(ctx context.Context, userID int3
 
 	return topPerformers, worstPerformers, nil
 }
-

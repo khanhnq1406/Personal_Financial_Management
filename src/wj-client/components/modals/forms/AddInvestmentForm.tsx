@@ -136,6 +136,9 @@ export function AddInvestmentForm({
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
   const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
 
+  // Custom investment toggle state
+  const [isCustomInvestment, setIsCustomInvestment] = useState(false);
+
   // Fetch user's wallets if walletId not provided
   const getListWallets = useQueryListWallets(
     {
@@ -198,9 +201,46 @@ export function AddInvestmentForm({
       });
     },
     onError: (error: any) => {
-      setErrorMessage(
-        error.message || "Failed to create investment. Please try again",
-      );
+      // Parse error message and provide user-friendly alternatives
+      let errorMsg = error.message || "Failed to create investment";
+
+      if (
+        errorMsg.toLowerCase().includes("duplicate") ||
+        errorMsg.toLowerCase().includes("already exists")
+      ) {
+        errorMsg =
+          "An investment with this symbol already exists in this wallet";
+      } else if (errorMsg.toLowerCase().includes("currency")) {
+        errorMsg = "Invalid currency code. Please select a valid currency";
+      } else if (
+        errorMsg.toLowerCase().includes("balance") ||
+        errorMsg.toLowerCase().includes("insufficient")
+      ) {
+        errorMsg = "Insufficient wallet balance for this investment";
+      } else if (errorMsg.toLowerCase().includes("symbol")) {
+        errorMsg = "Invalid symbol format. Please check and try again";
+      } else if (errorMsg.toLowerCase().includes("quantity")) {
+        errorMsg = "Invalid quantity. Please enter a valid positive number";
+      } else if (
+        errorMsg.toLowerCase().includes("cost") ||
+        errorMsg.toLowerCase().includes("price")
+      ) {
+        errorMsg = "Invalid cost amount. Please enter a valid positive number";
+      } else if (errorMsg.toLowerCase().includes("wallet")) {
+        errorMsg = "Invalid wallet or wallet not found";
+      } else if (
+        errorMsg.toLowerCase().includes("not found") ||
+        errorMsg.toLowerCase().includes("404")
+      ) {
+        errorMsg = "Resource not found. Please try again";
+      } else if (
+        errorMsg.toLowerCase().includes("unauthorized") ||
+        errorMsg.toLowerCase().includes("403")
+      ) {
+        errorMsg = "You don't have permission to perform this action";
+      }
+
+      setErrorMessage(errorMsg);
     },
   });
 
@@ -449,6 +489,7 @@ export function AddInvestmentForm({
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
         initialCost: 0,
+        isCustom: false, // Gold investments are never custom
       });
     } else if (isSilverInvestment && selectedSilverType) {
       // Use silver calculator for silver investments
@@ -476,6 +517,7 @@ export function AddInvestmentForm({
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
         initialCost: 0,
+        isCustom: false, // Silver investments are never custom
       });
     } else {
       // Convert to API format using utility functions for non-gold, non-silver investments
@@ -491,6 +533,7 @@ export function AddInvestmentForm({
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
         initialCost: 0,
+        isCustom: isCustomInvestment, // Set custom flag based on toggle
       });
     }
   };
@@ -535,32 +578,97 @@ export function AddInvestmentForm({
         </div>
       )}
 
+      {/* Custom Investment Toggle - shown only for non-gold, non-silver investments */}
+      {!isGoldInvestment && !isSilverInvestment && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isCustomInvestment}
+              onChange={(e) => {
+                setIsCustomInvestment(e.target.checked);
+                // Clear symbol and currency when toggling
+                if (e.target.checked) {
+                  setValue("symbol", "");
+                  setValue("currency", "");
+                  setSelectedSymbol("");
+                  setSelectedCurrency("");
+                } else {
+                  // Reset to default when unchecked
+                  setValue("currency", "USD");
+                  setSelectedCurrency("USD");
+                }
+              }}
+              className="w-4 h-4 text-bg border-gray-300 rounded focus:ring-bg"
+            />
+            <div className="flex-1">
+              <span className="font-medium text-gray-900">Custom Investment</span>
+              <p className="text-sm text-gray-500">
+                Create investment for assets not available in market data
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
+
       {/* Symbol - hidden for gold and silver investments (auto-populated from type) */}
       {!isGoldInvestment && !isSilverInvestment && (
         <div className="mb-4">
           <Label htmlFor="symbol" required>
             Symbol
           </Label>
-          <SymbolAutocomplete
-            value={watch("symbol")}
-            onChange={handleSymbolChange}
-            placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
-            // disabled={isSubmitting}
-            className="mt-1"
-          />
-          {errors.symbol && (
-            <ErrorMessage id="symbol-error">
-              {errors.symbol.message}
-            </ErrorMessage>
-          )}
-          {/* Market price display */}
-          {selectedSymbol && selectedSymbol.length >= 2 && (
-            <MarketPriceDisplay
-              symbol={selectedSymbol}
-              currency={selectedCurrency}
-              investmentType={Number(watch("type")) as InvestmentType}
-              className="mt-2"
-            />
+          {!isCustomInvestment ? (
+            // Autocomplete for regular investments
+            <>
+              <SymbolAutocomplete
+                value={watch("symbol")}
+                onChange={handleSymbolChange}
+                placeholder="Search for stocks, ETFs, crypto (e.g., AAPL, BTC, VTI)..."
+                // disabled={isSubmitting}
+                className="mt-1"
+              />
+              {errors.symbol && (
+                <ErrorMessage id="symbol-error">
+                  {errors.symbol.message}
+                </ErrorMessage>
+              )}
+              {/* Market price display */}
+              {selectedSymbol && selectedSymbol.length >= 2 && (
+                <MarketPriceDisplay
+                  symbol={selectedSymbol}
+                  currency={selectedCurrency}
+                  investmentType={Number(watch("type")) as InvestmentType}
+                  className="mt-2"
+                />
+              )}
+            </>
+          ) : (
+            // Manual input for custom investments
+            <>
+              <FormInput
+                name="symbol"
+                control={control}
+                label=""
+                placeholder="e.g., MY-CUSTOM-ASSET"
+                required
+                disabled={isSubmitting}
+                className="mt-1"
+              />
+              {errors.symbol && (
+                <ErrorMessage id="symbol-error">
+                  {errors.symbol.message}
+                </ErrorMessage>
+              )}
+              <p className="text-xs text-gray-500 mt-1 ml-1">
+                Enter a unique identifier for your custom investment
+              </p>
+              {/* Info box for custom investments */}
+              <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Custom investments don&apos;t have market prices. You can set the price manually after creation.
+                </p>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -836,17 +944,48 @@ export function AddInvestmentForm({
         )}
       </div>
 
+      {/* Currency Input - shown for custom investments before Initial Cost */}
+      {!isGoldInvestment && !isSilverInvestment && isCustomInvestment && (
+        <FormSelect
+          name="currency"
+          control={control}
+          label="Currency"
+          options={[
+            { value: "USD", label: "USD - US Dollar" },
+            { value: "VND", label: "VND - Vietnamese Dong" },
+            { value: "EUR", label: "EUR - Euro" },
+            { value: "GBP", label: "GBP - British Pound" },
+            { value: "JPY", label: "JPY - Japanese Yen" },
+            { value: "CNY", label: "CNY - Chinese Yuan" },
+            { value: "KRW", label: "KRW - South Korean Won" },
+            { value: "SGD", label: "SGD - Singapore Dollar" },
+          ]}
+          required
+          disabled={isSubmitting}
+          className="mb-4"
+        />
+      )}
+
       {/* Initial Cost */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Label htmlFor="initialCost" required>
             Total Initial Cost
           </Label>
-          <CurrencyBadge
-            value={currency}
-            onChange={(newCurrency) => setValue("currency", newCurrency)}
-            disabled={isSubmitting || isGoldInvestment || isSilverInvestment}
-          />
+          {/* CurrencyBadge - hidden for custom investments (manual select above) */}
+          {!isCustomInvestment && (
+            <CurrencyBadge
+              value={currency}
+              onChange={(newCurrency) => setValue("currency", newCurrency)}
+              disabled={isSubmitting || isGoldInvestment || isSilverInvestment}
+            />
+          )}
+          {/* Display only badge for custom investments */}
+          {isCustomInvestment && (
+            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">
+              {currency || "USD"}
+            </span>
+          )}
         </div>
         <FormNumberInput
           name="initialCost"
@@ -883,7 +1022,7 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
             <span className="text-red-600">
-              -{formatCurrency(initialCostInSmallestUnit, currency)}
+              -{currency ? formatCurrency(initialCostInSmallestUnit, currency) : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
             </span>
           </div>
           <hr className="my-2" />
@@ -924,7 +1063,7 @@ export function AddInvestmentForm({
               {exchangeRate && (
                 <span className="text-gray-500 ml-1">
                   ≈{" "}
-                  {formatCurrency(walletBalanceInInvestmentCurrency, currency)}
+                  {currency ? formatCurrency(walletBalanceInInvestmentCurrency, currency) : `${(walletBalanceInInvestmentCurrency / 100).toFixed(2)}`}
                 </span>
               )}
             </span>
@@ -932,7 +1071,7 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
             <span className="text-red-600">
-              -{formatCurrency(initialCostInSmallestUnit, currency)}
+              -{currency ? formatCurrency(initialCostInSmallestUnit, currency) : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
             </span>
           </div>
           <hr className="my-2" />
