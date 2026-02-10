@@ -239,7 +239,7 @@ export default function DashboardLayout({
         {/* Currency conversion progress banner */}
         <CurrencyConversionProgress />
 
-        <div className="h-screen bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
+        <div className="h-dvh bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
           {/* Desktop Sidebar - Collapsible */}
           <aside
             className={`hidden sm:flex flex-col bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface min-h-screen fixed left-0 top-0 z-sidebar transition-all duration-300 ease-in-out ${
@@ -764,9 +764,8 @@ export default function DashboardLayout({
               "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
               isExpanded ? "sm:ml-64 lg:ml-72" : "sm:ml-20",
             )}
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 60px)' }}
           >
-            <div className="h-full p-4 sm:p-6 lg:p-8 pb-8 sm:pb-8 overflow-y-auto transition-all duration-300 ease-in-out">
+            <div className="h-full p-4 sm:p-6 lg:p-8 pb-safe-mobile sm:pb-8 overflow-y-auto transition-all duration-300 ease-in-out">
               {children}
             </div>
           </main>

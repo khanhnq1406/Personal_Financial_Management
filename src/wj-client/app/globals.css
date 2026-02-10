@@ -34,11 +34,22 @@ body {
   /* color: var(--foreground); */
   background: var(--background);
   font-family: var(--font-jakarta-sans);
+  /* Use dvh (dynamic viewport height) for iOS Safari compatibility */
+  height: 100dvh;
+  /* Fallback for browsers that don't support dvh */
   height: 100vh;
   touch-action: manipulation;
   /* Prevent iOS from resizing when virtual keyboard appears */
   position: relative;
   overflow: hidden;
+}
+
+/* iOS Safari specific height fix */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Fill the viewport accounting for browser UI */
+    min-height: -webkit-fill-available;
+  }
 }
 
 /* Dark mode styles */
@@ -351,6 +362,26 @@ body {
 /* Safe area bottom padding for mobile bottom navigation */
 .pb-safe-bottom {
   padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+}
+
+/* Mobile-only safe area bottom padding */
+@media (max-width: 799px) {
+  .pb-safe-mobile {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
+  }
+}
+
+/* Dynamic viewport height utility for iOS Safari */
+.h-dvh {
+  height: 100vh; /* Fallback for older browsers */
+  height: 100dvh; /* Dynamic viewport height for modern browsers */
+}
+
+/* iOS Safari specific: use -webkit-fill-available */
+@supports (-webkit-touch-callout: none) {
+  .h-dvh {
+    height: -webkit-fill-available;
+  }
 }
 
 /* Touch-friendly utilities */

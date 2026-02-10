@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 35">
+  <!-- Background Circle -->
+  <circle cx="17.5" cy="17.5" r="17.5" fill="#008148"/>
+
+  <!-- Trending Up Icon - Converted strokes to filled paths for better rendering -->
+  <g transform="translate(5.5, 5.5)" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Horizontal line -->
+    <line x1="12.5" y1="6.5" x2="20.5" y2="6.5"/>
+    <!-- Vertical line -->
+    <line x1="20.5" y1="6.5" x2="20.5" y2="14.5"/>
+    <!-- Arrow diagonal 1 (top-right to bottom-left) -->
+    <line x1="20.5" y1="6.5" x2="12.5" y2="14.5"/>
+    <!-- Arrow diagonal 2 (segment going down) -->
+    <line x1="12.5" y1="14.5" x2="8.5" y2="10.5"/>
+    <!-- Arrow diagonal 3 (final segment) -->
+    <line x1="8.5" y1="10.5" x2="2.5" y2="16.5"/>
+  </g>
+</svg>
