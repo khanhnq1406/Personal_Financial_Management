@@ -58,15 +58,18 @@ export const BottomNav = memo(function BottomNav({
       className={cn(
         "sm:hidden fixed bottom-0 left-0 right-0",
         "bg-white border-t border-neutral-200",
-        "pb-safe pt-1",
+        "pt-1",
         "shadow-[0_-2px_10px_rgba(0,0,0,0.05)]",
         className
       )}
-      style={{ zIndex: ZIndex.sidebar }}
+      style={{
+        zIndex: ZIndex.sidebar,
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)'
+      }}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex justify-around items-center">
+      <div className="flex justify-around items-center min-h-[52px]">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
 
@@ -88,7 +91,7 @@ export const BottomNav = memo(function BottomNav({
               aria-current={isActive ? "page" : undefined}
               aria-label={item.ariaLabel}
             >
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 {/* Icon with active indicator */}
                 <div
                   className={cn(
@@ -97,6 +100,7 @@ export const BottomNav = memo(function BottomNav({
                     "transition-transform duration-200",
                     isActive ? "scale-110" : "scale-100"
                   )}
+                  style={{ minWidth: '24px', minHeight: '24px' }}
                 >
                   {item.icon}
                 </div>

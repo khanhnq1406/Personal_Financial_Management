@@ -45,8 +45,11 @@ export function FloatingActionButton({ actions }: FABProps) {
 
       {/* FAB Container - only visible on mobile */}
       <div
-        className="fixed bottom-14 right-3 sm:hidden flex items-end"
-        style={{ zIndex: ZIndex.floating + 1 }}
+        className="fixed right-3 sm:hidden flex items-end"
+        style={{
+          zIndex: ZIndex.floating + 1,
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 70px)",
+        }}
       >
         {/* Action buttons (expand upward) */}
         <div
@@ -95,10 +98,20 @@ export function FloatingActionButton({ actions }: FABProps) {
             "transition-all duration-200",
             isOpen && "rotate-45",
           )}
+          style={{ minWidth: "56px", minHeight: "56px" }}
           aria-label={isOpen ? "Close quick actions" : "Open quick actions"}
           aria-expanded={isOpen}
         >
-          {isOpen ? <XIcon size="xl" className="text-white" decorative /> : <PlusIcon size="xl" className="text-white" decorative />}
+          <div
+            className="flex-shrink-0 h-8"
+            style={{ minWidth: "24px", minHeight: "24px" }}
+          >
+            {isOpen ? (
+              <XIcon size="xl" className="text-white" decorative />
+            ) : (
+              <PlusIcon size="xl" className="text-white" decorative />
+            )}
+          </div>
         </button>
       </div>
     </>

@@ -373,3 +373,37 @@ textarea,
 select {
   font-size: 16px !important;
 }
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Ensure proper rendering of flex items with icons */
+  .flex.items-center {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Prevent subpixel antialiasing issues */
+  svg {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Ensure inline-flex elements have proper dimensions */
+  span.inline-flex {
+    min-width: min-content;
+    min-height: min-content;
+  }
+}
+
+/* Fix for icons being hidden on iOS */
+svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Ensure safe-area-inset works properly on iOS */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+}

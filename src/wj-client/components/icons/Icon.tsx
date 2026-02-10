@@ -73,7 +73,11 @@ export const Icon = memo(function Icon({
         sizeClass,
         className
       )}
-      style={customSize}
+      style={{
+        ...customSize,
+        minWidth: customSize.width || '12px',
+        minHeight: customSize.height || '12px',
+      }}
       aria-label={decorative ? undefined : ariaLabel}
       aria-hidden={decorative ? true : undefined}
       role="img"

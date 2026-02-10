@@ -764,8 +764,9 @@ export default function DashboardLayout({
               "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
               isExpanded ? "sm:ml-64 lg:ml-72" : "sm:ml-20",
             )}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 60px)' }}
           >
-            <div className="h-full p-4 sm:p-6 lg:p-8 pb-14 sm:pb-8 overflow-y-auto transition-all duration-300 ease-in-out">
+            <div className="h-full p-4 sm:p-6 lg:p-8 pb-8 sm:pb-8 overflow-y-auto transition-all duration-300 ease-in-out">
               {children}
             </div>
           </main>
