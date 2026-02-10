@@ -36,6 +36,7 @@ const (
 	InvestmentService_GetGoldTypeCodes_FullMethodName              = "/wealthjourney.investment.v1.InvestmentService/GetGoldTypeCodes"
 	InvestmentService_GetSilverTypeCodes_FullMethodName            = "/wealthjourney.investment.v1.InvestmentService/GetSilverTypeCodes"
 	InvestmentService_GetHistoricalPortfolioValues_FullMethodName  = "/wealthjourney.investment.v1.InvestmentService/GetHistoricalPortfolioValues"
+	InvestmentService_GetMarketPrice_FullMethodName                = "/wealthjourney.investment.v1.InvestmentService/GetMarketPrice"
 )
 
 // InvestmentServiceClient is the client API for InvestmentService service.
@@ -78,6 +79,8 @@ type InvestmentServiceClient interface {
 	GetSilverTypeCodes(ctx context.Context, in *GetSilverTypeCodesRequest, opts ...grpc.CallOption) (*GetSilverTypeCodesResponse, error)
 	// GetHistoricalPortfolioValues returns historical portfolio value snapshots
 	GetHistoricalPortfolioValues(ctx context.Context, in *GetHistoricalPortfolioValuesRequest, opts ...grpc.CallOption) (*GetHistoricalPortfolioValuesResponse, error)
+	// GetMarketPrice retrieves current market price for display in forms
+	GetMarketPrice(ctx context.Context, in *GetMarketPriceRequest, opts ...grpc.CallOption) (*GetMarketPriceResponse, error)
 }
 
 type investmentServiceClient struct {
@@ -241,6 +244,15 @@ func (c *investmentServiceClient) GetHistoricalPortfolioValues(ctx context.Conte
 	return out, nil
 }
 
+func (c *investmentServiceClient) GetMarketPrice(ctx context.Context, in *GetMarketPriceRequest, opts ...grpc.CallOption) (*GetMarketPriceResponse, error) {
+	out := new(GetMarketPriceResponse)
+	err := c.cc.Invoke(ctx, InvestmentService_GetMarketPrice_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvestmentServiceServer is the server API for InvestmentService service.
 // All implementations must embed UnimplementedInvestmentServiceServer
 // for forward compatibility
@@ -281,6 +293,8 @@ type InvestmentServiceServer interface {
 	GetSilverTypeCodes(context.Context, *GetSilverTypeCodesRequest) (*GetSilverTypeCodesResponse, error)
 	// GetHistoricalPortfolioValues returns historical portfolio value snapshots
 	GetHistoricalPortfolioValues(context.Context, *GetHistoricalPortfolioValuesRequest) (*GetHistoricalPortfolioValuesResponse, error)
+	// GetMarketPrice retrieves current market price for display in forms
+	GetMarketPrice(context.Context, *GetMarketPriceRequest) (*GetMarketPriceResponse, error)
 	mustEmbedUnimplementedInvestmentServiceServer()
 }
 
@@ -338,6 +352,9 @@ func (UnimplementedInvestmentServiceServer) GetSilverTypeCodes(context.Context, 
 }
 func (UnimplementedInvestmentServiceServer) GetHistoricalPortfolioValues(context.Context, *GetHistoricalPortfolioValuesRequest) (*GetHistoricalPortfolioValuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHistoricalPortfolioValues not implemented")
+}
+func (UnimplementedInvestmentServiceServer) GetMarketPrice(context.Context, *GetMarketPriceRequest) (*GetMarketPriceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMarketPrice not implemented")
 }
 func (UnimplementedInvestmentServiceServer) mustEmbedUnimplementedInvestmentServiceServer() {}
 
@@ -658,6 +675,24 @@ func _InvestmentService_GetHistoricalPortfolioValues_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InvestmentService_GetMarketPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMarketPriceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InvestmentServiceServer).GetMarketPrice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InvestmentService_GetMarketPrice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InvestmentServiceServer).GetMarketPrice(ctx, req.(*GetMarketPriceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InvestmentService_ServiceDesc is the grpc.ServiceDesc for InvestmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -732,6 +767,10 @@ var InvestmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetHistoricalPortfolioValues",
 			Handler:    _InvestmentService_GetHistoricalPortfolioValues_Handler,
+		},
+		{
+			MethodName: "GetMarketPrice",
+			Handler:    _InvestmentService_GetMarketPrice_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -437,6 +437,40 @@ export interface GetSilverTypeCodesResponse {
   timestamp: string;
 }
 
+/** GetMarketPriceRequest - Fetch current market price for display */
+export interface GetMarketPriceRequest {
+  /** e.g., "AAPL", "BTC-USD", "SJL1L10" */
+  symbol: string;
+  /** ISO 4217 code */
+  currency: string;
+  /** For routing to correct API */
+  type: InvestmentType;
+}
+
+/** GetMarketPriceResponse - Market price with metadata */
+export interface GetMarketPriceResponse {
+  success: boolean;
+  message: string;
+  data: MarketPrice | undefined;
+  timestamp: string;
+}
+
+/** MarketPrice - Price data with freshness info */
+export interface MarketPrice {
+  symbol: string;
+  currency: string;
+  /** Smallest currency unit */
+  price: number;
+  /** Convenience field */
+  priceDecimal: number;
+  /** Unix seconds */
+  timestamp: number;
+  /** Cache hit indicator */
+  isCached: boolean;
+  /** "tael", "oz", "unit", etc. */
+  displayUnit: string;
+}
+
 /** Request/Response messages */
 export interface ListInvestmentsRequest {
   walletId: number;
@@ -3007,6 +3041,364 @@ export const GetSilverTypeCodesResponse: MessageFns<GetSilverTypeCodesResponse> 
     message.success = object.success ?? false;
     message.data = object.data?.map((e) => SilverTypeCode.fromPartial(e)) || [];
     message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetMarketPriceRequest(): GetMarketPriceRequest {
+  return { symbol: "", currency: "", type: 0 };
+}
+
+export const GetMarketPriceRequest: MessageFns<GetMarketPriceRequest> = {
+  encode(message: GetMarketPriceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.symbol !== "") {
+      writer.uint32(10).string(message.symbol);
+    }
+    if (message.currency !== "") {
+      writer.uint32(18).string(message.currency);
+    }
+    if (message.type !== 0) {
+      writer.uint32(24).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetMarketPriceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetMarketPriceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.symbol = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetMarketPriceRequest {
+    return {
+      symbol: isSet(object.symbol) ? globalThis.String(object.symbol) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      type: isSet(object.type) ? investmentTypeFromJSON(object.type) : 0,
+    };
+  },
+
+  toJSON(message: GetMarketPriceRequest): unknown {
+    const obj: any = {};
+    if (message.symbol !== "") {
+      obj.symbol = message.symbol;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.type !== 0) {
+      obj.type = investmentTypeToJSON(message.type);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetMarketPriceRequest>): GetMarketPriceRequest {
+    return GetMarketPriceRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetMarketPriceRequest>): GetMarketPriceRequest {
+    const message = createBaseGetMarketPriceRequest();
+    message.symbol = object.symbol ?? "";
+    message.currency = object.currency ?? "";
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetMarketPriceResponse(): GetMarketPriceResponse {
+  return { success: false, message: "", data: undefined, timestamp: "" };
+}
+
+export const GetMarketPriceResponse: MessageFns<GetMarketPriceResponse> = {
+  encode(message: GetMarketPriceResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      MarketPrice.encode(message.data, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetMarketPriceResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetMarketPriceResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = MarketPrice.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetMarketPriceResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      data: isSet(object.data) ? MarketPrice.fromJSON(object.data) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetMarketPriceResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.data !== undefined) {
+      obj.data = MarketPrice.toJSON(message.data);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetMarketPriceResponse>): GetMarketPriceResponse {
+    return GetMarketPriceResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetMarketPriceResponse>): GetMarketPriceResponse {
+    const message = createBaseGetMarketPriceResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null)
+      ? MarketPrice.fromPartial(object.data)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseMarketPrice(): MarketPrice {
+  return { symbol: "", currency: "", price: 0, priceDecimal: 0, timestamp: 0, isCached: false, displayUnit: "" };
+}
+
+export const MarketPrice: MessageFns<MarketPrice> = {
+  encode(message: MarketPrice, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.symbol !== "") {
+      writer.uint32(10).string(message.symbol);
+    }
+    if (message.currency !== "") {
+      writer.uint32(18).string(message.currency);
+    }
+    if (message.price !== 0) {
+      writer.uint32(24).int64(message.price);
+    }
+    if (message.priceDecimal !== 0) {
+      writer.uint32(33).double(message.priceDecimal);
+    }
+    if (message.timestamp !== 0) {
+      writer.uint32(40).int64(message.timestamp);
+    }
+    if (message.isCached !== false) {
+      writer.uint32(48).bool(message.isCached);
+    }
+    if (message.displayUnit !== "") {
+      writer.uint32(58).string(message.displayUnit);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MarketPrice {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarketPrice();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.symbol = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.price = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 33) {
+            break;
+          }
+
+          message.priceDecimal = reader.double();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.timestamp = longToNumber(reader.int64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.isCached = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.displayUnit = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MarketPrice {
+    return {
+      symbol: isSet(object.symbol) ? globalThis.String(object.symbol) : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      priceDecimal: isSet(object.priceDecimal) ? globalThis.Number(object.priceDecimal) : 0,
+      timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
+      isCached: isSet(object.isCached) ? globalThis.Boolean(object.isCached) : false,
+      displayUnit: isSet(object.displayUnit) ? globalThis.String(object.displayUnit) : "",
+    };
+  },
+
+  toJSON(message: MarketPrice): unknown {
+    const obj: any = {};
+    if (message.symbol !== "") {
+      obj.symbol = message.symbol;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.priceDecimal !== 0) {
+      obj.priceDecimal = message.priceDecimal;
+    }
+    if (message.timestamp !== 0) {
+      obj.timestamp = Math.round(message.timestamp);
+    }
+    if (message.isCached !== false) {
+      obj.isCached = message.isCached;
+    }
+    if (message.displayUnit !== "") {
+      obj.displayUnit = message.displayUnit;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MarketPrice>): MarketPrice {
+    return MarketPrice.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MarketPrice>): MarketPrice {
+    const message = createBaseMarketPrice();
+    message.symbol = object.symbol ?? "";
+    message.currency = object.currency ?? "";
+    message.price = object.price ?? 0;
+    message.priceDecimal = object.priceDecimal ?? 0;
+    message.timestamp = object.timestamp ?? 0;
+    message.isCached = object.isCached ?? false;
+    message.displayUnit = object.displayUnit ?? "";
     return message;
   },
 };

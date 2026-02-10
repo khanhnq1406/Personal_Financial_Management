@@ -831,6 +831,7 @@ export function InvestmentDetailModal({
               walletBalance={walletBalance}
               walletCurrency={walletCurrency}
               onSuccess={handleTransactionSuccess}
+              symbol={investment.symbol}
             />
           )}
 

@@ -8,13 +8,13 @@ import { ButtonType } from "@/app/constants";
 import { RHFFormInput as FormInput } from "@/components/forms/RHFFormInput";
 import { FormNumberInput } from "@/components/forms/FormNumberInput";
 import { RHFFormSelect as FormSelect } from "@/components/forms/RHFFormSelect";
-import { SelectOption } from "@/components/forms/FormSelect";
 import {
-  Select,
-  SelectOption as SelectComponentOption,
-} from "@/components/select/Select";
+  FormSelect as BasicFormSelect,
+  SelectOption,
+} from "@/components/forms/FormSelect";
 import { Success } from "@/components/modals/Success";
 import { SymbolAutocomplete } from "@/components/forms/SymbolAutocomplete";
+import { MarketPriceDisplay } from "@/components/forms/MarketPriceDisplay";
 import {
   useMutationCreateInvestment,
   useQueryListWallets,
@@ -130,6 +130,10 @@ export function AddInvestmentForm({
     useState<SilverTypeOption | null>(null);
   const [silverQuantityUnit, setSilverQuantityUnit] =
     useState<SilverUnit>("tael");
+
+  // State for tracking selected symbol and currency (for market price display)
+  const [selectedSymbol, setSelectedSymbol] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
 
   // Fetch user's wallets if walletId not provided
   const getListWallets = useQueryListWallets(
@@ -357,11 +361,14 @@ export function AddInvestmentForm({
   // Handle symbol selection - auto-fill name and currency from search result
   const handleSymbolChange = (symbol: string, result?: SearchResult) => {
     setValue("symbol", symbol);
+    setSelectedSymbol(symbol);
+
     if (result?.name) {
       setValue("name", result.name);
     }
     if (result?.currency) {
       setValue("currency", result.currency);
+      setSelectedCurrency(result.currency);
     }
   };
 
@@ -458,7 +465,7 @@ export function AddInvestmentForm({
   };
 
   // Build wallet options for selector
-  const walletSelectOptions = useMemo((): SelectComponentOption<string>[] => {
+  const walletSelectOptions = useMemo((): SelectOption[] => {
     return investmentWallets.map((wallet) => ({
       value: String(wallet.id),
       label: wallet.walletName,
@@ -475,18 +482,14 @@ export function AddInvestmentForm({
       {/* Wallet Selector - only shown when walletId not provided */}
       {propWalletId === undefined && (
         <div className="mb-4">
-          <Label htmlFor="wallet" required>
-            Investment Wallet
-          </Label>
-          <Select
+          <BasicFormSelect
+            label="Investment Wallet"
             options={walletSelectOptions}
             value={selectedWalletId ? String(selectedWalletId) : undefined}
             onChange={(value) => setSelectedWalletId(parseInt(value, 10))}
             placeholder="Select investment wallet"
             disabled={isSubmitting || getListWallets.isLoading}
-            isLoading={getListWallets.isLoading}
-            clearable={false}
-            className="mt-1"
+            required
           />
           {!walletId && (
             <ErrorMessage id="wallet-error">
@@ -514,6 +517,15 @@ export function AddInvestmentForm({
               {errors.symbol.message}
             </ErrorMessage>
           )}
+          {/* Market price display */}
+          {selectedSymbol && selectedSymbol.length >= 2 && (
+            <MarketPriceDisplay
+              symbol={selectedSymbol}
+              currency={selectedCurrency}
+              investmentType={Number(watch("type")) as InvestmentType}
+              className="mt-2"
+            />
+          )}
         </div>
       )}
 
@@ -526,7 +538,6 @@ export function AddInvestmentForm({
           placeholder="Apple Inc., Bitcoin, Vanguard Total Stock Market ETF..."
           required
           disabled={isSubmitting}
-          className="mb-4"
         />
       )}
 
@@ -545,10 +556,8 @@ export function AddInvestmentForm({
       {/* Gold Type Selector - shown only for gold investments */}
       {isGoldInvestment && (
         <div className="mb-4">
-          <Label htmlFor="goldType" required>
-            Gold Type
-          </Label>
-          <Select
+          <BasicFormSelect
+            label="Gold Type"
             options={goldTypeOptions.map((opt) => ({
               value: opt.value,
               label: opt.label,
@@ -567,7 +576,7 @@ export function AddInvestmentForm({
             }}
             placeholder="Select gold type (SJC, XAU, etc.)"
             disabled={isSubmitting}
-            className="mt-1"
+            required
           />
           {selectedGoldType && (
             <p className="text-xs text-gray-500 mt-1 ml-1">
@@ -581,10 +590,8 @@ export function AddInvestmentForm({
       {/* Silver Type Selector - shown only for silver investments */}
       {isSilverInvestment && (
         <div className="mb-4">
-          <Label htmlFor="silverType" required>
-            Silver Type
-          </Label>
-          <Select
+          <BasicFormSelect
+            label="Silver Type"
             options={silverTypeOptions.map((opt: SilverTypeOption) => ({
               value: opt.value,
               label: opt.label,
@@ -606,7 +613,7 @@ export function AddInvestmentForm({
             }}
             placeholder="Select silver type (AG_VND, XAG, etc.)"
             disabled={isSubmitting}
-            className="mt-1"
+            required
           />
           {selectedSilverType && (
             <p className="text-xs text-gray-500 mt-1 ml-1">
@@ -690,10 +697,8 @@ export function AddInvestmentForm({
               selectedSilverType?.availableUnits &&
               selectedSilverType.availableUnits.length > 1 && (
                 <div>
-                  <Label htmlFor="initialQuantity" required>
-                    Unit
-                  </Label>
-                  <Select
+                  <BasicFormSelect
+                    label="Unit"
                     options={selectedSilverType.availableUnits.map(
                       (unit: SilverUnit) => ({
                         value: unit,
@@ -710,7 +715,8 @@ export function AddInvestmentForm({
                       setSilverQuantityUnit(value as SilverUnit)
                     }
                     disabled={isSubmitting}
-                    className="w-40 mt-1"
+                    required
+                    containerClassName="w-40"
                   />
                 </div>
               )}

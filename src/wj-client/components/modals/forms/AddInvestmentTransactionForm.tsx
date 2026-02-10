@@ -54,6 +54,7 @@ import {
   type SilverUnit,
 } from "@/lib/utils/silver-calculator";
 import { SuccessAnimation } from "@/components/success/SuccessAnimation";
+import { MarketPriceDisplay } from "@/components/forms/MarketPriceDisplay";
 
 interface AddInvestmentTransactionFormProps {
   investmentId: number;
@@ -62,6 +63,7 @@ interface AddInvestmentTransactionFormProps {
   purchaseUnit?: string; // User's purchase unit for display ("tael", "kg", "oz", "gram")
   walletBalance?: number; // Wallet balance in smallest currency unit
   walletCurrency?: string; // Currency of the wallet (ISO 4217)
+  symbol?: string; // Symbol for price lookup
   onSuccess?: () => void;
 }
 
@@ -92,6 +94,7 @@ export function AddInvestmentTransactionForm({
   purchaseUnit,
   walletBalance = 0,
   walletCurrency = "USD",
+  symbol,
   onSuccess,
 }: AddInvestmentTransactionFormProps) {
   const queryClient = useQueryClient();
@@ -500,6 +503,16 @@ export function AddInvestmentTransactionForm({
         step="0.01"
       />
 
+      {/* Market price display */}
+      {symbol && (
+        <MarketPriceDisplay
+          symbol={symbol}
+          currency={investmentCurrency}
+          investmentType={investmentType}
+          className="mt-2 mb-4"
+        />
+      )}
+
       {/* Fees */}
       <FormNumberInput
         name="fees"
@@ -512,23 +525,17 @@ export function AddInvestmentTransactionForm({
       />
 
       {/* Transaction Date */}
-      <div className="mb-2">
-        <label
-          htmlFor="transactionDate"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Transaction Date <span className="text-danger-600">*</span>
-        </label>
-        <input
-          id="transactionDate"
-          type="date"
-          disabled={isSubmitting}
-          className="p-2 drop-shadow-round rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed"
-          {...control.register("transactionDate", {
-            required: "Transaction date is required",
-          })}
-        />
-      </div>
+      <FormInput
+        control={control}
+        name="transactionDate"
+        type="date"
+        label="Transaction Date"
+        disabled={isSubmitting}
+        required
+        rules={{
+          required: "Transaction date is required",
+        }}
+      />
 
       {/* Balance Preview for BUY transactions - same currency */}
       {transactionType ===

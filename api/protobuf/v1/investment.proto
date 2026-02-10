@@ -194,6 +194,32 @@ message GetSilverTypeCodesResponse {
   string timestamp = 3 [json_name = "timestamp"];
 }
 
+// GetMarketPriceRequest - Fetch current market price for display
+message GetMarketPriceRequest {
+  string symbol = 1 [json_name = "symbol"];           // e.g., "AAPL", "BTC-USD", "SJL1L10"
+  string currency = 2 [json_name = "currency"];       // ISO 4217 code
+  InvestmentType type = 3 [json_name = "type"];       // For routing to correct API
+}
+
+// GetMarketPriceResponse - Market price with metadata
+message GetMarketPriceResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  MarketPrice data = 3 [json_name = "data"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+// MarketPrice - Price data with freshness info
+message MarketPrice {
+  string symbol = 1 [json_name = "symbol"];
+  string currency = 2 [json_name = "currency"];
+  int64 price = 3 [json_name = "price"];              // Smallest currency unit
+  double priceDecimal = 4 [json_name = "priceDecimal"]; // Convenience field
+  int64 timestamp = 5 [json_name = "timestamp"];      // Unix seconds
+  bool isCached = 6 [json_name = "isCached"];         // Cache hit indicator
+  string displayUnit = 7 [json_name = "displayUnit"]; // "tael", "oz", "unit", etc.
+}
+
 // Service definition
 service InvestmentService {
   // List all investments in a wallet
@@ -319,6 +345,13 @@ service InvestmentService {
   rpc GetHistoricalPortfolioValues(GetHistoricalPortfolioValuesRequest) returns (GetHistoricalPortfolioValuesResponse) {
     option (google.api.http) = {
       get: "/api/v1/portfolio/historical-values"
+    };
+  }
+
+  // GetMarketPrice retrieves current market price for display in forms
+  rpc GetMarketPrice(GetMarketPriceRequest) returns (GetMarketPriceResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/market-price"
     };
   }
 }

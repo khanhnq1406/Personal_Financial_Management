@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 
 	"wealthjourney/domain/service"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/fx"
 	"wealthjourney/pkg/handler"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
@@ -18,13 +20,15 @@ import (
 type InvestmentHandlers struct {
 	investmentService   service.InvestmentService
 	portfolioHistorySvc service.PortfolioHistoryService
+	marketDataService   service.MarketDataService
 }
 
 // NewInvestmentHandlers creates a new InvestmentHandlers instance.
-func NewInvestmentHandlers(investmentService service.InvestmentService, portfolioHistorySvc service.PortfolioHistoryService) *InvestmentHandlers {
+func NewInvestmentHandlers(investmentService service.InvestmentService, portfolioHistorySvc service.PortfolioHistoryService, marketDataService service.MarketDataService) *InvestmentHandlers {
 	return &InvestmentHandlers{
 		investmentService:   investmentService,
 		portfolioHistorySvc: portfolioHistorySvc,
+		marketDataService:   marketDataService,
 	}
 }
 
@@ -856,5 +860,111 @@ func (h *InvestmentHandlers) GetHistoricalPortfolioValues(c *gin.Context) {
 	}
 
 	handler.Success(c, result)
+}
+
+// GetMarketPrice retrieves current market price for a symbol.
+// @Summary Get current market price for display
+// @Tags investments
+// @Produce json
+// @Param symbol query string true "Symbol (e.g., AAPL, BTC-USD, SJL1L10)"
+// @Param currency query string true "Currency code (e.g., USD, VND)"
+// @Param type query int false "Investment type (default: 2 for stock)"
+// @Success 200 {object} types.APIResponse{data=investmentv1.MarketPrice}
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/investments/market-price [get]
+func (h *InvestmentHandlers) GetMarketPrice(c *gin.Context) {
+	// Get user ID from context (for authentication check)
+	_, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Parse query parameters
+	symbol := c.Query("symbol")
+	currency := c.Query("currency")
+	typeStr := c.Query("type")
+
+	// Validate required parameters
+	if symbol == "" || currency == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("symbol and currency are required"))
+		return
+	}
+
+	// Parse investment type (default to stock)
+	investmentType := investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK
+	if typeStr != "" {
+		typeInt, err := strconv.ParseInt(typeStr, 10, 32)
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError("invalid type parameter"))
+			return
+		}
+		investmentType = investmentv1.InvestmentType(typeInt)
+	}
+
+	// Fetch price with 15-minute cache tolerance
+	maxAge := 15 * time.Minute
+	priceData, err := h.marketDataService.GetPrice(c.Request.Context(), symbol, currency, investmentType, maxAge)
+
+	if err != nil {
+		// Return user-friendly error message
+		c.JSON(200, &investmentv1.GetMarketPriceResponse{
+			Success:   false,
+			Message:   fmt.Sprintf("Price unavailable for %s", symbol),
+			Timestamp: time.Now().Format(time.RFC3339),
+		})
+		return
+	}
+
+	// Determine display unit based on investment type
+	displayUnit := getDisplayUnitForType(investmentType)
+
+	// Check if data is from cache (older than 5 minutes)
+	isCached := time.Since(priceData.Timestamp) > 5*time.Minute
+
+	// Convert price to decimal for frontend convenience
+	priceDecimal := convertToDecimal(priceData.Price, currency)
+
+	// Build successful response
+	response := &investmentv1.GetMarketPriceResponse{
+		Success: true,
+		Message: "Market price retrieved",
+		Data: &investmentv1.MarketPrice{
+			Symbol:       priceData.Symbol,
+			Currency:     priceData.Currency,
+			Price:        priceData.Price,
+			PriceDecimal: priceDecimal,
+			Timestamp:    priceData.Timestamp.Unix(),
+			IsCached:     isCached,
+			DisplayUnit:  displayUnit,
+		},
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+
+	handler.Success(c, response)
+}
+
+// getDisplayUnitForType returns the appropriate display unit for an investment type.
+func getDisplayUnitForType(investmentType investmentv1.InvestmentType) string {
+	switch investmentType {
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_VND:
+		return "tael"
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_USD:
+		return "oz"
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
+		return "tael"
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
+		return "oz"
+	default:
+		return "unit"
+	}
+}
+
+// convertToDecimal converts amount from smallest currency unit to decimal.
+func convertToDecimal(amount int64, currency string) float64 {
+	multiplier := float64(fx.GetDecimalMultiplier(currency))
+	return float64(amount) / multiplier
 }
 

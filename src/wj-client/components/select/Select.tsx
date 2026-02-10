@@ -287,7 +287,7 @@ export function Select<T extends string = string>({
   };
 
   const dropdownClassName =
-    "absolute z-50 w-full mt-1 bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg shadow-lg dark:shadow-dark-dropdown max-h-60 overflow-auto transition-colors duration-200";
+    "absolute z-50 w-full mt-1 bg-white dark:bg-dark-surface border border-neutral-200 dark:border-dark-border rounded-lg shadow-lg overflow-hidden animate-fade-in-scale";
 
   const defaultRenderOption = (
     option: SelectOption<T>,
@@ -308,20 +308,15 @@ export function Select<T extends string = string>({
         onMouseDown={(e) => e.preventDefault()}
         tabIndex={-1}
         className={cn(
-          "px-3 py-2 cursor-pointer text-base sm:text-sm",
-          // Light mode
-          isHighlighted
-            ? "bg-primary-500 text-white"
-            : isSelected
-              ? "bg-green-50 font-semibold text-green-900"
-              : "hover:bg-gray-100 text-gray-900",
-          // Dark mode
-          isHighlighted
-            ? "bg-primary-600 text-white"
-            : isSelected
-              ? "dark:bg-green-900/30 dark:font-semibold dark:text-green-400"
-              : "dark:hover:bg-dark-surface-hover dark:text-dark-text",
-          "transition-colors duration-150"
+          "w-full px-4 py-3 text-left flex items-center gap-3 cursor-pointer",
+          "transition-colors duration-200",
+          "hover:bg-neutral-50 dark:hover:bg-dark-surface-hover/50",
+          "focus:outline-none focus:bg-neutral-100 dark:focus:bg-dark-surface-hover",
+          {
+            "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300":
+              isSelected,
+            "bg-neutral-100 dark:bg-dark-surface-hover": isHighlighted,
+          },
         )}
       >
         {option.render ? option.render(option) : option.label}
@@ -331,7 +326,7 @@ export function Select<T extends string = string>({
 
   const dropdownContent =
     filteredOptions.length === 0 ? (
-      <div className="p-2 text-gray-500 dark:text-dark-text-tertiary text-base sm:text-sm">No options found</div>
+      <div className="px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">No options found</div>
     ) : (
       filteredOptions.map((option, index) => {
         const isSelected = value === option.value;
@@ -377,15 +372,18 @@ export function Select<T extends string = string>({
           autoComplete="off"
           spellCheck={false}
           className={cn(
-            "p-2 drop-shadow-round rounded-lg w-full pr-16 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
-            // IMPORTANT: Font size must be at least 16px (text-base) to prevent iOS auto-zoom
-            "text-base sm:text-sm",
-            // Light mode
-            "bg-white text-neutral-900",
-            // Dark mode
-            "dark:bg-dark-surface dark:text-dark-text dark:focus-visible:ring-offset-dark-background",
-            // Transitions
-            "transition-colors duration-200",
+            "w-full pr-16 rounded-lg border bg-white dark:bg-dark-surface",
+            "text-neutral-900 dark:text-dark-text",
+            "min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 text-base sm:text-base",
+            "transition-all duration-200",
+            // Focus styles - aligned with FormSelect
+            "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+            // Border styles
+            "border-neutral-300 dark:border-neutral-600",
+            // Disabled styles
+            "disabled:bg-neutral-50 disabled:cursor-not-allowed dark:disabled:bg-dark-surface-hover disabled:opacity-50",
+            // Dark mode focus
+            "dark:focus:ring-primary-500",
             disableInput && "cursor-pointer",
           )}
           role="combobox"
@@ -402,7 +400,7 @@ export function Select<T extends string = string>({
             <button
               type="button"
               onClick={handleClear}
-              className="text-gray-400 hover:text-gray-600 dark:text-dark-text-tertiary dark:hover:text-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-150"
+              className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-200"
               aria-label="Clear selection"
             >
               <XIcon size="sm" decorative />
@@ -423,7 +421,7 @@ export function Select<T extends string = string>({
                 }
                 inputRef.current?.focus();
               }}
-              className="text-gray-500 hover:text-gray-700 dark:text-dark-text-tertiary dark:hover:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-150"
+              className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full p-0.5 transition-colors duration-200"
               aria-label={isOpen ? "Close dropdown" : "Open dropdown"}
               aria-expanded={isOpen}
             >

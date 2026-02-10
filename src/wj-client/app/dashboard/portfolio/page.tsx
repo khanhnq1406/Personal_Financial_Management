@@ -30,7 +30,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { WalletType } from "@/gen/protobuf/v1/wallet";
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
-import { Select, SelectOption } from "@/components/select/Select";
+import { FormSelect, SelectOption } from "@/components/forms/FormSelect";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   CreateWalletForm,
@@ -59,7 +59,7 @@ const ModalType = {
 
 type WalletFilterValue = "all" | string;
 
-const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
+const TYPE_FILTER_OPTIONS: SelectOption[] = [
   { value: "0", label: "All Types" },
   {
     value: String(InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY),
@@ -87,7 +87,7 @@ const TYPE_FILTER_OPTIONS: SelectOption<string>[] = [
   { value: String(InvestmentType.INVESTMENT_TYPE_OTHER), label: "Other" },
 ];
 
-const SORT_OPTIONS: SelectOption<string>[] = [
+const SORT_OPTIONS: SelectOption[] = [
   { value: "name", label: "Name (A-Z)" },
   { value: "value", label: "Value (High-Low)" },
   { value: "pnl", label: "PnL (High-Low)" },
@@ -130,8 +130,8 @@ export default function PortfolioPageEnhanced() {
     );
   }, [getListWallets.data]);
 
-  const walletOptions = useMemo((): SelectOption<string>[] => {
-    const options: SelectOption<string>[] = [
+  const walletOptions = useMemo((): SelectOption[] => {
+    const options: SelectOption[] = [
       { value: "all", label: "All Investment Wallets" },
     ];
     investmentWallets.forEach((wallet) => {
@@ -408,7 +408,7 @@ export default function PortfolioPageEnhanced() {
             {/* Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <div className="w-full sm:w-56 md:w-fit">
-                <Select
+                <FormSelect
                   options={walletOptions}
                   value={selectedWallet}
                   onChange={(value) => {
@@ -417,34 +417,28 @@ export default function PortfolioPageEnhanced() {
                     );
                   }}
                   placeholder="Select Wallet"
-                  clearable={false}
-                  disableFilter={true}
                 />
               </div>
 
               <div className="w-full sm:w-full md:w-40">
-                <Select
+                <FormSelect
                   options={TYPE_FILTER_OPTIONS}
                   value={typeFilter}
                   onChange={(value) => {
                     startTransition(() => setTypeFilter(value));
                   }}
                   placeholder="Filter by Type"
-                  clearable={false}
-                  disableFilter={true}
                 />
               </div>
 
               <div className="w-full sm:w-full md:w-40">
-                <Select
+                <FormSelect
                   options={SORT_OPTIONS}
                   value={sortBy}
                   onChange={(value) => {
                     startTransition(() => setSortBy(value));
                   }}
                   placeholder="Sort by"
-                  clearable={false}
-                  disableFilter={true}
                 />
               </div>
             </div>

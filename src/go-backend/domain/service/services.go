@@ -17,6 +17,7 @@ type Services struct {
 	Investment         InvestmentService
 	FXRate             FXRateService
 	PortfolioHistory   PortfolioHistoryService
+	MarketData         MarketDataService
 }
 
 // NewServices creates all service instances.
@@ -63,6 +64,7 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 		Investment:       NewInvestmentService(repos.Investment, repos.Wallet, repos.InvestmentTransaction, marketDataSvc, repos.User, fxRateSvc, currencyCache, walletSvc),
 		FXRate:           fxRateSvc,
 		PortfolioHistory: portfolioHistorySvc,
+		MarketData:       marketDataSvc,
 	}
 }
 

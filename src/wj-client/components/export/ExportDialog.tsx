@@ -335,11 +335,13 @@ export function ExportDialog({
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
                   className={cn(
-                    "w-full px-3 py-2 rounded-lg border text-sm",
+                    "w-full px-3 sm:px-4 rounded-lg border text-sm sm:text-base",
+                    "min-h-[44px] sm:min-h-[48px]",
                     "bg-white dark:bg-dark-surface-hover",
                     "border-neutral-300 dark:border-dark-border",
                     "text-neutral-900 dark:text-dark-text",
-                    "focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                    "transition-all duration-200",
+                    "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                     "placeholder:text-neutral-400 dark:placeholder:text-dark-text-tertiary",
                   )}
                 />
@@ -353,11 +355,13 @@ export function ExportDialog({
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
                   className={cn(
-                    "w-full px-3 py-2 rounded-lg border text-sm",
+                    "w-full px-3 sm:px-4 rounded-lg border text-sm sm:text-base",
+                    "min-h-[44px] sm:min-h-[48px]",
                     "bg-white dark:bg-dark-surface-hover",
                     "border-neutral-300 dark:border-dark-border",
                     "text-neutral-900 dark:text-dark-text",
-                    "focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                    "transition-all duration-200",
+                    "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                     "placeholder:text-neutral-400 dark:placeholder:text-dark-text-tertiary",
                   )}
                 />
