@@ -7,10 +7,6 @@ import { WalletType } from "@/gen/protobuf/v1/wallet";
  * Includes async validation for wallet name uniqueness
  */
 
-// Use native enum which handles both number and string values
-// HTML select returns strings, but z.nativeEnum will validate and convert them
-const walletTypeEnum = z.nativeEnum(WalletType);
-
 // Schema with runtime wallet list for async validation
 export const createWalletSchemaWithExisting = (existingWalletNames: string[]) =>
   z.object({
@@ -21,7 +17,11 @@ export const createWalletSchemaWithExisting = (existingWalletNames: string[]) =>
       },
     ),
     initialBalance: z.number(),
-    type: walletTypeEnum,
+    // Accept string from select component, validate it's a valid wallet type string
+    type: z.string().refine(
+      (val) => val === String(WalletType.BASIC) || val === String(WalletType.INVESTMENT),
+      { message: "Invalid wallet type" }
+    ),
   });
 
 // Infer the form type from the schema

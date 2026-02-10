@@ -57,7 +57,7 @@ export function CreateWalletForm({
     defaultValues: {
       walletName: "",
       initialBalance: 0,
-      type: defaultType ?? WalletType.BASIC,
+      type: String(defaultType ?? WalletType.BASIC),
     },
     mode: "onSubmit",
   });
@@ -76,7 +76,7 @@ export function CreateWalletForm({
           amount: amountToSmallestUnit(data.initialBalance, currency),
           currency: currency,
         },
-        type: data.type,
+        type: Number(data.type) as WalletType,
       },
       {
         onSuccess: (data) => {
@@ -115,6 +115,7 @@ export function CreateWalletForm({
         label="Name"
         placeholder="Enter wallet's name"
         required
+        className="mb-3 sm:mb-4"
       />
 
       <FormNumberInput

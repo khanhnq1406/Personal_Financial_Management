@@ -70,12 +70,6 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
     ? wallets.filter((w) => w.id !== fromWalletId)
     : wallets;
 
-  const formatWalletOption = (wallet: SelectOption): string => {
-    const walletData = wallets.find((w) => w.id === Number(wallet.value));
-    const balance = (walletData?.displayBalance?.amount ?? walletData?.balance?.amount) || 0;
-    return `${wallet.label} (${formatCurrency(balance, currency)})`;
-  };
-
   const walletOptions: SelectOption[] = wallets.map((wallet) => ({
     value: String(wallet.id),
     label: wallet.walletName,
@@ -87,6 +81,16 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
     label: wallet.walletName,
     balance: wallet.balance?.amount || 0, // Keep raw balance for validation
   }));
+
+  const renderWalletOption = (option: SelectOption) => {
+    const walletData = wallets.find((w) => w.id === Number(option.value));
+    const balance = (walletData?.displayBalance?.amount ?? walletData?.balance?.amount) || 0;
+    return (
+      <span>
+        {option.label} <span className="text-neutral-500">({formatCurrency(balance, currency)})</span>
+      </span>
+    );
+  };
 
   const onSubmit = (data: TransferMoneyFormInput) => {
     setErrorMessage("");
@@ -143,6 +147,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
         label="From"
         options={walletOptions}
         placeholder="Select source wallet"
+        renderOption={renderWalletOption}
         required
       />
 
@@ -156,6 +161,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
             ? "Select source wallet first"
             : "Select destination wallet"
         }
+        renderOption={renderWalletOption}
         required
         disabled={!fromWalletId}
       />
