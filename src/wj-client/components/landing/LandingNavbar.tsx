@@ -13,10 +13,25 @@ export default function LandingNavbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      // Check both window scroll and container scroll
+      const scrollContainer = document.querySelector('.landing-scroll-container');
+      const scrollY = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+      setIsScrolled(scrollY > 10);
     };
+
+    // Listen to both window and container scroll
+    const scrollContainer = document.querySelector('.landing-scroll-container');
+    if (scrollContainer) {
+      scrollContainer.addEventListener("scroll", handleScroll);
+    }
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -187,7 +202,7 @@ export default function LandingNavbar() {
                   </motion.div>
                 ) : (
                   <>
-                    <motion.a
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{
@@ -202,7 +217,7 @@ export default function LandingNavbar() {
                       >
                         Sign In
                       </Link>
-                    </motion.a>
+                    </motion.div>
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}

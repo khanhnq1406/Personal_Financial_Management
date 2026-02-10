@@ -10,11 +10,12 @@ import LandingCTA from "@/components/landing/LandingCTA";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import LandingErrorBoundary from "@/components/landing/LandingErrorBoundary";
+import { PWAInstallPrompt } from "@/components/pwa";
 
 export default function LandingPage() {
   return (
     <LandingErrorBoundary>
-      <div className="min-h-screen bg-neutral-50">
+      <div className="landing-scroll-container h-full overflow-y-auto min-h-screen bg-neutral-50">
         <LandingNavbar />
         <main id="main-content" className="pt-14 sm:pt-16">
           <LandingHero />
@@ -26,6 +27,7 @@ export default function LandingPage() {
           <LandingCTA />
         </main>
         <LandingFooter />
+        <PWAInstallPrompt showDelay={3000} />
       </div>
     </LandingErrorBoundary>
   );

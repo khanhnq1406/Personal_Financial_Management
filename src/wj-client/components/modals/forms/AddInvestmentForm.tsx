@@ -18,6 +18,7 @@ import { MarketPriceDisplay } from "@/components/forms/MarketPriceDisplay";
 import {
   useMutationCreateInvestment,
   useQueryListWallets,
+  useQueryGetMarketPrice,
   EVENT_InvestmentCreateInvestment,
   EVENT_InvestmentListInvestments,
   EVENT_InvestmentGetPortfolioSummary,
@@ -227,18 +228,48 @@ export function AddInvestmentForm({
   const initialCost = watch("initialCost");
   const quantityConfig = getQuantityInputConfig(investmentType);
 
-  // Check if current investment type is gold
-  const isGoldInvestment = isGoldType(investmentType);
+  // Check if current investment type is gold (convert to number for comparison)
+  const isGoldInvestment = isGoldType(Number(investmentType));
 
-  // Check if current investment type is silver
-  const isSilverInvestment = isSilverType(investmentType);
+  // Check if current investment type is silver (cast to InvestmentType enum)
+  const isSilverInvestment = isSilverType(
+    Number(investmentType) as InvestmentType,
+  );
+
+  // Fetch gold market price when gold type is selected
+  const goldPriceQuery = useQueryGetMarketPrice(
+    {
+      symbol: selectedGoldType?.value || "",
+      currency: selectedGoldType?.currency || "VND",
+      type: Number(investmentType) as InvestmentType,
+    },
+    {
+      enabled: isGoldInvestment && !!selectedGoldType,
+      refetchOnMount: "always",
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  );
+
+  // Fetch silver market price when silver type is selected
+  const silverPriceQuery = useQueryGetMarketPrice(
+    {
+      symbol: selectedSilverType?.value || "",
+      currency: selectedSilverType?.currency || "VND",
+      type: Number(investmentType) as InvestmentType,
+    },
+    {
+      enabled: isSilverInvestment && !!selectedSilverType,
+      refetchOnMount: "always",
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  );
 
   // Get gold type options based on investment type (not currency field)
   const goldTypeOptions = useMemo(() => {
     if (!isGoldInvestment) return [];
     // Determine currency from investment type: GOLD_VND → VND, GOLD_USD → USD
     const goldCurrency =
-      investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND
+      Number(investmentType) === InvestmentType.INVESTMENT_TYPE_GOLD_VND
         ? "VND"
         : "USD";
     return getGoldTypeOptions(goldCurrency);
@@ -258,7 +289,7 @@ export function AddInvestmentForm({
     } else {
       // Auto-set currency based on gold investment type
       const targetCurrency =
-        investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND
+        Number(investmentType) === InvestmentType.INVESTMENT_TYPE_GOLD_VND
           ? "VND"
           : "USD";
       setValue("currency", targetCurrency);
@@ -270,7 +301,7 @@ export function AddInvestmentForm({
     if (!isSilverInvestment) return [];
     // Determine currency from investment type: SILVER_VND → VND, SILVER_USD → USD
     const silverCurrency =
-      investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+      Number(investmentType) === InvestmentType.INVESTMENT_TYPE_SILVER_VND
         ? "VND"
         : "USD";
     return getSilverTypeOptions(silverCurrency);
@@ -290,7 +321,7 @@ export function AddInvestmentForm({
     } else {
       // Auto-set currency based on silver investment type
       const targetCurrency =
-        investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+        Number(investmentType) === InvestmentType.INVESTMENT_TYPE_SILVER_VND
           ? "VND"
           : "USD";
       setValue("currency", targetCurrency);
@@ -466,10 +497,15 @@ export function AddInvestmentForm({
 
   // Build wallet options for selector
   const walletSelectOptions = useMemo((): SelectOption[] => {
-    return investmentWallets.map((wallet) => ({
-      value: String(wallet.id),
-      label: wallet.walletName,
-    }));
+    return investmentWallets.map((wallet) => {
+      const balance = wallet.balance?.amount || 0;
+      const currency = wallet.balance?.currency || "USD";
+      const formattedBalance = formatCurrency(balance, currency);
+      return {
+        value: String(wallet.id),
+        label: `${wallet.walletName} (${formattedBalance})`,
+      };
+    });
   }, [investmentWallets]);
 
   // Show success state (AFTER all hooks have been called)
@@ -579,10 +615,40 @@ export function AddInvestmentForm({
             required
           />
           {selectedGoldType && (
-            <p className="text-xs text-gray-500 mt-1 ml-1">
-              Unit: {selectedGoldType.unit} | Currency:{" "}
-              {selectedGoldType.currency}
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-gray-500 ml-1">
+                Unit: {selectedGoldType.unit} | Currency:{" "}
+                {selectedGoldType.currency}
+              </p>
+              {/* Market Price Display */}
+              {goldPriceQuery.isLoading && (
+                <p className="text-xs text-gray-400 ml-1">
+                  Loading price...
+                </p>
+              )}
+              {goldPriceQuery.data?.data && (
+                <div className="p-2 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm font-medium text-green-900">
+                    Current Market Price:{" "}
+                    {formatCurrency(
+                      goldPriceQuery.data.data.price,
+                      goldPriceQuery.data.data.currency,
+                    )}
+                    /{selectedGoldType.unit}
+                  </p>
+                  {goldPriceQuery.data.data.isCached && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      (Cached price)
+                    </p>
+                  )}
+                </div>
+              )}
+              {goldPriceQuery.isError && (
+                <p className="text-xs text-red-500 ml-1">
+                  Unable to fetch price
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -616,9 +682,39 @@ export function AddInvestmentForm({
             required
           />
           {selectedSilverType && (
-            <p className="text-xs text-gray-500 mt-1 ml-1">
-              Currency: {selectedSilverType.currency}
-            </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-gray-500 ml-1">
+                Currency: {selectedSilverType.currency}
+              </p>
+              {/* Market Price Display */}
+              {silverPriceQuery.isLoading && (
+                <p className="text-xs text-gray-400 ml-1">
+                  Loading price...
+                </p>
+              )}
+              {silverPriceQuery.data?.data && (
+                <div className="p-2 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm font-medium text-green-900">
+                    Current Market Price:{" "}
+                    {formatCurrency(
+                      silverPriceQuery.data.data.price,
+                      silverPriceQuery.data.data.currency,
+                    )}
+                    /{selectedSilverType.availableUnits[0] || "unit"}
+                  </p>
+                  {silverPriceQuery.data.data.isCached && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      (Cached price)
+                    </p>
+                  )}
+                </div>
+              )}
+              {silverPriceQuery.isError && (
+                <p className="text-xs text-red-500 ml-1">
+                  Unable to fetch price
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -654,7 +750,7 @@ export function AddInvestmentForm({
               min={0}
               step="0.01"
             />
-            <p className="text-xs text-gray-500 mt-1 -mb-3 ml-1">
+            <p className="text-xs text-gray-500 -mt-2 ml-1">
               Amount of gold in{" "}
               {goldQuantityUnit === "tael"
                 ? "taels (lượng)"
@@ -680,7 +776,7 @@ export function AddInvestmentForm({
                 step="0.01"
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 ml-1">
+              <p className="text-xs text-gray-500 -mt-2 ml-1">
                 Amount of silver in{" "}
                 {silverQuantityUnit === "tael"
                   ? "taels (lượng)"

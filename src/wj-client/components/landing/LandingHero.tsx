@@ -137,6 +137,36 @@ export default function LandingHero() {
             </a>
           </motion.div>
 
+          {/* PWA Badge - Mobile Only */}
+          <motion.div
+            variants={safeItemVariants}
+            className="mt-4 flex justify-center px-4 sm:hidden"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md border border-gray-200">
+              <svg
+                className="w-5 h-5 text-bg"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+              <div className="text-left">
+                <div className="text-xs font-semibold text-gray-900">
+                  Install as App
+                </div>
+                <div className="text-[10px] text-gray-600">
+                  Available on iOS & Android
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div
             variants={safeItemVariants}
             className="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-gray-500 px-4"

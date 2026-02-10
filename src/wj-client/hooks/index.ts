@@ -11,3 +11,7 @@ export type { HistoricalPortfolioValue, PortfolioHistoricalValuesResponse, UsePo
 
 // Export useMobile hook
 export { useMobile } from './useMobile';
+
+// Export usePWAInstall hook
+export { usePWAInstall } from './usePWAInstall';
+export type { PWAInstallState, Platform } from './usePWAInstall';

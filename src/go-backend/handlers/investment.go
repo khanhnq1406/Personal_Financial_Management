@@ -918,14 +918,18 @@ func (h *InvestmentHandlers) GetMarketPrice(c *gin.Context) {
 		return
 	}
 
-	// Determine display unit based on investment type
-	displayUnit := getDisplayUnitForType(investmentType)
+	// Determine display unit based on investment type and symbol
+	displayUnit := getDisplayUnitForType(investmentType, symbol)
 
 	// Check if data is from cache (older than 5 minutes)
 	isCached := time.Since(priceData.Timestamp) > 5*time.Minute
 
+	// For gold/silver, price is stored per gram/oz but needs to be displayed per tael/kg/oz
+	// Convert price from storage unit to display unit based on symbol
+	displayPrice := convertPriceForDisplay(priceData.Price, currency, investmentType, symbol)
+
 	// Convert price to decimal for frontend convenience
-	priceDecimal := convertToDecimal(priceData.Price, currency)
+	priceDecimal := convertToDecimal(displayPrice, currency)
 
 	// Build successful response
 	response := &investmentv1.GetMarketPriceResponse{
@@ -934,7 +938,7 @@ func (h *InvestmentHandlers) GetMarketPrice(c *gin.Context) {
 		Data: &investmentv1.MarketPrice{
 			Symbol:       priceData.Symbol,
 			Currency:     priceData.Currency,
-			Price:        priceData.Price,
+			Price:        displayPrice,
 			PriceDecimal: priceDecimal,
 			Timestamp:    priceData.Timestamp.Unix(),
 			IsCached:     isCached,
@@ -946,15 +950,19 @@ func (h *InvestmentHandlers) GetMarketPrice(c *gin.Context) {
 	handler.Success(c, response)
 }
 
-// getDisplayUnitForType returns the appropriate display unit for an investment type.
-func getDisplayUnitForType(investmentType investmentv1.InvestmentType) string {
+// getDisplayUnitForType returns the appropriate display unit for an investment type and symbol.
+func getDisplayUnitForType(investmentType investmentv1.InvestmentType, symbol string) string {
 	switch investmentType {
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_VND:
 		return "tael"
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_USD:
 		return "oz"
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
-		return "tael"
+		// For VND silver, unit depends on symbol
+		if symbol == "AG_VND_Kg" {
+			return "kg"
+		}
+		return "tael" // AG_VND_Tael or legacy AG_VND
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
 		return "oz"
 	default:
@@ -966,5 +974,40 @@ func getDisplayUnitForType(investmentType investmentv1.InvestmentType) string {
 func convertToDecimal(amount int64, currency string) float64 {
 	multiplier := float64(fx.GetDecimalMultiplier(currency))
 	return float64(amount) / multiplier
+}
+
+// convertPriceForDisplay converts price from storage format to display format.
+// For gold VND: storage is per gram, display is per tael (×37.5)
+// For gold USD: storage is per oz, display is per oz (no conversion)
+// For silver VND: storage is per gram, display depends on symbol:
+//   - AG_VND_Tael: display per tael (×37.5)
+//   - AG_VND_Kg: display per kg (×1000)
+// For silver USD: storage is per oz, display is per oz (no conversion)
+func convertPriceForDisplay(storagePrice int64, currency string, investmentType investmentv1.InvestmentType, symbol string) int64 {
+	const gramsPerTael = 37.5
+	const gramsPerKg = 1000.0
+
+	switch investmentType {
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_VND:
+		// Gold VND: Storage per gram, Display per tael
+		return int64(float64(storagePrice) * gramsPerTael)
+
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
+		// Silver VND: Storage per gram, Display depends on symbol
+		if symbol == "AG_VND_Kg" {
+			// Display per kg
+			return int64(float64(storagePrice) * gramsPerKg)
+		}
+		// Default: Display per tael (AG_VND_Tael or legacy AG_VND)
+		return int64(float64(storagePrice) * gramsPerTael)
+
+	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_USD, investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
+		// Storage: per oz, Display: per oz (no conversion needed)
+		return storagePrice
+
+	default:
+		// Other investment types: no conversion needed
+		return storagePrice
+	}
 }
 
