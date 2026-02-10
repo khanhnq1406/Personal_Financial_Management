@@ -64,9 +64,11 @@ body {
   transition-duration: 200ms;
 }
 
-/* Disable transitions for theme toggle button to avoid jarring animations */
+/* Disable transitions for theme toggle button and animations to avoid conflicts */
 .theme-toggle,
-.theme-toggle * {
+.theme-toggle *,
+.animate-spin,
+.animate-spin * {
   transition: none !important;
 }
 
@@ -186,6 +188,14 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  /* Keep loading spinners spinning even with reduced motion (functional, not decorative) */
+  .animate-spin,
+  .animate-spin *,
+  [class*="animate-spin"] {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 /* Hide scrollbar utility */
@@ -217,6 +227,16 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Spin animation for loading spinners (explicit definition for iOS/PWA compatibility) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Fade in animation for notification banners */
 @keyframes fade-in {
   from {
@@ -227,6 +247,11 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Explicit spin animation class (backup for Tailwind) */
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 .animate-fade-in {
