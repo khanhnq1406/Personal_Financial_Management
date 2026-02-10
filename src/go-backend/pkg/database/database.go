@@ -153,17 +153,25 @@ func (d *Database) Close() error {
 	return sqlDB.Close()
 }
 
-// Ping checks if the database connection is alive
+// Ping checks if the database connection is alive with exponential backoff retry.
+// It makes up to 3 retries with exponential backoff (500ms, 1s, 2s).
+// Each individual ping attempt has a 5-second timeout.
+// This handles transient network issues common on Railway's free tier.
 func (d *Database) Ping() error {
 	sqlDB, err := d.DB.DB()
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// Define the ping function with timeout
+	pingFunc := func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return sqlDB.PingContext(ctx)
+	}
 
-	return sqlDB.PingContext(ctx)
+	// Use exponential backoff: 500ms, 1s, 2s (3 retries total)
+	return pingWithRetry(context.Background(), pingFunc, 3, 500*time.Millisecond)
 }
 
 // Stats returns database connection pool statistics

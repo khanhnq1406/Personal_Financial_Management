@@ -1,4 +1,5 @@
 # Build stage
+# Note: Requires ENABLE_ALPINE_PRIVATE_NETWORKING=true on Railway (see docs/deployment/railway-env-vars.md)
 FROM golang:1.24-alpine AS builder
 
 # Install build dependencies

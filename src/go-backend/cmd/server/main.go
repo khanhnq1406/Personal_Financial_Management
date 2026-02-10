@@ -257,6 +257,10 @@ func main() {
 	// Railway free tier puts idle databases to sleep after ~5 minutes of no activity
 	// This lightweight query keeps the connection pool active
 	go func() {
+		attemptCount := 0          // Track attempts for throttled logging
+		consecutiveFailures := 0   // Track consecutive failures for circuit breaker
+		const maxConsecutiveFailures = 5 // Open circuit after 5 consecutive failures
+		circuitOpen := false       // Circuit breaker state
 		ticker := time.NewTicker(dbKeepAliveInterval)
 		defer ticker.Stop()
 
@@ -268,12 +272,47 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
+				// Skip ping if circuit breaker is open (database is persistently down)
+				if circuitOpen {
+					log.Printf("Database keep-alive circuit breaker OPEN - skipping ping (database is down)")
+					continue
+				}
+
+				// Get connection pool stats before ping
+				stats := db.Stats()
+
 				// Execute lightweight health check query
 				// This uses the existing Ping() method which executes PingContext
 				if err := db.Ping(); err != nil {
-					log.Printf("Database keep-alive ping failed: %v", err)
+					consecutiveFailures++
+					log.Printf("Database keep-alive ping failed (%d/%d consecutive): %v | Pool stats: %+v",
+						consecutiveFailures, maxConsecutiveFailures, err, stats)
+
+					// Open circuit breaker after max consecutive failures
+					if consecutiveFailures >= maxConsecutiveFailures {
+						log.Printf("Database keep-alive circuit breaker OPENED after %d consecutive failures - pausing pings until recovery",
+							maxConsecutiveFailures)
+						circuitOpen = true
+					}
 				} else {
-					log.Printf("Database keep-alive ping success")
+					// Close circuit breaker and reset failure counter on success
+					if circuitOpen {
+						log.Printf("Database keep-alive ping recovered - circuit breaker CLOSED")
+						circuitOpen = false
+					}
+					if consecutiveFailures > 0 {
+						log.Printf("Database keep-alive ping recovered after %d failures", consecutiveFailures)
+						consecutiveFailures = 0
+					}
+
+					// Only log full stats on success every 5th attempt to reduce noise
+					attemptCount++
+					if attemptCount%5 == 0 {
+						log.Printf("Database keep-alive ping success | Pool stats: open=%v, in_use=%v, idle=%v",
+							stats["open_connections"], stats["in_use"], stats["idle"])
+					} else {
+						log.Printf("Database keep-alive ping success")
+					}
 				}
 
 			case <-backgroundCtx.Done():
@@ -308,20 +347,9 @@ func main() {
 	app.Use(appmiddleware.Logger(appmiddleware.DefaultLoggerConfig()))
 
 	// Health check endpoint (no rate limiting)
-	app.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"service": "wealthjourney-api",
-			"version": "2.0.0",
-		})
-	})
-	app.HEAD("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"service": "wealthjourney-api",
-			"version": "2.0.0",
-		})
-	})
+	// Uses HealthHandler to provide database connection status and uptime
+	app.GET("/health", handlers.HealthHandler(db))
+	app.HEAD("/health", handlers.HealthHandler(db))
 
 	// API v1 group with rate limiting
 	v1 := app.Group("/api/v1")
