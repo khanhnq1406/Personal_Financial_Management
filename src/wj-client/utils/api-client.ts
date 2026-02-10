@@ -1,5 +1,6 @@
 import { LOCAL_STORAGE_TOKEN_NAME } from "@/app/constants";
 import type { ApiResponse } from "@/types/api";
+import { sanitizeErrorMessage, categorizeError } from "@/lib/utils/error-sanitizer";
 
 /**
  * API Client Configuration
@@ -122,6 +123,10 @@ async function handleErrorResponse(response: Response): Promise<never> {
     // No JSON content, use status text
     errorMessage = response.statusText || errorMessage;
   }
+
+  // Sanitize message before throwing (defense in depth)
+  const category = categorizeError(response.status);
+  errorMessage = sanitizeErrorMessage(errorMessage, category);
 
   throw new ApiRequestError(
     response.status,

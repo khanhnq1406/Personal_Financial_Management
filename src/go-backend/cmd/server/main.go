@@ -331,6 +331,9 @@ func main() {
 	// Initialize Gin app
 	app := gin.New()
 
+	// Security headers middleware (must be first)
+	app.Use(appmiddleware.SecurityHeaders())
+
 	// CORS middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -340,6 +343,9 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	// Error logging middleware (before error handler)
+	app.Use(appmiddleware.ErrorLogger())
 
 	// Global middleware
 	app.Use(appmiddleware.Recovery())

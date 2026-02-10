@@ -223,7 +223,7 @@ func GetErrorCode(err error) string {
 // Internal details are stripped for non-application errors.
 func GetErrorMessage(err error) string {
 	if err == nil {
-		return ""
+		return "An unexpected error occurred"
 	}
 	var appErr AppError
 	if errors.As(err, &appErr) {
@@ -231,4 +231,76 @@ func GetErrorMessage(err error) string {
 	}
 	// Don't leak internal error details
 	return "An unexpected error occurred"
+}
+
+// Auth-specific error types for security
+
+// InvalidCredentialsError represents a failed authentication attempt.
+// This provides a safe, generic message that doesn't leak whether username or password was wrong.
+type InvalidCredentialsError struct {
+	BaseError
+}
+
+// NewInvalidCredentialsError creates an error for authentication failures.
+func NewInvalidCredentialsError() InvalidCredentialsError {
+	return InvalidCredentialsError{
+		BaseError: NewError("INVALID_CREDENTIALS", "invalid credentials", http.StatusUnauthorized),
+	}
+}
+
+// TokenError represents a token-related failure.
+type TokenError struct {
+	BaseError
+}
+
+// NewTokenError creates an error for token-related failures.
+// operation: "verification", "generation", "extraction", etc.
+func NewTokenError(operation string) TokenError {
+	return TokenError{
+		BaseError: NewError("TOKEN_ERROR", fmt.Sprintf("token %s failed", operation), http.StatusUnauthorized),
+	}
+}
+
+// NewTokenErrorWithCause wraps an underlying token error with a safe message.
+func NewTokenErrorWithCause(operation string, cause error) TokenError {
+	return TokenError{
+		BaseError: WrapError("TOKEN_ERROR", fmt.Sprintf("token %s failed", operation), http.StatusUnauthorized, cause),
+	}
+}
+
+// RegistrationError represents a registration failure.
+type RegistrationError struct {
+	BaseError
+}
+
+// NewRegistrationErrorWithCause creates a safe error for registration failures.
+// The cause is logged server-side but not exposed to client.
+func NewRegistrationErrorWithCause(cause error) RegistrationError {
+	return RegistrationError{
+		BaseError: WrapError("REGISTRATION_FAILED", "registration failed", http.StatusInternalServerError, cause),
+	}
+}
+
+// LoginError represents a login failure.
+type LoginError struct {
+	BaseError
+}
+
+// NewLoginErrorWithCause creates a safe error for login failures.
+func NewLoginErrorWithCause(cause error) LoginError {
+	return LoginError{
+		BaseError: WrapError("LOGIN_FAILED", "login failed", http.StatusInternalServerError, cause),
+	}
+}
+
+// LogoutError represents a logout failure.
+type LogoutError struct {
+	BaseError
+}
+
+// NewLogoutErrorWithCause creates a safe error for logout failures.
+func NewLogoutErrorWithCause(cause error) LogoutError {
+	return LogoutError{
+		BaseError: WrapError("LOGOUT_FAILED", "logout failed", http.StatusInternalServerError, cause),
+	}
 }

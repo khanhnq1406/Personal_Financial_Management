@@ -223,11 +223,18 @@ Alert on: Non-200 response or keyword "unhealthy"
 If deployment causes issues:
 
 ```bash
-# Rollback to previous deployment
-railway rollback
+# Rollback via Railway web UI:
+# 1. Go to your service in Railway dashboard
+# 2. Click on "Deployments" tab
+# 3. Find the previous successful deployment
+# 4. Click the three dots menu -> "Rollback"
 
-# Or redeploy specific commit
-railway up --service backend --detach <commit-hash>
+# Or redeploy the current deployment (CLI)
+railway up
+
+# To redeploy a specific commit, first checkout locally:
+git checkout <commit-hash>
+railway up
 ```
 
 ## References

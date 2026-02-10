@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/domain/auth"
+	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
 )
 
@@ -35,10 +37,11 @@ func Register(c *gin.Context) {
 	result, err := authServer.Register(c.Request.Context(), req.Token)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "registration_failed",
-			"message": err.Error(),
-		})
+		// Log detailed error server-side for debugging
+		log.Printf("[AUTH] Registration failed: %v", err)
+
+		// Return safe error to client
+		handler.HandleError(c, apperrors.NewRegistrationErrorWithCause(err))
 		return
 	}
 
@@ -69,10 +72,11 @@ func Login(c *gin.Context) {
 	result, err := authServer.Login(c.Request.Context(), req.Token)
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "login_failed",
-			"message": err.Error(),
-		})
+		// Log detailed error server-side
+		log.Printf("[AUTH] Login failed: %v", err)
+
+		// Return safe error to client
+		handler.HandleError(c, apperrors.NewLoginErrorWithCause(err))
 		return
 	}
 
@@ -112,10 +116,11 @@ func Logout(c *gin.Context) {
 	result, err := authServer.Logout(token)
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "logout_failed",
-			"message": err.Error(),
-		})
+		// Log detailed error server-side
+		log.Printf("[AUTH] Logout failed: %v", err)
+
+		// Return safe error to client
+		handler.HandleError(c, apperrors.NewLogoutErrorWithCause(err))
 		return
 	}
 
@@ -167,7 +172,11 @@ func VerifyAuth(c *gin.Context) {
 	result, err := authServer.VerifyAuth(token)
 
 	if err != nil {
-		handler.Unauthorized(c, err.Error())
+		// Log detailed error server-side
+		log.Printf("[AUTH] Token verification failed: %v", err)
+
+		// Return safe error to client
+		handler.HandleError(c, apperrors.NewTokenError("verification"))
 		return
 	}
 
