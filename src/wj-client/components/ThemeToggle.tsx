@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { useTheme } from "./ThemeProvider";
 import { cn } from "@/lib/utils/cn";
-import { SunIcon, MoonIcon, DesktopIcon } from "@/components/icons";
+import { SunIcon, MoonIcon } from "@/components/icons";
 
 interface ThemeToggleProps {
   className?: string;
@@ -30,32 +30,20 @@ export const ThemeToggle = memo(function ThemeToggle({
     lg: "w-6 h-6",
   };
 
+  // Dark mode temporarily disabled - toggle is a no-op
   const handleCycleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark");
-    } else if (theme === "dark") {
-      setTheme("system");
-    } else {
-      setTheme("light");
-    }
+    // Theme is always "light" - no cycling available
+    // Keeping function for future dark mode support
   };
 
   const getIcon = () => {
-    if (theme === "system") {
-      return <DesktopIcon className={iconSize[size]} />;
-    }
-    return resolvedTheme === "dark" ? (
-      <MoonIcon className={iconSize[size]} />
-    ) : (
-      <SunIcon className={iconSize[size]} />
-    );
+    // Dark mode temporarily disabled - always show sun icon
+    return <SunIcon className={iconSize[size]} />;
   };
 
   const getLabel = () => {
-    if (theme === "system") {
-      return "System";
-    }
-    return resolvedTheme === "dark" ? "Dark" : "Light";
+    // Dark mode temporarily disabled - always show "Light"
+    return "Light";
   };
 
   const getAriaLabel = () => {
