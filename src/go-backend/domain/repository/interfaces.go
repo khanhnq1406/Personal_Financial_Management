@@ -138,6 +138,14 @@ type TransactionRepository interface {
 
 	// BulkCreate creates multiple transactions atomically with wallet balance updates.
 	BulkCreate(ctx context.Context, transactions []*models.Transaction) ([]int32, error)
+
+	// FindByWalletAndDateRange retrieves transactions for a wallet within a date range.
+	// This method benefits from the composite index (wallet_id, date, amount).
+	FindByWalletAndDateRange(ctx context.Context, walletID int32, startDate, endDate time.Time) ([]*models.Transaction, error)
+
+	// FindByExternalID retrieves a transaction by its external reference ID.
+	// This method benefits from the composite index (wallet_id, external_id).
+	FindByExternalID(ctx context.Context, walletID int32, externalID string) (*models.Transaction, error)
 }
 
 // CategoryBreakdownItem represents category-wise transaction summary

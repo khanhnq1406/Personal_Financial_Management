@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
@@ -455,4 +456,41 @@ func (r *transactionRepository) BulkCreate(ctx context.Context, transactions []*
 	}
 
 	return createdIDs, nil
+}
+
+// FindByWalletAndDateRange retrieves transactions for a wallet within a date range.
+// Uses composite index (wallet_id, date, amount) for optimal performance.
+func (r *transactionRepository) FindByWalletAndDateRange(ctx context.Context, walletID int32, startDate, endDate time.Time) ([]*models.Transaction, error) {
+	var transactions []*models.Transaction
+
+	result := r.db.DB.WithContext(ctx).
+		Where("wallet_id = ? AND date >= ? AND date <= ? AND deleted_at IS NULL",
+			walletID, startDate, endDate).
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to find transactions by date range", result.Error)
+	}
+
+	return transactions, nil
+}
+
+// FindByExternalID retrieves a transaction by its external reference ID.
+// Uses composite index (wallet_id, external_id) for optimal performance.
+func (r *transactionRepository) FindByExternalID(ctx context.Context, walletID int32, externalID string) (*models.Transaction, error) {
+	var transaction models.Transaction
+
+	result := r.db.DB.WithContext(ctx).
+		Where("wallet_id = ? AND external_id = ? AND deleted_at IS NULL",
+			walletID, externalID).
+		First(&transaction)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // Not found is not an error for duplicate detection
+		}
+		return nil, apperrors.NewInternalErrorWithCause("failed to find transaction by external ID", result.Error)
+	}
+
+	return &transaction, nil
 }

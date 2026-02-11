@@ -345,3 +345,127 @@ func TestIsSummaryRow(t *testing.T) {
 		})
 	}
 }
+
+func TestParseWithValidationErrors(t *testing.T) {
+	// Create a temporary CSV file with various validation errors
+	tmpDir := t.TempDir()
+	csvFile := filepath.Join(tmpDir, "test_errors.csv")
+
+	csvContent := `Date,Amount,Description
+01/01/2024,100,Valid Transaction
+invalid-date,200,Bad Date
+02/01/2024,invalid-amount,Bad Amount
+03/01/2024,300,
+04/01/2024,,Missing Amount
+,100,Missing Date
+`
+
+	err := os.WriteFile(csvFile, []byte(csvContent), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test CSV: %v", err)
+	}
+
+	// Create parser
+	mapping := &ColumnMapping{
+		DateColumn:        0,
+		AmountColumn:      1,
+		DescriptionColumn: 2,
+		TypeColumn:        -1,
+		CategoryColumn:    -1,
+		ReferenceColumn:   -1,
+		Currency:          "VND",
+	}
+
+	parser := NewCSVParser(csvFile, mapping)
+	rows, err := parser.Parse()
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Verify we got all rows
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows, got %d", len(rows))
+	}
+
+	// Row 0: Valid
+	if !rows[0].IsValid {
+		t.Errorf("row 0 should be valid, errors: %v", rows[0].ValidationErrors)
+	}
+
+	// Row 1: Bad date
+	if rows[1].IsValid {
+		t.Errorf("row 1 should be invalid")
+	}
+	if len(rows[1].ValidationErrors) == 0 {
+		t.Errorf("row 1 should have validation errors")
+	}
+
+	// Row 2: Bad amount
+	if rows[2].IsValid {
+		t.Errorf("row 2 should be invalid")
+	}
+
+	// Row 3: Empty description (should use default, not invalid)
+	if !rows[3].IsValid {
+		t.Errorf("row 3 should be valid (empty description uses default)")
+	}
+	if rows[3].Description != "Imported Transaction" {
+		t.Errorf("row 3 description = %v, want 'Imported Transaction'", rows[3].Description)
+	}
+
+	// Row 4: Missing amount
+	if rows[4].IsValid {
+		t.Errorf("row 4 should be invalid (missing amount)")
+	}
+
+	// Row 5: Missing date
+	if rows[5].IsValid {
+		t.Errorf("row 5 should be invalid (missing date)")
+	}
+}
+
+func TestParseWithMultipleDateFormats(t *testing.T) {
+	tmpDir := t.TempDir()
+	csvFile := filepath.Join(tmpDir, "test_dates.csv")
+
+	csvContent := `Date,Amount,Description
+15/01/2024,100,DD/MM/YYYY
+2024-01-15,100,YYYY-MM-DD
+15 Jan 2024,100,DD MMM YYYY
+15-01-2024,100,DD-MM-YYYY
+2024/01/15,100,YYYY/MM/DD
+`
+
+	err := os.WriteFile(csvFile, []byte(csvContent), 0644)
+	if err != nil {
+		t.Fatalf("failed to create test CSV: %v", err)
+	}
+
+	mapping := &ColumnMapping{
+		DateColumn:        0,
+		AmountColumn:      1,
+		DescriptionColumn: 2,
+		TypeColumn:        -1,
+		CategoryColumn:    -1,
+		ReferenceColumn:   -1,
+		Currency:          "VND",
+	}
+
+	parser := NewCSVParser(csvFile, mapping)
+	rows, err := parser.Parse()
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// All rows should be valid
+	for i, row := range rows {
+		if !row.IsValid {
+			t.Errorf("row %d should be valid, errors: %v", i, row.ValidationErrors)
+		}
+		// All should parse to the same date
+		expectedYear, expectedMonth, expectedDay := 2024, time.January, 15
+		if row.Date.Year() != expectedYear || row.Date.Month() != expectedMonth || row.Date.Day() != expectedDay {
+			t.Errorf("row %d date = %v, want 2024-01-15", i, row.Date)
+		}
+	}
+}
