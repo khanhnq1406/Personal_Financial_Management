@@ -1,0 +1,12 @@
+Date,Amount,Description,Type,Reference
+Transaction Date,Amount,Merchant,Type,Ref Number
+01/01/2024,"₫100,000",Coffee Shop,Expense,REF001
+02/01/2024,"(₫50,000)",Salary Refund,Income,REF002
+03/01/2024,$25.50,Lunch Restaurant,Expense,REF003
+04/01/2024,"₫1,234,567.89",Contract Payment,Income,REF004
+05/01/2024,-75.00,Gas Station,Expense,REF005
+06/01/2024,150.25,Freelance Work,Income,REF006
+
+Total,"₫2,500,000",Summary,,
+
+07/01/2024,200.00,Grocery Shopping,Expense,REF007
