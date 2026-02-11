@@ -70,6 +70,19 @@ export function ColumnMappingStep({
         setLoading(true);
         setError(null);
 
+        // Check file type - only parse CSV files on frontend
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
+
+        if (fileExt === "xlsx" || fileExt === "xls" || fileExt === "pdf") {
+          // For Excel and PDF files, skip frontend preview
+          // Backend will handle parsing with auto-detection
+          setError(
+            `${fileExt.toUpperCase()} files are parsed automatically by the backend. Column mapping is not needed.`,
+          );
+          setLoading(false);
+          return;
+        }
+
         const text = await file.text();
         const lines = text.split("\n").filter((line) => line.trim());
 
@@ -78,12 +91,16 @@ export function ColumnMappingStep({
         }
 
         // Parse header row
-        const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/"/g, ""));
 
         // Parse first 3 data rows for preview
         const sampleRows = lines
           .slice(1, 4)
-          .map((line) => line.split(",").map((cell) => cell.trim().replace(/"/g, "")));
+          .map((line) =>
+            line.split(",").map((cell) => cell.trim().replace(/"/g, "")),
+          );
 
         setPreview({ headers, sampleRows });
 
@@ -139,7 +156,10 @@ export function ColumnMappingStep({
       }
 
       // Category column detection
-      if (lowerHeader.includes("category") || lowerHeader.includes("danh mục")) {
+      if (
+        lowerHeader.includes("category") ||
+        lowerHeader.includes("danh mục")
+      ) {
         setCategoryColumn(index);
       }
 
@@ -176,10 +196,11 @@ export function ColumnMappingStep({
     onMappingComplete(mapping);
   };
 
-  const columnOptions = preview?.headers.map((header, index) => ({
-    value: index.toString(),
-    label: `Column ${index + 1}: ${header}`,
-  })) || [];
+  const columnOptions =
+    preview?.headers.map((header, index) => ({
+      value: index.toString(),
+      label: `Column ${index + 1}: ${header}`,
+    })) || [];
 
   const noneOption = { value: "-1", label: "None (Skip)" };
   const allColumnOptions = [noneOption, ...columnOptions];
@@ -214,10 +235,12 @@ export function ColumnMappingStep({
       {/* Instructions */}
       <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
         <p className="mb-2">
-          Map CSV columns to transaction fields. Required fields are marked with *.
+          Map CSV columns to transaction fields. Required fields are marked with
+          *.
         </p>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          We've auto-detected columns based on header names. Please verify the mapping.
+          We've auto-detected columns based on header names. Please verify the
+          mapping.
         </p>
       </div>
 
@@ -278,25 +301,25 @@ export function ColumnMappingStep({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Required Fields */}
           <FormSelect
-            label="Date Column *"
+            label="Date Column"
             value={dateColumn.toString()}
-            onChange={(e) => setDateColumn(parseInt(e.target.value))}
+            onChange={(value) => setDateColumn(parseInt(value))}
             options={columnOptions}
             required
           />
 
           <FormSelect
-            label="Amount Column *"
+            label="Amount Column"
             value={amountColumn.toString()}
-            onChange={(e) => setAmountColumn(parseInt(e.target.value))}
+            onChange={(value) => setAmountColumn(parseInt(value))}
             options={columnOptions}
             required
           />
 
           <FormSelect
-            label="Description Column *"
+            label="Description Column"
             value={descriptionColumn.toString()}
-            onChange={(e) => setDescriptionColumn(parseInt(e.target.value))}
+            onChange={(value) => setDescriptionColumn(parseInt(value))}
             options={columnOptions}
             required
           />
@@ -305,37 +328,37 @@ export function ColumnMappingStep({
           <FormSelect
             label="Type Column (Optional)"
             value={typeColumn.toString()}
-            onChange={(e) => setTypeColumn(parseInt(e.target.value))}
+            onChange={(value) => setTypeColumn(parseInt(value))}
             options={allColumnOptions}
           />
 
           <FormSelect
             label="Category Column (Optional)"
             value={categoryColumn.toString()}
-            onChange={(e) => setCategoryColumn(parseInt(e.target.value))}
+            onChange={(value) => setCategoryColumn(parseInt(value))}
             options={allColumnOptions}
           />
 
           <FormSelect
             label="Reference Column (Optional)"
             value={referenceColumn.toString()}
-            onChange={(e) => setReferenceColumn(parseInt(e.target.value))}
+            onChange={(value) => setReferenceColumn(parseInt(value))}
             options={allColumnOptions}
           />
 
           {/* Date Format & Currency */}
           <FormSelect
-            label="Date Format *"
+            label="Date Format"
             value={dateFormat}
-            onChange={(e) => setDateFormat(e.target.value)}
+            onChange={(value) => setDateFormat(value)}
             options={DATE_FORMATS}
             required
           />
 
           <FormSelect
-            label="Currency *"
+            label="Currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(value) => setCurrency(value)}
             options={CURRENCIES}
             required
           />
@@ -350,7 +373,9 @@ export function ColumnMappingStep({
         <Button
           variant="primary"
           onClick={handleNext}
-          disabled={dateColumn === -1 || amountColumn === -1 || descriptionColumn === -1}
+          disabled={
+            dateColumn === -1 || amountColumn === -1 || descriptionColumn === -1
+          }
         >
           Next: Review Transactions
         </Button>

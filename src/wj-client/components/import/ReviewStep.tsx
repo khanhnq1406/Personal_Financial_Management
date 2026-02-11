@@ -34,14 +34,14 @@ function isParseProps(props: ReviewStepProps): props is ReviewStepParseProps {
   return 'file' in props && 'columnMapping' in props;
 }
 
-export function ReviewStep({
-  transactions,
-  duplicateMatches,
-  onImport,
-  onBack,
-  isLoading = false,
-  currency = "VND",
-}: ReviewStepProps) {
+export function ReviewStep(props: ReviewStepProps) {
+  // Extract props based on type
+  const transactions = 'transactions' in props ? props.transactions : [];
+  const duplicateMatches = 'duplicateMatches' in props ? props.duplicateMatches : undefined;
+  const onImport = 'onImport' in props ? props.onImport : () => {};
+  const onBack = props.onBack;
+  const isLoading = 'isLoading' in props ? props.isLoading : false;
+  const currency = 'currency' in props ? props.currency : "VND";
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // Auto-select valid non-duplicate transactions by default

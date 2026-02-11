@@ -189,7 +189,17 @@ export function ImportTransactionsForm({
   };
 
   const handleStep3Next = () => {
-    setCurrentStep(4); // Move to column mapping
+    // Skip column mapping for Excel and PDF files (backend handles parsing automatically)
+    if (selectedFile) {
+      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
+      if (fileExt === 'xlsx' || fileExt === 'xls' || fileExt === 'pdf') {
+        // For Excel/PDF, skip column mapping and go directly to review
+        setCurrentStep(5);
+        return;
+      }
+    }
+    // For CSV files, go to column mapping
+    setCurrentStep(4);
   };
 
   const handleStep4Back = () => {
@@ -319,13 +329,13 @@ export function ImportTransactionsForm({
       {currentStep === 5 &&
         selectedFile &&
         uploadedFileId &&
-        selectedWalletId &&
-        columnMapping && (
+        selectedWalletId && (
           <ReviewStepWrapper
             file={selectedFile}
             fileId={uploadedFileId}
             walletId={selectedWalletId}
             columnMapping={columnMapping}
+            bankTemplateId={selectedTemplateId}
             onImportSuccess={handleImportSuccess}
             onBack={handleStep5Back}
             onError={handleImportError}
