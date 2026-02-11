@@ -13,23 +13,17 @@ export default function LandingNavbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Check both window scroll and container scroll
-      const scrollContainer = document.querySelector('.landing-scroll-container');
-      const scrollY = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
-      setIsScrolled(scrollY > 10);
+      const scrolled = window.scrollY > 10;
+      setIsScrolled(scrolled);
     };
 
-    // Listen to both window and container scroll
-    const scrollContainer = document.querySelector('.landing-scroll-container');
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", handleScroll);
-    }
-    window.addEventListener("scroll", handleScroll);
+    // Listen to window scroll
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    // Check initial scroll position
+    handleScroll();
 
     return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener("scroll", handleScroll);
-      }
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
@@ -69,8 +63,14 @@ export default function LandingNavbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white/95 backdrop-blur-sm shadow-md" : "bg-transparent"
+        isScrolled
+          ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50"
+          : "bg-white/10"
       }`}
+      style={{
+        backdropFilter: isScrolled ? "blur(12px)" : "none",
+        WebkitBackdropFilter: isScrolled ? "blur(12px)" : "none",
+      }}
     >
       <a
         href="#main-content"

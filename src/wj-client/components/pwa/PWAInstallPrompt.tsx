@@ -33,6 +33,7 @@ export function PWAInstallPrompt({
       const dismissed = localStorage.getItem(PWA_PROMPT_DISMISSED_KEY);
       if (dismissed === "true") {
         setIsDismissed(true);
+        console.log('[PWA] Prompt permanently dismissed by user');
         return;
       }
     } catch (error) {
@@ -40,15 +41,20 @@ export function PWAInstallPrompt({
       console.warn("localStorage access failed:", error);
     }
 
+    console.log('[PWA] Conditions:', { isMobile, canInstall, isInstalled, isDismissed, platform });
+
     // Show prompt after delay if conditions are met
     const timer = setTimeout(() => {
       if (isMobile && canInstall && !isInstalled && !isDismissed) {
+        console.log('[PWA] Showing install prompt');
         setIsVisible(true);
+      } else {
+        console.log('[PWA] Not showing prompt. Conditions not met.');
       }
     }, showDelay);
 
     return () => clearTimeout(timer);
-  }, [isMobile, canInstall, isInstalled, isDismissed, showDelay]);
+  }, [isMobile, canInstall, isInstalled, isDismissed, showDelay, platform]);
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -103,18 +109,32 @@ export function PWAInstallPrompt({
                 {/* App Icon */}
                 <div className="flex-shrink-0">
                   <div className="w-14 h-14 bg-bg rounded-2xl flex items-center justify-center drop-shadow-round">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
                     </svg>
                   </div>
                 </div>
                 {/* Title and Description */}
                 <div className="flex-1">
-                  <h2 id="pwa-prompt-title" className="text-xl font-bold text-gray-900 mb-1">
+                  <h2
+                    id="pwa-prompt-title"
+                    className="text-xl font-bold text-gray-900 mb-1"
+                  >
                     Install WealthJourney
                   </h2>
                   <p className="text-sm text-gray-600">
-                    Get the full app experience with faster loading, offline access, and home screen convenience.
+                    Get the full app experience with faster loading, offline
+                    access, and home screen convenience.
                   </p>
                 </div>
               </div>
@@ -124,8 +144,18 @@ export function PWAInstallPrompt({
                 className="flex-shrink-0 -mt-1 -mr-1 p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Close"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -137,24 +167,54 @@ export function PWAInstallPrompt({
             <div className="mb-6 grid grid-cols-3 gap-3">
               <div className="text-center">
                 <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-5 h-5 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <svg
+                    className="w-5 h-5 text-bg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
                   </svg>
                 </div>
                 <p className="text-xs font-medium text-gray-700">Fast</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-5 h-5 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  <svg
+                    className="w-5 h-5 text-bg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                    />
                   </svg>
                 </div>
                 <p className="text-xs font-medium text-gray-700">Offline</p>
               </div>
               <div className="text-center">
                 <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-5 h-5 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  <svg
+                    className="w-5 h-5 text-bg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
                   </svg>
                 </div>
                 <p className="text-xs font-medium text-gray-700">Home Screen</p>

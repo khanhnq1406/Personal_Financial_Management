@@ -239,7 +239,7 @@ export default function DashboardLayout({
         {/* Currency conversion progress banner */}
         <CurrencyConversionProgress />
 
-        <div className="h-dvh bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
+        <div className="dashboard-container h-dvh bg-neutral-50 dark:bg-dark-background flex flex-col sm:flex-row overflow-hidden">
           {/* Desktop Sidebar - Collapsible */}
           <aside
             className={`hidden sm:flex flex-col bg-gradient-to-b from-primary-600 to-primary-700 dark:from-dark-surface dark:to-dark-surface min-h-screen fixed left-0 top-0 z-sidebar transition-all duration-300 ease-in-out ${

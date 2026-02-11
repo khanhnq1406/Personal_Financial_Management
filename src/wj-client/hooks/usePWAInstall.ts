@@ -78,10 +78,18 @@ export function usePWAInstall(): PWAInstallState {
     };
 
     // Set initial platform
-    setPlatform(detectPlatform());
+    const detectedPlatform = detectPlatform();
+    setPlatform(detectedPlatform);
 
     // Set initial installation status
-    setIsInstalled(checkInstalled());
+    const installed = checkInstalled();
+    setIsInstalled(installed);
+
+    // For iOS, set canInstall to true if not already installed
+    // (iOS doesn't fire beforeinstallprompt, so we need to enable it manually)
+    if (detectedPlatform === "ios" && !installed) {
+      setCanInstall(true);
+    }
 
     // Listen for beforeinstallprompt event (Android)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -105,7 +113,7 @@ export function usePWAInstall(): PWAInstallState {
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
-        handleBeforeInstallPrompt
+        handleBeforeInstallPrompt,
       );
       window.removeEventListener("appinstalled", handleAppInstalled);
     };

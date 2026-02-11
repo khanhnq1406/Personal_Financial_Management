@@ -34,14 +34,23 @@ body {
   /* color: var(--foreground); */
   background: var(--background);
   font-family: var(--font-jakarta-sans);
-  /* Use dvh (dynamic viewport height) for iOS Safari compatibility */
-  height: 100dvh;
-  /* Fallback for browsers that don't support dvh */
-  height: 100vh;
   touch-action: manipulation;
   /* Prevent iOS from resizing when virtual keyboard appears */
   position: relative;
+  min-height: 100vh;
+}
+
+/* Dashboard pages - fixed height for iOS compatibility */
+body:has(.dashboard-container) {
+  height: 100dvh;
+  height: 100vh;
   overflow: hidden;
+}
+
+/* Landing page - allow scrolling */
+body:has(.landing-scroll-container) {
+  height: auto;
+  overflow: visible;
 }
 
 /* iOS Safari specific height fix */
