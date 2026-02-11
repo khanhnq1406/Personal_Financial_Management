@@ -82,20 +82,9 @@ func (h *InvestmentHandlers) CreateInvestment(c *gin.Context) {
 		req.Currency = types.USD
 	}
 
-	// Convert decimal fields to int64 if provided
-	if req.InitialCostDecimal > 0 {
-		// Convert decimal to smallest currency unit
-		// USD: multiply by 100 (cents), VND: multiply by 1 (dong)
-		multiplier := int64(1)
-		if req.Currency == "USD" || req.Currency == "EUR" || req.Currency == "GBP" {
-			multiplier = 100 // 2 decimal places
-		}
-		// For zero-decimal currencies like VND, JPY, keep as is
-		req.InitialCost = int64(req.InitialCostDecimal * float64(multiplier))
-	}
-	if req.InitialQuantityDecimal > 0 {
-		req.InitialQuantity = int64(req.InitialQuantityDecimal * 10000) // Standard storage multiplier
-	}
+	// NOTE: Decimal field conversion is handled by the service layer
+	// The service layer properly converts using currency-aware and type-aware functions
+	// Do NOT convert here to avoid double conversion
 
 	// Call service
 	result, err := h.investmentService.CreateInvestment(c.Request.Context(), userID, &req)

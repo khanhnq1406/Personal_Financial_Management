@@ -378,8 +378,10 @@ export function AddInvestmentForm({
   );
 
   // Fetch exchange rate from wallet currency to preferred currency for display
-  const { rate: walletToPreferredRate } =
-    useExchangeRate(walletCurrency, preferredCurrency);
+  const { rate: walletToPreferredRate } = useExchangeRate(
+    walletCurrency,
+    preferredCurrency,
+  );
 
   // Convert wallet balance to preferred currency for display
   const walletBalanceInPreferredCurrency = useMemo(() => {
@@ -468,13 +470,14 @@ export function AddInvestmentForm({
 
     if (isGoldInvestment && selectedGoldType) {
       // Use gold calculator for gold investments
+      const formData = form.getValues();
       const goldCalculation = calculateGoldFromUserInput({
         quantity: data.initialQuantity,
         quantityUnit: goldQuantityUnit,
         pricePerUnit: data.initialCost / data.initialQuantity, // Calculate price per unit
-        priceCurrency: data.currency,
+        priceCurrency: formData.currency,
         priceUnit: goldQuantityUnit,
-        investmentType: data.type,
+        investmentType: formData.type,
         walletCurrency: walletCurrency,
         fxRate: exchangeRate || 1,
       });
@@ -483,10 +486,10 @@ export function AddInvestmentForm({
         walletId,
         symbol: selectedGoldType.value,
         name: selectedGoldType.label,
-        type: data.type,
+        type: formData.type,
         initialQuantityDecimal: goldCalculation.storedQuantity / 10000, // Convert storage format (grams×10000) to decimal (grams)
         initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
-        currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
+        currency: formData.currency, // Send the currency the user actually paid in (NOT wallet currency)
         purchaseUnit: goldQuantityUnit, // Store user's purchase unit for display
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
@@ -495,13 +498,14 @@ export function AddInvestmentForm({
       });
     } else if (isSilverInvestment && selectedSilverType) {
       // Use silver calculator for silver investments
+      const formData = form.getValues();
       const silverCalculation = calculateSilverFromUserInput({
         quantity: data.initialQuantity,
         quantityUnit: silverQuantityUnit,
         pricePerUnit: data.initialCost / data.initialQuantity, // Calculate price per unit
-        priceCurrency: data.currency,
+        priceCurrency: formData.currency,
         priceUnit: silverQuantityUnit,
-        investmentType: data.type,
+        investmentType: formData.type,
         walletCurrency: walletCurrency,
         fxRate: exchangeRate || 1,
       });
@@ -511,10 +515,10 @@ export function AddInvestmentForm({
         walletId,
         symbol: selectedSilverType.value, // Keep unit suffix: AG_VND_Tael or AG_VND_Kg
         name: selectedSilverType.label,
-        type: data.type,
+        type: formData.type,
         initialQuantityDecimal: silverCalculation.storedQuantity / 10000, // Convert storage format (grams×10000 or oz×10000) to decimal
         initialCostDecimal: data.initialCost, // Send decimal value in the user's input currency
-        currency: data.currency, // Send the currency the user actually paid in (NOT wallet currency)
+        currency: formData.currency, // Send the currency the user actually paid in (NOT wallet currency)
         purchaseUnit: silverCalculation.purchaseUnit, // Store user's purchase unit for display
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
@@ -523,14 +527,16 @@ export function AddInvestmentForm({
       });
     } else {
       // Convert to API format using utility functions for non-gold, non-silver investments
+      // Use form.getValues() instead of data because zodResolver may return partial data on validation failure
+      const formData = form.getValues();
       createInvestmentMutation.mutate({
         walletId,
-        symbol: data.symbol.toUpperCase(),
-        name: data.name,
-        type: data.type,
+        symbol: (formData.symbol || "").toUpperCase(),
+        name: formData.name || "",
+        type: formData.type,
         initialQuantityDecimal: data.initialQuantity, // Send decimal value
         initialCostDecimal: data.initialCost, // Send decimal value
-        currency: data.currency,
+        currency: formData.currency || "USD",
         purchaseUnit: "gram", // Default unit for non-gold, non-silver investments
         // Set int64 fields to 0 (decimal fields take precedence)
         initialQuantity: 0,
@@ -589,12 +595,10 @@ export function AddInvestmentForm({
               checked={isCustomInvestment}
               onChange={(e) => {
                 setIsCustomInvestment(e.target.checked);
-                // Clear symbol and currency when toggling
+                // Clear symbol when toggling, but keep currency valid
                 if (e.target.checked) {
                   setValue("symbol", "");
-                  setValue("currency", "");
                   setSelectedSymbol("");
-                  setSelectedCurrency("");
                 } else {
                   // Reset to default when unchecked
                   setValue("currency", "USD");
@@ -604,7 +608,9 @@ export function AddInvestmentForm({
               className="w-4 h-4 text-bg border-gray-300 rounded focus:ring-bg"
             />
             <div className="flex-1">
-              <span className="font-medium text-gray-900">Custom Investment</span>
+              <span className="font-medium text-gray-900">
+                Custom Investment
+              </span>
               <p className="text-sm text-gray-500">
                 Create investment for assets not available in market data
               </p>
@@ -667,7 +673,8 @@ export function AddInvestmentForm({
               {/* Info box for custom investments */}
               <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
                 <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Custom investments don&apos;t have market prices. You can set the price manually after creation.
+                  <strong>Note:</strong> Custom investments don&apos;t have
+                  market prices. You can set the price manually after creation.
                 </p>
               </div>
             </>
@@ -733,9 +740,7 @@ export function AddInvestmentForm({
               </p>
               {/* Market Price Display */}
               {goldPriceQuery.isLoading && (
-                <p className="text-xs text-gray-400 ml-1">
-                  Loading price...
-                </p>
+                <p className="text-xs text-gray-400 ml-1">Loading price...</p>
               )}
               {goldPriceQuery.data?.data && (
                 <div className="p-2 bg-green-50 border border-green-200 rounded-md">
@@ -799,9 +804,7 @@ export function AddInvestmentForm({
               </p>
               {/* Market Price Display */}
               {silverPriceQuery.isLoading && (
-                <p className="text-xs text-gray-400 ml-1">
-                  Loading price...
-                </p>
+                <p className="text-xs text-gray-400 ml-1">Loading price...</p>
               )}
               {silverPriceQuery.data?.data && (
                 <div className="p-2 bg-green-50 border border-green-200 rounded-md">
@@ -1025,7 +1028,10 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
             <span className="text-red-600">
-              -{currency ? formatCurrency(initialCostInSmallestUnit, currency) : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
+              -
+              {currency
+                ? formatCurrency(initialCostInSmallestUnit, currency)
+                : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
             </span>
           </div>
           <hr className="my-2" />
@@ -1066,7 +1072,12 @@ export function AddInvestmentForm({
               {exchangeRate && (
                 <span className="text-gray-500 ml-1">
                   ≈{" "}
-                  {currency ? formatCurrency(walletBalanceInInvestmentCurrency, currency) : `${(walletBalanceInInvestmentCurrency / 100).toFixed(2)}`}
+                  {currency
+                    ? formatCurrency(
+                        walletBalanceInInvestmentCurrency,
+                        currency,
+                      )
+                    : `${(walletBalanceInInvestmentCurrency / 100).toFixed(2)}`}
                 </span>
               )}
             </span>
@@ -1074,7 +1085,10 @@ export function AddInvestmentForm({
           <div className="flex justify-between text-sm">
             <span>Initial Cost:</span>
             <span className="text-red-600">
-              -{currency ? formatCurrency(initialCostInSmallestUnit, currency) : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
+              -
+              {currency
+                ? formatCurrency(initialCostInSmallestUnit, currency)
+                : `${(initialCostInSmallestUnit / 100).toFixed(2)}`}
             </span>
           </div>
           <hr className="my-2" />

@@ -38,7 +38,11 @@ import {
 import { isGoldType } from "@/lib/utils/gold-calculator";
 import { isSilverType } from "@/lib/utils/silver-calculator";
 
-export type TabType = "overview" | "transactions" | "add-transaction" | "set-price";
+export type TabType =
+  | "overview"
+  | "transactions"
+  | "add-transaction"
+  | "set-price";
 export interface InvestmentDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -131,7 +135,7 @@ export function InvestmentDetailModal({
         investment.unrealizedPnl || 0,
         investment.unrealizedPnlPercent || 0,
         investment.currency || "USD",
-        isCustom
+        isCustom,
       )
     : { text: "N/A", colorClass: "text-gray-500" };
 
@@ -664,15 +668,14 @@ export function InvestmentDetailModal({
                       ? formatInvestmentPrice(
                           investment.currentPrice || 0,
                           investment.currency || "USD",
-                          true
+                          true,
                         )
                       : formatPrice(
                           investment.currentPrice || 0,
                           investment.type,
                           investment.currency || "USD",
                           investment.purchaseUnit,
-                        )
-                    }
+                        )}
                   </span>
                   <div className="mt-1">
                     {(() => {
@@ -715,14 +718,15 @@ export function InvestmentDetailModal({
               </div>
 
               {/* Show warning message for custom investments without price */}
-              {isCustomInvestment(investment) && investment.currentPrice === 0 && (
-                <div className="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ This is a custom investment without a set price.
-                    Click &quot;Set Price&quot; tab to update the current value.
-                  </p>
-                </div>
-              )}
+              {isCustomInvestment(investment) &&
+                investment.currentPrice === 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ This is a custom investment without a set price. Click
+                      &quot;Set Price&quot; tab to update the current value.
+                    </p>
+                  </div>
+                )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Cost</span>
                 <div className="text-right">
@@ -767,7 +771,8 @@ export function InvestmentDetailModal({
               </div>
               <div className="border-t pt-3">
                 {/* Only show PNL if not custom or price is set */}
-                {(!isCustomInvestment(investment) || investment.currentPrice > 0) && (
+                {(!isCustomInvestment(investment) ||
+                  investment.currentPrice > 0) && (
                   <>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Unrealized PNL</span>
@@ -813,12 +818,13 @@ export function InvestmentDetailModal({
                 )}
 
                 {/* Show N/A message for custom investments without price */}
-                {isCustomInvestment(investment) && investment.currentPrice === 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Unrealized PNL</span>
-                    <span className="text-gray-500">N/A (Price not set)</span>
-                  </div>
-                )}
+                {isCustomInvestment(investment) &&
+                  investment.currentPrice === 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Unrealized PNL</span>
+                      <span className="text-gray-500">N/A (Price not set)</span>
+                    </div>
+                  )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Realized PNL</span>
                   <div className="text-right">
@@ -947,6 +953,23 @@ export function InvestmentDetailModal({
                 // Refresh investment data and switch back to overview tab
                 getInvestment.refetch();
                 setActiveTab("overview");
+                // Invalidate queries to refetch fresh data
+                queryClient.invalidateQueries({
+                  queryKey: [EVENT_InvestmentGetInvestment],
+                });
+                queryClient.invalidateQueries({
+                  queryKey: [EVENT_InvestmentListInvestments],
+                });
+                queryClient.invalidateQueries({
+                  queryKey: [EVENT_InvestmentGetPortfolioSummary],
+                });
+                // Invalidate wallet queries to refresh balance after transaction deletion
+                queryClient.invalidateQueries({
+                  queryKey: [EVENT_WalletListWallets],
+                });
+                queryClient.invalidateQueries({
+                  queryKey: [EVENT_WalletGetWallet],
+                });
               }}
             />
           )}

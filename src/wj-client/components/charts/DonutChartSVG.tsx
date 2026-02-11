@@ -98,14 +98,16 @@ export const DonutChartSVG = memo(function DonutChartSVG({
   tooltipFormatter,
   animate = true,
 }: DonutChartSVGProps) {
-  // Assign colors to segments
-  const coloredData = data.map((point, index) => ({
-    ...point,
-    color: point.color ?? colors[index % colors.length],
-  }));
+  // Assign colors to segments and filter out invalid values
+  const coloredData = data
+    .filter((point) => point.value !== undefined && point.value !== null && !isNaN(point.value))
+    .map((point, index) => ({
+      ...point,
+      color: point.color ?? colors[index % colors.length],
+    }));
 
   // Calculate total value
-  const total = coloredData.reduce((sum, item) => sum + item.value, 0);
+  const total = coloredData.reduce((sum, item) => sum + (item.value || 0), 0);
 
   // SVG dimensions
   const size = Math.min(height, 400);
@@ -236,7 +238,7 @@ export const DonutChartSVG = memo(function DonutChartSVG({
                       <title>
                         {tooltipFormatter
                           ? `${slice.name}: ${tooltipFormatter(slice.value, slice.name)}`
-                          : `${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
+                          : `${slice.name}: ${(slice.value || 0).toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
                         }
                       </title>
                     </path>
@@ -271,7 +273,7 @@ export const DonutChartSVG = memo(function DonutChartSVG({
                     <title>
                       {tooltipFormatter
                         ? `${slice.name}: ${tooltipFormatter(slice.value, slice.name)}`
-                        : `${slice.name}: ${slice.value.toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
+                        : `${slice.name}: ${(slice.value || 0).toLocaleString()} (${(slice.percentage * 100).toFixed(1)}%)`
                       }
                     </title>
                   </path>

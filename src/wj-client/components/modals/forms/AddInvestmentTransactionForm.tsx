@@ -77,7 +77,9 @@ const transactionTypeOptions: SelectOption[] = [
     label: "Sell",
   },
   {
-    value: String(InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND),
+    value: String(
+      InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_DIVIDEND,
+    ),
     label: "Dividend",
   },
 ];
@@ -132,10 +134,15 @@ export function AddInvestmentTransactionForm({
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
     watch,
+    getValues,
+    setError,
   } = useForm<AddTransactionFormInput>({
-    resolver: zodResolver(addTransactionSchema),
+    // NOTE: Removed zodResolver due to bug where it strips type and transactionDate fields
+    // See: https://github.com/react-hook-form/resolvers/issues/XXX
+    // resolver: zodResolver(addTransactionSchema),
+    mode: "onSubmit",
     defaultValues: {
       type: InvestmentTransactionType.INVESTMENT_TRANSACTION_TYPE_BUY,
       quantity: 0,
@@ -178,7 +185,7 @@ export function AddInvestmentTransactionForm({
   const silverDisplayUnit = useMemo(() => {
     if (!isSilverInvestment) return null;
     // If user has a purchase unit preference, use it
-    if (purchaseUnit && ['tael', 'kg', 'gram', 'oz'].includes(purchaseUnit)) {
+    if (purchaseUnit && ["tael", "kg", "gram", "oz"].includes(purchaseUnit)) {
       return purchaseUnit as SilverUnit;
     }
     // Default to market convention: tael for VND, oz for USD
@@ -347,8 +354,26 @@ export function AddInvestmentTransactionForm({
     exchangeRate,
   ]);
 
-  const onSubmit = (data: AddTransactionFormInput) => {
+  const onSubmit = () => {
     setErrorMessage(undefined);
+
+    // Get all form values directly (bypassing Zod resolver issue)
+    const formData = getValues();
+
+    // Manual validation using Zod schema
+    const validationResult = addTransactionSchema.safeParse(formData);
+
+    if (!validationResult.success) {
+      // Set form errors
+      validationResult.error.issues.forEach((issue) => {
+        const fieldName = issue.path[0] as keyof AddTransactionFormInput;
+        setError(fieldName, { message: issue.message });
+      });
+      setErrorMessage("Please fix the validation errors");
+      return;
+    }
+
+    const completeData = validationResult.data;
 
     // Convert quantity to storage format
     let quantityInStorage: number;
@@ -360,19 +385,19 @@ export function AddInvestmentTransactionForm({
 
       // Convert quantity to storage units
       const quantityInStorageUnits = convertGoldQuantity(
-        data.quantity,
+        completeData.quantity,
         goldDisplayUnit,
         storageUnit,
       );
       quantityInStorage = Math.round(quantityInStorageUnits * 10000);
 
       // Convert price from display units to storage units
-      priceInStorage = data.price;
+      priceInStorage = completeData.price;
       if (investmentType === InvestmentType.INVESTMENT_TYPE_GOLD_VND) {
         // User enters price per tael, convert to price per gram
         // IMPORTANT: Use convertGoldPricePerUnit, not convertGoldQuantity!
         priceInStorage = convertGoldPricePerUnit(
-          data.price,
+          completeData.price,
           goldDisplayUnit, // tael
           storageUnit, // gram
         );
@@ -384,18 +409,18 @@ export function AddInvestmentTransactionForm({
 
       // Convert quantity to storage units
       const quantityInStorageUnits = convertSilverQuantity(
-        data.quantity,
+        completeData.quantity,
         silverDisplayUnit,
         storageUnit,
       );
       quantityInStorage = Math.round(quantityInStorageUnits * 10000);
 
       // Convert price from display units to storage units
-      priceInStorage = data.price;
+      priceInStorage = completeData.price;
       if (investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND) {
         // User enters price per tael, convert to price per gram
         priceInStorage = convertSilverPricePerUnit(
-          data.price,
+          completeData.price,
           silverDisplayUnit, // tael
           storageUnit, // gram
         );
@@ -403,19 +428,22 @@ export function AddInvestmentTransactionForm({
       // For USD silver, price is already per ounce, no conversion needed
     } else {
       // For non-gold, non-silver: use standard quantity conversion
-      quantityInStorage = quantityToStorage(data.quantity, investmentType);
-      priceInStorage = data.price;
+      quantityInStorage = quantityToStorage(
+        completeData.quantity,
+        investmentType,
+      );
+      priceInStorage = completeData.price;
     }
 
     // Convert to API format using utility functions
     const request: AddTransactionRequest = {
       investmentId: investmentId,
-      type: data.type,
+      type: completeData.type,
       quantity: quantityInStorage,
       price: amountToSmallestUnit(priceInStorage, investmentCurrency),
-      fees: amountToSmallestUnit(data.fees, investmentCurrency),
+      fees: amountToSmallestUnit(completeData.fees, investmentCurrency),
       transactionDate: Math.floor(
-        new Date(data.transactionDate).getTime() / 1000,
+        new Date(completeData.transactionDate).getTime() / 1000,
       ),
       notes: "",
     };
@@ -451,6 +479,7 @@ export function AddInvestmentTransactionForm({
         placeholder="Select transaction type"
         required
         disabled={isSubmitting}
+        parseAsNumber={true}
       />
 
       {/* Quantity */}
@@ -461,16 +490,16 @@ export function AddInvestmentTransactionForm({
           isGoldInvestment && goldDisplayUnit
             ? `Quantity (${getGoldUnitLabel(goldDisplayUnit)})`
             : isSilverInvestment && silverDisplayUnit
-            ? `Quantity (${getSilverUnitLabel(silverDisplayUnit)})`
-            : "Quantity"
+              ? `Quantity (${getSilverUnitLabel(silverDisplayUnit)})`
+              : "Quantity"
         }
         placeholder={
           (isGoldInvestment && goldDisplayUnit === "tael") ||
           (isSilverInvestment && silverDisplayUnit === "tael")
             ? "0.0000"
-            : (isSilverInvestment && silverDisplayUnit === "kg")
-            ? "0.00"
-            : quantityConfig.placeholder
+            : isSilverInvestment && silverDisplayUnit === "kg"
+              ? "0.00"
+              : quantityConfig.placeholder
         }
         required
         disabled={isSubmitting}
@@ -479,9 +508,9 @@ export function AddInvestmentTransactionForm({
           (isGoldInvestment && goldDisplayUnit === "tael") ||
           (isSilverInvestment && silverDisplayUnit === "tael")
             ? "0.0001"
-            : (isSilverInvestment && silverDisplayUnit === "kg")
-            ? "0.01"
-            : quantityConfig.step
+            : isSilverInvestment && silverDisplayUnit === "kg"
+              ? "0.01"
+              : quantityConfig.step
         }
       />
 
@@ -493,8 +522,8 @@ export function AddInvestmentTransactionForm({
           isGoldInvestment
             ? `Price per ${getInvestmentUnitLabelFull(goldDisplayUnit || "oz", investmentType)} (${investmentCurrency})`
             : isSilverInvestment && silverDisplayUnit
-            ? `Price per ${getInvestmentUnitLabelFull(silverDisplayUnit, investmentType)} (${investmentCurrency})`
-            : `Price per Unit (${investmentCurrency})`
+              ? `Price per ${getInvestmentUnitLabelFull(silverDisplayUnit, investmentType)} (${investmentCurrency})`
+              : `Price per Unit (${investmentCurrency})`
         }
         placeholder="0.00"
         required
@@ -645,10 +674,10 @@ export function AddInvestmentTransactionForm({
 
       {/* Submit button */}
       <Button
+        htmlType="submit"
         type={ButtonType.PRIMARY}
-        onClick={handleSubmit(onSubmit)}
-        loading={addTransactionMutation.isPending || isSubmitting}
         disabled={insufficientBalance}
+        loading={addTransactionMutation.isPending || isSubmitting}
         className="w-full"
       >
         Add Transaction

@@ -27,9 +27,16 @@ export function UpdateInvestmentPriceForm({
   investmentType,
   onSuccess,
 }: UpdateInvestmentPriceFormProps) {
-  const [priceInput, setPriceInput] = useState(
-    currentPrice > 0 ? (currentPrice / 100).toFixed(2) : ""
-  );
+  // Currencies with no decimal places (0 decimals)
+  const zeroDecimalCurrencies = ["VND", "JPY", "KRW"];
+  const hasDecimals = !zeroDecimalCurrencies.includes(currency);
+
+  // Calculate display price and initial input based on currency
+  const displayPrice = currentPrice > 0
+    ? (hasDecimals ? (currentPrice / 100).toFixed(2) : currentPrice.toString())
+    : "";
+
+  const [priceInput, setPriceInput] = useState(displayPrice);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -52,8 +59,12 @@ export function UpdateInvestmentPriceForm({
       return;
     }
 
-    // Convert to smallest currency unit
-    const priceInSmallestUnit = Math.round(priceDecimal * 100);
+    // Convert to smallest currency unit (currency-aware)
+    // USD/EUR/GBP: multiply by 100 (cents)
+    // VND/JPY/KRW: no conversion (already in smallest unit)
+    const priceInSmallestUnit = hasDecimals
+      ? Math.round(priceDecimal * 100)
+      : Math.round(priceDecimal);
 
     updateMutation.mutate({
       id: investmentId,
@@ -80,7 +91,7 @@ export function UpdateInvestmentPriceForm({
         <p className="text-sm text-gray-600">
           <strong>Current Price:</strong>{" "}
           {currentPrice > 0
-            ? `${currency} ${(currentPrice / 100).toFixed(2)}`
+            ? `${currency} ${displayPrice}`
             : "Not set"}
         </p>
       </div>
@@ -89,11 +100,11 @@ export function UpdateInvestmentPriceForm({
         label="New Price"
         name="price"
         type="number"
-        step="0.01"
+        step={hasDecimals ? "0.01" : "1"}
         min="0"
         value={priceInput}
         onChange={(e) => setPriceInput(e.target.value)}
-        placeholder="0.00"
+        placeholder={hasDecimals ? "0.00" : "0"}
         required
         helperText={`Enter price per unit in ${currency}`}
       />

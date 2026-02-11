@@ -143,6 +143,8 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
     const signedAmount =
       data.transactionType === "income" ? data.amount : -Math.abs(data.amount);
 
+    // Note: We don't send transactionType to the API
+    // The type is derived from the selected category on the backend
     createTransaction.mutate(
       {
         walletId: Number(data.walletId),

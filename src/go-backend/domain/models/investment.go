@@ -56,14 +56,18 @@ func (i *Investment) BeforeUpdate(tx *gorm.DB) error {
 func (i *Investment) Recalculate() {
 	if i.Quantity > 0 && i.CurrentPrice > 0 {
 		// Determine divisor based on investment type
-		var divisor int64 = 100 // Default: 2 decimals
+		// Default to 4 decimals (10000) for most investment types including OTHER (custom investments)
+		var divisor int64 = 10000 // Default: 4 decimals
 		switch v1.InvestmentType(i.Type) {
 		case v1.InvestmentType_INVESTMENT_TYPE_CRYPTOCURRENCY:
 			divisor = 100000000 // 8 decimals for satoshis
 		case v1.InvestmentType_INVESTMENT_TYPE_STOCK,
 			v1.InvestmentType_INVESTMENT_TYPE_ETF,
-			v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND:
-			divisor = 10000 // 4 decimals for stocks
+			v1.InvestmentType_INVESTMENT_TYPE_MUTUAL_FUND,
+			v1.InvestmentType_INVESTMENT_TYPE_BOND,
+			v1.InvestmentType_INVESTMENT_TYPE_COMMODITY,
+			v1.InvestmentType_INVESTMENT_TYPE_OTHER:
+			divisor = 10000 // 4 decimals for stocks, bonds, commodities, and other investments
 		case v1.InvestmentType_INVESTMENT_TYPE_GOLD_VND,
 			v1.InvestmentType_INVESTMENT_TYPE_GOLD_USD,
 			v1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,

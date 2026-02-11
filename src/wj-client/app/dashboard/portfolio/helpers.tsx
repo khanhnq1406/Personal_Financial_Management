@@ -35,16 +35,10 @@ export const formatQuantity = (
     return formatSilverQuantityUtil(quantity, type, purchaseUnit as SilverUnit);
   }
 
-  // Crypto: 8 decimals, Stocks/ETFs/Mutual Funds: 4 decimals, Bonds/Commodities: 2 decimals
-  let decimals = 2;
+  // Match backend precision: Crypto: 8 decimals, Stocks/ETFs/Mutual Funds/Bonds/Commodities/Other: 4 decimals
+  let decimals = 4; // Default for most investment types
   if (type === InvestmentType.INVESTMENT_TYPE_CRYPTOCURRENCY) {
     decimals = 8;
-  } else if (
-    type === InvestmentType.INVESTMENT_TYPE_STOCK ||
-    type === InvestmentType.INVESTMENT_TYPE_ETF ||
-    type === InvestmentType.INVESTMENT_TYPE_MUTUAL_FUND
-  ) {
-    decimals = 4;
   }
   return (quantity / Math.pow(10, decimals)).toFixed(decimals);
 };

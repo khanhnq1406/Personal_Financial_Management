@@ -24,6 +24,8 @@ type PropType = {
   href?: string;
   target?: string;
   download?: boolean;
+  // HTML button type attribute
+  htmlType?: "button" | "submit" | "reset";
 };
 
 export const Button = React.memo(function Button({
@@ -46,6 +48,7 @@ export const Button = React.memo(function Button({
   href,
   target,
   download,
+  htmlType = "button",
 }: PropType) {
   // Determine button variant from type or variant prop
   const buttonVariant =
@@ -162,12 +165,14 @@ export const Button = React.memo(function Button({
     "aria-label": ariaLabel,
     "aria-pressed": ariaPressed,
     "aria-busy": loading,
+    type: htmlType,
   };
 
   // Image button (legacy type)
   if (type === ButtonType.IMG) {
     return (
       <button
+        type={htmlType}
         className={cn(
           "!p-2.5 sm:!p-2 !min-h-[44px] sm:!min-h-[48px] !min-w-[44px] sm:!min-w-[48px] !w-auto",
           "bg-transparent",

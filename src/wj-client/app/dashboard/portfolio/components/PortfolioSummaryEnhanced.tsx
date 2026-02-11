@@ -274,11 +274,13 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.investmentsByType &&
       portfolioSummary.investmentsByType.length > 0
     ) {
-      return portfolioSummary.investmentsByType.map((item, index) => ({
-        name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
-        value: item.totalValue,
-        color: ASSET_COLORS[index % ASSET_COLORS.length],
-      }));
+      return portfolioSummary.investmentsByType
+        .filter((item) => item.totalValue !== undefined && item.totalValue > 0)
+        .map((item, index) => ({
+          name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
+          value: item.totalValue,
+          color: ASSET_COLORS[index % ASSET_COLORS.length],
+        }));
     }
 
     // Fallback: mock data based on holdings count (for empty portfolios)
