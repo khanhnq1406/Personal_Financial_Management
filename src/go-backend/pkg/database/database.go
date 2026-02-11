@@ -68,6 +68,7 @@ func New(cfg *config.Config) (*Database, error) {
 		&models.InvestmentLot{},
 		&models.MarketData{},
 		&models.PortfolioHistory{},
+		&models.Session{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
