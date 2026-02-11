@@ -5,14 +5,33 @@ import { Button } from "@/components/Button";
 import { ErrorSummary } from "./ErrorSummary";
 import { TransactionReviewTable } from "./TransactionReviewTable";
 import { ParsedTransaction, DuplicateMatch } from "@/gen/protobuf/v1/import";
+import { ColumnMapping } from "./ColumnMappingStep";
+import { useMutationParseStatement } from "@/utils/generated/hooks";
 
-export interface ReviewStepProps {
+// Props for parsing mode (Task 10)
+export interface ReviewStepParseProps {
+  file: File;
+  columnMapping: ColumnMapping;
+  onNext: () => void;
+  onBack: () => void;
+  onError: (error: any) => void;
+}
+
+// Props for review mode (existing)
+export interface ReviewStepReviewProps {
   transactions: ParsedTransaction[];
   duplicateMatches?: DuplicateMatch[];
   onImport: (selectedRowNumbers: number[]) => void;
   onBack: () => void;
   isLoading?: boolean;
   currency?: string;
+}
+
+export type ReviewStepProps = ReviewStepParseProps | ReviewStepReviewProps;
+
+// Type guard to check if props are for parsing mode
+function isParseProps(props: ReviewStepProps): props is ReviewStepParseProps {
+  return 'file' in props && 'columnMapping' in props;
 }
 
 export function ReviewStep({

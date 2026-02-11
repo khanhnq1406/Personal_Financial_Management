@@ -247,6 +247,9 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			txType = v1.TransactionType_TRANSACTION_TYPE_INCOME
 		}
 
+		// Suggest category based on description
+		categorySuggestion := parser.SuggestCategory(row.Description, int32(txType))
+
 		transactions = append(transactions, &v1.ParsedTransaction{
 			RowNumber:   int32(row.RowNumber),
 			Date:        row.Date.Unix(),
@@ -256,8 +259,8 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			},
 			Description:        row.Description,
 			Type:               txType,
-			SuggestedCategoryId: row.CategoryID,
-			CategoryConfidence:  0, // TODO: Implement category suggestion
+			SuggestedCategoryId: categorySuggestion.CategoryID,
+			CategoryConfidence:  categorySuggestion.Confidence,
 			ReferenceNumber:     row.ReferenceNum,
 			ValidationErrors:    validationErrors,
 			IsValid:             row.IsValid,

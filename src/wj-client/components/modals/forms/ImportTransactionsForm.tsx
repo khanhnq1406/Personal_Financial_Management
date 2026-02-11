@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { FileUploadStep } from "@/components/import/FileUploadStep";
+import { WalletSelectionStep } from "@/components/import/WalletSelectionStep";
 import { BankTemplateStep } from "@/components/import/BankTemplateStep";
+import { ColumnMappingStep, ColumnMapping } from "@/components/import/ColumnMappingStep";
+import { ReviewStepWrapper } from "@/components/import/ReviewStepWrapper";
+import { ImportSuccess } from "@/components/import/ImportSuccess";
+import { ImportSummary } from "@/gen/protobuf/v1/import";
+import { useMutationUploadStatementFile } from "@/utils/generated/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { EVENT_TransactionListTransactions } from "@/utils/generated/hooks";
 
 interface ImportTransactionsFormProps {
   onSuccess?: () => void;
@@ -12,28 +20,72 @@ interface ImportTransactionsFormProps {
 /**
  * Import Transactions Form - Multi-step wizard for importing bank/credit card statements
  *
- * Current implementation (Tasks 7-8):
- * - Step 1: File Upload (FileUploadStep)
- * - Step 2: Bank Template Selection (BankTemplateStep)
- * - Placeholder for future steps (Tasks 9-12)
+ * Complete implementation with 6 steps:
+ * - Step 1: File Upload (FileUploadStep) ✓
+ * - Step 2: Wallet Selection (WalletSelectionStep) ✓
+ * - Step 3: Bank Template Selection (BankTemplateStep) ✓
+ * - Step 4: Column Mapping Configuration (ColumnMappingStep) ✓
+ * - Step 5: Preview, Review & Execute Import (ReviewStepWrapper) ✓
+ * - Step 6: Success Summary with Undo Option (ImportSuccess) ✓
  *
- * Future steps to be implemented:
- * - Step 3: Column Mapping Configuration (Task 9)
- * - Step 4: Preview & Validation (Task 10)
- * - Step 5: Import Execution (Task 11)
- * - Step 6: Success/Error Summary (Task 12)
+ * Features:
+ * - Multi-format support (CSV, Excel, PDF)
+ * - Auto-detection of column mappings
+ * - Category suggestions based on transaction description
+ * - Duplicate detection
+ * - Wallet balance updates
+ * - Import undo functionality (24-hour window)
  */
 export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProps) {
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importBatchId, setImportBatchId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+
+  // File upload mutation
+  const uploadFileMutation = useMutationUploadStatementFile({
+    onSuccess: (response) => {
+      if (response.success && response.fileId) {
+        setUploadedFileId(response.fileId);
+        setCurrentStep(2); // Move to wallet selection
+      } else {
+        setError(response.message || "Failed to upload file");
+      }
+    },
+    onError: (err: any) => {
+      setError(err.message || "Failed to upload file");
+    },
+  });
 
   const handleClose = () => {
     setIsOpen(false);
     onSuccess?.();
+  };
+
+  const getModalTitle = () => {
+    switch (currentStep) {
+      case 1:
+        return "Import Transactions - Upload File";
+      case 2:
+        return "Import Transactions - Select Wallet";
+      case 3:
+        return "Import Transactions - Bank Template";
+      case 4:
+        return "Import Transactions - Column Mapping";
+      case 5:
+        return "Import Transactions - Review";
+      case 6:
+        return "Import Complete";
+      default:
+        return "Import Transactions";
+    }
   };
 
   /**
@@ -72,33 +124,83 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
     setSelectedFile(file);
   };
 
+  const handleWalletSelected = (walletId: number) => {
+    setSelectedWalletId(walletId);
+  };
+
   const handleTemplateSelected = (templateId: string | null) => {
     setSelectedTemplateId(templateId);
   };
 
-  const handleStep1Next = () => {
-    // Advance to bank template selection
-    console.log("Step 1 complete - Selected file:", selectedFile?.name);
-    setCurrentStep(2);
+  const handleStep1Next = async () => {
+    if (!selectedFile) return;
+
+    // Upload file to backend
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const fileData = e.target?.result as ArrayBuffer;
+      uploadFileMutation.mutate({
+        fileData: new Uint8Array(fileData),
+        fileName: selectedFile.name,
+        fileType: selectedFile.name.split(".").pop() || "",
+        fileSize: selectedFile.size,
+      });
+    };
+    reader.readAsArrayBuffer(selectedFile);
   };
 
   const handleStep2Back = () => {
-    // Go back to file upload
     setCurrentStep(1);
   };
 
   const handleStep2Next = () => {
-    // TODO: Task 9 - Implement column mapping step
-    // TODO: Wire up handleImportError when import execution is implemented (Task 11)
-    console.log("Step 2 complete - Selected template:", selectedTemplateId);
-    console.log("Next: Column Mapping (to be implemented in Task 9)");
+    setCurrentStep(3); // Move to bank template selection
+  };
+
+  const handleStep3Back = () => {
+    setCurrentStep(2);
+  };
+
+  const handleStep3Next = () => {
+    setCurrentStep(4); // Move to column mapping
+  };
+
+  const handleStep4Back = () => {
+    setCurrentStep(3);
+  };
+
+  const handleColumnMappingComplete = (mapping: ColumnMapping) => {
+    setColumnMapping(mapping);
+    setCurrentStep(5); // Move to review
+  };
+
+  const handleStep5Back = () => {
+    setCurrentStep(4);
+  };
+
+  const handleImportSuccess = (summary: ImportSummary, batchId: string) => {
+    setImportSummary(summary);
+    setImportBatchId(batchId);
+    setCurrentStep(6); // Move to success screen
+  };
+
+  const handleDone = () => {
+    // Refresh transaction list
+    queryClient.invalidateQueries({ queryKey: [EVENT_TransactionListTransactions] });
+    handleClose();
+  };
+
+  const handleUndoSuccess = () => {
+    // Refresh and close
+    queryClient.invalidateQueries({ queryKey: [EVENT_TransactionListTransactions] });
+    handleClose();
   };
 
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Import Transactions"
+      title={getModalTitle()}
       maxWidth="max-w-2xl"
     >
       {/* Error Message Display */}
@@ -146,24 +248,64 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
         <FileUploadStep
           onFileSelected={handleFileSelected}
           onNext={handleStep1Next}
-          isUploading={isUploading}
+          isUploading={uploadFileMutation.isPending}
         />
       )}
 
-      {/* Step 2: Bank Template Selection */}
+      {/* Step 2: Wallet Selection */}
       {currentStep === 2 && (
-        <BankTemplateStep
-          onTemplateSelected={handleTemplateSelected}
+        <WalletSelectionStep
+          onWalletSelected={handleWalletSelected}
           onNext={handleStep2Next}
           onBack={handleStep2Back}
         />
       )}
 
-      {/* Future steps will be added here in subsequent tasks */}
-      {/* Step 3: Column Mapping (Task 9) */}
-      {/* Step 4: Preview & Validation (Task 10) */}
-      {/* Step 5: Import Execution (Task 11) */}
-      {/* Step 6: Summary (Task 12) */}
+      {/* Step 3: Bank Template Selection */}
+      {currentStep === 3 && (
+        <BankTemplateStep
+          onTemplateSelected={handleTemplateSelected}
+          onNext={handleStep3Next}
+          onBack={handleStep3Back}
+        />
+      )}
+
+      {/* Step 4: Column Mapping */}
+      {currentStep === 4 && selectedFile && (
+        <ColumnMappingStep
+          file={selectedFile}
+          templateId={selectedTemplateId}
+          onMappingComplete={handleColumnMappingComplete}
+          onBack={handleStep4Back}
+        />
+      )}
+
+      {/* Step 5: Review & Execute Import */}
+      {currentStep === 5 &&
+        selectedFile &&
+        uploadedFileId &&
+        selectedWalletId &&
+        columnMapping && (
+          <ReviewStepWrapper
+            file={selectedFile}
+            fileId={uploadedFileId}
+            walletId={selectedWalletId}
+            columnMapping={columnMapping}
+            onImportSuccess={handleImportSuccess}
+            onBack={handleStep5Back}
+            onError={handleImportError}
+          />
+        )}
+
+      {/* Step 6: Success Summary */}
+      {currentStep === 6 && importSummary && importBatchId && (
+        <ImportSuccess
+          summary={importSummary}
+          importBatchId={importBatchId}
+          onDone={handleDone}
+          onUndoSuccess={handleUndoSuccess}
+        />
+      )}
     </BaseModal>
   );
 }
