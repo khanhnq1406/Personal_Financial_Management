@@ -84,10 +84,14 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
 
   const renderWalletOption = (option: SelectOption) => {
     const walletData = wallets.find((w) => w.id === Number(option.value));
-    const balance = (walletData?.displayBalance?.amount ?? walletData?.balance?.amount) || 0;
+    const balance =
+      (walletData?.displayBalance?.amount ?? walletData?.balance?.amount) || 0;
     return (
       <span>
-        {option.label} <span className="text-neutral-500">({formatCurrency(balance, currency)})</span>
+        {option.label}{" "}
+        <span className="text-neutral-500">
+          ({formatCurrency(balance, currency)})
+        </span>
       </span>
     );
   };
@@ -186,6 +190,7 @@ export function TransferMoneyForm({ onSuccess }: TransferMoneyFormProps) {
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={transferFunds.isPending}
+          htmlType="submit"
         >
           Transfer
         </Button>

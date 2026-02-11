@@ -124,6 +124,7 @@ export function EditBudgetItemForm({
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={updateBudgetItem.isPending}
+          htmlType="submit"
         >
           Save
         </Button>

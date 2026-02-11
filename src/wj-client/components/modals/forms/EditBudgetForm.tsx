@@ -36,8 +36,7 @@ export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
 
   const updateBudget = useMutationUpdateBudget({
     onSuccess: (data) => {
-      const message =
-        data?.message || "Budget has been updated successfully";
+      const message = data?.message || "Budget has been updated successfully";
       setSuccessMessage(message);
       setShowSuccess(true);
       setErrorMessage("");
@@ -117,6 +116,7 @@ export function EditBudgetForm({ budget, onSuccess }: EditBudgetFormProps) {
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={updateBudget.isPending}
+          htmlType="submit"
         >
           Save
         </Button>

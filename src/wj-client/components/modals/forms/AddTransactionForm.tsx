@@ -252,6 +252,7 @@ export function AddTransactionForm({ onSuccess }: AddTransactionFormProps) {
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={createTransaction.isPending}
+          htmlType="submit"
         >
           Add Transaction
         </Button>

@@ -1146,6 +1146,7 @@ export function AddInvestmentForm({
         loading={createInvestmentMutation.isPending || isSubmitting}
         disabled={insufficientBalance}
         className="w-full"
+        htmlType="submit"
       >
         Add Investment
       </Button>

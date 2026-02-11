@@ -56,7 +56,8 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
       {
         onSuccess: (data) => {
           const message =
-            data?.message || `Budget "${data?.data?.name || ""}" has been created successfully`;
+            data?.message ||
+            `Budget "${data?.data?.name || ""}" has been created successfully`;
           setSuccessMessage(message);
           setShowSuccess(true);
           setErrorMessage("");
@@ -107,6 +108,7 @@ export function CreateBudgetForm({ onSuccess }: CreateBudgetFormProps) {
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={createBudget.isPending}
+          htmlType="submit"
         >
           Create
         </Button>

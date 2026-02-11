@@ -159,7 +159,10 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
         await adjustBalanceMutation.mutateAsync({
           walletId: wallet.id,
           amount: {
-            amount: amountToSmallestUnit(adjustment.adjustmentAmount, wallet.balance?.currency || currency),
+            amount: amountToSmallestUnit(
+              adjustment.adjustmentAmount,
+              wallet.balance?.currency || currency,
+            ),
             currency: wallet.balance?.currency || currency,
           },
           reason: adjustment.reason || "Balance adjustment",
@@ -207,7 +210,8 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
   // Calculate projected balance
   // Use raw balance for calculation, but displayBalance for display purposes
   const currentBalance = wallet.balance?.amount || 0;
-  const displayBalance = (wallet.displayBalance?.amount ?? wallet.balance?.amount) || 0;
+  const displayBalance =
+    (wallet.displayBalance?.amount ?? wallet.balance?.amount) || 0;
   const adjustmentAmount = watchAdjustmentAmount || 0;
   const adjustmentType = watchAdjustmentType || "add";
   const isAdd = adjustmentType === "add";
@@ -328,6 +332,7 @@ export function EditWalletForm({ wallet, onSuccess }: EditWalletFormProps) {
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={isLoading}
+          htmlType="submit"
         >
           Save
         </Button>

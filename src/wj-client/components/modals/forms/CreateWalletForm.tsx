@@ -139,6 +139,7 @@ export function CreateWalletForm({
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={createWallet.isPending}
+          htmlType="submit"
         >
           Create
         </Button>

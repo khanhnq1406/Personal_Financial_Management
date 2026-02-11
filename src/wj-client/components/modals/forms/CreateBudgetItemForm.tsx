@@ -60,7 +60,8 @@ export function CreateBudgetItemForm({
       {
         onSuccess: (data) => {
           const message =
-            data?.message || `Budget item "${data?.data?.name || ""}" has been added successfully`;
+            data?.message ||
+            `Budget item "${data?.data?.name || ""}" has been added successfully`;
           setSuccessMessage(message);
           setShowSuccess(true);
           setErrorMessage("");
@@ -111,6 +112,7 @@ export function CreateBudgetItemForm({
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={createBudgetItem.isPending}
+          htmlType="submit"
         >
           Add Item
         </Button>

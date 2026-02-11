@@ -276,6 +276,7 @@ export function EditTransactionForm({
           type={ButtonType.PRIMARY}
           onClick={() => {}}
           loading={updateTransaction.isPending}
+          htmlType="submit"
         >
           Save Changes
         </Button>

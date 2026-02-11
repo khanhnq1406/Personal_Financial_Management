@@ -32,9 +32,12 @@ export function UpdateInvestmentPriceForm({
   const hasDecimals = !zeroDecimalCurrencies.includes(currency);
 
   // Calculate display price and initial input based on currency
-  const displayPrice = currentPrice > 0
-    ? (hasDecimals ? (currentPrice / 100).toFixed(2) : currentPrice.toString())
-    : "";
+  const displayPrice =
+    currentPrice > 0
+      ? hasDecimals
+        ? (currentPrice / 100).toFixed(2)
+        : currentPrice.toString()
+      : "";
 
   const [priceInput, setPriceInput] = useState(displayPrice);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -74,12 +77,7 @@ export function UpdateInvestmentPriceForm({
   };
 
   if (showSuccess) {
-    return (
-      <Success
-        message="Price updated successfully!"
-        onDone={onSuccess}
-      />
-    );
+    return <Success message="Price updated successfully!" onDone={onSuccess} />;
   }
 
   return (
@@ -90,9 +88,7 @@ export function UpdateInvestmentPriceForm({
         </p>
         <p className="text-sm text-gray-600">
           <strong>Current Price:</strong>{" "}
-          {currentPrice > 0
-            ? `${currency} ${displayPrice}`
-            : "Not set"}
+          {currentPrice > 0 ? `${currency} ${displayPrice}` : "Not set"}
         </p>
       </div>
 
@@ -111,8 +107,9 @@ export function UpdateInvestmentPriceForm({
 
       <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
         <p className="text-sm text-blue-800">
-          💡 <strong>Tip:</strong> You can set price to 0 if market price is unavailable.
-          This will show your holdings without profit/loss calculations.
+          💡 <strong>Tip:</strong> You can set price to 0 if market price is
+          unavailable. This will show your holdings without profit/loss
+          calculations.
         </p>
       </div>
 
@@ -127,6 +124,7 @@ export function UpdateInvestmentPriceForm({
           type={ButtonType.PRIMARY}
           onClick={handleSubmit}
           loading={updateMutation.isPending}
+          htmlType="submit"
         >
           Update Price
         </Button>
