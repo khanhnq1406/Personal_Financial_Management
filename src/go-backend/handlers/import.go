@@ -41,10 +41,8 @@ func (h *ImportHandler) ListBankTemplates(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": gin.H{
-			"templates": templates,
-		},
+		"success":   true,
+		"templates": templates,
 		"message":   "Bank templates fetched successfully",
 		"timestamp": time.Now().Format(time.RFC3339),
 	})
