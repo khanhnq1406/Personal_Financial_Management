@@ -111,6 +111,29 @@ export function formatCurrencyCompact(
 }
 
 /**
+ * Get decimal places for a currency
+ * @param currency - ISO 4217 currency code
+ * @returns Number of decimal places (0 for VND/JPY, 2 for most others)
+ */
+export function getCurrencyDecimals(currency: string): number {
+  return CURRENCY_CONFIG[currency]?.decimals ?? 2;
+}
+
+/**
+ * Format exchange rate with appropriate decimal places
+ * @param rate - Exchange rate value
+ * @param currency - Target currency code (determines decimal places)
+ * @returns Formatted rate string (e.g., "25000" for VND, "1.23" for USD)
+ */
+export function formatExchangeRate(rate: number, currency: string): string {
+  const decimals = getCurrencyDecimals(currency);
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(rate);
+}
+
+/**
  * Legacy formatter for backward compatibility (VND only)
  * @deprecated Use formatCurrency(amount, currency) instead
  * This formatter is deprecated and will be removed in a future version.

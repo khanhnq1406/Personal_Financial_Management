@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"wealthjourney/pkg/validator"
 )
 
 // CSVParser handles parsing of bank statement CSV files
@@ -191,6 +193,20 @@ func (p *CSVParser) parseRow(rowNumber int, row []string) *ParsedRow {
 			// Note: Actual category ID mapping would be done by the service layer
 			// For now, we just store 0 as placeholder
 			parsed.CategoryID = 0
+		}
+	}
+
+	// Apply business rules validation (if all required fields are parsed successfully)
+	if parsed.IsValid {
+		validationErrors := validator.ValidateTransaction(
+			parsed.Amount,
+			p.mapping.Currency,
+			parsed.Description,
+			parsed.Date,
+		)
+
+		for _, ve := range validationErrors {
+			parsed.addError(ve.Field, ve.Message, ve.Severity)
 		}
 	}
 

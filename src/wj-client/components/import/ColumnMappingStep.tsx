@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/Button";
 import { FormSelect } from "@/components/forms/FormSelect";
+import { FormInput } from "@/components/forms/FormInput";
 import { cn } from "@/lib/utils/cn";
+import { useMutationCreateUserTemplate } from "@/utils/generated/hooks";
 
 export interface ColumnMappingStepProps {
   file: File;
@@ -21,6 +23,8 @@ export interface ColumnMapping {
   referenceColumn?: number;
   dateFormat: string;
   currency: string;
+  saveAsTemplate?: boolean;
+  templateName?: string;
 }
 
 interface CSVPreview {
@@ -62,6 +66,13 @@ export function ColumnMappingStep({
   const [referenceColumn, setReferenceColumn] = useState<number>(-1);
   const [dateFormat, setDateFormat] = useState<string>("DD/MM/YYYY");
   const [currency, setCurrency] = useState<string>("VND");
+
+  // Save as template state
+  const [saveAsTemplate, setSaveAsTemplate] = useState<boolean>(false);
+  const [templateName, setTemplateName] = useState<string>("");
+
+  // Create template mutation
+  const createTemplateMutation = useMutationCreateUserTemplate();
 
   // Parse CSV and extract preview
   useEffect(() => {
@@ -175,11 +186,50 @@ export function ColumnMappingStep({
     });
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Validate required fields
     if (dateColumn === -1 || amountColumn === -1 || descriptionColumn === -1) {
       setError("Please map at least Date, Amount, and Description columns");
       return;
+    }
+
+    // Validate template name if saving
+    if (saveAsTemplate && !templateName.trim()) {
+      setError("Please enter a template name");
+      return;
+    }
+
+    // Save template if requested
+    if (saveAsTemplate && templateName.trim()) {
+      try {
+        const fileExt = file.name.split(".").pop()?.toLowerCase() || "csv";
+        await createTemplateMutation.mutateAsync({
+          templateName: templateName.trim(),
+          columnMapping: {
+            dateColumn: (dateColumn + 1).toString(),
+            amountColumn: (amountColumn + 1).toString(),
+            descriptionColumn: (descriptionColumn + 1).toString(),
+            typeColumn:
+              typeColumn >= 0 ? (typeColumn + 1).toString() : undefined,
+            categoryColumn:
+              categoryColumn >= 0 ? (categoryColumn + 1).toString() : undefined,
+            referenceColumn:
+              referenceColumn >= 0
+                ? (referenceColumn + 1).toString()
+                : undefined,
+            dateFormat,
+            currency,
+          },
+          dateFormat,
+          currency,
+          fileFormats: [fileExt],
+        });
+      } catch (err: any) {
+        setError(
+          err.message || "Failed to save template. Continuing with import...",
+        );
+        // Continue with import even if template save fails
+      }
     }
 
     const mapping: ColumnMapping = {
@@ -191,6 +241,8 @@ export function ColumnMappingStep({
       referenceColumn: referenceColumn >= 0 ? referenceColumn : undefined,
       dateFormat,
       currency,
+      saveAsTemplate,
+      templateName: saveAsTemplate ? templateName.trim() : undefined,
     };
 
     onMappingComplete(mapping);
@@ -365,6 +417,43 @@ export function ColumnMappingStep({
         </div>
       </div>
 
+      {/* Save as Template Option */}
+      <div className="border border-neutral-200 dark:border-dark-border rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="saveAsTemplate"
+            checked={saveAsTemplate}
+            onChange={(e) => setSaveAsTemplate(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-neutral-300 dark:border-dark-border text-primary focus:ring-primary"
+          />
+          <div className="flex-1">
+            <label
+              htmlFor="saveAsTemplate"
+              className="text-sm font-medium text-neutral-900 dark:text-dark-text cursor-pointer"
+            >
+              Save as template for reuse
+            </label>
+            <p className="text-xs text-neutral-500 dark:text-dark-text-tertiary mt-1">
+              Save this column mapping as a template to quickly import similar
+              files in the future.
+            </p>
+          </div>
+        </div>
+
+        {saveAsTemplate && (
+          <div className="pl-7">
+            <FormInput
+              label="Template Name"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., My Bank Credit Card Statement"
+              required
+            />
+          </div>
+        )}
+      </div>
+
       {/* Action Buttons */}
       <div className="flex gap-3 pt-2">
         <Button variant="secondary" onClick={onBack}>
@@ -374,10 +463,16 @@ export function ColumnMappingStep({
           variant="primary"
           onClick={handleNext}
           disabled={
-            dateColumn === -1 || amountColumn === -1 || descriptionColumn === -1
+            dateColumn === -1 ||
+            amountColumn === -1 ||
+            descriptionColumn === -1 ||
+            (saveAsTemplate && !templateName.trim()) ||
+            createTemplateMutation.isPending
           }
         >
-          Next: Review Transactions
+          {createTemplateMutation.isPending
+            ? "Saving Template..."
+            : "Next: Review Transactions"}
         </Button>
       </div>
     </div>

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/xuri/excelize/v2"
+
+	"wealthjourney/pkg/validator"
 )
 
 // ExcelParser handles parsing of bank statement Excel files (.xlsx, .xls)
@@ -420,6 +422,20 @@ func (p *ExcelParser) parseRow(sheetName string, rowNumber int, row []string, ma
 	// Parse reference (if column exists)
 	if mapping.ReferenceColumn >= 0 && mapping.ReferenceColumn <= maxCol {
 		parsed.ReferenceNum = strings.TrimSpace(row[mapping.ReferenceColumn])
+	}
+
+	// Apply business rules validation (if all required fields are parsed successfully)
+	if parsed.IsValid {
+		validationErrors := validator.ValidateTransaction(
+			parsed.Amount,
+			mapping.Currency,
+			parsed.Description,
+			parsed.Date,
+		)
+
+		for _, ve := range validationErrors {
+			parsed.addError(ve.Field, ve.Message, ve.Severity)
+		}
 	}
 
 	return parsed

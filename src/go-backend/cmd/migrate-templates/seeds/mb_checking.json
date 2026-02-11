@@ -1,0 +1,78 @@
+{
+  "id": "mb-checking",
+  "name": "MB Bank Checking Account Statement",
+  "bankCode": "MB",
+  "statementType": "checking",
+  "fileFormats": ["csv", "excel"],
+  "columnMapping": {
+    "dateColumn": ["Ngày", "Date", "Transaction Date", "Ngày giao dịch"],
+    "amountColumn": ["Số tiền", "Amount", "Số tiền GD"],
+    "descriptionColumn": ["Nội dung", "Description", "Chi tiết"],
+    "typeColumn": ["Loại GD", "Type"],
+    "referenceColumn": ["Số tham chiếu", "FT Number"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "minus",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "MB",
+      "QUÂN ĐỘI",
+      "MILITARY BANK",
+      "Ngày giao dịch",
+      "Số tiền",
+      "TÀI KHOẢN"
+    ],
+    "footerKeywords": [
+      "Số dư đầu kỳ",
+      "Số dư cuối kỳ",
+      "Opening Balance",
+      "Closing Balance",
+      "Tổng phát sinh"
+    ],
+    "skipPatterns": [
+      "^Số dư",
+      "^Balance",
+      "^Opening",
+      "^Closing",
+      "^Tổng phát sinh",
+      "^Total Debit",
+      "^Total Credit"
+    ]
+  },
+  "typeRules": {
+    "defaultType": null,
+    "typeColumn": "Loại GD",
+    "creditIndicators": ["C", "Có", "Credit", "IN"],
+    "debitIndicators": ["D", "Nợ", "Debit", "OUT"],
+    "incomeKeywords": [
+      "Nhận tiền",
+      "Chuyển đến",
+      "Transfer In",
+      "Lãi",
+      "Interest",
+      "Lương"
+    ],
+    "expenseKeywords": [
+      "Chuyển đi",
+      "Transfer Out",
+      "Thanh toán",
+      "Payment",
+      "Rút tiền",
+      "Withdrawal"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for MB Bank (Military Bank) checking/savings account statements. Supports transaction type column for debit/credit classification.",
+  "exampleColumns": {
+    "csv": "Ngày,Số tiền,Loại GD,Nội dung,Số tham chiếu",
+    "excel": "Standard format with separate columns for debit/credit amounts"
+  },
+  "notes": "MB Bank statements often have a 'Loại GD' column that indicates IN (credit) or OUT (debit) transactions."
+}

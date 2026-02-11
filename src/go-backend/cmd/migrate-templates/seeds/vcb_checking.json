@@ -1,0 +1,77 @@
+{
+  "id": "vcb-checking",
+  "name": "Vietcombank Checking Account Statement",
+  "bankCode": "VCB",
+  "statementType": "checking",
+  "fileFormats": ["csv", "excel", "pdf"],
+  "columnMapping": {
+    "dateColumn": ["Ngày GD", "Ngày giao dịch", "Transaction Date", "Date"],
+    "amountColumn": ["Số tiền", "Amount", "Số tiền GD", "PS Ghi có", "PS Ghi nợ"],
+    "descriptionColumn": ["Diễn giải", "Nội dung", "Description", "Particulars"],
+    "typeColumn": ["Ghi có/Ghi nợ", "Loại GD", "Type"],
+    "referenceColumn": ["Số chứng từ", "Doc No", "Ref No"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "minus",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "Ngày GD",
+      "Số tiền",
+      "VIETCOMBANK",
+      "TÀI KHOẢN",
+      "CHECKING ACCOUNT",
+      "Diễn giải"
+    ],
+    "footerKeywords": [
+      "Số dư cuối kỳ",
+      "Closing Balance",
+      "Tổng phát sinh",
+      "Total Debit",
+      "Total Credit",
+      "*** Hết ***"
+    ],
+    "skipPatterns": [
+      "^Số dư đầu kỳ",
+      "^Opening Balance",
+      "^Số dư cuối kỳ",
+      "^Closing Balance",
+      "^TỔNG",
+      "^TOTAL"
+    ]
+  },
+  "typeRules": {
+    "defaultType": null,
+    "typeColumn": "Ghi có/Ghi nợ",
+    "creditIndicators": ["C", "Ghi có", "Credit", "+"],
+    "debitIndicators": ["D", "Ghi nợ", "Debit", "-"],
+    "incomeKeywords": [
+      "Nhận tiền",
+      "Transfer In",
+      "Deposit",
+      "Lương",
+      "Salary",
+      "Interest"
+    ],
+    "expenseKeywords": [
+      "Chuyển tiền",
+      "Transfer Out",
+      "Withdrawal",
+      "Payment",
+      "Thanh toán"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for Vietcombank checking/savings account statements. Handles both debit (ghi nợ) and credit (ghi có) transactions. Type detection from transaction type column.",
+  "exampleColumns": {
+    "csv": "Ngày GD,Số tiền,Ghi có/Ghi nợ,Diễn giải,Số chứng từ",
+    "excel": "Formatted table with debit/credit columns",
+    "pdf": "Transaction history with separate debit/credit columns"
+  }
+}

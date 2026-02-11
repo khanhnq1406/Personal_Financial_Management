@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -95,12 +96,76 @@ func main() {
 	// Initialize services
 	services := service.NewServices(repos, underlyingRedisClient)
 
-	// Initialize handlers
-	h := handlers.NewHandlers(services, repos)
-
 	// Create context for background jobs cancellation
 	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())
 	defer backgroundCancel()
+
+	// Initialize import job queue and worker pool
+	var importWorkerPool *jobs.WorkerPool
+	if redisClient != nil {
+		// Create Redis-based job queue
+		jobQueue := jobs.NewRedisImportQueue(underlyingRedisClient)
+
+		// Create FX rate service for currency conversion (needed by import service)
+		var fxService service.FXRateService
+		if cfg != nil && repos.FXRate != nil {
+			fxService = service.NewFXRateService(repos.FXRate, underlyingRedisClient)
+		}
+
+		// Create dedicated import service for workers
+		workerImportService := service.NewImportService(
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			nil, // Workers don't queue jobs recursively
+		)
+
+		// Start worker pool with 2 workers (can be configured via environment variable)
+		numWorkers := 2
+		if workerCountStr := os.Getenv("IMPORT_WORKER_COUNT"); workerCountStr != "" {
+			if count, err := strconv.Atoi(workerCountStr); err == nil && count > 0 {
+				numWorkers = count
+			}
+		}
+
+		importWorkerPool = jobs.NewWorkerPool(numWorkers, jobQueue, workerImportService)
+		importWorkerPool.Start()
+		log.Printf("Import worker pool started with %d workers", numWorkers)
+
+		// Schedule job cleanup every 6 hours
+		go func() {
+			ticker := time.NewTicker(6 * time.Hour)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					count, err := jobQueue.CleanupExpiredJobs(context.Background())
+					if err != nil {
+						log.Printf("Error cleaning up expired jobs: %v", err)
+					} else if count > 0 {
+						log.Printf("Cleaned up %d expired import jobs", count)
+					}
+				case <-backgroundCtx.Done():
+					return
+				}
+			}
+		}()
+	}
+	defer func() {
+		if importWorkerPool != nil {
+			log.Println("Stopping import worker pool...")
+			importWorkerPool.Stop()
+		}
+	}()
+
+	// Initialize handlers (must be after worker pool setup)
+	h := handlers.NewHandlers(services, repos)
 
 	// Initialize session cleanup job (runs every 6 hours)
 	// This cleans up expired sessions from Redis and database
@@ -342,12 +407,36 @@ func main() {
 		CleanupInterval:   time.Minute,
 	})
 
-	// Initialize import rate limiter (10 imports per hour per user)
-	importRateLimiter := appmiddleware.NewImportRateLimiter(
-		cfg.Import.MaxImportsPerHour,
-		time.Hour,
-	)
-	defer importRateLimiter.Stop()
+	// Initialize import rate limiter
+	// Use Redis-based rate limiter if Redis is available, otherwise fall back to in-memory
+	var importRateLimiter interface{}
+	if underlyingRedisClient != nil {
+		// Redis-based rate limiter (distributed, supports multiple instances)
+		importRateLimiterConfig := appmiddleware.ImportRateLimitConfig{
+			MaxImportsPerHour:         cfg.Import.MaxImportsPerHour,
+			UserWindow:                time.Hour,
+			MaxImportsPerHourPerIP:    cfg.Import.MaxImportsPerHourPerIP,
+			IPWindow:                  time.Hour,
+			MaxImportsPerDayPerWallet: cfg.Import.MaxImportsPerDayPerWallet,
+			WalletWindow:              24 * time.Hour,
+			UserPrefix:                "ratelimit:import:user",
+			IPPrefix:                  "ratelimit:import:ip",
+			WalletPrefix:              "ratelimit:import:wallet",
+		}
+		importRateLimiter = appmiddleware.NewRedisImportRateLimiter(underlyingRedisClient, importRateLimiterConfig)
+		log.Printf("Import rate limiting enabled (Redis): user=%d/hr, ip=%d/hr, wallet=%d/day",
+			cfg.Import.MaxImportsPerHour, cfg.Import.MaxImportsPerHourPerIP, cfg.Import.MaxImportsPerDayPerWallet)
+	} else {
+		// Fallback to in-memory rate limiter (single instance only)
+		inMemoryLimiter := appmiddleware.NewImportRateLimiter(
+			cfg.Import.MaxImportsPerHour,
+			time.Hour,
+		)
+		importRateLimiter = inMemoryLimiter
+		defer inMemoryLimiter.Stop()
+		log.Printf("Import rate limiting enabled (in-memory): user=%d/hr (Redis unavailable, IP and wallet limits disabled)",
+			cfg.Import.MaxImportsPerHour)
+	}
 
 	// Initialize Gin app
 	app := gin.New()
@@ -360,7 +449,7 @@ func main() {
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))

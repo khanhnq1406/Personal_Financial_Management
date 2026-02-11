@@ -750,3 +750,309 @@ func (h *ImportHandler) ListExcelSheets(c *gin.Context) {
 
 	handler.Success(c, response)
 }
+
+// CreateUserTemplate creates a new user template.
+// @Summary Create user template
+// @Tags import
+// @Accept json
+// @Produce json
+// @Param request body v1.CreateUserTemplateRequest true "Create template request"
+// @Success 200 {object} v1.CreateUserTemplateResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/user-templates [post]
+func (h *ImportHandler) CreateUserTemplate(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Bind and validate request
+	var req v1.CreateUserTemplateRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Create template via service
+	response, err := h.importService.CreateUserTemplate(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// ListUserTemplates lists all user templates for the authenticated user.
+// @Summary List user templates
+// @Tags import
+// @Produce json
+// @Success 200 {object} v1.ListUserTemplatesResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/user-templates [get]
+func (h *ImportHandler) ListUserTemplates(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// List templates via service
+	response, err := h.importService.ListUserTemplates(c.Request.Context(), userID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// GetUserTemplate retrieves a specific user template.
+// @Summary Get user template
+// @Tags import
+// @Produce json
+// @Param template_id path int true "Template ID"
+// @Success 200 {object} v1.GetUserTemplateResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/user-templates/{template_id} [get]
+func (h *ImportHandler) GetUserTemplate(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get template ID from path parameter
+	templateIDStr := c.Param("template_id")
+	templateID, err := strconv.ParseInt(templateIDStr, 10, 32)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid template ID"))
+		return
+	}
+
+	// Get template via service
+	response, err := h.importService.GetUserTemplate(c.Request.Context(), userID, int32(templateID))
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// UpdateUserTemplate updates an existing user template.
+// @Summary Update user template
+// @Tags import
+// @Accept json
+// @Produce json
+// @Param template_id path int true "Template ID"
+// @Param request body v1.UpdateUserTemplateRequest true "Update template request"
+// @Success 200 {object} v1.UpdateUserTemplateResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/user-templates/{template_id} [put]
+func (h *ImportHandler) UpdateUserTemplate(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get template ID from path parameter
+	templateIDStr := c.Param("template_id")
+	templateID, err := strconv.ParseInt(templateIDStr, 10, 32)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid template ID"))
+		return
+	}
+
+	// Bind and validate request
+	var req v1.UpdateUserTemplateRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Set template ID from path parameter
+	req.TemplateId = int32(templateID)
+
+	// Update template via service
+	response, err := h.importService.UpdateUserTemplate(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// DeleteUserTemplate deletes a user template.
+// @Summary Delete user template
+// @Tags import
+// @Produce json
+// @Param template_id path int true "Template ID"
+// @Success 200 {object} v1.DeleteUserTemplateResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/user-templates/{template_id} [delete]
+func (h *ImportHandler) DeleteUserTemplate(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get template ID from path parameter
+	templateIDStr := c.Param("template_id")
+	templateID, err := strconv.ParseInt(templateIDStr, 10, 32)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError("invalid template ID"))
+		return
+	}
+
+	// Delete template via service
+	response, err := h.importService.DeleteUserTemplate(c.Request.Context(), userID, int32(templateID))
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// GetJobStatus retrieves the status of a background import job.
+// @Summary Get import job status
+// @Tags import
+// @Produce json
+// @Param job_id path string true "Job ID"
+// @Success 200 {object} v1.GetJobStatusResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/jobs/{job_id} [get]
+func (h *ImportHandler) GetJobStatus(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get job ID from path parameter
+	jobID := c.Param("job_id")
+	if jobID == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("job ID is required"))
+		return
+	}
+
+	// Get job status via service
+	response, err := h.importService.GetJobStatus(c.Request.Context(), userID, jobID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// CancelJob cancels a background import job.
+// @Summary Cancel import job
+// @Tags import
+// @Produce json
+// @Param job_id path string true "Job ID"
+// @Success 200 {object} v1.CancelJobResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/jobs/{job_id}/cancel [post]
+func (h *ImportHandler) CancelJob(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get job ID from path parameter
+	jobID := c.Param("job_id")
+	if jobID == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("job ID is required"))
+		return
+	}
+
+	// Cancel job via service
+	response, err := h.importService.CancelJob(c.Request.Context(), userID, jobID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}
+
+// ListUserJobs retrieves all import jobs for the authenticated user.
+// @Summary List user import jobs
+// @Tags import
+// @Produce json
+// @Param status query string false "Filter by job status (queued, processing, completed, failed, cancelled)"
+// @Success 200 {object} v1.ListUserJobsResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/jobs [get]
+func (h *ImportHandler) ListUserJobs(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get optional status filter from query parameter
+	statusStr := c.Query("status")
+	var statusFilter v1.JobStatus
+	if statusStr != "" {
+		// Map string to enum
+		switch statusStr {
+		case "queued":
+			statusFilter = v1.JobStatus_JOB_STATUS_QUEUED
+		case "processing":
+			statusFilter = v1.JobStatus_JOB_STATUS_PROCESSING
+		case "completed":
+			statusFilter = v1.JobStatus_JOB_STATUS_COMPLETED
+		case "failed":
+			statusFilter = v1.JobStatus_JOB_STATUS_FAILED
+		case "cancelled":
+			statusFilter = v1.JobStatus_JOB_STATUS_CANCELLED
+		default:
+			statusFilter = v1.JobStatus_JOB_STATUS_UNSPECIFIED
+		}
+	}
+
+	// List jobs via service
+	response, err := h.importService.ListUserJobs(c.Request.Context(), userID, statusFilter)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
+}

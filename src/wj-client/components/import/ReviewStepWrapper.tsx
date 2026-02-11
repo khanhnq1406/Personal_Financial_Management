@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { ReviewStep } from "./ReviewStep";
 import { ColumnMapping } from "./ColumnMappingStep";
-import { ParsedTransaction, DuplicateHandlingStrategy, ImportSummary } from "@/gen/protobuf/v1/import";
+import { ParsedTransaction, DuplicateHandlingStrategy, ImportSummary, DuplicateMatch, CurrencyConversion, CurrencyInfo } from "@/gen/protobuf/v1/import";
 import { Button } from "@/components/Button";
-import { useMutationExecuteImport, useMutationParseStatement } from "@/utils/generated/hooks";
+import { useMutationExecuteImport, useMutationParseStatement, useMutationDetectDuplicates, useMutationConvertCurrency } from "@/utils/generated/hooks";
+import { DuplicateReviewModal, DuplicateAction } from "./DuplicateReviewModal";
 
 export interface ReviewStepWrapperProps {
   file: File;
@@ -36,6 +37,14 @@ export function ReviewStepWrapper({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<string>("VND");
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<DuplicateHandlingStrategy>(
+    DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL
+  );
+  const [showDuplicateReview, setShowDuplicateReview] = useState(false);
+  const [duplicateActions, setDuplicateActions] = useState<DuplicateAction[]>([]);
+  const [currencyInfo, setCurrencyInfo] = useState<CurrencyInfo | null>(null);
+  const [conversions, setConversions] = useState<CurrencyConversion[]>([]);
 
   // Parse statement mutation (backend API)
   const parseStatementMutation = useMutationParseStatement({
@@ -46,7 +55,22 @@ export function ReviewStepWrapper({
         if (response.transactions.length > 0 && response.transactions[0].amount?.currency) {
           setCurrency(response.transactions[0].amount.currency);
         }
-        setLoading(false);
+        // Store currency info for conversion check
+        if (response.currencyInfo) {
+          setCurrencyInfo(response.currencyInfo);
+          // If conversion is needed, trigger conversion API
+          if (response.currencyInfo.needsConversion) {
+            convertCurrencyMutation.mutate({
+              walletId,
+              transactions: response.transactions,
+              manualRates: {},
+            });
+          } else {
+            setLoading(false);
+          }
+        } else {
+          setLoading(false);
+        }
       } else {
         setError(response.message || "Failed to parse file");
         setLoading(false);
@@ -55,6 +79,43 @@ export function ReviewStepWrapper({
     onError: (err: any) => {
       setError(err.message || "Failed to parse file");
       setLoading(false);
+    },
+  });
+
+  // Currency conversion mutation
+  const convertCurrencyMutation = useMutationConvertCurrency({
+    onSuccess: (response) => {
+      if (response.success && response.convertedTransactions) {
+        // Update transactions with converted amounts
+        setTransactions(response.convertedTransactions);
+        // Store conversion information
+        if (response.conversions) {
+          setConversions(response.conversions);
+        }
+        setLoading(false);
+      } else {
+        setError(response.message || "Failed to convert currencies");
+        setLoading(false);
+      }
+    },
+    onError: (err: any) => {
+      console.error("Failed to convert currencies:", err);
+      // Continue without conversion (use original transactions)
+      setLoading(false);
+    },
+  });
+
+  // Duplicate detection mutation
+  const detectDuplicatesMutation = useMutationDetectDuplicates({
+    onSuccess: (response) => {
+      if (response.success && response.matches) {
+        setDuplicateMatches(response.matches);
+      }
+    },
+    onError: (err: any) => {
+      console.error("Failed to detect duplicates:", err);
+      // Continue without duplicate detection
+      setDuplicateMatches([]);
     },
   });
 
@@ -76,6 +137,16 @@ export function ReviewStepWrapper({
   useEffect(() => {
     parseFileViaBackend();
   }, [fileId, columnMapping, bankTemplateId]);
+
+  // Detect duplicates when transactions are loaded
+  useEffect(() => {
+    if (transactions.length > 0 && walletId) {
+      detectDuplicatesMutation.mutate({
+        transactions,
+        walletId,
+      });
+    }
+  }, [transactions, walletId]);
 
   const parseFileViaBackend = () => {
     // Build custom mapping if provided (for CSV files)
@@ -99,10 +170,23 @@ export function ReviewStepWrapper({
       fileId,
       bankTemplateId: bankTemplateId || "",
       customMapping,
+      sheetName: "",
+      useOcr: false,
     });
   };
 
-  const handleImport = (selectedRowNumbers: number[]) => {
+  const handleImport = (selectedRowNumbers: number[], strategy?: DuplicateHandlingStrategy) => {
+    const strategyToUse = strategy !== undefined ? strategy : duplicateStrategy;
+
+    // Check if we need to show duplicate review modal
+    if (strategyToUse === DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH &&
+        duplicateMatches.length > 0 &&
+        duplicateActions.length === 0) {
+      // Show modal for user to review duplicates
+      setShowDuplicateReview(true);
+      return;
+    }
+
     // Filter transactions to only include selected rows
     const selectedTransactions = transactions.filter((t) =>
       selectedRowNumbers.includes(t.rowNumber)
@@ -114,15 +198,57 @@ export function ReviewStepWrapper({
       (num) => !selectedRowNumbers.includes(num)
     );
 
-    // Execute import
+    // Execute import with duplicate actions if REVIEW_EACH strategy
     executeImportMutation.mutate({
       fileId,
       walletId,
       transactions: selectedTransactions,
-      strategy: DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL, // Default strategy
+      strategy: strategyToUse,
       excludedRowNumbers,
       dateFilterStart: 0,
       dateFilterEnd: 0,
+      duplicateActions: strategyToUse === DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH
+        ? duplicateActions
+        : [],
+    });
+  };
+
+  const handleDuplicateReviewComplete = (actions: DuplicateAction[]) => {
+    // Validate: number of actions should match number of duplicates
+    if (actions.length !== duplicateMatches.length) {
+      console.error(`Review incomplete: ${actions.length} actions for ${duplicateMatches.length} duplicates`);
+      // Use alert since toast system may not be available
+      alert(`Review incomplete. Please review all ${duplicateMatches.length} duplicates.`);
+      return;
+    }
+
+    setDuplicateActions(actions);
+    setShowDuplicateReview(false);
+    // Trigger import with the collected actions
+    const allRowNumbers = transactions.map((t) => t.rowNumber);
+    handleImport(allRowNumbers, DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH);
+  };
+
+  const handleDuplicateReviewCancel = () => {
+    setShowDuplicateReview(false);
+  };
+
+  const handleChangeRate = (fromCurrency: string, toCurrency: string, newRate: number) => {
+    // Re-convert with manual rate
+    const manualRates = {
+      [fromCurrency]: {
+        fromCurrency,
+        toCurrency,
+        exchangeRate: newRate,
+        rateDate: Math.floor(Date.now() / 1000),
+      },
+    };
+
+    setLoading(true);
+    convertCurrencyMutation.mutate({
+      walletId,
+      transactions,
+      manualRates,
     });
   };
 
@@ -153,15 +279,31 @@ export function ReviewStepWrapper({
   }
 
   return (
-    <ReviewStep
-      transactions={transactions}
-      onImport={handleImport}
-      onBack={onBack}
-      currency={currency}
-      isLoading={executeImportMutation.isPending}
-      useGroupedUI={true}
-      categories={[]}
-      duplicateMatches={[]}
-    />
+    <>
+      <ReviewStep
+        transactions={transactions}
+        onImport={(selectedRows) => handleImport(selectedRows)}
+        onBack={onBack}
+        currency={currency}
+        isLoading={executeImportMutation.isPending}
+        useGroupedUI={true}
+        categories={[]}
+        duplicateMatches={duplicateMatches}
+        duplicateStrategy={duplicateStrategy}
+        onDuplicateStrategyChange={setDuplicateStrategy}
+        conversions={conversions}
+        onChangeRate={handleChangeRate}
+      />
+
+      {/* Duplicate Review Modal */}
+      {showDuplicateReview && (
+        <DuplicateReviewModal
+          matches={duplicateMatches}
+          onComplete={handleDuplicateReviewComplete}
+          onCancel={handleDuplicateReviewCancel}
+          currency={currency}
+        />
+      )}
+    </>
   );
 }

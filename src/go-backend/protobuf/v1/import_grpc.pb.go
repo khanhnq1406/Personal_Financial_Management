@@ -28,6 +28,14 @@ const (
 	ImportService_GetImportHistory_FullMethodName    = "/wealthjourney.import.v1.ImportService/GetImportHistory"
 	ImportService_UndoImport_FullMethodName          = "/wealthjourney.import.v1.ImportService/UndoImport"
 	ImportService_ListExcelSheets_FullMethodName     = "/wealthjourney.import.v1.ImportService/ListExcelSheets"
+	ImportService_CreateUserTemplate_FullMethodName  = "/wealthjourney.import.v1.ImportService/CreateUserTemplate"
+	ImportService_ListUserTemplates_FullMethodName   = "/wealthjourney.import.v1.ImportService/ListUserTemplates"
+	ImportService_GetUserTemplate_FullMethodName     = "/wealthjourney.import.v1.ImportService/GetUserTemplate"
+	ImportService_UpdateUserTemplate_FullMethodName  = "/wealthjourney.import.v1.ImportService/UpdateUserTemplate"
+	ImportService_DeleteUserTemplate_FullMethodName  = "/wealthjourney.import.v1.ImportService/DeleteUserTemplate"
+	ImportService_GetJobStatus_FullMethodName        = "/wealthjourney.import.v1.ImportService/GetJobStatus"
+	ImportService_CancelJob_FullMethodName           = "/wealthjourney.import.v1.ImportService/CancelJob"
+	ImportService_ListUserJobs_FullMethodName        = "/wealthjourney.import.v1.ImportService/ListUserJobs"
 )
 
 // ImportServiceClient is the client API for ImportService service.
@@ -52,6 +60,16 @@ type ImportServiceClient interface {
 	UndoImport(ctx context.Context, in *UndoImportRequest, opts ...grpc.CallOption) (*UndoImportResponse, error)
 	// List Excel sheets for multi-sheet files
 	ListExcelSheets(ctx context.Context, in *ListExcelSheetsRequest, opts ...grpc.CallOption) (*ListExcelSheetsResponse, error)
+	// User Template Management
+	CreateUserTemplate(ctx context.Context, in *CreateUserTemplateRequest, opts ...grpc.CallOption) (*CreateUserTemplateResponse, error)
+	ListUserTemplates(ctx context.Context, in *ListUserTemplatesRequest, opts ...grpc.CallOption) (*ListUserTemplatesResponse, error)
+	GetUserTemplate(ctx context.Context, in *GetUserTemplateRequest, opts ...grpc.CallOption) (*GetUserTemplateResponse, error)
+	UpdateUserTemplate(ctx context.Context, in *UpdateUserTemplateRequest, opts ...grpc.CallOption) (*UpdateUserTemplateResponse, error)
+	DeleteUserTemplate(ctx context.Context, in *DeleteUserTemplateRequest, opts ...grpc.CallOption) (*DeleteUserTemplateResponse, error)
+	// Background Job Management
+	GetJobStatus(ctx context.Context, in *GetJobStatusRequest, opts ...grpc.CallOption) (*GetJobStatusResponse, error)
+	CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error)
+	ListUserJobs(ctx context.Context, in *ListUserJobsRequest, opts ...grpc.CallOption) (*ListUserJobsResponse, error)
 }
 
 type importServiceClient struct {
@@ -143,6 +161,78 @@ func (c *importServiceClient) ListExcelSheets(ctx context.Context, in *ListExcel
 	return out, nil
 }
 
+func (c *importServiceClient) CreateUserTemplate(ctx context.Context, in *CreateUserTemplateRequest, opts ...grpc.CallOption) (*CreateUserTemplateResponse, error) {
+	out := new(CreateUserTemplateResponse)
+	err := c.cc.Invoke(ctx, ImportService_CreateUserTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) ListUserTemplates(ctx context.Context, in *ListUserTemplatesRequest, opts ...grpc.CallOption) (*ListUserTemplatesResponse, error) {
+	out := new(ListUserTemplatesResponse)
+	err := c.cc.Invoke(ctx, ImportService_ListUserTemplates_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) GetUserTemplate(ctx context.Context, in *GetUserTemplateRequest, opts ...grpc.CallOption) (*GetUserTemplateResponse, error) {
+	out := new(GetUserTemplateResponse)
+	err := c.cc.Invoke(ctx, ImportService_GetUserTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) UpdateUserTemplate(ctx context.Context, in *UpdateUserTemplateRequest, opts ...grpc.CallOption) (*UpdateUserTemplateResponse, error) {
+	out := new(UpdateUserTemplateResponse)
+	err := c.cc.Invoke(ctx, ImportService_UpdateUserTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) DeleteUserTemplate(ctx context.Context, in *DeleteUserTemplateRequest, opts ...grpc.CallOption) (*DeleteUserTemplateResponse, error) {
+	out := new(DeleteUserTemplateResponse)
+	err := c.cc.Invoke(ctx, ImportService_DeleteUserTemplate_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) GetJobStatus(ctx context.Context, in *GetJobStatusRequest, opts ...grpc.CallOption) (*GetJobStatusResponse, error) {
+	out := new(GetJobStatusResponse)
+	err := c.cc.Invoke(ctx, ImportService_GetJobStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error) {
+	out := new(CancelJobResponse)
+	err := c.cc.Invoke(ctx, ImportService_CancelJob_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) ListUserJobs(ctx context.Context, in *ListUserJobsRequest, opts ...grpc.CallOption) (*ListUserJobsResponse, error) {
+	out := new(ListUserJobsResponse)
+	err := c.cc.Invoke(ctx, ImportService_ListUserJobs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ImportServiceServer is the server API for ImportService service.
 // All implementations must embed UnimplementedImportServiceServer
 // for forward compatibility
@@ -165,6 +255,16 @@ type ImportServiceServer interface {
 	UndoImport(context.Context, *UndoImportRequest) (*UndoImportResponse, error)
 	// List Excel sheets for multi-sheet files
 	ListExcelSheets(context.Context, *ListExcelSheetsRequest) (*ListExcelSheetsResponse, error)
+	// User Template Management
+	CreateUserTemplate(context.Context, *CreateUserTemplateRequest) (*CreateUserTemplateResponse, error)
+	ListUserTemplates(context.Context, *ListUserTemplatesRequest) (*ListUserTemplatesResponse, error)
+	GetUserTemplate(context.Context, *GetUserTemplateRequest) (*GetUserTemplateResponse, error)
+	UpdateUserTemplate(context.Context, *UpdateUserTemplateRequest) (*UpdateUserTemplateResponse, error)
+	DeleteUserTemplate(context.Context, *DeleteUserTemplateRequest) (*DeleteUserTemplateResponse, error)
+	// Background Job Management
+	GetJobStatus(context.Context, *GetJobStatusRequest) (*GetJobStatusResponse, error)
+	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
+	ListUserJobs(context.Context, *ListUserJobsRequest) (*ListUserJobsResponse, error)
 	mustEmbedUnimplementedImportServiceServer()
 }
 
@@ -198,6 +298,30 @@ func (UnimplementedImportServiceServer) UndoImport(context.Context, *UndoImportR
 }
 func (UnimplementedImportServiceServer) ListExcelSheets(context.Context, *ListExcelSheetsRequest) (*ListExcelSheetsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListExcelSheets not implemented")
+}
+func (UnimplementedImportServiceServer) CreateUserTemplate(context.Context, *CreateUserTemplateRequest) (*CreateUserTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUserTemplate not implemented")
+}
+func (UnimplementedImportServiceServer) ListUserTemplates(context.Context, *ListUserTemplatesRequest) (*ListUserTemplatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserTemplates not implemented")
+}
+func (UnimplementedImportServiceServer) GetUserTemplate(context.Context, *GetUserTemplateRequest) (*GetUserTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserTemplate not implemented")
+}
+func (UnimplementedImportServiceServer) UpdateUserTemplate(context.Context, *UpdateUserTemplateRequest) (*UpdateUserTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserTemplate not implemented")
+}
+func (UnimplementedImportServiceServer) DeleteUserTemplate(context.Context, *DeleteUserTemplateRequest) (*DeleteUserTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserTemplate not implemented")
+}
+func (UnimplementedImportServiceServer) GetJobStatus(context.Context, *GetJobStatusRequest) (*GetJobStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetJobStatus not implemented")
+}
+func (UnimplementedImportServiceServer) CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelJob not implemented")
+}
+func (UnimplementedImportServiceServer) ListUserJobs(context.Context, *ListUserJobsRequest) (*ListUserJobsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserJobs not implemented")
 }
 func (UnimplementedImportServiceServer) mustEmbedUnimplementedImportServiceServer() {}
 
@@ -374,6 +498,150 @@ func _ImportService_ListExcelSheets_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ImportService_CreateUserTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).CreateUserTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_CreateUserTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).CreateUserTemplate(ctx, req.(*CreateUserTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_ListUserTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserTemplatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).ListUserTemplates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_ListUserTemplates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).ListUserTemplates(ctx, req.(*ListUserTemplatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_GetUserTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).GetUserTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_GetUserTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).GetUserTemplate(ctx, req.(*GetUserTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_UpdateUserTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).UpdateUserTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_UpdateUserTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).UpdateUserTemplate(ctx, req.(*UpdateUserTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_DeleteUserTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).DeleteUserTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_DeleteUserTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).DeleteUserTemplate(ctx, req.(*DeleteUserTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_GetJobStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetJobStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).GetJobStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_GetJobStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).GetJobStatus(ctx, req.(*GetJobStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_CancelJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).CancelJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_CancelJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).CancelJob(ctx, req.(*CancelJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_ListUserJobs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserJobsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).ListUserJobs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_ListUserJobs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).ListUserJobs(ctx, req.(*ListUserJobsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ImportService_ServiceDesc is the grpc.ServiceDesc for ImportService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -416,6 +684,38 @@ var ImportService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListExcelSheets",
 			Handler:    _ImportService_ListExcelSheets_Handler,
+		},
+		{
+			MethodName: "CreateUserTemplate",
+			Handler:    _ImportService_CreateUserTemplate_Handler,
+		},
+		{
+			MethodName: "ListUserTemplates",
+			Handler:    _ImportService_ListUserTemplates_Handler,
+		},
+		{
+			MethodName: "GetUserTemplate",
+			Handler:    _ImportService_GetUserTemplate_Handler,
+		},
+		{
+			MethodName: "UpdateUserTemplate",
+			Handler:    _ImportService_UpdateUserTemplate_Handler,
+		},
+		{
+			MethodName: "DeleteUserTemplate",
+			Handler:    _ImportService_DeleteUserTemplate_Handler,
+		},
+		{
+			MethodName: "GetJobStatus",
+			Handler:    _ImportService_GetJobStatus_Handler,
+		},
+		{
+			MethodName: "CancelJob",
+			Handler:    _ImportService_CancelJob_Handler,
+		},
+		{
+			MethodName: "ListUserJobs",
+			Handler:    _ImportService_ListUserJobs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

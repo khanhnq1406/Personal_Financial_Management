@@ -26,7 +26,7 @@ func TestExcelParser_HasHeader(t *testing.T) {
 		},
 		{
 			name:     "Data row without keywords",
-			row:      []string{"01/01/2024", "Coffee", "50000"},
+			row:      []string{"01/01/2026", "Coffee", "50000"},
 			expected: false,
 		},
 		{
@@ -50,7 +50,7 @@ func TestExcelParser_IsEmptyRow(t *testing.T) {
 	assert.True(t, parser.isEmptyRow([]string{"", "", ""}))
 	assert.True(t, parser.isEmptyRow([]string{"  ", "\t", " "}))
 	assert.False(t, parser.isEmptyRow([]string{"", "data", ""}))
-	assert.False(t, parser.isEmptyRow([]string{"01/01/2024", "", ""}))
+	assert.False(t, parser.isEmptyRow([]string{"01/01/2026", "", ""}))
 }
 
 func TestExcelParser_IsSummaryRow(t *testing.T) {
@@ -78,7 +78,7 @@ func TestExcelParser_IsSummaryRow(t *testing.T) {
 		},
 		{
 			name:     "Data row",
-			row:      []string{"01/01/2024", "Coffee", "50,000"},
+			row:      []string{"01/01/2026", "Coffee", "50,000"},
 			expected: false,
 		},
 	}
@@ -236,7 +236,7 @@ func TestExcelParser_ParseRow(t *testing.T) {
 	}{
 		{
 			name:          "Valid row",
-			row:           []string{"01/01/2024", "Coffee", "50,000"},
+			row:           []string{"01/01/2026", "Coffee", "50,000"},
 			expectValid:   true,
 			expectErrors:  0,
 			checkAmount:   true,
@@ -250,7 +250,7 @@ func TestExcelParser_ParseRow(t *testing.T) {
 		},
 		{
 			name:          "Missing amount",
-			row:           []string{"01/01/2024", "Coffee", ""},
+			row:           []string{"01/01/2026", "Coffee", ""},
 			expectValid:   false,
 			expectErrors:  1,
 		},
@@ -262,13 +262,13 @@ func TestExcelParser_ParseRow(t *testing.T) {
 		},
 		{
 			name:          "Invalid amount format",
-			row:           []string{"01/01/2024", "Coffee", "abc"},
+			row:           []string{"01/01/2026", "Coffee", "abc"},
 			expectValid:   false,
 			expectErrors:  1,
 		},
 		{
 			name:          "Empty description uses default",
-			row:           []string{"01/01/2024", "", "50,000"},
+			row:           []string{"01/01/2026", "", "50,000"},
 			expectValid:   true,
 			expectErrors:  1, // Info level error about default description
 		},

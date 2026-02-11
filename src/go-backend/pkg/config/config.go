@@ -81,15 +81,22 @@ type FX struct {
 }
 
 type Import struct {
-	MaxCSVSize                  int64         // Maximum CSV file size in bytes
-	MaxExcelSize                int64         // Maximum Excel file size in bytes
-	MaxPDFSize                  int64         // Maximum PDF file size in bytes
-	MaxTransactionsPerImport    int           // Maximum number of transactions per import
-	MaxImportsPerHour           int           // Maximum imports per user per hour
-	ParseTimeout                time.Duration // Timeout for parsing operations
-	EnableOCR                   bool          // Enable OCR for PDFs
+	MaxCSVSize                   int64         // Maximum CSV file size in bytes
+	MaxExcelSize                 int64         // Maximum Excel file size in bytes
+	MaxPDFSize                   int64         // Maximum PDF file size in bytes
+	MaxTransactionsPerImport     int           // Maximum number of transactions per import
+	MaxImportsPerHour            int           // Maximum imports per user per hour
+	MaxImportsPerHourPerIP       int           // Maximum imports per IP per hour
+	MaxImportsPerDayPerWallet    int           // Maximum imports per wallet per day
+	ParseTimeout                 time.Duration // Timeout for parsing operations
+	EnableOCR                    bool          // Enable OCR for PDFs
 	DuplicateConfidenceThreshold float64       // Minimum confidence to consider as duplicate (0-100)
-	UndoWindowHours             int           // Hours within which undo is allowed
+	UndoWindowHours              int           // Hours within which undo is allowed
+
+	// Validation configuration
+	ValidationZeroAmountPolicy   string // How to handle zero amounts: "error", "warning", or "ignore"
+	ValidationLargeAmountThreshold int64  // Threshold for large amount warnings in VND (smallest unit)
+	ValidationOldDateThresholdDays int    // Number of days after which a date is considered old
 }
 
 // Load loads configuration from environment variables
@@ -158,10 +165,17 @@ func Load() (*Config, error) {
 	maxPDFSize, _ := strconv.ParseInt(getEnv("IMPORT_MAX_PDF_SIZE", "20971520"), 10, 64)        // 20MB
 	maxTransactionsPerImport, _ := strconv.Atoi(getEnv("IMPORT_MAX_TRANSACTIONS", "10000"))
 	maxImportsPerHour, _ := strconv.Atoi(getEnv("IMPORT_MAX_PER_HOUR", "10"))
+	maxImportsPerHourPerIP, _ := strconv.Atoi(getEnv("IMPORT_MAX_PER_HOUR_PER_IP", "50"))
+	maxImportsPerDayPerWallet, _ := strconv.Atoi(getEnv("IMPORT_MAX_PER_DAY_PER_WALLET", "20"))
 	parseTimeout, _ := time.ParseDuration(getEnv("IMPORT_PARSE_TIMEOUT", "30s"))
 	enableOCR, _ := strconv.ParseBool(getEnv("IMPORT_ENABLE_OCR", "true"))
 	duplicateThreshold, _ := strconv.ParseFloat(getEnv("IMPORT_DUPLICATE_THRESHOLD", "80"), 64)
 	undoWindowHours, _ := strconv.Atoi(getEnv("IMPORT_UNDO_WINDOW_HOURS", "24"))
+
+	// Validation settings
+	validationZeroAmountPolicy := getEnv("VALIDATION_ZERO_AMOUNT", "error") // "error", "warning", or "ignore"
+	validationLargeAmountThreshold, _ := strconv.ParseInt(getEnv("VALIDATION_LARGE_AMOUNT_THRESHOLD", "10000000000000"), 10, 64) // 1B VND
+	validationOldDateThresholdDays, _ := strconv.Atoi(getEnv("VALIDATION_OLD_DATE_THRESHOLD_DAYS", "365")) // 1 year
 
 	cfg := &Config{
 		Server: Server{
@@ -215,15 +229,20 @@ func Load() (*Config, error) {
 			MaxRetries:         fxMaxRetries,
 		},
 		Import: Import{
-			MaxCSVSize:                  maxCSVSize,
-			MaxExcelSize:                maxExcelSize,
-			MaxPDFSize:                  maxPDFSize,
-			MaxTransactionsPerImport:    maxTransactionsPerImport,
-			MaxImportsPerHour:           maxImportsPerHour,
-			ParseTimeout:                parseTimeout,
-			EnableOCR:                   enableOCR,
+			MaxCSVSize:                   maxCSVSize,
+			MaxExcelSize:                 maxExcelSize,
+			MaxPDFSize:                   maxPDFSize,
+			MaxTransactionsPerImport:     maxTransactionsPerImport,
+			MaxImportsPerHour:            maxImportsPerHour,
+			MaxImportsPerHourPerIP:       maxImportsPerHourPerIP,
+			MaxImportsPerDayPerWallet:    maxImportsPerDayPerWallet,
+			ParseTimeout:                 parseTimeout,
+			EnableOCR:                    enableOCR,
 			DuplicateConfidenceThreshold: duplicateThreshold,
-			UndoWindowHours:             undoWindowHours,
+			UndoWindowHours:              undoWindowHours,
+			ValidationZeroAmountPolicy:   validationZeroAmountPolicy,
+			ValidationLargeAmountThreshold: validationLargeAmountThreshold,
+			ValidationOldDateThresholdDays: validationOldDateThresholdDays,
 		},
 	}
 

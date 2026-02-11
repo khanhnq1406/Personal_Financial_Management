@@ -20,22 +20,22 @@ func TestParseDate(t *testing.T) {
 	}{
 		{
 			name:      "DD/MM/YYYY format",
-			dateStr:   "15/01/2026",
-			wantYear:  2026,
+			dateStr:   "15/01/2024",
+			wantYear:  2024,
 			wantMonth: time.January,
 			wantDay:   15,
 		},
 		{
 			name:      "YYYY-MM-DD format",
-			dateStr:   "2026-01-15",
-			wantYear:  2026,
+			dateStr:   "2024-01-15",
+			wantYear:  2024,
 			wantMonth: time.January,
 			wantDay:   15,
 		},
 		{
 			name:      "DD MMM YYYY format",
-			dateStr:   "15 Jan 2026",
-			wantYear:  2026,
+			dateStr:   "15 Jan 2024",
+			wantYear:  2024,
 			wantMonth: time.January,
 			wantDay:   15,
 		},
@@ -189,9 +189,9 @@ func TestParse(t *testing.T) {
 	csvFile := filepath.Join(tmpDir, "test.csv")
 
 	csvContent := `Date,Amount,Description,Type
-01/01/2026,"₫100,000",Coffee,Expense
-02/01/2026,"(₫50,000)",Refund,Income
-03/01/2026,$25.50,Lunch,Expense
+01/01/2024,"₫100,000",Coffee,Expense
+02/01/2024,"(₫50,000)",Refund,Income
+03/01/2024,$25.50,Lunch,Expense
 `
 
 	err := os.WriteFile(csvFile, []byte(csvContent), 0644)
@@ -261,7 +261,7 @@ func TestHasHeader(t *testing.T) {
 		},
 		{
 			name: "Data row",
-			row:  []string{"01/01/2026", "100", "Coffee"},
+			row:  []string{"01/01/2024", "100", "Coffee"},
 			want: false,
 		},
 	}
@@ -296,7 +296,7 @@ func TestIsEmptyRow(t *testing.T) {
 		},
 		{
 			name: "Row with data",
-			row:  []string{"01/01/2026", "100", "Coffee"},
+			row:  []string{"01/01/2024", "100", "Coffee"},
 			want: false,
 		},
 	}
@@ -331,7 +331,7 @@ func TestIsSummaryRow(t *testing.T) {
 		},
 		{
 			name: "Data row",
-			row:  []string{"01/01/2026", "100", "Coffee"},
+			row:  []string{"01/01/2024", "100", "Coffee"},
 			want: false,
 		},
 	}
@@ -352,11 +352,11 @@ func TestParseWithValidationErrors(t *testing.T) {
 	csvFile := filepath.Join(tmpDir, "test_errors.csv")
 
 	csvContent := `Date,Amount,Description
-01/01/2026,100,Valid Transaction
+01/01/2024,100,Valid Transaction
 invalid-date,200,Bad Date
-02/01/2026,invalid-amount,Bad Amount
-03/01/2026,300,
-04/01/2026,,Missing Amount
+02/01/2024,invalid-amount,Bad Amount
+03/01/2024,300,
+04/01/2024,,Missing Amount
 ,100,Missing Date
 `
 
@@ -429,11 +429,11 @@ func TestParseWithMultipleDateFormats(t *testing.T) {
 	csvFile := filepath.Join(tmpDir, "test_dates.csv")
 
 	csvContent := `Date,Amount,Description
-15/01/2026,100,DD/MM/YYYY
-2026-01-15,100,YYYY-MM-DD
-15 Jan 2026,100,DD MMM YYYY
-15-01-2026,100,DD-MM-YYYY
-2026/01/15,100,YYYY/MM/DD
+15/01/2024,100,DD/MM/YYYY
+2024-01-15,100,YYYY-MM-DD
+15 Jan 2024,100,DD MMM YYYY
+15-01-2024,100,DD-MM-YYYY
+2024/01/15,100,YYYY/MM/DD
 `
 
 	err := os.WriteFile(csvFile, []byte(csvContent), 0644)
@@ -463,9 +463,9 @@ func TestParseWithMultipleDateFormats(t *testing.T) {
 			t.Errorf("row %d should be valid, errors: %v", i, row.ValidationErrors)
 		}
 		// All should parse to the same date
-		expectedYear, expectedMonth, expectedDay := 2026, time.January, 15
+		expectedYear, expectedMonth, expectedDay := 2024, time.January, 15
 		if row.Date.Year() != expectedYear || row.Date.Month() != expectedMonth || row.Date.Day() != expectedDay {
-			t.Errorf("row %d date = %v, want 2026-01-15", i, row.Date)
+			t.Errorf("row %d date = %v, want 2024-01-15", i, row.Date)
 		}
 	}
 }

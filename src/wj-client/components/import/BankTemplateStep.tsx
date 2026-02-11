@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryListBankTemplates } from "@/utils/generated/hooks";
+import {
+  useQueryListBankTemplates,
+  useQueryListUserTemplates,
+} from "@/utils/generated/hooks";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/utils/cn";
 
@@ -39,6 +42,7 @@ export function BankTemplateStep({
 }: BankTemplateStepProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
+  // Fetch bank templates
   const {
     data: templatesData,
     isLoading,
@@ -46,6 +50,12 @@ export function BankTemplateStep({
     error,
     refetch,
   } = useQueryListBankTemplates({});
+
+  // Fetch user templates
+  const {
+    data: userTemplatesData,
+    isLoading: isLoadingUserTemplates,
+  } = useQueryListUserTemplates({});
 
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -100,44 +110,95 @@ export function BankTemplateStep({
 
       {/* Bank Templates */}
       {!isLoading && !isError && (
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto -mx-1 px-1">
-          {templatesData?.templates?.map((template) => (
-            <button
-              key={template.id}
-              onClick={() => handleSelectTemplate(template.id)}
-              className={cn(
-                "w-full p-4 rounded-lg border-2 text-left transition-all duration-200",
-                "hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
-                "active:scale-[0.99]",
-                selectedTemplate === template.id
-                  ? "border-primary-600 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
-                  : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-base text-neutral-900 dark:text-dark-text">
-                    {template.name}
-                  </h3>
-                  <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
-                    {template.bankCode} • {template.statementType} •{" "}
-                    {template.fileFormats.join(", ")}
+        <div className="space-y-4">
+          {/* User Templates Section */}
+          {userTemplatesData?.templates &&
+            userTemplatesData.templates.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-700 dark:text-dark-text-secondary mb-2 px-1">
+                  Your Templates
+                </h3>
+                <div className="space-y-2 max-h-[25vh] overflow-y-auto -mx-1 px-1">
+                  {userTemplatesData.templates.map((template) => (
+                    <button
+                      key={`user-${template.id}`}
+                      onClick={() => handleSelectTemplate(`user-${template.id}`)}
+                      className={cn(
+                        "w-full p-4 rounded-lg border-2 text-left transition-all duration-200",
+                        "hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
+                        "active:scale-[0.99]",
+                        selectedTemplate === `user-${template.id}`
+                          ? "border-primary-600 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
+                          : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base text-neutral-900 dark:text-dark-text">
+                            {template.name}
+                          </h3>
+                          <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
+                            {template.currency} • {template.dateFormat} •{" "}
+                            {template.fileFormats?.join(", ") || "CSV"}
+                          </p>
+                        </div>
+                        {selectedTemplate === `user-${template.id}` && (
+                          <CheckIcon />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Bank Templates Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-700 dark:text-dark-text-secondary mb-2 px-1">
+              Bank Templates
+            </h3>
+            <div className="space-y-2 max-h-[25vh] overflow-y-auto -mx-1 px-1">
+              {templatesData?.templates?.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleSelectTemplate(template.id)}
+                  className={cn(
+                    "w-full p-4 rounded-lg border-2 text-left transition-all duration-200",
+                    "hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
+                    "active:scale-[0.99]",
+                    selectedTemplate === template.id
+                      ? "border-primary-600 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
+                      : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface",
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-base text-neutral-900 dark:text-dark-text">
+                        {template.name}
+                      </h3>
+                      <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
+                        {template.bankCode} • {template.statementType} •{" "}
+                        {template.fileFormats.join(", ")}
+                      </p>
+                    </div>
+                    {selectedTemplate === template.id && <CheckIcon />}
+                  </div>
+                </button>
+              ))}
+
+              {/* Empty State */}
+              {templatesData?.templates?.length === 0 && (
+                <div className="text-center py-8 px-4 text-neutral-500 dark:text-neutral-400">
+                  <p className="text-base mb-2">
+                    No bank templates available yet.
+                  </p>
+                  <p className="text-sm">
+                    Use "Custom Format" below to proceed with your import.
                   </p>
                 </div>
-                {selectedTemplate === template.id && <CheckIcon />}
-              </div>
-            </button>
-          ))}
-
-          {/* Empty State */}
-          {templatesData?.templates?.length === 0 && (
-            <div className="text-center py-8 px-4 text-neutral-500 dark:text-neutral-400">
-              <p className="text-base mb-2">No bank templates available yet.</p>
-              <p className="text-sm">
-                Use "Custom Format" below to proceed with your import.
-              </p>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Custom Format Option */}
           <button

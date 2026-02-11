@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -47,6 +48,18 @@ type ImportService interface {
 
 	// LearnFromUserCorrections learns from user's category corrections during import.
 	LearnFromUserCorrections(ctx context.Context, userID int32, corrections map[string]int32) error
+
+	// User Template Management
+	CreateUserTemplate(ctx context.Context, userID int32, req *v1.CreateUserTemplateRequest) (*v1.CreateUserTemplateResponse, error)
+	ListUserTemplates(ctx context.Context, userID int32) (*v1.ListUserTemplatesResponse, error)
+	GetUserTemplate(ctx context.Context, userID int32, templateID int32) (*v1.GetUserTemplateResponse, error)
+	UpdateUserTemplate(ctx context.Context, userID int32, req *v1.UpdateUserTemplateRequest) (*v1.UpdateUserTemplateResponse, error)
+	DeleteUserTemplate(ctx context.Context, userID int32, templateID int32) (*v1.DeleteUserTemplateResponse, error)
+
+	// Background Job Management
+	GetJobStatus(ctx context.Context, userID int32, jobID string) (*v1.GetJobStatusResponse, error)
+	CancelJob(ctx context.Context, userID int32, jobID string) (*v1.CancelJobResponse, error)
+	ListUserJobs(ctx context.Context, userID int32, statusFilter v1.JobStatus) (*v1.ListUserJobsResponse, error)
 }
 
 type importService struct {
@@ -56,14 +69,46 @@ type importService struct {
 	categoryRepo      repository.CategoryRepository
 	duplicateDetector *duplicate.Detector
 	categorizer       *categorization.Categorizer
-	fxService         FXService // For currency conversion
+	fxService         ImportFXService // For currency conversion
+	jobQueue          ImportJobQueue  // For background processing
 }
 
 // FXService defines the interface for exchange rate operations
-type FXService interface {
-	GetHistoricalRate(ctx context.Context, fromCurrency, toCurrency string, date time.Time) (float64, error)
-	GetLatestRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error)
-	Convert(ctx context.Context, amount int64, fromCurrency, toCurrency string, date time.Time) (int64, float64, error)
+// ImportFXService defines the minimal FX service interface needed by import service
+// This is a subset of the full FXRateService to avoid interface coupling
+type ImportFXService interface {
+	GetRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error)
+	ConvertAmount(ctx context.Context, amount int64, fromCurrency, toCurrency string) (int64, error)
+}
+
+// ImportJobQueue defines the interface for background job queue operations
+// This interface uses interface{} to avoid import cycles with the jobs package
+type ImportJobQueue interface {
+	Enqueue(ctx context.Context, job interface{}) error
+	GetJob(ctx context.Context, jobID string) (interface{}, error)
+	UpdateJob(ctx context.Context, job interface{}) error
+	CancelJob(ctx context.Context, jobID string) error
+	GetUserJobs(ctx context.Context, userID int32) ([]interface{}, error)
+	CleanupExpiredJobs(ctx context.Context) (int, error)
+}
+
+// ImportJobData represents the data structure for import jobs
+// This is a simplified version to avoid importing the jobs package
+type ImportJobData struct {
+	JobID          string
+	UserID         int32
+	FileID         string
+	WalletID       int32
+	Status         string // Job status as string
+	Progress       int32
+	ProcessedCount int32
+	TotalCount     int32
+	Result         *v1.ExecuteImportResponse
+	Error          string
+	CreatedAt      time.Time
+	StartedAt      *time.Time
+	CompletedAt    *time.Time
+	ExpiresAt      time.Time
 }
 
 // NewImportService creates a new ImportService.
@@ -75,7 +120,8 @@ func NewImportService(
 	merchantRepo repository.MerchantRuleRepository,
 	keywordRepo repository.KeywordRepository,
 	userMappingRepo repository.UserMappingRepository,
-	fxService FXService,
+	fxService ImportFXService,
+	jobQueue ImportJobQueue,
 ) ImportService {
 	// Create categorizer with VN region by default
 	categorizer := categorization.NewCategorizer(
@@ -94,6 +140,7 @@ func NewImportService(
 		duplicateDetector: duplicate.NewDetector(transactionRepo),
 		categorizer:       categorizer,
 		fxService:         fxService,
+		jobQueue:          jobQueue,
 	}
 }
 
@@ -188,6 +235,21 @@ func (s *importService) DetectDuplicates(ctx context.Context, userID int32, req 
 	}, nil
 }
 
+// updateTransactionFromParsed updates an existing transaction with data from a parsed transaction
+func (s *importService) updateTransactionFromParsed(ctx context.Context, existingTx *models.Transaction, parsedTx *v1.ParsedTransaction, userID int32) {
+	existingTx.Amount = parsedTx.Amount.Amount
+	existingTx.Date = time.Unix(parsedTx.Date, 0)
+	existingTx.Note = parsedTx.Description
+
+	// Update category if provided and valid
+	if parsedTx.SuggestedCategoryId > 0 {
+		_, err := s.categoryRepo.GetByIDForUser(ctx, parsedTx.SuggestedCategoryId, userID)
+		if err == nil {
+			existingTx.CategoryID = &parsedTx.SuggestedCategoryId
+		}
+	}
+}
+
 // ExecuteImport executes the import of transactions with duplicate handling.
 func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1.ExecuteImportRequest) (*v1.ExecuteImportResponse, error) {
 	// Track import duration
@@ -232,6 +294,55 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		return nil, err
 	}
 
+	// Check if import should be queued (>500 transactions)
+	const largeImportThreshold = 500
+	if s.jobQueue != nil && len(req.Transactions) > largeImportThreshold {
+		// Create background job using simple data structure
+		jobID := uuid.New().String()
+		now := time.Now()
+		jobData := map[string]interface{}{
+			"jobId":      jobID,
+			"userId":     userID,
+			"fileId":     req.FileId,
+			"walletId":   req.WalletId,
+			"request":    req,
+			"status":     "queued",
+			"progress":   int32(0),
+			"totalCount": int32(len(req.Transactions)),
+			"createdAt":  now,
+			"expiresAt":  now.Add(24 * time.Hour),
+		}
+
+		// Enqueue job
+		if err := s.jobQueue.Enqueue(ctx, jobData); err != nil {
+			logger.LogImportError(ctx, userID, "execute:enqueue_job", err, map[string]interface{}{
+				"job_id":            jobID,
+				"wallet_id":         req.WalletId,
+				"file_id":           req.FileId,
+				"transaction_count": len(req.Transactions),
+			})
+			return nil, fmt.Errorf("failed to queue import job: %w", err)
+		}
+
+		logger.LogImportSuccess(ctx, userID, "execute:job_queued", map[string]interface{}{
+			"job_id":            jobID,
+			"wallet_id":         req.WalletId,
+			"transaction_count": len(req.Transactions),
+		})
+
+		// Return immediate response with job ID
+		return &v1.ExecuteImportResponse{
+			Success:       true,
+			Message:       fmt.Sprintf("Import queued for background processing (%d transactions). Check job status using job ID.", len(req.Transactions)),
+			ImportBatchId: jobID, // Use job ID as import batch ID temporarily
+			Summary: &v1.ImportSummary{
+				TotalImported: 0,
+				TotalSkipped:  0,
+			},
+			Timestamp: time.Now().Format(time.RFC3339),
+		}, nil
+	}
+
 	// Filter out excluded and invalid transactions
 	var validTransactions []*v1.ParsedTransaction
 	excludedMap := make(map[int32]bool)
@@ -262,11 +373,12 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		return nil, err
 	}
 
-	// Detect duplicates if strategy is AUTO_MERGE or SKIP_ALL
+	// Detect duplicates if strategy is AUTO_MERGE, SKIP_ALL, or REVIEW_EACH
 	var duplicateMatches []*duplicate.DuplicateMatch
 	duplicateMatchMap := make(map[int32]int32) // parsedTx row number -> existing tx ID
 	if req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_AUTO_MERGE ||
-		req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_SKIP_ALL {
+		req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_SKIP_ALL ||
+		req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_REVIEW_EACH {
 		duplicateMatches, err = s.duplicateDetector.DetectDuplicates(ctx, req.WalletId, validTransactions)
 		if err != nil {
 			logger.LogImportError(ctx, userID, "execute:detect_duplicates", err, map[string]interface{}{
@@ -280,6 +392,14 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		// Build map for quick lookup
 		for _, match := range duplicateMatches {
 			duplicateMatchMap[match.ImportedTransaction.RowNumber] = match.ExistingTransaction.ID
+		}
+	}
+
+	// Build user action map for REVIEW_EACH strategy
+	duplicateActionMap := make(map[int32]*v1.DuplicateAction) // row number -> action
+	if req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_REVIEW_EACH {
+		for _, action := range req.DuplicateActions {
+			duplicateActionMap[action.ImportedRowNumber] = action
 		}
 	}
 
@@ -312,6 +432,7 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 				// Skip this transaction
 				duplicatesSkipped++
 				continue
+
 			case v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_AUTO_MERGE:
 				// Update the existing transaction
 				existingTx, err := s.transactionRepo.GetByID(ctx, existingTxID)
@@ -322,21 +443,88 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 				}
 
 				// Update fields from parsed transaction
-				existingTx.Amount = parsedTx.Amount.Amount
-				existingTx.Date = txDate
-				existingTx.Note = parsedTx.Description
-
-				// Update category if provided
-				if parsedTx.SuggestedCategoryId > 0 {
-					_, err := s.categoryRepo.GetByIDForUser(ctx, parsedTx.SuggestedCategoryId, userID)
-					if err == nil {
-						existingTx.CategoryID = &parsedTx.SuggestedCategoryId
-					}
-				}
+				s.updateTransactionFromParsed(ctx, existingTx, parsedTx, userID)
 
 				transactionsToUpdate = append(transactionsToUpdate, existingTx)
 				duplicatesMerged++
 				continue
+
+			case v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_REVIEW_EACH:
+				// Handle user's decision for this duplicate
+				action, hasAction := duplicateActionMap[parsedTx.RowNumber]
+				if !hasAction {
+					// No action specified for this duplicate, skip it
+					duplicatesSkipped++
+					continue
+				}
+
+				// CRITICAL: Validate that the action's transaction ID matches the detected duplicate
+				if action.ExistingTransactionId != existingTxID {
+					logger.LogImportError(ctx, userID, "execute:duplicate_action_mismatch",
+						fmt.Errorf("action transaction ID %d doesn't match duplicate %d",
+							action.ExistingTransactionId, existingTxID),
+						map[string]interface{}{
+							"row_number":   parsedTx.RowNumber,
+							"action_tx_id": action.ExistingTransactionId,
+							"match_tx_id":  existingTxID,
+						})
+					duplicatesSkipped++
+					continue
+				}
+
+				switch action.Action {
+				case v1.DuplicateActionType_DUPLICATE_ACTION_MERGE:
+					// Update the existing transaction
+					existingTx, err := s.transactionRepo.GetByID(ctx, existingTxID)
+					if err != nil {
+						duplicatesSkipped++
+						continue
+					}
+
+					// SECURITY: Verify transaction belongs to user's wallet
+					if existingTx.WalletID != req.WalletId {
+						logger.LogImportError(ctx, userID, "execute:merge_wallet_mismatch",
+							fmt.Errorf("transaction %d doesn't belong to wallet %d",
+								existingTxID, req.WalletId),
+							map[string]interface{}{
+								"tx_id":      existingTxID,
+								"tx_wallet":  existingTx.WalletID,
+								"req_wallet": req.WalletId,
+							})
+						duplicatesSkipped++
+						continue
+					}
+
+					// Update fields from parsed transaction
+					s.updateTransactionFromParsed(ctx, existingTx, parsedTx, userID)
+
+					transactionsToUpdate = append(transactionsToUpdate, existingTx)
+					duplicatesMerged++
+					continue
+
+				case v1.DuplicateActionType_DUPLICATE_ACTION_SKIP:
+					// User chose to skip this transaction
+					duplicatesSkipped++
+					continue
+
+				case v1.DuplicateActionType_DUPLICATE_ACTION_KEEP_BOTH:
+					// Import as new transaction (fall through to normal flow)
+					break
+
+				case v1.DuplicateActionType_DUPLICATE_ACTION_NOT_DUPLICATE:
+					// User marked as false positive, import as new transaction (fall through)
+					break
+
+				default:
+					// Unknown action, skip for safety
+					duplicatesSkipped++
+					continue
+				}
+
+			case v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_KEEP_ALL:
+				// Import all transactions regardless of duplicates
+				// Fall through to create as new transaction
+				break
 			}
 		}
 
@@ -767,7 +955,7 @@ func (s *importService) ConvertCurrency(ctx context.Context, userID int32, req *
 				return nil, apperrors.NewValidationError("currency conversion service not available")
 			}
 
-			rate, err := s.fxService.GetLatestRate(ctx, currency, walletCurrency)
+			rate, err := s.fxService.GetRate(ctx, currency, walletCurrency)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get exchange rate for %s -> %s: %w", currency, walletCurrency, err)
 			}
@@ -899,4 +1087,449 @@ func (s *importService) LearnFromUserCorrections(ctx context.Context, userID int
 	}
 
 	return nil
+}
+
+// CreateUserTemplate creates a new user template
+func (s *importService) CreateUserTemplate(ctx context.Context, userID int32, req *v1.CreateUserTemplateRequest) (*v1.CreateUserTemplateResponse, error) {
+	// Validate request
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if req.TemplateName == "" {
+		return nil, apperrors.NewValidationError("template name is required")
+	}
+
+	if req.ColumnMapping == nil {
+		return nil, apperrors.NewValidationError("column mapping is required")
+	}
+
+	if req.DateFormat == "" {
+		return nil, apperrors.NewValidationError("date format is required")
+	}
+
+	if req.Currency == "" {
+		return nil, apperrors.NewValidationError("currency is required")
+	}
+
+	// Serialize column mapping to JSON
+	mappingJSON, err := json.Marshal(req.ColumnMapping)
+	if err != nil {
+		return nil, apperrors.NewValidationError(fmt.Sprintf("invalid column mapping: %v", err))
+	}
+
+	// Serialize file formats to JSON
+	fileFormatsJSON, err := json.Marshal(req.FileFormats)
+	if err != nil {
+		return nil, apperrors.NewValidationError(fmt.Sprintf("invalid file formats: %v", err))
+	}
+
+	// Create default amount format (matches bank template structure)
+	amountFormat := map[string]interface{}{
+		"thousandsSeparator": ",",
+		"decimalSeparator":   ".",
+		"negativeFormat":     "minus", // or "parentheses"
+	}
+	amountFormatJSON, _ := json.Marshal(amountFormat)
+
+	// Create user template
+	template := &models.UserTemplate{
+		UserID:        userID,
+		Name:          req.TemplateName,
+		ColumnMapping: mappingJSON,
+		DateFormat:    req.DateFormat,
+		Currency:      req.Currency,
+		AmountFormat:  amountFormatJSON,
+		FileFormats:   fileFormatsJSON,
+	}
+
+	if err := s.importRepo.CreateUserTemplate(ctx, template); err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf response
+	pbTemplate, err := s.userTemplateToProto(template)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.CreateUserTemplateResponse{
+		Success:   true,
+		Message:   "Template created successfully",
+		Template:  pbTemplate,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// ListUserTemplates lists all user templates for a user
+func (s *importService) ListUserTemplates(ctx context.Context, userID int32) (*v1.ListUserTemplatesResponse, error) {
+	// Validate user ID
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Get templates from repository
+	templates, err := s.importRepo.ListUserTemplatesByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf format
+	var pbTemplates []*v1.UserTemplate
+	for _, template := range templates {
+		pbTemplate, err := s.userTemplateToProto(template)
+		if err != nil {
+			// Log error and skip this template
+			logger.LogImportError(ctx, userID, "list_templates:convert", err, map[string]interface{}{
+				"template_id": template.ID,
+			})
+			continue
+		}
+		pbTemplates = append(pbTemplates, pbTemplate)
+	}
+
+	return &v1.ListUserTemplatesResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Found %d template(s)", len(pbTemplates)),
+		Templates: pbTemplates,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// GetUserTemplate retrieves a specific user template
+func (s *importService) GetUserTemplate(ctx context.Context, userID int32, templateID int32) (*v1.GetUserTemplateResponse, error) {
+	// Validate inputs
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if err := validator.ID(templateID); err != nil {
+		return nil, apperrors.NewValidationError("invalid template ID")
+	}
+
+	// Get template from repository
+	template, err := s.importRepo.GetUserTemplateByID(ctx, templateID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf format
+	pbTemplate, err := s.userTemplateToProto(template)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.GetUserTemplateResponse{
+		Success:   true,
+		Message:   "Template retrieved successfully",
+		Template:  pbTemplate,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// UpdateUserTemplate updates an existing user template
+func (s *importService) UpdateUserTemplate(ctx context.Context, userID int32, req *v1.UpdateUserTemplateRequest) (*v1.UpdateUserTemplateResponse, error) {
+	// Validate inputs
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if err := validator.ID(req.TemplateId); err != nil {
+		return nil, apperrors.NewValidationError("invalid template ID")
+	}
+
+	// Get existing template to verify ownership
+	existingTemplate, err := s.importRepo.GetUserTemplateByID(ctx, req.TemplateId, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate request fields
+	if req.TemplateName == "" {
+		return nil, apperrors.NewValidationError("template name is required")
+	}
+
+	if req.ColumnMapping == nil {
+		return nil, apperrors.NewValidationError("column mapping is required")
+	}
+
+	if req.DateFormat == "" {
+		return nil, apperrors.NewValidationError("date format is required")
+	}
+
+	if req.Currency == "" {
+		return nil, apperrors.NewValidationError("currency is required")
+	}
+
+	// Serialize column mapping to JSON
+	mappingJSON, err := json.Marshal(req.ColumnMapping)
+	if err != nil {
+		return nil, apperrors.NewValidationError(fmt.Sprintf("invalid column mapping: %v", err))
+	}
+
+	// Serialize file formats to JSON
+	fileFormatsJSON, err := json.Marshal(req.FileFormats)
+	if err != nil {
+		return nil, apperrors.NewValidationError(fmt.Sprintf("invalid file formats: %v", err))
+	}
+
+	// Update template fields
+	existingTemplate.Name = req.TemplateName
+	existingTemplate.ColumnMapping = mappingJSON
+	existingTemplate.DateFormat = req.DateFormat
+	existingTemplate.Currency = req.Currency
+	existingTemplate.FileFormats = fileFormatsJSON
+
+	// Save to database
+	if err := s.importRepo.UpdateUserTemplate(ctx, existingTemplate); err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf response
+	pbTemplate, err := s.userTemplateToProto(existingTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.UpdateUserTemplateResponse{
+		Success:   true,
+		Message:   "Template updated successfully",
+		Template:  pbTemplate,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// DeleteUserTemplate deletes a user template
+func (s *importService) DeleteUserTemplate(ctx context.Context, userID int32, templateID int32) (*v1.DeleteUserTemplateResponse, error) {
+	// Validate inputs
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if err := validator.ID(templateID); err != nil {
+		return nil, apperrors.NewValidationError("invalid template ID")
+	}
+
+	// Delete template
+	if err := s.importRepo.DeleteUserTemplate(ctx, templateID, userID); err != nil {
+		return nil, err
+	}
+
+	return &v1.DeleteUserTemplateResponse{
+		Success:   true,
+		Message:   "Template deleted successfully",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// userTemplateToProto converts a models.UserTemplate to protobuf UserTemplate
+func (s *importService) userTemplateToProto(template *models.UserTemplate) (*v1.UserTemplate, error) {
+	// Deserialize column mapping
+	var columnMapping v1.ColumnMapping
+	if err := json.Unmarshal(template.ColumnMapping, &columnMapping); err != nil {
+		return nil, apperrors.NewValidationError(fmt.Sprintf("invalid column mapping format: %v", err))
+	}
+
+	// Deserialize file formats
+	var fileFormats []string
+	if len(template.FileFormats) > 0 {
+		if err := json.Unmarshal(template.FileFormats, &fileFormats); err != nil {
+			// Set default if unmarshal fails
+			fileFormats = []string{"csv"}
+		}
+	} else {
+		fileFormats = []string{"csv"}
+	}
+
+	return &v1.UserTemplate{
+		Id:            template.ID,
+		UserId:        template.UserID,
+		Name:          template.Name,
+		ColumnMapping: &columnMapping,
+		DateFormat:    template.DateFormat,
+		Currency:      template.Currency,
+		FileFormats:   fileFormats,
+		CreatedAt:     template.CreatedAt.Unix(),
+		UpdatedAt:     template.UpdatedAt.Unix(),
+	}, nil
+}
+
+// GetJobStatus retrieves the status of a background import job
+func (s *importService) GetJobStatus(ctx context.Context, userID int32, jobID string) (*v1.GetJobStatusResponse, error) {
+	// Validate inputs
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if jobID == "" {
+		return nil, apperrors.NewValidationError("job ID is required")
+	}
+
+	// Get job from queue
+	jobInterface, err := s.jobQueue.GetJob(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get job: %w", err)
+	}
+
+	if jobInterface == nil {
+		return nil, apperrors.NewNotFoundError("job")
+	}
+
+	// Type assert to ImportJobData
+	job, ok := jobInterface.(*ImportJobData)
+	if !ok {
+		return nil, fmt.Errorf("invalid job data type")
+	}
+
+	// Verify ownership
+	if job.UserID != userID {
+		return nil, apperrors.NewNotFoundError("job")
+	}
+
+	// Convert to protobuf format
+	pbJob := s.jobToProto(job)
+
+	return &v1.GetJobStatusResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Job status: %s", job.Status),
+		Job:       pbJob,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// CancelJob cancels a background import job
+func (s *importService) CancelJob(ctx context.Context, userID int32, jobID string) (*v1.CancelJobResponse, error) {
+	// Validate inputs
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	if jobID == "" {
+		return nil, apperrors.NewValidationError("job ID is required")
+	}
+
+	// Get job to verify ownership
+	jobData, err := s.jobQueue.GetJob(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get job: %w", err)
+	}
+
+	if jobData == nil {
+		return nil, apperrors.NewNotFoundError("job")
+	}
+
+	// Type assert to ImportJobData
+	job, ok := jobData.(*ImportJobData)
+	if !ok {
+		return nil, fmt.Errorf("invalid job data type")
+	}
+
+	// Verify ownership
+	if job.UserID != userID {
+		return nil, apperrors.NewNotFoundError("job")
+	}
+
+	// Cancel job
+	if err := s.jobQueue.CancelJob(ctx, jobID); err != nil {
+		return nil, err
+	}
+
+	return &v1.CancelJobResponse{
+		Success:   true,
+		Message:   "Job cancelled successfully",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// ListUserJobs retrieves all jobs for a user
+func (s *importService) ListUserJobs(ctx context.Context, userID int32, statusFilter v1.JobStatus) (*v1.ListUserJobsResponse, error) {
+	// Validate user ID
+	if err := validator.ID(userID); err != nil {
+		return nil, err
+	}
+
+	// Get all jobs for user
+	jobList, err := s.jobQueue.GetUserJobs(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user jobs: %w", err)
+	}
+
+	// Filter by status if specified
+	var filteredJobs []*ImportJobData
+	for _, jobData := range jobList {
+		// Type assert to ImportJobData
+		job, ok := jobData.(*ImportJobData)
+		if !ok {
+			log.Printf("Warning: Skipping invalid job data type in user jobs list")
+			continue
+		}
+
+		// Apply status filter
+		if statusFilter != v1.JobStatus_JOB_STATUS_UNSPECIFIED {
+			jobStatus := s.mapJobStatusToProto(job.Status)
+			if jobStatus != statusFilter {
+				continue
+			}
+		}
+		filteredJobs = append(filteredJobs, job)
+	}
+
+	// Convert to protobuf format
+	pbJobs := make([]*v1.ImportJobStatus, 0, len(filteredJobs))
+	for _, job := range filteredJobs {
+		pbJobs = append(pbJobs, s.jobToProto(job))
+	}
+
+	return &v1.ListUserJobsResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Found %d job(s)", len(pbJobs)),
+		Jobs:      pbJobs,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// jobToProto converts an ImportJobData to protobuf ImportJobStatus
+func (s *importService) jobToProto(job *ImportJobData) *v1.ImportJobStatus {
+	pbJob := &v1.ImportJobStatus{
+		JobId:          job.JobID,
+		UserId:         job.UserID,
+		FileId:         job.FileID,
+		WalletId:       job.WalletID,
+		Status:         s.mapJobStatusToProto(job.Status),
+		Progress:       job.Progress,
+		ProcessedCount: job.ProcessedCount,
+		TotalCount:     job.TotalCount,
+		Result:         job.Result,
+		Error:          job.Error,
+		CreatedAt:      job.CreatedAt.Unix(),
+		ExpiresAt:      job.ExpiresAt.Unix(),
+	}
+
+	if job.StartedAt != nil {
+		pbJob.StartedAt = job.StartedAt.Unix()
+	}
+
+	if job.CompletedAt != nil {
+		pbJob.CompletedAt = job.CompletedAt.Unix()
+	}
+
+	return pbJob
+}
+
+// mapJobStatusToProto converts string job status to protobuf JobStatus
+func (s *importService) mapJobStatusToProto(status string) v1.JobStatus {
+	switch status {
+	case "queued":
+		return v1.JobStatus_JOB_STATUS_QUEUED
+	case "processing":
+		return v1.JobStatus_JOB_STATUS_PROCESSING
+	case "completed":
+		return v1.JobStatus_JOB_STATUS_COMPLETED
+	case "failed":
+		return v1.JobStatus_JOB_STATUS_FAILED
+	case "cancelled":
+		return v1.JobStatus_JOB_STATUS_CANCELLED
+	default:
+		return v1.JobStatus_JOB_STATUS_UNSPECIFIED
+	}
 }

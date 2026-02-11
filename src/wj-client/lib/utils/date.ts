@@ -65,3 +65,18 @@ export const formatDateTime = (timestamp: number | undefined): string => {
     hour12: true,
   });
 };
+
+/**
+ * Format Unix timestamp to date only
+ * @param timestamp - Unix timestamp in seconds
+ * @returns Formatted date string (e.g., "Jan 15, 2025")
+ */
+export const formatDate = (timestamp: number | undefined): string => {
+  if (!timestamp) return "";
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};

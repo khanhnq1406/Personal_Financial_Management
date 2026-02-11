@@ -1,0 +1,73 @@
+{
+  "id": "techcombank-credit-card",
+  "name": "Techcombank Credit Card Statement",
+  "bankCode": "TCB",
+  "statementType": "credit",
+  "fileFormats": ["csv", "excel", "pdf"],
+  "columnMapping": {
+    "dateColumn": ["Ngày giao dịch", "Trans Date", "Date", "Ngày"],
+    "amountColumn": ["Số tiền giao dịch", "Amount", "Số tiền", "Transaction Amount"],
+    "descriptionColumn": ["Mô tả giao dịch", "Description", "Nội dung", "Merchant Name"],
+    "referenceColumn": ["Mã tham chiếu", "Reference", "Ref Code"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "parentheses",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "TECHCOMBANK",
+      "Ngày giao dịch",
+      "Số tiền giao dịch",
+      "THẺ TÍN DỤNG",
+      "CREDIT CARD STATEMENT"
+    ],
+    "footerKeywords": [
+      "Tổng chi tiêu",
+      "Total Spending",
+      "Số tiền thanh toán tối thiểu",
+      "Minimum Payment",
+      "Hạn thanh toán",
+      "Payment Due Date"
+    ],
+    "skipPatterns": [
+      "^Tổng",
+      "^Total",
+      "^Minimum Payment",
+      "^Payment Due",
+      "^Số dư",
+      "^Balance"
+    ]
+  },
+  "typeRules": {
+    "defaultType": "expense",
+    "incomeKeywords": [
+      "REFUND",
+      "HOÀN TIỀN",
+      "REVERSAL",
+      "HỦY GIAO DỊCH"
+    ],
+    "expenseKeywords": [
+      "PURCHASE",
+      "MUA SẮM",
+      "PAYMENT",
+      "THANH TOÁN",
+      "ATM WITHDRAWAL",
+      "RÚT TIỀN",
+      "FEE",
+      "PHÍ"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for Techcombank credit card statements. Modern format with clear transaction descriptions. Negative amounts shown in parentheses.",
+  "exampleColumns": {
+    "csv": "Ngày giao dịch,Số tiền giao dịch,Mô tả giao dịch,Mã tham chiếu",
+    "excel": "Formatted table with amounts in parentheses for expenses",
+    "pdf": "Clean tabular layout with merchant names"
+  }
+}

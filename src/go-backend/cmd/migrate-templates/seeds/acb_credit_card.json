@@ -1,0 +1,70 @@
+{
+  "id": "acb-credit-card",
+  "name": "ACB Credit Card Statement",
+  "bankCode": "ACB",
+  "statementType": "credit",
+  "fileFormats": ["csv", "excel"],
+  "columnMapping": {
+    "dateColumn": ["Posting Date", "Ngày GD", "Trans Date"],
+    "amountColumn": ["Amount", "Transaction Amount", "Số tiền GD"],
+    "descriptionColumn": ["Description", "Merchant", "Tên merchant"],
+    "referenceColumn": ["Reference Number", "Trace Number"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "minus",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "ACB",
+      "Á CHÂU",
+      "ASIA COMMERCIAL BANK",
+      "Posting Date",
+      "Transaction Amount",
+      "CREDIT CARD"
+    ],
+    "footerKeywords": [
+      "Total Transactions",
+      "Tổng giao dịch",
+      "Statement Balance",
+      "Minimum Payment Due",
+      "End of Statement"
+    ],
+    "skipPatterns": [
+      "^Total",
+      "^Tổng",
+      "^Payment Due",
+      "^Minimum Amount",
+      "^Previous Balance",
+      "^New Balance"
+    ]
+  },
+  "typeRules": {
+    "defaultType": "expense",
+    "incomeKeywords": [
+      "REFUND",
+      "PAYMENT RECEIVED",
+      "CREDIT ADJUSTMENT"
+    ],
+    "expenseKeywords": [
+      "PURCHASE",
+      "POS",
+      "ECOMMERCE",
+      "CASH WITHDRAWAL",
+      "ANNUAL FEE",
+      "LATE PAYMENT FEE"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for ACB (Asia Commercial Bank) credit card statements. Modern format with English column names. CSV and Excel only (no PDF parser yet).",
+  "exampleColumns": {
+    "csv": "Posting Date,Amount,Description,Reference Number",
+    "excel": "Clean Excel format with conditional formatting for negative amounts"
+  },
+  "notes": "ACB often uses English column names even in Vietnamese statements. PDF support not available - bank provides Excel export."
+}

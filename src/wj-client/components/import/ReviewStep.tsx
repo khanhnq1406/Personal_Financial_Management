@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/Button";
 import { ErrorSummary } from "./ErrorSummary";
 import { TransactionReviewTable } from "./TransactionReviewTable";
-import { ParsedTransaction, DuplicateMatch } from "@/gen/protobuf/v1/import";
+import { ParsedTransaction, DuplicateMatch, DuplicateHandlingStrategy, CurrencyConversion } from "@/gen/protobuf/v1/import";
 import { ColumnMapping } from "./ColumnMappingStep";
 import { useMutationParseStatement } from "@/utils/generated/hooks";
 import { ErrorSection } from "./ErrorSection";
@@ -12,6 +12,9 @@ import { DuplicateSection } from "./DuplicateSection";
 import { CategoryReviewSection } from "./CategoryReviewSection";
 import { ReadyToImportSection } from "./ReadyToImportSection";
 import { DateRangeFilter } from "./DateRangeFilter";
+import { DuplicateStrategySelector } from "./DuplicateStrategySelector";
+import { CurrencyConversionSection } from "./CurrencyConversionSection";
+import { ChangeRateModal } from "./ChangeRateModal";
 
 // Props for parsing mode (Task 10)
 export interface ReviewStepParseProps {
@@ -33,6 +36,12 @@ export interface ReviewStepReviewProps {
   categories?: Array<{ id: number; name: string }>;
   // New grouped UI props
   useGroupedUI?: boolean;
+  // Duplicate strategy props
+  duplicateStrategy?: DuplicateHandlingStrategy;
+  onDuplicateStrategyChange?: (strategy: DuplicateHandlingStrategy) => void;
+  // Currency conversion props
+  conversions?: CurrencyConversion[];
+  onChangeRate?: (fromCurrency: string, toCurrency: string, newRate: number) => void;
 }
 
 export type ReviewStepProps = ReviewStepParseProps | ReviewStepReviewProps;
@@ -52,6 +61,10 @@ export function ReviewStep(props: ReviewStepProps) {
   const currency = 'currency' in props ? props.currency : "VND";
   const categories = 'categories' in props ? props.categories : [];
   const useGroupedUI = 'useGroupedUI' in props ? props.useGroupedUI : true; // Default to new UI
+  const duplicateStrategy = 'duplicateStrategy' in props ? props.duplicateStrategy : DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL;
+  const onDuplicateStrategyChange = 'onDuplicateStrategyChange' in props ? props.onDuplicateStrategyChange : undefined;
+  const conversions = 'conversions' in props ? props.conversions : undefined;
+  const onChangeRate = 'onChangeRate' in props ? props.onChangeRate : undefined;
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
@@ -59,6 +72,8 @@ export function ReviewStep(props: ReviewStepProps) {
   const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
   const [handledDuplicates, setHandledDuplicates] = useState<Set<number>>(new Set());
   const [transactionsState, setTransactionsState] = useState<ParsedTransaction[]>([]);
+  const [showChangeRateModal, setShowChangeRateModal] = useState(false);
+  const [selectedConversion, setSelectedConversion] = useState<CurrencyConversion | null>(null);
 
   // Initialize transactions state
   useEffect(() => {
@@ -217,6 +232,33 @@ export function ReviewStep(props: ReviewStepProps) {
     setDateRangeEnd(end);
   };
 
+  const handleOpenChangeRateModal = (fromCurrency: string, toCurrency: string) => {
+    const conversion = conversions?.find(
+      (c) => c.fromCurrency === fromCurrency && c.toCurrency === toCurrency
+    );
+    if (conversion) {
+      setSelectedConversion(conversion);
+      setShowChangeRateModal(true);
+    }
+  };
+
+  const handleConfirmRateChange = (newRate: number) => {
+    if (selectedConversion && onChangeRate) {
+      onChangeRate(
+        selectedConversion.fromCurrency,
+        selectedConversion.toCurrency,
+        newRate
+      );
+    }
+    setShowChangeRateModal(false);
+    setSelectedConversion(null);
+  };
+
+  const handleCancelRateChange = () => {
+    setShowChangeRateModal(false);
+    setSelectedConversion(null);
+  };
+
   const handleImport = () => {
     if (useGroupedUI) {
       // New UI: exclude rows that are in excludedRows set
@@ -259,6 +301,23 @@ export function ReviewStep(props: ReviewStepProps) {
           onChange={handleDateRangeChange}
           transactionCount={transactionsState.length}
         />
+
+        {/* Duplicate Strategy Selector */}
+        {duplicateMatches && duplicateMatches.length > 0 && onDuplicateStrategyChange && (
+          <DuplicateStrategySelector
+            duplicateCount={duplicateMatches.length}
+            selectedStrategy={duplicateStrategy || DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL}
+            onStrategyChange={onDuplicateStrategyChange}
+          />
+        )}
+
+        {/* Currency Conversion Section */}
+        {conversions && conversions.length > 0 && (
+          <CurrencyConversionSection
+            conversions={conversions}
+            onChangeRate={handleOpenChangeRateModal}
+          />
+        )}
 
         {/* Grouped Sections */}
         <div className="space-y-3">
@@ -349,6 +408,16 @@ export function ReviewStep(props: ReviewStepProps) {
               : `Import ${importableCount} Transaction${importableCount !== 1 ? "s" : ""}`}
           </Button>
         </div>
+
+        {/* Change Rate Modal */}
+        {showChangeRateModal && selectedConversion && (
+          <ChangeRateModal
+            isOpen={showChangeRateModal}
+            onClose={handleCancelRateChange}
+            conversion={selectedConversion}
+            onConfirm={handleConfirmRateChange}
+          />
+        )}
       </div>
     );
   }

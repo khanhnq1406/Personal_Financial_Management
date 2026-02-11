@@ -76,6 +76,58 @@ service ImportService {
       get: "/api/v1/import/excel-sheets/{file_id}"
     };
   }
+
+  // User Template Management
+  rpc CreateUserTemplate(CreateUserTemplateRequest) returns (CreateUserTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/user-templates"
+      body: "*"
+    };
+  }
+
+  rpc ListUserTemplates(ListUserTemplatesRequest) returns (ListUserTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/user-templates"
+    };
+  }
+
+  rpc GetUserTemplate(GetUserTemplateRequest) returns (GetUserTemplateResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/user-templates/{template_id}"
+    };
+  }
+
+  rpc UpdateUserTemplate(UpdateUserTemplateRequest) returns (UpdateUserTemplateResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/import/user-templates/{template_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteUserTemplate(DeleteUserTemplateRequest) returns (DeleteUserTemplateResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/import/user-templates/{template_id}"
+    };
+  }
+
+  // Background Job Management
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/jobs/{job_id}"
+    };
+  }
+
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/jobs/{job_id}/cancel"
+    };
+  }
+
+  rpc ListUserJobs(ListUserJobsRequest) returns (ListUserJobsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/jobs"
+    };
+  }
 }
 
 // Messages
@@ -181,6 +233,7 @@ message ExecuteImportRequest {
   repeated int32 excluded_row_numbers = 5 [json_name = "excludedRowNumbers"]; // Rows user unchecked
   int64 date_filter_start = 6 [json_name = "dateFilterStart"]; // Optional date range filter
   int64 date_filter_end = 7 [json_name = "dateFilterEnd"];
+  repeated DuplicateAction duplicate_actions = 8 [json_name = "duplicateActions"]; // User decisions for REVIEW_EACH strategy
 }
 
 enum DuplicateHandlingStrategy {
@@ -189,6 +242,20 @@ enum DuplicateHandlingStrategy {
   DUPLICATE_STRATEGY_REVIEW_EACH = 2;
   DUPLICATE_STRATEGY_KEEP_ALL = 3;
   DUPLICATE_STRATEGY_SKIP_ALL = 4;
+}
+
+enum DuplicateActionType {
+  DUPLICATE_ACTION_UNSPECIFIED = 0;
+  DUPLICATE_ACTION_MERGE = 1;       // Update existing transaction with imported data
+  DUPLICATE_ACTION_KEEP_BOTH = 2;   // Import as new transaction
+  DUPLICATE_ACTION_SKIP = 3;        // Don't import
+  DUPLICATE_ACTION_NOT_DUPLICATE = 4; // False positive, treat as new
+}
+
+message DuplicateAction {
+  int32 imported_row_number = 1 [json_name = "importedRowNumber"]; // Row number from parsed transaction
+  int32 existing_transaction_id = 2 [json_name = "existingTransactionId"]; // ID of existing transaction
+  DuplicateActionType action = 3 [json_name = "action"]; // User's decision
 }
 
 message ExecuteImportResponse {
@@ -312,4 +379,139 @@ message CurrencyConversion {
   int32 transaction_count = 6 [json_name = "transactionCount"];
   wealthjourney.common.v1.Money total_original = 7 [json_name = "totalOriginal"];
   wealthjourney.common.v1.Money total_converted = 8 [json_name = "totalConverted"];
+}
+
+// User Template Management Messages
+
+message CreateUserTemplateRequest {
+  string template_name = 1 [json_name = "templateName"];
+  ColumnMapping column_mapping = 2 [json_name = "columnMapping"];
+  string date_format = 3 [json_name = "dateFormat"];
+  string currency = 4 [json_name = "currency"];
+  repeated string file_formats = 5 [json_name = "fileFormats"]; // ["csv", "excel", "pdf"]
+}
+
+message CreateUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ListUserTemplatesRequest {}
+
+message ListUserTemplatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated UserTemplate templates = 3 [json_name = "templates"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message GetUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+}
+
+message GetUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdateUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+  string template_name = 2 [json_name = "templateName"];
+  ColumnMapping column_mapping = 3 [json_name = "columnMapping"];
+  string date_format = 4 [json_name = "dateFormat"];
+  string currency = 5 [json_name = "currency"];
+  repeated string file_formats = 6 [json_name = "fileFormats"];
+}
+
+message UpdateUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+}
+
+message DeleteUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message UserTemplate {
+  int32 id = 1 [json_name = "id"];
+  int32 user_id = 2 [json_name = "userId"];
+  string name = 3 [json_name = "name"];
+  ColumnMapping column_mapping = 4 [json_name = "columnMapping"];
+  string date_format = 5 [json_name = "dateFormat"];
+  string currency = 6 [json_name = "currency"];
+  repeated string file_formats = 7 [json_name = "fileFormats"];
+  int64 created_at = 8 [json_name = "createdAt"];
+  int64 updated_at = 9 [json_name = "updatedAt"];
+}
+
+// Background Job Status
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_QUEUED = 1;
+  JOB_STATUS_PROCESSING = 2;
+  JOB_STATUS_COMPLETED = 3;
+  JOB_STATUS_FAILED = 4;
+  JOB_STATUS_CANCELLED = 5;
+}
+
+message GetJobStatusRequest {
+  string job_id = 1 [json_name = "jobId"];
+}
+
+message GetJobStatusResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  ImportJobStatus job = 3 [json_name = "job"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message CancelJobRequest {
+  string job_id = 1 [json_name = "jobId"];
+}
+
+message CancelJobResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message ListUserJobsRequest {
+  // Optional: filter by status
+  JobStatus status = 1 [json_name = "status"];
+}
+
+message ListUserJobsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ImportJobStatus jobs = 3 [json_name = "jobs"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ImportJobStatus {
+  string job_id = 1 [json_name = "jobId"];
+  int32 user_id = 2 [json_name = "userId"];
+  string file_id = 3 [json_name = "fileId"];
+  int32 wallet_id = 4 [json_name = "walletId"];
+  JobStatus status = 5 [json_name = "status"];
+  int32 progress = 6 [json_name = "progress"]; // 0-100
+  int32 processed_count = 7 [json_name = "processedCount"];
+  int32 total_count = 8 [json_name = "totalCount"];
+  ExecuteImportResponse result = 9 [json_name = "result"];
+  string error = 10 [json_name = "error"];
+  int64 created_at = 11 [json_name = "createdAt"];
+  int64 started_at = 12 [json_name = "startedAt"];
+  int64 completed_at = 13 [json_name = "completedAt"];
+  int64 expires_at = 14 [json_name = "expiresAt"];
 }

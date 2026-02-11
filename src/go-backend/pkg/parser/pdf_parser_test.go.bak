@@ -11,10 +11,10 @@ func TestTableDetector_GroupElementsByRow(t *testing.T) {
 		{X: 10, Y: 100, Text: "Date"},
 		{X: 50, Y: 100, Text: "Description"},
 		{X: 150, Y: 100, Text: "Amount"},
-		{X: 10, Y: 120, Text: "01/01/2026"},
+		{X: 10, Y: 120, Text: "01/01/2024"},
 		{X: 50, Y: 120, Text: "Coffee"},
 		{X: 150, Y: 120, Text: "50,000"},
-		{X: 10, Y: 140, Text: "02/01/2026"},
+		{X: 10, Y: 140, Text: "02/01/2024"},
 		{X: 50, Y: 140, Text: "Lunch"},
 		{X: 150, Y: 140, Text: "100,000"},
 	}
@@ -25,7 +25,7 @@ func TestTableDetector_GroupElementsByRow(t *testing.T) {
 	assert.Equal(t, 3, len(rows), "Should have 3 rows")
 	assert.Equal(t, 3, len(rows[0]), "First row should have 3 elements")
 	assert.Equal(t, "Date", rows[0][0].Text)
-	assert.Equal(t, "01/01/2026", rows[1][0].Text)
+	assert.Equal(t, "01/01/2024", rows[1][0].Text)
 }
 
 func TestTableDetector_DetectColumnBoundaries(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTableDetector_DetectColumnBoundaries(t *testing.T) {
 			{X: 150, Y: 100, Text: "Amount"},
 		},
 		{
-			{X: 10, Y: 120, Text: "01/01/2026"},
+			{X: 10, Y: 120, Text: "01/01/2024"},
 			{X: 50, Y: 120, Text: "Coffee"},
 			{X: 150, Y: 120, Text: "50,000"},
 		},
@@ -51,8 +51,8 @@ func TestTableDetector_DetectColumnBoundaries(t *testing.T) {
 func TestTableDetector_FindHeaderRow(t *testing.T) {
 	tableRows := []TableRow{
 		{Cells: []string{"Date", "Description", "Amount"}},
-		{Cells: []string{"01/01/2026", "Coffee", "50,000"}},
-		{Cells: []string{"02/01/2026", "Lunch", "100,000"}},
+		{Cells: []string{"01/01/2024", "Coffee", "50,000"}},
+		{Cells: []string{"02/01/2024", "Lunch", "100,000"}},
 	}
 
 	detector := NewTableDetector(nil, nil)

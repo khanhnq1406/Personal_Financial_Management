@@ -73,6 +73,142 @@ export function duplicateHandlingStrategyToJSON(object: DuplicateHandlingStrateg
   }
 }
 
+export const DuplicateActionType = {
+  DUPLICATE_ACTION_UNSPECIFIED: 0,
+  /** DUPLICATE_ACTION_MERGE - Update existing transaction with imported data */
+  DUPLICATE_ACTION_MERGE: 1,
+  /** DUPLICATE_ACTION_KEEP_BOTH - Import as new transaction */
+  DUPLICATE_ACTION_KEEP_BOTH: 2,
+  /** DUPLICATE_ACTION_SKIP - Don't import */
+  DUPLICATE_ACTION_SKIP: 3,
+  /** DUPLICATE_ACTION_NOT_DUPLICATE - False positive, treat as new */
+  DUPLICATE_ACTION_NOT_DUPLICATE: 4,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type DuplicateActionType = typeof DuplicateActionType[keyof typeof DuplicateActionType];
+
+export namespace DuplicateActionType {
+  export type DUPLICATE_ACTION_UNSPECIFIED = typeof DuplicateActionType.DUPLICATE_ACTION_UNSPECIFIED;
+  export type DUPLICATE_ACTION_MERGE = typeof DuplicateActionType.DUPLICATE_ACTION_MERGE;
+  export type DUPLICATE_ACTION_KEEP_BOTH = typeof DuplicateActionType.DUPLICATE_ACTION_KEEP_BOTH;
+  export type DUPLICATE_ACTION_SKIP = typeof DuplicateActionType.DUPLICATE_ACTION_SKIP;
+  export type DUPLICATE_ACTION_NOT_DUPLICATE = typeof DuplicateActionType.DUPLICATE_ACTION_NOT_DUPLICATE;
+  export type UNRECOGNIZED = typeof DuplicateActionType.UNRECOGNIZED;
+}
+
+export function duplicateActionTypeFromJSON(object: any): DuplicateActionType {
+  switch (object) {
+    case 0:
+    case "DUPLICATE_ACTION_UNSPECIFIED":
+      return DuplicateActionType.DUPLICATE_ACTION_UNSPECIFIED;
+    case 1:
+    case "DUPLICATE_ACTION_MERGE":
+      return DuplicateActionType.DUPLICATE_ACTION_MERGE;
+    case 2:
+    case "DUPLICATE_ACTION_KEEP_BOTH":
+      return DuplicateActionType.DUPLICATE_ACTION_KEEP_BOTH;
+    case 3:
+    case "DUPLICATE_ACTION_SKIP":
+      return DuplicateActionType.DUPLICATE_ACTION_SKIP;
+    case 4:
+    case "DUPLICATE_ACTION_NOT_DUPLICATE":
+      return DuplicateActionType.DUPLICATE_ACTION_NOT_DUPLICATE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DuplicateActionType.UNRECOGNIZED;
+  }
+}
+
+export function duplicateActionTypeToJSON(object: DuplicateActionType): string {
+  switch (object) {
+    case DuplicateActionType.DUPLICATE_ACTION_UNSPECIFIED:
+      return "DUPLICATE_ACTION_UNSPECIFIED";
+    case DuplicateActionType.DUPLICATE_ACTION_MERGE:
+      return "DUPLICATE_ACTION_MERGE";
+    case DuplicateActionType.DUPLICATE_ACTION_KEEP_BOTH:
+      return "DUPLICATE_ACTION_KEEP_BOTH";
+    case DuplicateActionType.DUPLICATE_ACTION_SKIP:
+      return "DUPLICATE_ACTION_SKIP";
+    case DuplicateActionType.DUPLICATE_ACTION_NOT_DUPLICATE:
+      return "DUPLICATE_ACTION_NOT_DUPLICATE";
+    case DuplicateActionType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Background Job Status */
+export const JobStatus = {
+  JOB_STATUS_UNSPECIFIED: 0,
+  JOB_STATUS_QUEUED: 1,
+  JOB_STATUS_PROCESSING: 2,
+  JOB_STATUS_COMPLETED: 3,
+  JOB_STATUS_FAILED: 4,
+  JOB_STATUS_CANCELLED: 5,
+  UNRECOGNIZED: -1,
+} as const;
+
+export type JobStatus = typeof JobStatus[keyof typeof JobStatus];
+
+export namespace JobStatus {
+  export type JOB_STATUS_UNSPECIFIED = typeof JobStatus.JOB_STATUS_UNSPECIFIED;
+  export type JOB_STATUS_QUEUED = typeof JobStatus.JOB_STATUS_QUEUED;
+  export type JOB_STATUS_PROCESSING = typeof JobStatus.JOB_STATUS_PROCESSING;
+  export type JOB_STATUS_COMPLETED = typeof JobStatus.JOB_STATUS_COMPLETED;
+  export type JOB_STATUS_FAILED = typeof JobStatus.JOB_STATUS_FAILED;
+  export type JOB_STATUS_CANCELLED = typeof JobStatus.JOB_STATUS_CANCELLED;
+  export type UNRECOGNIZED = typeof JobStatus.UNRECOGNIZED;
+}
+
+export function jobStatusFromJSON(object: any): JobStatus {
+  switch (object) {
+    case 0:
+    case "JOB_STATUS_UNSPECIFIED":
+      return JobStatus.JOB_STATUS_UNSPECIFIED;
+    case 1:
+    case "JOB_STATUS_QUEUED":
+      return JobStatus.JOB_STATUS_QUEUED;
+    case 2:
+    case "JOB_STATUS_PROCESSING":
+      return JobStatus.JOB_STATUS_PROCESSING;
+    case 3:
+    case "JOB_STATUS_COMPLETED":
+      return JobStatus.JOB_STATUS_COMPLETED;
+    case 4:
+    case "JOB_STATUS_FAILED":
+      return JobStatus.JOB_STATUS_FAILED;
+    case 5:
+    case "JOB_STATUS_CANCELLED":
+      return JobStatus.JOB_STATUS_CANCELLED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return JobStatus.UNRECOGNIZED;
+  }
+}
+
+export function jobStatusToJSON(object: JobStatus): string {
+  switch (object) {
+    case JobStatus.JOB_STATUS_UNSPECIFIED:
+      return "JOB_STATUS_UNSPECIFIED";
+    case JobStatus.JOB_STATUS_QUEUED:
+      return "JOB_STATUS_QUEUED";
+    case JobStatus.JOB_STATUS_PROCESSING:
+      return "JOB_STATUS_PROCESSING";
+    case JobStatus.JOB_STATUS_COMPLETED:
+      return "JOB_STATUS_COMPLETED";
+    case JobStatus.JOB_STATUS_FAILED:
+      return "JOB_STATUS_FAILED";
+    case JobStatus.JOB_STATUS_CANCELLED:
+      return "JOB_STATUS_CANCELLED";
+    case JobStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface UploadStatementFileRequest {
   fileData: Uint8Array;
   fileName: string;
@@ -194,6 +330,17 @@ export interface ExecuteImportRequest {
   /** Optional date range filter */
   dateFilterStart: number;
   dateFilterEnd: number;
+  /** User decisions for REVIEW_EACH strategy */
+  duplicateActions: DuplicateAction[];
+}
+
+export interface DuplicateAction {
+  /** Row number from parsed transaction */
+  importedRowNumber: number;
+  /** ID of existing transaction */
+  existingTransactionId: number;
+  /** User's decision */
+  action: DuplicateActionType;
 }
 
 export interface ExecuteImportResponse {
@@ -327,6 +474,132 @@ export interface CurrencyConversion {
   transactionCount: number;
   totalOriginal: Money | undefined;
   totalConverted: Money | undefined;
+}
+
+export interface CreateUserTemplateRequest {
+  templateName: string;
+  columnMapping: ColumnMapping | undefined;
+  dateFormat: string;
+  currency: string;
+  /** ["csv", "excel", "pdf"] */
+  fileFormats: string[];
+}
+
+export interface CreateUserTemplateResponse {
+  success: boolean;
+  message: string;
+  template: UserTemplate | undefined;
+  timestamp: string;
+}
+
+export interface ListUserTemplatesRequest {
+}
+
+export interface ListUserTemplatesResponse {
+  success: boolean;
+  message: string;
+  templates: UserTemplate[];
+  timestamp: string;
+}
+
+export interface GetUserTemplateRequest {
+  templateId: number;
+}
+
+export interface GetUserTemplateResponse {
+  success: boolean;
+  message: string;
+  template: UserTemplate | undefined;
+  timestamp: string;
+}
+
+export interface UpdateUserTemplateRequest {
+  templateId: number;
+  templateName: string;
+  columnMapping: ColumnMapping | undefined;
+  dateFormat: string;
+  currency: string;
+  fileFormats: string[];
+}
+
+export interface UpdateUserTemplateResponse {
+  success: boolean;
+  message: string;
+  template: UserTemplate | undefined;
+  timestamp: string;
+}
+
+export interface DeleteUserTemplateRequest {
+  templateId: number;
+}
+
+export interface DeleteUserTemplateResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+}
+
+export interface UserTemplate {
+  id: number;
+  userId: number;
+  name: string;
+  columnMapping: ColumnMapping | undefined;
+  dateFormat: string;
+  currency: string;
+  fileFormats: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface GetJobStatusRequest {
+  jobId: string;
+}
+
+export interface GetJobStatusResponse {
+  success: boolean;
+  message: string;
+  job: ImportJobStatus | undefined;
+  timestamp: string;
+}
+
+export interface CancelJobRequest {
+  jobId: string;
+}
+
+export interface CancelJobResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+}
+
+export interface ListUserJobsRequest {
+  /** Optional: filter by status */
+  status: JobStatus;
+}
+
+export interface ListUserJobsResponse {
+  success: boolean;
+  message: string;
+  jobs: ImportJobStatus[];
+  timestamp: string;
+}
+
+export interface ImportJobStatus {
+  jobId: string;
+  userId: number;
+  fileId: string;
+  walletId: number;
+  status: JobStatus;
+  /** 0-100 */
+  progress: number;
+  processedCount: number;
+  totalCount: number;
+  result: ExecuteImportResponse | undefined;
+  error: string;
+  createdAt: number;
+  startedAt: number;
+  completedAt: number;
+  expiresAt: number;
 }
 
 function createBaseUploadStatementFileRequest(): UploadStatementFileRequest {
@@ -1945,6 +2218,7 @@ function createBaseExecuteImportRequest(): ExecuteImportRequest {
     excludedRowNumbers: [],
     dateFilterStart: 0,
     dateFilterEnd: 0,
+    duplicateActions: [],
   };
 }
 
@@ -1972,6 +2246,9 @@ export const ExecuteImportRequest: MessageFns<ExecuteImportRequest> = {
     }
     if (message.dateFilterEnd !== 0) {
       writer.uint32(56).int64(message.dateFilterEnd);
+    }
+    for (const v of message.duplicateActions) {
+      DuplicateAction.encode(v!, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -2049,6 +2326,14 @@ export const ExecuteImportRequest: MessageFns<ExecuteImportRequest> = {
           message.dateFilterEnd = longToNumber(reader.int64());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.duplicateActions.push(DuplicateAction.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2089,6 +2374,11 @@ export const ExecuteImportRequest: MessageFns<ExecuteImportRequest> = {
         : isSet(object.date_filter_end)
         ? globalThis.Number(object.date_filter_end)
         : 0,
+      duplicateActions: globalThis.Array.isArray(object?.duplicateActions)
+        ? object.duplicateActions.map((e: any) => DuplicateAction.fromJSON(e))
+        : globalThis.Array.isArray(object?.duplicate_actions)
+        ? object.duplicate_actions.map((e: any) => DuplicateAction.fromJSON(e))
+        : [],
     };
   },
 
@@ -2115,6 +2405,9 @@ export const ExecuteImportRequest: MessageFns<ExecuteImportRequest> = {
     if (message.dateFilterEnd !== 0) {
       obj.dateFilterEnd = Math.round(message.dateFilterEnd);
     }
+    if (message.duplicateActions?.length) {
+      obj.duplicateActions = message.duplicateActions.map((e) => DuplicateAction.toJSON(e));
+    }
     return obj;
   },
 
@@ -2130,6 +2423,107 @@ export const ExecuteImportRequest: MessageFns<ExecuteImportRequest> = {
     message.excludedRowNumbers = object.excludedRowNumbers?.map((e) => e) || [];
     message.dateFilterStart = object.dateFilterStart ?? 0;
     message.dateFilterEnd = object.dateFilterEnd ?? 0;
+    message.duplicateActions = object.duplicateActions?.map((e) => DuplicateAction.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDuplicateAction(): DuplicateAction {
+  return { importedRowNumber: 0, existingTransactionId: 0, action: 0 };
+}
+
+export const DuplicateAction: MessageFns<DuplicateAction> = {
+  encode(message: DuplicateAction, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.importedRowNumber !== 0) {
+      writer.uint32(8).int32(message.importedRowNumber);
+    }
+    if (message.existingTransactionId !== 0) {
+      writer.uint32(16).int32(message.existingTransactionId);
+    }
+    if (message.action !== 0) {
+      writer.uint32(24).int32(message.action);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DuplicateAction {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDuplicateAction();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.importedRowNumber = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.existingTransactionId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DuplicateAction {
+    return {
+      importedRowNumber: isSet(object.importedRowNumber)
+        ? globalThis.Number(object.importedRowNumber)
+        : isSet(object.imported_row_number)
+        ? globalThis.Number(object.imported_row_number)
+        : 0,
+      existingTransactionId: isSet(object.existingTransactionId)
+        ? globalThis.Number(object.existingTransactionId)
+        : isSet(object.existing_transaction_id)
+        ? globalThis.Number(object.existing_transaction_id)
+        : 0,
+      action: isSet(object.action) ? duplicateActionTypeFromJSON(object.action) : 0,
+    };
+  },
+
+  toJSON(message: DuplicateAction): unknown {
+    const obj: any = {};
+    if (message.importedRowNumber !== 0) {
+      obj.importedRowNumber = Math.round(message.importedRowNumber);
+    }
+    if (message.existingTransactionId !== 0) {
+      obj.existingTransactionId = Math.round(message.existingTransactionId);
+    }
+    if (message.action !== 0) {
+      obj.action = duplicateActionTypeToJSON(message.action);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DuplicateAction>): DuplicateAction {
+    return DuplicateAction.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DuplicateAction>): DuplicateAction {
+    const message = createBaseDuplicateAction();
+    message.importedRowNumber = object.importedRowNumber ?? 0;
+    message.existingTransactionId = object.existingTransactionId ?? 0;
+    message.action = object.action ?? 0;
     return message;
   },
 };
@@ -4339,6 +4733,2058 @@ export const CurrencyConversion: MessageFns<CurrencyConversion> = {
     message.totalConverted = (object.totalConverted !== undefined && object.totalConverted !== null)
       ? Money.fromPartial(object.totalConverted)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateUserTemplateRequest(): CreateUserTemplateRequest {
+  return { templateName: "", columnMapping: undefined, dateFormat: "", currency: "", fileFormats: [] };
+}
+
+export const CreateUserTemplateRequest: MessageFns<CreateUserTemplateRequest> = {
+  encode(message: CreateUserTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.templateName !== "") {
+      writer.uint32(10).string(message.templateName);
+    }
+    if (message.columnMapping !== undefined) {
+      ColumnMapping.encode(message.columnMapping, writer.uint32(18).fork()).join();
+    }
+    if (message.dateFormat !== "") {
+      writer.uint32(26).string(message.dateFormat);
+    }
+    if (message.currency !== "") {
+      writer.uint32(34).string(message.currency);
+    }
+    for (const v of message.fileFormats) {
+      writer.uint32(42).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateUserTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateUserTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.templateName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columnMapping = ColumnMapping.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.dateFormat = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fileFormats.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateUserTemplateRequest {
+    return {
+      templateName: isSet(object.templateName)
+        ? globalThis.String(object.templateName)
+        : isSet(object.template_name)
+        ? globalThis.String(object.template_name)
+        : "",
+      columnMapping: isSet(object.columnMapping)
+        ? ColumnMapping.fromJSON(object.columnMapping)
+        : isSet(object.column_mapping)
+        ? ColumnMapping.fromJSON(object.column_mapping)
+        : undefined,
+      dateFormat: isSet(object.dateFormat)
+        ? globalThis.String(object.dateFormat)
+        : isSet(object.date_format)
+        ? globalThis.String(object.date_format)
+        : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      fileFormats: globalThis.Array.isArray(object?.fileFormats)
+        ? object.fileFormats.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.file_formats)
+        ? object.file_formats.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: CreateUserTemplateRequest): unknown {
+    const obj: any = {};
+    if (message.templateName !== "") {
+      obj.templateName = message.templateName;
+    }
+    if (message.columnMapping !== undefined) {
+      obj.columnMapping = ColumnMapping.toJSON(message.columnMapping);
+    }
+    if (message.dateFormat !== "") {
+      obj.dateFormat = message.dateFormat;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.fileFormats?.length) {
+      obj.fileFormats = message.fileFormats;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateUserTemplateRequest>): CreateUserTemplateRequest {
+    return CreateUserTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateUserTemplateRequest>): CreateUserTemplateRequest {
+    const message = createBaseCreateUserTemplateRequest();
+    message.templateName = object.templateName ?? "";
+    message.columnMapping = (object.columnMapping !== undefined && object.columnMapping !== null)
+      ? ColumnMapping.fromPartial(object.columnMapping)
+      : undefined;
+    message.dateFormat = object.dateFormat ?? "";
+    message.currency = object.currency ?? "";
+    message.fileFormats = object.fileFormats?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCreateUserTemplateResponse(): CreateUserTemplateResponse {
+  return { success: false, message: "", template: undefined, timestamp: "" };
+}
+
+export const CreateUserTemplateResponse: MessageFns<CreateUserTemplateResponse> = {
+  encode(message: CreateUserTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.template !== undefined) {
+      UserTemplate.encode(message.template, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateUserTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateUserTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.template = UserTemplate.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateUserTemplateResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      template: isSet(object.template) ? UserTemplate.fromJSON(object.template) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: CreateUserTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.template !== undefined) {
+      obj.template = UserTemplate.toJSON(message.template);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateUserTemplateResponse>): CreateUserTemplateResponse {
+    return CreateUserTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateUserTemplateResponse>): CreateUserTemplateResponse {
+    const message = createBaseCreateUserTemplateResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.template = (object.template !== undefined && object.template !== null)
+      ? UserTemplate.fromPartial(object.template)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseListUserTemplatesRequest(): ListUserTemplatesRequest {
+  return {};
+}
+
+export const ListUserTemplatesRequest: MessageFns<ListUserTemplatesRequest> = {
+  encode(_: ListUserTemplatesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserTemplatesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserTemplatesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ListUserTemplatesRequest {
+    return {};
+  },
+
+  toJSON(_: ListUserTemplatesRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserTemplatesRequest>): ListUserTemplatesRequest {
+    return ListUserTemplatesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ListUserTemplatesRequest>): ListUserTemplatesRequest {
+    const message = createBaseListUserTemplatesRequest();
+    return message;
+  },
+};
+
+function createBaseListUserTemplatesResponse(): ListUserTemplatesResponse {
+  return { success: false, message: "", templates: [], timestamp: "" };
+}
+
+export const ListUserTemplatesResponse: MessageFns<ListUserTemplatesResponse> = {
+  encode(message: ListUserTemplatesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.templates) {
+      UserTemplate.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserTemplatesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserTemplatesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.templates.push(UserTemplate.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUserTemplatesResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      templates: globalThis.Array.isArray(object?.templates)
+        ? object.templates.map((e: any) => UserTemplate.fromJSON(e))
+        : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: ListUserTemplatesResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.templates?.length) {
+      obj.templates = message.templates.map((e) => UserTemplate.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserTemplatesResponse>): ListUserTemplatesResponse {
+    return ListUserTemplatesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUserTemplatesResponse>): ListUserTemplatesResponse {
+    const message = createBaseListUserTemplatesResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.templates = object.templates?.map((e) => UserTemplate.fromPartial(e)) || [];
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserTemplateRequest(): GetUserTemplateRequest {
+  return { templateId: 0 };
+}
+
+export const GetUserTemplateRequest: MessageFns<GetUserTemplateRequest> = {
+  encode(message: GetUserTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.templateId !== 0) {
+      writer.uint32(8).int32(message.templateId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.templateId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserTemplateRequest {
+    return {
+      templateId: isSet(object.templateId)
+        ? globalThis.Number(object.templateId)
+        : isSet(object.template_id)
+        ? globalThis.Number(object.template_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetUserTemplateRequest): unknown {
+    const obj: any = {};
+    if (message.templateId !== 0) {
+      obj.templateId = Math.round(message.templateId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserTemplateRequest>): GetUserTemplateRequest {
+    return GetUserTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserTemplateRequest>): GetUserTemplateRequest {
+    const message = createBaseGetUserTemplateRequest();
+    message.templateId = object.templateId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetUserTemplateResponse(): GetUserTemplateResponse {
+  return { success: false, message: "", template: undefined, timestamp: "" };
+}
+
+export const GetUserTemplateResponse: MessageFns<GetUserTemplateResponse> = {
+  encode(message: GetUserTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.template !== undefined) {
+      UserTemplate.encode(message.template, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.template = UserTemplate.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserTemplateResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      template: isSet(object.template) ? UserTemplate.fromJSON(object.template) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetUserTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.template !== undefined) {
+      obj.template = UserTemplate.toJSON(message.template);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserTemplateResponse>): GetUserTemplateResponse {
+    return GetUserTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserTemplateResponse>): GetUserTemplateResponse {
+    const message = createBaseGetUserTemplateResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.template = (object.template !== undefined && object.template !== null)
+      ? UserTemplate.fromPartial(object.template)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateUserTemplateRequest(): UpdateUserTemplateRequest {
+  return { templateId: 0, templateName: "", columnMapping: undefined, dateFormat: "", currency: "", fileFormats: [] };
+}
+
+export const UpdateUserTemplateRequest: MessageFns<UpdateUserTemplateRequest> = {
+  encode(message: UpdateUserTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.templateId !== 0) {
+      writer.uint32(8).int32(message.templateId);
+    }
+    if (message.templateName !== "") {
+      writer.uint32(18).string(message.templateName);
+    }
+    if (message.columnMapping !== undefined) {
+      ColumnMapping.encode(message.columnMapping, writer.uint32(26).fork()).join();
+    }
+    if (message.dateFormat !== "") {
+      writer.uint32(34).string(message.dateFormat);
+    }
+    if (message.currency !== "") {
+      writer.uint32(42).string(message.currency);
+    }
+    for (const v of message.fileFormats) {
+      writer.uint32(50).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateUserTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateUserTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.templateId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.templateName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.columnMapping = ColumnMapping.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.dateFormat = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.fileFormats.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateUserTemplateRequest {
+    return {
+      templateId: isSet(object.templateId)
+        ? globalThis.Number(object.templateId)
+        : isSet(object.template_id)
+        ? globalThis.Number(object.template_id)
+        : 0,
+      templateName: isSet(object.templateName)
+        ? globalThis.String(object.templateName)
+        : isSet(object.template_name)
+        ? globalThis.String(object.template_name)
+        : "",
+      columnMapping: isSet(object.columnMapping)
+        ? ColumnMapping.fromJSON(object.columnMapping)
+        : isSet(object.column_mapping)
+        ? ColumnMapping.fromJSON(object.column_mapping)
+        : undefined,
+      dateFormat: isSet(object.dateFormat)
+        ? globalThis.String(object.dateFormat)
+        : isSet(object.date_format)
+        ? globalThis.String(object.date_format)
+        : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      fileFormats: globalThis.Array.isArray(object?.fileFormats)
+        ? object.fileFormats.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.file_formats)
+        ? object.file_formats.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: UpdateUserTemplateRequest): unknown {
+    const obj: any = {};
+    if (message.templateId !== 0) {
+      obj.templateId = Math.round(message.templateId);
+    }
+    if (message.templateName !== "") {
+      obj.templateName = message.templateName;
+    }
+    if (message.columnMapping !== undefined) {
+      obj.columnMapping = ColumnMapping.toJSON(message.columnMapping);
+    }
+    if (message.dateFormat !== "") {
+      obj.dateFormat = message.dateFormat;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.fileFormats?.length) {
+      obj.fileFormats = message.fileFormats;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateUserTemplateRequest>): UpdateUserTemplateRequest {
+    return UpdateUserTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateUserTemplateRequest>): UpdateUserTemplateRequest {
+    const message = createBaseUpdateUserTemplateRequest();
+    message.templateId = object.templateId ?? 0;
+    message.templateName = object.templateName ?? "";
+    message.columnMapping = (object.columnMapping !== undefined && object.columnMapping !== null)
+      ? ColumnMapping.fromPartial(object.columnMapping)
+      : undefined;
+    message.dateFormat = object.dateFormat ?? "";
+    message.currency = object.currency ?? "";
+    message.fileFormats = object.fileFormats?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseUpdateUserTemplateResponse(): UpdateUserTemplateResponse {
+  return { success: false, message: "", template: undefined, timestamp: "" };
+}
+
+export const UpdateUserTemplateResponse: MessageFns<UpdateUserTemplateResponse> = {
+  encode(message: UpdateUserTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.template !== undefined) {
+      UserTemplate.encode(message.template, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateUserTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateUserTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.template = UserTemplate.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateUserTemplateResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      template: isSet(object.template) ? UserTemplate.fromJSON(object.template) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: UpdateUserTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.template !== undefined) {
+      obj.template = UserTemplate.toJSON(message.template);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateUserTemplateResponse>): UpdateUserTemplateResponse {
+    return UpdateUserTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateUserTemplateResponse>): UpdateUserTemplateResponse {
+    const message = createBaseUpdateUserTemplateResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.template = (object.template !== undefined && object.template !== null)
+      ? UserTemplate.fromPartial(object.template)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteUserTemplateRequest(): DeleteUserTemplateRequest {
+  return { templateId: 0 };
+}
+
+export const DeleteUserTemplateRequest: MessageFns<DeleteUserTemplateRequest> = {
+  encode(message: DeleteUserTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.templateId !== 0) {
+      writer.uint32(8).int32(message.templateId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteUserTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteUserTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.templateId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteUserTemplateRequest {
+    return {
+      templateId: isSet(object.templateId)
+        ? globalThis.Number(object.templateId)
+        : isSet(object.template_id)
+        ? globalThis.Number(object.template_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: DeleteUserTemplateRequest): unknown {
+    const obj: any = {};
+    if (message.templateId !== 0) {
+      obj.templateId = Math.round(message.templateId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteUserTemplateRequest>): DeleteUserTemplateRequest {
+    return DeleteUserTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteUserTemplateRequest>): DeleteUserTemplateRequest {
+    const message = createBaseDeleteUserTemplateRequest();
+    message.templateId = object.templateId ?? 0;
+    return message;
+  },
+};
+
+function createBaseDeleteUserTemplateResponse(): DeleteUserTemplateResponse {
+  return { success: false, message: "", timestamp: "" };
+}
+
+export const DeleteUserTemplateResponse: MessageFns<DeleteUserTemplateResponse> = {
+  encode(message: DeleteUserTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteUserTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteUserTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteUserTemplateResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: DeleteUserTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteUserTemplateResponse>): DeleteUserTemplateResponse {
+    return DeleteUserTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteUserTemplateResponse>): DeleteUserTemplateResponse {
+    const message = createBaseDeleteUserTemplateResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseUserTemplate(): UserTemplate {
+  return {
+    id: 0,
+    userId: 0,
+    name: "",
+    columnMapping: undefined,
+    dateFormat: "",
+    currency: "",
+    fileFormats: [],
+    createdAt: 0,
+    updatedAt: 0,
+  };
+}
+
+export const UserTemplate: MessageFns<UserTemplate> = {
+  encode(message: UserTemplate, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).int32(message.id);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int32(message.userId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.columnMapping !== undefined) {
+      ColumnMapping.encode(message.columnMapping, writer.uint32(34).fork()).join();
+    }
+    if (message.dateFormat !== "") {
+      writer.uint32(42).string(message.dateFormat);
+    }
+    if (message.currency !== "") {
+      writer.uint32(50).string(message.currency);
+    }
+    for (const v of message.fileFormats) {
+      writer.uint32(58).string(v!);
+    }
+    if (message.createdAt !== 0) {
+      writer.uint32(64).int64(message.createdAt);
+    }
+    if (message.updatedAt !== 0) {
+      writer.uint32(72).int64(message.updatedAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserTemplate {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserTemplate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.columnMapping = ColumnMapping.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.dateFormat = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.fileFormats.push(reader.string());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.createdAt = longToNumber(reader.int64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.updatedAt = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserTemplate {
+    return {
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      userId: isSet(object.userId)
+        ? globalThis.Number(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.Number(object.user_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      columnMapping: isSet(object.columnMapping)
+        ? ColumnMapping.fromJSON(object.columnMapping)
+        : isSet(object.column_mapping)
+        ? ColumnMapping.fromJSON(object.column_mapping)
+        : undefined,
+      dateFormat: isSet(object.dateFormat)
+        ? globalThis.String(object.dateFormat)
+        : isSet(object.date_format)
+        ? globalThis.String(object.date_format)
+        : "",
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      fileFormats: globalThis.Array.isArray(object?.fileFormats)
+        ? object.fileFormats.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.file_formats)
+        ? object.file_formats.map((e: any) => globalThis.String(e))
+        : [],
+      createdAt: isSet(object.createdAt)
+        ? globalThis.Number(object.createdAt)
+        : isSet(object.created_at)
+        ? globalThis.Number(object.created_at)
+        : 0,
+      updatedAt: isSet(object.updatedAt)
+        ? globalThis.Number(object.updatedAt)
+        : isSet(object.updated_at)
+        ? globalThis.Number(object.updated_at)
+        : 0,
+    };
+  },
+
+  toJSON(message: UserTemplate): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.columnMapping !== undefined) {
+      obj.columnMapping = ColumnMapping.toJSON(message.columnMapping);
+    }
+    if (message.dateFormat !== "") {
+      obj.dateFormat = message.dateFormat;
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.fileFormats?.length) {
+      obj.fileFormats = message.fileFormats;
+    }
+    if (message.createdAt !== 0) {
+      obj.createdAt = Math.round(message.createdAt);
+    }
+    if (message.updatedAt !== 0) {
+      obj.updatedAt = Math.round(message.updatedAt);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UserTemplate>): UserTemplate {
+    return UserTemplate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UserTemplate>): UserTemplate {
+    const message = createBaseUserTemplate();
+    message.id = object.id ?? 0;
+    message.userId = object.userId ?? 0;
+    message.name = object.name ?? "";
+    message.columnMapping = (object.columnMapping !== undefined && object.columnMapping !== null)
+      ? ColumnMapping.fromPartial(object.columnMapping)
+      : undefined;
+    message.dateFormat = object.dateFormat ?? "";
+    message.currency = object.currency ?? "";
+    message.fileFormats = object.fileFormats?.map((e) => e) || [];
+    message.createdAt = object.createdAt ?? 0;
+    message.updatedAt = object.updatedAt ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetJobStatusRequest(): GetJobStatusRequest {
+  return { jobId: "" };
+}
+
+export const GetJobStatusRequest: MessageFns<GetJobStatusRequest> = {
+  encode(message: GetJobStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetJobStatusRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetJobStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetJobStatusRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+    };
+  },
+
+  toJSON(message: GetJobStatusRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetJobStatusRequest>): GetJobStatusRequest {
+    return GetJobStatusRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetJobStatusRequest>): GetJobStatusRequest {
+    const message = createBaseGetJobStatusRequest();
+    message.jobId = object.jobId ?? "";
+    return message;
+  },
+};
+
+function createBaseGetJobStatusResponse(): GetJobStatusResponse {
+  return { success: false, message: "", job: undefined, timestamp: "" };
+}
+
+export const GetJobStatusResponse: MessageFns<GetJobStatusResponse> = {
+  encode(message: GetJobStatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.job !== undefined) {
+      ImportJobStatus.encode(message.job, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetJobStatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetJobStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.job = ImportJobStatus.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetJobStatusResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      job: isSet(object.job) ? ImportJobStatus.fromJSON(object.job) : undefined,
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetJobStatusResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.job !== undefined) {
+      obj.job = ImportJobStatus.toJSON(message.job);
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetJobStatusResponse>): GetJobStatusResponse {
+    return GetJobStatusResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetJobStatusResponse>): GetJobStatusResponse {
+    const message = createBaseGetJobStatusResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.job = (object.job !== undefined && object.job !== null)
+      ? ImportJobStatus.fromPartial(object.job)
+      : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseCancelJobRequest(): CancelJobRequest {
+  return { jobId: "" };
+}
+
+export const CancelJobRequest: MessageFns<CancelJobRequest> = {
+  encode(message: CancelJobRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelJobRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelJobRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelJobRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+    };
+  },
+
+  toJSON(message: CancelJobRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelJobRequest>): CancelJobRequest {
+    return CancelJobRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CancelJobRequest>): CancelJobRequest {
+    const message = createBaseCancelJobRequest();
+    message.jobId = object.jobId ?? "";
+    return message;
+  },
+};
+
+function createBaseCancelJobResponse(): CancelJobResponse {
+  return { success: false, message: "", timestamp: "" };
+}
+
+export const CancelJobResponse: MessageFns<CancelJobResponse> = {
+  encode(message: CancelJobResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelJobResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelJobResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelJobResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: CancelJobResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelJobResponse>): CancelJobResponse {
+    return CancelJobResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CancelJobResponse>): CancelJobResponse {
+    const message = createBaseCancelJobResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseListUserJobsRequest(): ListUserJobsRequest {
+  return { status: 0 };
+}
+
+export const ListUserJobsRequest: MessageFns<ListUserJobsRequest> = {
+  encode(message: ListUserJobsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserJobsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserJobsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUserJobsRequest {
+    return { status: isSet(object.status) ? jobStatusFromJSON(object.status) : 0 };
+  },
+
+  toJSON(message: ListUserJobsRequest): unknown {
+    const obj: any = {};
+    if (message.status !== 0) {
+      obj.status = jobStatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserJobsRequest>): ListUserJobsRequest {
+    return ListUserJobsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUserJobsRequest>): ListUserJobsRequest {
+    const message = createBaseListUserJobsRequest();
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseListUserJobsResponse(): ListUserJobsResponse {
+  return { success: false, message: "", jobs: [], timestamp: "" };
+}
+
+export const ListUserJobsResponse: MessageFns<ListUserJobsResponse> = {
+  encode(message: ListUserJobsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.jobs) {
+      ImportJobStatus.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(34).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUserJobsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUserJobsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.jobs.push(ImportJobStatus.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUserJobsResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      jobs: globalThis.Array.isArray(object?.jobs) ? object.jobs.map((e: any) => ImportJobStatus.fromJSON(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: ListUserJobsResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.jobs?.length) {
+      obj.jobs = message.jobs.map((e) => ImportJobStatus.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUserJobsResponse>): ListUserJobsResponse {
+    return ListUserJobsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUserJobsResponse>): ListUserJobsResponse {
+    const message = createBaseListUserJobsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.jobs = object.jobs?.map((e) => ImportJobStatus.fromPartial(e)) || [];
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBaseImportJobStatus(): ImportJobStatus {
+  return {
+    jobId: "",
+    userId: 0,
+    fileId: "",
+    walletId: 0,
+    status: 0,
+    progress: 0,
+    processedCount: 0,
+    totalCount: 0,
+    result: undefined,
+    error: "",
+    createdAt: 0,
+    startedAt: 0,
+    completedAt: 0,
+    expiresAt: 0,
+  };
+}
+
+export const ImportJobStatus: MessageFns<ImportJobStatus> = {
+  encode(message: ImportJobStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int32(message.userId);
+    }
+    if (message.fileId !== "") {
+      writer.uint32(26).string(message.fileId);
+    }
+    if (message.walletId !== 0) {
+      writer.uint32(32).int32(message.walletId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(40).int32(message.status);
+    }
+    if (message.progress !== 0) {
+      writer.uint32(48).int32(message.progress);
+    }
+    if (message.processedCount !== 0) {
+      writer.uint32(56).int32(message.processedCount);
+    }
+    if (message.totalCount !== 0) {
+      writer.uint32(64).int32(message.totalCount);
+    }
+    if (message.result !== undefined) {
+      ExecuteImportResponse.encode(message.result, writer.uint32(74).fork()).join();
+    }
+    if (message.error !== "") {
+      writer.uint32(82).string(message.error);
+    }
+    if (message.createdAt !== 0) {
+      writer.uint32(88).int64(message.createdAt);
+    }
+    if (message.startedAt !== 0) {
+      writer.uint32(96).int64(message.startedAt);
+    }
+    if (message.completedAt !== 0) {
+      writer.uint32(104).int64(message.completedAt);
+    }
+    if (message.expiresAt !== 0) {
+      writer.uint32(112).int64(message.expiresAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportJobStatus {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportJobStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileId = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.walletId = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.progress = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.processedCount = reader.int32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.totalCount = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.result = ExecuteImportResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.createdAt = longToNumber(reader.int64());
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.startedAt = longToNumber(reader.int64());
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.completedAt = longToNumber(reader.int64());
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.expiresAt = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportJobStatus {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+      userId: isSet(object.userId)
+        ? globalThis.Number(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.Number(object.user_id)
+        : 0,
+      fileId: isSet(object.fileId)
+        ? globalThis.String(object.fileId)
+        : isSet(object.file_id)
+        ? globalThis.String(object.file_id)
+        : "",
+      walletId: isSet(object.walletId)
+        ? globalThis.Number(object.walletId)
+        : isSet(object.wallet_id)
+        ? globalThis.Number(object.wallet_id)
+        : 0,
+      status: isSet(object.status) ? jobStatusFromJSON(object.status) : 0,
+      progress: isSet(object.progress) ? globalThis.Number(object.progress) : 0,
+      processedCount: isSet(object.processedCount)
+        ? globalThis.Number(object.processedCount)
+        : isSet(object.processed_count)
+        ? globalThis.Number(object.processed_count)
+        : 0,
+      totalCount: isSet(object.totalCount)
+        ? globalThis.Number(object.totalCount)
+        : isSet(object.total_count)
+        ? globalThis.Number(object.total_count)
+        : 0,
+      result: isSet(object.result) ? ExecuteImportResponse.fromJSON(object.result) : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+      createdAt: isSet(object.createdAt)
+        ? globalThis.Number(object.createdAt)
+        : isSet(object.created_at)
+        ? globalThis.Number(object.created_at)
+        : 0,
+      startedAt: isSet(object.startedAt)
+        ? globalThis.Number(object.startedAt)
+        : isSet(object.started_at)
+        ? globalThis.Number(object.started_at)
+        : 0,
+      completedAt: isSet(object.completedAt)
+        ? globalThis.Number(object.completedAt)
+        : isSet(object.completed_at)
+        ? globalThis.Number(object.completed_at)
+        : 0,
+      expiresAt: isSet(object.expiresAt)
+        ? globalThis.Number(object.expiresAt)
+        : isSet(object.expires_at)
+        ? globalThis.Number(object.expires_at)
+        : 0,
+    };
+  },
+
+  toJSON(message: ImportJobStatus): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    if (message.fileId !== "") {
+      obj.fileId = message.fileId;
+    }
+    if (message.walletId !== 0) {
+      obj.walletId = Math.round(message.walletId);
+    }
+    if (message.status !== 0) {
+      obj.status = jobStatusToJSON(message.status);
+    }
+    if (message.progress !== 0) {
+      obj.progress = Math.round(message.progress);
+    }
+    if (message.processedCount !== 0) {
+      obj.processedCount = Math.round(message.processedCount);
+    }
+    if (message.totalCount !== 0) {
+      obj.totalCount = Math.round(message.totalCount);
+    }
+    if (message.result !== undefined) {
+      obj.result = ExecuteImportResponse.toJSON(message.result);
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    if (message.createdAt !== 0) {
+      obj.createdAt = Math.round(message.createdAt);
+    }
+    if (message.startedAt !== 0) {
+      obj.startedAt = Math.round(message.startedAt);
+    }
+    if (message.completedAt !== 0) {
+      obj.completedAt = Math.round(message.completedAt);
+    }
+    if (message.expiresAt !== 0) {
+      obj.expiresAt = Math.round(message.expiresAt);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportJobStatus>): ImportJobStatus {
+    return ImportJobStatus.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportJobStatus>): ImportJobStatus {
+    const message = createBaseImportJobStatus();
+    message.jobId = object.jobId ?? "";
+    message.userId = object.userId ?? 0;
+    message.fileId = object.fileId ?? "";
+    message.walletId = object.walletId ?? 0;
+    message.status = object.status ?? 0;
+    message.progress = object.progress ?? 0;
+    message.processedCount = object.processedCount ?? 0;
+    message.totalCount = object.totalCount ?? 0;
+    message.result = (object.result !== undefined && object.result !== null)
+      ? ExecuteImportResponse.fromPartial(object.result)
+      : undefined;
+    message.error = object.error ?? "";
+    message.createdAt = object.createdAt ?? 0;
+    message.startedAt = object.startedAt ?? 0;
+    message.completedAt = object.completedAt ?? 0;
+    message.expiresAt = object.expiresAt ?? 0;
     return message;
   },
 };

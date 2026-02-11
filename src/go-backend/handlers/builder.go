@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"wealthjourney/domain/service"
-	"wealthjourney/pkg/fx"
+	"wealthjourney/pkg/jobs"
 )
 
 // AllHandlers contains all handler instances.
@@ -24,10 +24,17 @@ func NewHandlers(services *service.Services, repos *service.Repositories) *AllHa
 	// Get dependencies
 	deps := GetDependencies()
 
-	// Create FX service for currency conversion (for import service)
-	var fxService service.FXService
-	if deps != nil && deps.RDB != nil && deps.Cfg != nil {
-		fxService = fx.NewExchangeService(deps.Cfg.FX, repos.ExchangeRate, deps.RDB.GetClient())
+	// Create FX rate service for currency conversion (for import service)
+	var fxService service.FXRateService
+	if deps != nil && deps.RDB != nil && repos.FXRate != nil {
+		fxService = service.NewFXRateService(repos.FXRate, deps.RDB.GetClient())
+	}
+
+	// Create import job queue (Redis-based) with adapter
+	var adaptedQueue service.ImportJobQueue
+	if deps != nil && deps.RDB != nil {
+		redisQueue := jobs.NewRedisImportQueue(deps.RDB.GetClient())
+		adaptedQueue = jobs.NewImportQueueAdapter(redisQueue)
 	}
 
 	// Create import service with categorization and currency conversion support
@@ -40,6 +47,7 @@ func NewHandlers(services *service.Services, repos *service.Repositories) *AllHa
 		repos.Keyword,
 		repos.UserMapping,
 		fxService,
+		adaptedQueue,
 	)
 
 	return &AllHandlers{

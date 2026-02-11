@@ -40,6 +40,7 @@ type UserTemplate struct {
 	DateFormat    string         `gorm:"size:20;not null" json:"dateFormat"`
 	AmountFormat  datatypes.JSON `gorm:"not null" json:"amountFormat"`
 	Currency      string         `gorm:"size:3;not null" json:"currency"`
+	FileFormats   datatypes.JSON `json:"fileFormats"` // ["csv", "excel", "pdf"]
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`

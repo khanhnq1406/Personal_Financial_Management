@@ -304,3 +304,23 @@ func NewLogoutErrorWithCause(cause error) LogoutError {
 		BaseError: WrapError("LOGOUT_FAILED", "logout failed", http.StatusInternalServerError, cause),
 	}
 }
+
+// RateLimitError represents a rate limit exceeded error.
+type RateLimitError struct {
+	BaseError
+}
+
+// NewRateLimitError creates a new rate limit error.
+func NewRateLimitError(message string) RateLimitError {
+	return RateLimitError{
+		BaseError: NewError("RATE_LIMIT_EXCEEDED", message, http.StatusTooManyRequests),
+	}
+}
+
+// NewRateLimitErrorWithRetry creates a rate limit error with retry-after information.
+func NewRateLimitErrorWithRetry(message string, retryAfter int) RateLimitError {
+	fullMessage := fmt.Sprintf("%s. Retry after %d seconds", message, retryAfter)
+	return RateLimitError{
+		BaseError: NewError("RATE_LIMIT_EXCEEDED", fullMessage, http.StatusTooManyRequests),
+	}
+}

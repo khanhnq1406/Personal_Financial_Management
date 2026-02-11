@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/ledongthuc/pdf"
+
+	"wealthjourney/pkg/validator"
 )
 
 // PDFParser handles parsing of bank statement PDF files
@@ -225,6 +227,20 @@ func (p *PDFParser) parseRow(rowNumber int, cells []string, mapping *ColumnMappi
 	// Parse reference (if column exists)
 	if mapping.ReferenceColumn >= 0 && mapping.ReferenceColumn <= maxCol {
 		parsed.ReferenceNum = strings.TrimSpace(cells[mapping.ReferenceColumn])
+	}
+
+	// Apply business rules validation (if all required fields are parsed successfully)
+	if parsed.IsValid {
+		validationErrors := validator.ValidateTransaction(
+			parsed.Amount,
+			mapping.Currency,
+			parsed.Description,
+			parsed.Date,
+		)
+
+		for _, ve := range validationErrors {
+			parsed.addError(ve.Field, ve.Message, ve.Severity)
+		}
 	}
 
 	return parsed
