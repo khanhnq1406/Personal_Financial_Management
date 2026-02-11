@@ -810,8 +810,8 @@ export function InvestmentDetailModal({
                             : "text-red-600"
                         }`}
                       >
-                        {investment.unrealizedPnlPercent >= 0 ? "+" : ""}
-                        {investment.unrealizedPnlPercent?.toFixed(2)}%
+                        {(investment.unrealizedPnlPercent || 0) >= 0 ? "+" : ""}
+                        {(investment.unrealizedPnlPercent || 0).toFixed(2)}%
                       </span>
                     </div>
                   </>

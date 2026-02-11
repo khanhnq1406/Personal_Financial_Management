@@ -310,6 +310,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.topPerformers.length > 0
     ) {
       const best = portfolioSummary.topPerformers[0];
+      if (best.unrealizedPnlPercent === undefined) {
+        return null;
+      }
       return {
         name: best.symbol || best.name,
         value: `${best.unrealizedPnlPercent >= 0 ? "+" : ""}${best.unrealizedPnlPercent.toFixed(2)}%`,
@@ -326,6 +329,9 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
       portfolioSummary.worstPerformers.length > 0
     ) {
       const worst = portfolioSummary.worstPerformers[0];
+      if (worst.unrealizedPnlPercent === undefined) {
+        return null;
+      }
       return {
         name: worst.symbol || worst.name,
         value: `${worst.unrealizedPnlPercent >= 0 ? "+" : ""}${worst.unrealizedPnlPercent.toFixed(2)}%`,
