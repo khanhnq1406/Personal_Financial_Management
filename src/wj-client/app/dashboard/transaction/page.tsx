@@ -95,6 +95,15 @@ const EditTransactionForm = dynamic(
   { ssr: false },
 );
 
+// Lazy load ImportTransactionsForm
+const ImportTransactionsForm = dynamic(
+  () =>
+    import("@/components/modals/forms/ImportTransactionsForm").then(
+      (mod) => mod.ImportTransactionsForm,
+    ),
+  { ssr: false },
+);
+
 export default function TransactionPage() {
   const { currency } = useCurrency();
   const queryClient = useQueryClient();
@@ -111,6 +120,7 @@ export default function TransactionPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   // Additional filter states
   const [amountMin, setAmountMin] = useState<number>(0);
   const [amountMax, setAmountMax] = useState<number>(0);
@@ -391,6 +401,14 @@ export default function TransactionPage() {
     [],
   );
 
+  const handleImportSuccess = useCallback(() => {
+    // Refresh transaction data after successful import
+    queryClient.invalidateQueries({ queryKey: ["ListTransactions"] });
+    queryClient.invalidateQueries({ queryKey: ["ListWallets"] });
+    queryClient.invalidateQueries({ queryKey: ["GetTotalBalance"] });
+    setShowImportModal(false);
+  }, [queryClient]);
+
   // Handle export transactions
   const { exportTransactions, isExporting } = useExportTransactions({
     onError: (error) => {
@@ -591,6 +609,28 @@ export default function TransactionPage() {
             </Button>
           </div>
 
+          <Button
+            variant="secondary"
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2"
+            aria-label="Import transactions"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <span className="hidden sm:inline">Import</span>
+          </Button>
+
           <ExportButton
             onExport={handleExportTransactions}
             categories={categoryOptions.map((c) => ({
@@ -754,6 +794,11 @@ export default function TransactionPage() {
         sortOptions={sortOptions}
         onClearFilters={handleClearFilters}
       />
+
+      {/* Import Transactions Modal */}
+      {showImportModal && (
+        <ImportTransactionsForm onSuccess={handleImportSuccess} />
+      )}
     </div>
   );
 }
