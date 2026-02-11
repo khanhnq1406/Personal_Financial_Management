@@ -722,7 +722,7 @@ export const api = {
      * DELETE /api/v1/sessions/{session_id}
      */
     async revokeSession(request: RevokeSessionRequest): Promise<RevokeSessionResponse> {
-      const endpoint = `/api/v1/sessions/${request.session_id}`;
+      const endpoint = `/api/v1/sessions/${request.sessionId}`;
       return apiClient.delete(endpoint) as unknown as RevokeSessionResponse;
     },
 
