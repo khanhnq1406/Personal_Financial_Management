@@ -8,19 +8,20 @@ import {
  * Zod schema for investment creation
  */
 
-// Investment type enum that accepts both number and string values (FormSelect returns strings)
-const investmentTypeEnum = z
-  .union([z.nativeEnum(InvestmentType), z.string()])
-  .transform((val): InvestmentType => {
+// Helper to coerce string to number for enum validation (FormSelect returns strings)
+function coerceStringToEnum<T extends z.ZodNativeEnumEnumType>(
+  enumType: T,
+): z.ZodType<z.infer<ReturnType<typeof z.nativeEnum<typeof enumType>>>> {
+  return z.preprocess((val) => {
     if (typeof val === "string") {
       const num = parseInt(val, 10);
-      // Check if it's a valid number enum value
-      if (!isNaN(num)) {
-        return num as InvestmentType;
-      }
+      return isNaN(num) ? val : num;
     }
-    return val as InvestmentType;
-  });
+    return val;
+  }, z.nativeEnum(enumType));
+}
+
+const investmentTypeEnum = coerceStringToEnum(InvestmentType);
 
 export const createInvestmentSchema = z
   .object({
@@ -57,18 +58,7 @@ export const createInvestmentSchema = z
     { message: "Quantity must be greater than 0", path: ["initialQuantity"] },
   );
 
-// Investment transaction type enum that accepts both number and string values
-const investmentTransactionTypeEnum = z
-  .union([z.nativeEnum(InvestmentTransactionType), z.string()])
-  .transform((val): InvestmentTransactionType => {
-    if (typeof val === "string") {
-      const num = parseInt(val, 10);
-      if (!isNaN(num)) {
-        return num as InvestmentTransactionType;
-      }
-    }
-    return val as InvestmentTransactionType;
-  });
+const investmentTransactionTypeEnum = coerceStringToEnum(InvestmentTransactionType);
 
 // Dynamic validation schema based on investment type (crypto vs others)
 export const addTransactionSchema = z.object({
