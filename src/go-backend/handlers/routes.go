@@ -216,5 +216,6 @@ func RegisterRoutes(
 		imports.POST("/confirm", h.Import.ConfirmImport)
 		imports.GET("/history", h.Import.ListImportBatches)
 		imports.GET("/:id", h.Import.GetImportBatch)
+		imports.POST("/:id/undo", h.Import.UndoImport)
 	}
 }
