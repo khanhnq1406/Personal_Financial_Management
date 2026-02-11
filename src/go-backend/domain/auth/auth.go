@@ -39,8 +39,9 @@ type Server struct {
 
 // JWTClaims represents JWT token claims
 type JWTClaims struct {
-	UserID int32  `json:"userId"`
-	Email  string `json:"email"`
+	UserID    int32  `json:"userId"`
+	Email     string `json:"email"`
+	SessionID string `json:"sessionId"` // Unique session identifier for multi-device support
 	jwt.RegisteredClaims
 }
 
