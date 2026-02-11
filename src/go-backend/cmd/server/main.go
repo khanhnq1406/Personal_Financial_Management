@@ -71,6 +71,7 @@ func main() {
 		MarketData:            repository.NewMarketDataRepository(db),
 		FXRate:                repository.NewFXRateRepository(db),
 		PortfolioHistory:      repository.NewPortfolioHistoryRepository(db.DB),
+		Import:                repository.NewImportRepository(db),
 	}
 
 	// Initialize redis (single instance for both handlers and auth server)
@@ -91,7 +92,7 @@ func main() {
 	services := service.NewServices(repos, underlyingRedisClient)
 
 	// Initialize handlers
-	h := handlers.NewHandlers(services)
+	h := handlers.NewHandlers(services, repos)
 
 	// Create context for background jobs cancellation
 	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())

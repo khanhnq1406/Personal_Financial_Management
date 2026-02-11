@@ -202,4 +202,19 @@ func RegisterRoutes(
 	{
 		portfolio.GET("/historical-values", h.Investment.GetHistoricalPortfolioValues)
 	}
+
+	// Import routes (protected)
+	imports := v1.Group("/import")
+	if rateLimiter != nil {
+		imports.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	imports.Use(AuthMiddleware())
+	{
+		imports.GET("/templates", h.Import.ListBankTemplates)
+		imports.POST("/upload", h.Import.UploadFile)
+		imports.POST("/parse", h.Import.ParseFile)
+		imports.POST("/confirm", h.Import.ConfirmImport)
+		imports.GET("/history", h.Import.ListImportBatches)
+		imports.GET("/:id", h.Import.GetImportBatch)
+	}
 }

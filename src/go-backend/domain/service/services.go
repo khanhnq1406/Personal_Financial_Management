@@ -81,6 +81,7 @@ type Repositories struct {
 	MarketData            repository.MarketDataRepository
 	FXRate                repository.FXRateRepository
 	PortfolioHistory      repository.PortfolioHistoryRepository
+	Import                repository.ImportRepository
 }
 
 // NewRepositories creates all repository instances.

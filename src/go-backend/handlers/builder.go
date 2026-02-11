@@ -15,10 +15,11 @@ type AllHandlers struct {
 	Investment  *InvestmentHandlers
 	Gold        *GoldHandler
 	Silver      *SilverHandler
+	Import      *ImportHandler
 }
 
 // NewHandlers creates all handler instances with proper dependency injection.
-func NewHandlers(services *service.Services) *AllHandlers {
+func NewHandlers(services *service.Services, repos *service.Repositories) *AllHandlers {
 	return &AllHandlers{
 		Wallet:      NewWalletHandlers(services.Wallet),
 		User:        NewUserHandlers(services.User),
@@ -29,6 +30,7 @@ func NewHandlers(services *service.Services) *AllHandlers {
 		Investment:  NewInvestmentHandlers(services.Investment, services.PortfolioHistory, services.MarketData),
 		Gold:        NewGoldHandler(),
 		Silver:      NewSilverHandler(),
+		Import:      NewImportHandler(repos.Import),
 	}
 }
 
