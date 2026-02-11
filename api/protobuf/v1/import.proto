@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package wealthjourney.import.v1;
+
+import "google/api/annotations.proto";
+import "protobuf/v1/common.proto";
+import "protobuf/v1/transaction.proto";
+
+option go_package = "protobuf/v1";
+
+service ImportService {
+  // Upload file and initiate parsing
+  rpc UploadStatementFile(UploadStatementFileRequest) returns (UploadStatementFileResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/upload"
+      body: "*"
+    };
+  }
+
+  // Parse uploaded file with bank template
+  rpc ParseStatement(ParseStatementRequest) returns (ParseStatementResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/parse"
+      body: "*"
+    };
+  }
+
+  // Detect duplicates for imported transactions
+  rpc DetectDuplicates(DetectDuplicatesRequest) returns (DetectDuplicatesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/detect-duplicates"
+      body: "*"
+    };
+  }
+
+  // Execute import of reviewed transactions
+  rpc ExecuteImport(ExecuteImportRequest) returns (ExecuteImportResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/execute"
+      body: "*"
+    };
+  }
+
+  // List available bank templates
+  rpc ListBankTemplates(ListBankTemplatesRequest) returns (ListBankTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/templates"
+    };
+  }
+
+  // Get import history
+  rpc GetImportHistory(GetImportHistoryRequest) returns (GetImportHistoryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/history"
+    };
+  }
+
+  // Undo import (within 24 hours)
+  rpc UndoImport(UndoImportRequest) returns (UndoImportResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/{import_id}/undo"
+    };
+  }
+}
+
+// Messages
+
+message UploadStatementFileRequest {
+  bytes file_data = 1 [json_name = "fileData"];
+  string file_name = 2 [json_name = "fileName"];
+  string file_type = 3 [json_name = "fileType"]; // csv, excel, pdf
+  int64 file_size = 4 [json_name = "fileSize"];
+}
+
+message UploadStatementFileResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string file_id = 3 [json_name = "fileId"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ParseStatementRequest {
+  string file_id = 1 [json_name = "fileId"];
+  string bank_template_id = 2 [json_name = "bankTemplateId"]; // Optional: e.g., "vcb-credit-card"
+  ColumnMapping custom_mapping = 3 [json_name = "customMapping"]; // For custom format
+}
+
+message ColumnMapping {
+  string date_column = 1 [json_name = "dateColumn"];
+  string amount_column = 2 [json_name = "amountColumn"];
+  string description_column = 3 [json_name = "descriptionColumn"];
+  string type_column = 4 [json_name = "typeColumn"]; // Optional
+  string category_column = 5 [json_name = "categoryColumn"]; // Optional
+  string reference_column = 6 [json_name = "referenceColumn"]; // Optional
+  string date_format = 7 [json_name = "dateFormat"]; // e.g., "DD/MM/YYYY"
+  string currency = 8 [json_name = "currency"];
+}
+
+message ParseStatementResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ParsedTransaction transactions = 3 [json_name = "transactions"];
+  ParseStatistics statistics = 4 [json_name = "statistics"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ParsedTransaction {
+  int32 row_number = 1 [json_name = "rowNumber"];
+  int64 date = 2 [json_name = "date"]; // Unix timestamp
+  wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
+  string description = 4 [json_name = "description"];
+  wealthjourney.transaction.v1.TransactionType type = 5 [json_name = "type"];
+  int32 suggested_category_id = 6 [json_name = "suggestedCategoryId"];
+  int32 category_confidence = 7 [json_name = "categoryConfidence"]; // 0-100
+  string reference_number = 8 [json_name = "referenceNumber"];
+  repeated ValidationError validation_errors = 9 [json_name = "validationErrors"];
+  bool is_valid = 10 [json_name = "isValid"];
+}
+
+message ValidationError {
+  string field = 1 [json_name = "field"];
+  string message = 2 [json_name = "message"];
+  string severity = 3 [json_name = "severity"]; // error, warning, info
+}
+
+message ParseStatistics {
+  int32 total_rows = 1 [json_name = "totalRows"];
+  int32 valid_rows = 2 [json_name = "validRows"];
+  int32 error_rows = 3 [json_name = "errorRows"];
+  int32 warning_rows = 4 [json_name = "warningRows"];
+}
+
+message DetectDuplicatesRequest {
+  repeated ParsedTransaction transactions = 1 [json_name = "transactions"];
+  int32 wallet_id = 2 [json_name = "walletId"];
+}
+
+message DetectDuplicatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated DuplicateMatch matches = 3 [json_name = "matches"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DuplicateMatch {
+  ParsedTransaction imported_transaction = 1 [json_name = "importedTransaction"];
+  wealthjourney.transaction.v1.Transaction existing_transaction = 2 [json_name = "existingTransaction"];
+  int32 confidence = 3 [json_name = "confidence"]; // 50-100 (Level 1-4)
+  string match_reason = 4 [json_name = "matchReason"];
+}
+
+message ExecuteImportRequest {
+  string file_id = 1 [json_name = "fileId"];
+  int32 wallet_id = 2 [json_name = "walletId"];
+  repeated ParsedTransaction transactions = 3 [json_name = "transactions"];
+  DuplicateHandlingStrategy strategy = 4 [json_name = "strategy"];
+  repeated int32 excluded_row_numbers = 5 [json_name = "excludedRowNumbers"]; // Rows user unchecked
+  int64 date_filter_start = 6 [json_name = "dateFilterStart"]; // Optional date range filter
+  int64 date_filter_end = 7 [json_name = "dateFilterEnd"];
+}
+
+enum DuplicateHandlingStrategy {
+  DUPLICATE_STRATEGY_UNSPECIFIED = 0;
+  DUPLICATE_STRATEGY_AUTO_MERGE = 1;
+  DUPLICATE_STRATEGY_REVIEW_EACH = 2;
+  DUPLICATE_STRATEGY_KEEP_ALL = 3;
+  DUPLICATE_STRATEGY_SKIP_ALL = 4;
+}
+
+message ExecuteImportResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string import_batch_id = 3 [json_name = "importBatchId"];
+  ImportSummary summary = 4 [json_name = "summary"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ImportSummary {
+  int32 total_imported = 1 [json_name = "totalImported"];
+  int32 total_skipped = 2 [json_name = "totalSkipped"];
+  int32 duplicates_merged = 3 [json_name = "duplicatesMerged"];
+  int32 duplicates_skipped = 4 [json_name = "duplicatesSkipped"];
+  wealthjourney.common.v1.Money total_income = 5 [json_name = "totalIncome"];
+  wealthjourney.common.v1.Money total_expenses = 6 [json_name = "totalExpenses"];
+  wealthjourney.common.v1.Money net_change = 7 [json_name = "netChange"];
+  wealthjourney.common.v1.Money new_wallet_balance = 8 [json_name = "newWalletBalance"];
+}
+
+message ListBankTemplatesRequest {}
+
+message ListBankTemplatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated BankTemplate templates = 3 [json_name = "templates"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message BankTemplate {
+  string id = 1 [json_name = "id"];
+  string name = 2 [json_name = "name"];
+  string bank_code = 3 [json_name = "bankCode"];
+  string statement_type = 4 [json_name = "statementType"]; // credit, debit, checking
+  repeated string file_formats = 5 [json_name = "fileFormats"];
+}
+
+message GetImportHistoryRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+}
+
+message GetImportHistoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ImportBatch batches = 3 [json_name = "batches"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ImportBatch {
+  string id = 1 [json_name = "id"];
+  int32 user_id = 2 [json_name = "userId"];
+  int32 wallet_id = 3 [json_name = "walletId"];
+  string file_name = 4 [json_name = "fileName"];
+  string file_type = 5 [json_name = "fileType"];
+  string bank_template = 6 [json_name = "bankTemplate"];
+  int64 imported_at = 7 [json_name = "importedAt"];
+  ImportSummary summary = 8 [json_name = "summary"];
+  bool can_undo = 9 [json_name = "canUndo"];
+  int64 undo_expires_at = 10 [json_name = "undoExpiresAt"];
+}
+
+message UndoImportRequest {
+  string import_id = 1 [json_name = "importId"];
+}
+
+message UndoImportResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
