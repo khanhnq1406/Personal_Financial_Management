@@ -63,9 +63,9 @@ func (h *ImportHandler) ListBankTemplates(c *gin.Context) {
 // UploadFile handles bank statement file upload.
 // @Summary Upload bank statement file
 // @Tags import
-// @Accept multipart/form-data
+// @Accept json
 // @Produce json
-// @Param file formData file true "Bank statement file"
+// @Param request body v1.UploadStatementFileRequest true "Upload file request"
 // @Success 200 {object} v1.UploadStatementFileResponse
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
@@ -80,16 +80,27 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 	}
 	_ = userID // Will be used for user-specific upload directory in future
 
-	// Get file from multipart form
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
+	// Bind and validate request
+	var req v1.UploadStatementFileRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+
+	// Validate required fields
+	if len(req.FileData) == 0 {
 		handler.BadRequest(c, apperrors.NewValidationError("file is required"))
 		return
 	}
-	defer file.Close()
 
-	// Upload file
-	result, err := fileupload.UploadFile(file, header)
+	if req.FileName == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("fileName is required"))
+		return
+	}
+
+	// Upload file from bytes
+	result, err := fileupload.UploadFileFromBytes(req.FileData, req.FileName, req.FileSize)
 	if err != nil {
 		handler.BadRequest(c, err)
 		return
@@ -140,7 +151,14 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 	}
 
 	// Get file path from upload directory
-	filePath := filepath.Join(fileupload.UploadDir, req.FileId+".csv")
+	// First, find the actual file with any extension
+	matches, err := filepath.Glob(filepath.Join(fileupload.UploadDir, req.FileId+".*"))
+	if err != nil || len(matches) == 0 {
+		handler.BadRequest(c, apperrors.NewValidationError("uploaded file not found"))
+		return
+	}
+	filePath := matches[0]
+	fileExt := filepath.Ext(filePath)
 
 	// Get bank template or custom mapping
 	var columnMapping *parser.ColumnMapping
@@ -204,12 +222,34 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
-	// Parse CSV file
-	csvParser := parser.NewCSVParser(filePath, columnMapping)
-	parsedRows, err := csvParser.Parse()
-	if err != nil {
-		handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse CSV: %v", err)))
-		return
+	// Parse file based on extension
+	var parsedRows []*parser.ParsedRow
+
+	switch fileExt {
+	case ".pdf":
+		// Use PDF parser
+		pdfParser := parser.NewPDFParser(filePath, columnMapping)
+		parsedRows, err = pdfParser.Parse()
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse PDF: %v", err)))
+			return
+		}
+	case ".xlsx", ".xls":
+		// Use Excel parser
+		excelParser := parser.NewExcelParser(filePath, columnMapping)
+		parsedRows, err = excelParser.Parse()
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse Excel: %v", err)))
+			return
+		}
+	default:
+		// Use CSV parser (default for .csv and any other text format)
+		csvParser := parser.NewCSVParser(filePath, columnMapping)
+		parsedRows, err = csvParser.Parse()
+		if err != nil {
+			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse CSV: %v", err)))
+			return
+		}
 	}
 
 	// Convert parsed rows to protobuf format

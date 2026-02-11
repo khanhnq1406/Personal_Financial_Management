@@ -19,9 +19,14 @@ export function WalletSelectionStep({
 }: WalletSelectionStepProps) {
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
 
-  const { data: walletsData, isLoading, isError, error } = useQueryListWallets(
+  const {
+    data: walletsData,
+    isLoading,
+    isError,
+    error,
+  } = useQueryListWallets(
     { pagination: { page: 1, pageSize: 100, orderBy: "", order: "" } },
-    { refetchOnMount: "always" }
+    { refetchOnMount: "always" },
   );
 
   const handleSelectWallet = (walletId: number) => {
@@ -29,7 +34,7 @@ export function WalletSelectionStep({
     onWalletSelected(walletId);
   };
 
-  const wallets = walletsData?.data || [];
+  const wallets = walletsData?.wallets || [];
 
   if (isLoading) {
     return (
@@ -64,7 +69,8 @@ export function WalletSelectionStep({
       <div className="space-y-4">
         <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <p className="text-yellow-700 dark:text-yellow-300">
-            No wallets found. Please create a wallet first before importing transactions.
+            No wallets found. Please create a wallet first before importing
+            transactions.
           </p>
         </div>
         <Button variant="secondary" onClick={onBack}>
@@ -78,7 +84,9 @@ export function WalletSelectionStep({
     <div className="space-y-4 sm:space-y-6">
       {/* Instructions */}
       <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-        <p className="mb-2">Select the wallet where transactions will be imported.</p>
+        <p className="mb-2">
+          Select the wallet where transactions will be imported.
+        </p>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
           The wallet balance will be updated based on imported transactions.
         </p>
@@ -96,7 +104,7 @@ export function WalletSelectionStep({
               "active:scale-[0.99]",
               selectedWalletId === wallet.id
                 ? "border-primary-600 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
-                : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface"
+                : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface",
             )}
           >
             <div className="flex items-center justify-between">
@@ -105,7 +113,8 @@ export function WalletSelectionStep({
                   {wallet.walletName}
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
-                  Balance: {wallet.balance?.amount?.toLocaleString()} {wallet.balance?.currency}
+                  Balance: {wallet.balance?.amount?.toLocaleString() || 0}{" "}
+                  {wallet.balance?.currency}
                 </p>
               </div>
               {selectedWalletId === wallet.id && (

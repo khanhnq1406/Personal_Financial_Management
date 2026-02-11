@@ -15,8 +15,22 @@ import (
 
 // Success sends a successful response with data.
 func Success(c *gin.Context, data interface{}) {
-	// Explicitly marshal to ensure custom MarshalJSON is called
-	jsonBytes, err := json.Marshal(data)
+	var jsonBytes []byte
+	var err error
+
+	// Check if data is a protobuf message
+	if pm, ok := data.(proto.Message); ok {
+		// Use protojson for protobuf messages (respects json_name)
+		opts := protojson.MarshalOptions{
+			UseProtoNames:   false, // Use json_name from proto definition
+			EmitUnpopulated: false, // Don't emit zero values
+		}
+		jsonBytes, err = opts.Marshal(pm)
+	} else {
+		// For non-protobuf objects, use standard JSON marshaling
+		jsonBytes, err = json.Marshal(data)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(types.APIError{
 			Code:       "MARSHAL_ERROR",
@@ -32,8 +46,22 @@ func Success(c *gin.Context, data interface{}) {
 
 // Created sends a 201 created response with data.
 func Created(c *gin.Context, data interface{}) {
-	// Explicitly marshal to ensure custom MarshalJSON is called
-	jsonBytes, err := json.Marshal(data)
+	var jsonBytes []byte
+	var err error
+
+	// Check if data is a protobuf message
+	if pm, ok := data.(proto.Message); ok {
+		// Use protojson for protobuf messages (respects json_name)
+		opts := protojson.MarshalOptions{
+			UseProtoNames:   false, // Use json_name from proto definition
+			EmitUnpopulated: false, // Don't emit zero values
+		}
+		jsonBytes, err = opts.Marshal(pm)
+	} else {
+		// For non-protobuf objects, use standard JSON marshaling
+		jsonBytes, err = json.Marshal(data)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(types.APIError{
 			Code:       "MARSHAL_ERROR",

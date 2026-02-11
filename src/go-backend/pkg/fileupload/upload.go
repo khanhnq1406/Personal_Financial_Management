@@ -77,6 +77,42 @@ func UploadFile(file multipart.File, header *multipart.FileHeader) (*UploadResul
 	}, nil
 }
 
+func UploadFileFromBytes(fileData []byte, fileName string, fileSize int64) (*UploadResult, error) {
+	// Validate file type
+	fileType, err := ValidateFileType(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate file size
+	if err := ValidateFileSize(fileSize, fileType); err != nil {
+		return nil, err
+	}
+
+	// Generate unique file ID
+	fileID := uuid.New().String()
+	ext := filepath.Ext(fileName)
+	destPath := filepath.Join(UploadDir, fileID+ext)
+
+	// Ensure upload directory exists
+	if err := os.MkdirAll(UploadDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create upload directory: %w", err)
+	}
+
+	// Write file data to destination
+	if err := os.WriteFile(destPath, fileData, 0644); err != nil {
+		return nil, fmt.Errorf("failed to save file: %w", err)
+	}
+
+	return &UploadResult{
+		FileID:   fileID,
+		FileName: fileName,
+		FileType: fileType,
+		FileSize: fileSize,
+		FilePath: destPath,
+	}, nil
+}
+
 func CleanupFile(fileID string) error {
 	// Find and delete file with any extension
 	matches, err := filepath.Glob(filepath.Join(UploadDir, fileID+".*"))

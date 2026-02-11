@@ -5,7 +5,10 @@ import { BaseModal } from "@/components/modals/BaseModal";
 import { FileUploadStep } from "@/components/import/FileUploadStep";
 import { WalletSelectionStep } from "@/components/import/WalletSelectionStep";
 import { BankTemplateStep } from "@/components/import/BankTemplateStep";
-import { ColumnMappingStep, ColumnMapping } from "@/components/import/ColumnMappingStep";
+import {
+  ColumnMappingStep,
+  ColumnMapping,
+} from "@/components/import/ColumnMappingStep";
 import { ReviewStepWrapper } from "@/components/import/ReviewStepWrapper";
 import { ImportSuccess } from "@/components/import/ImportSuccess";
 import { ImportSummary } from "@/gen/protobuf/v1/import";
@@ -36,15 +39,23 @@ interface ImportTransactionsFormProps {
  * - Wallet balance updates
  * - Import undo functionality (24-hour window)
  */
-export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProps) {
+export function ImportTransactionsForm({
+  onSuccess,
+}: ImportTransactionsFormProps) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(null);
-  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    null,
+  );
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(
+    null,
+  );
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(
+    null,
+  );
   const [importBatchId, setImportBatchId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -100,23 +111,35 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
 
     // Recoverable errors - guide user to fix and retry
     if (errorMsg.includes("insufficient balance")) {
-      setError("Wallet has insufficient balance for these transactions. Please adjust the transactions or choose a different wallet.");
+      setError(
+        "Wallet has insufficient balance for these transactions. Please adjust the transactions or choose a different wallet.",
+      );
       // Go back to review step when it's implemented (Task 10)
       // For now, stay on current step
     } else if (errorMsg.includes("exceeded maximum transactions per import")) {
-      setError("File contains too many transactions (max 10,000). Please split into smaller files.");
+      setError(
+        "File contains too many transactions (max 10,000). Please split into smaller files.",
+      );
       setCurrentStep(1); // Go back to file upload
     } else if (errorMsg.includes("transaction date cannot be in the future")) {
-      setError("Some transactions have future dates. Please check your file and ensure all dates are valid.");
+      setError(
+        "Some transactions have future dates. Please check your file and ensure all dates are valid.",
+      );
       setCurrentStep(1); // Go back to file upload
     } else if (errorMsg.includes("transaction date too old")) {
-      setError("Some transactions are older than 10 years. Please remove old transactions and try again.");
+      setError(
+        "Some transactions are older than 10 years. Please remove old transactions and try again.",
+      );
       setCurrentStep(1); // Go back to file upload
     } else if (errorMsg.includes("No valid transactions to import")) {
-      setError("No valid transactions found. Please check your file format and try again.");
+      setError(
+        "No valid transactions found. Please check your file format and try again.",
+      );
       setCurrentStep(1); // Go back to file upload
     } else {
-      setError("Import failed. Please try again or contact support if the problem persists.");
+      setError(
+        "Import failed. Please try again or contact support if the problem persists.",
+      );
     }
   };
 
@@ -135,18 +158,22 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
   const handleStep1Next = async () => {
     if (!selectedFile) return;
 
-    // Upload file to backend
+    // Upload file to backend - Use FileReader to read as base64 directly
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const fileData = e.target?.result as ArrayBuffer;
+      const result = e.target?.result as string;
+      // Result is in format: "data:<mimetype>;base64,<base64data>"
+      // Extract just the base64 part
+      const base64Data = result.split(",")[1];
+
       uploadFileMutation.mutate({
-        fileData: new Uint8Array(fileData),
+        fileData: base64Data as any, // Protobuf bytes field expects base64 string in JSON
         fileName: selectedFile.name,
         fileType: selectedFile.name.split(".").pop() || "",
         fileSize: selectedFile.size,
       });
     };
-    reader.readAsArrayBuffer(selectedFile);
+    reader.readAsDataURL(selectedFile); // Reads file as base64 data URL
   };
 
   const handleStep2Back = () => {
@@ -186,13 +213,17 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
 
   const handleDone = () => {
     // Refresh transaction list
-    queryClient.invalidateQueries({ queryKey: [EVENT_TransactionListTransactions] });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_TransactionListTransactions],
+    });
     handleClose();
   };
 
   const handleUndoSuccess = () => {
     // Refresh and close
-    queryClient.invalidateQueries({ queryKey: [EVENT_TransactionListTransactions] });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_TransactionListTransactions],
+    });
     handleClose();
   };
 
@@ -206,7 +237,7 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
       {/* Error Message Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-          <div className="flex items-start">
+          <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg
                 className="h-5 w-5 text-red-400"
@@ -230,7 +261,11 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
                 className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
               >
                 <span className="sr-only">Dismiss</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
