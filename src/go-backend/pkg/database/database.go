@@ -69,6 +69,7 @@ func New(cfg *config.Config) (*Database, error) {
 		&models.MarketData{},
 		&models.PortfolioHistory{},
 		&models.Session{},
+		&models.FXRate{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -121,6 +122,35 @@ func runPostMigrations(db *gorm.DB) error {
 		WHERE deleted_at IS NULL
 	`).Error; err != nil {
 		return fmt.Errorf("failed to create idx_user_email: %w", err)
+	}
+
+	// Session indexes for multi-device login feature
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_sessions_user_id
+		ON sessions(user_id)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_sessions_user_id: %w", err)
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_sessions_session_id
+		ON sessions(session_id)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_sessions_session_id: %w", err)
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+		ON sessions(expires_at)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_sessions_expires_at: %w", err)
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_sessions_user_expires
+		ON sessions(user_id, expires_at)
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create idx_sessions_user_expires: %w", err)
 	}
 
 	// 2. Backfill gold investment purchase_unit values
