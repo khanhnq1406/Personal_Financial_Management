@@ -170,15 +170,16 @@ export default function SessionsPage() {
         </div>
       </BaseCard>
 
-      <ConfirmationDialog
-        isOpen={showRevokeAllConfirm}
-        onClose={() => setShowRevokeAllConfirm(false)}
-        onConfirm={handleRevokeAll}
-        title="Revoke All Sessions"
-        message={`Are you sure you want to revoke ${otherSessionsCount} other session(s)? Those devices will need to log in again.`}
-        confirmText="Revoke All"
-        loading={revokeAllMutation.isPending}
-      />
+      {showRevokeAllConfirm && (
+        <ConfirmationDialog
+          onCancel={() => setShowRevokeAllConfirm(false)}
+          onConfirm={handleRevokeAll}
+          title="Revoke All Sessions"
+          message={`Are you sure you want to revoke ${otherSessionsCount} other session(s)? Those devices will need to log in again.`}
+          confirmText="Revoke All"
+          isLoading={revokeAllMutation.isPending}
+        />
+      )}
     </div>
   );
 }
