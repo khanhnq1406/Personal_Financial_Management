@@ -244,13 +244,7 @@ export function AddInvestmentForm({
     },
   });
 
-  const {
-    control,
-    handleSubmit,
-    formState: { isSubmitting, errors },
-    watch,
-    setValue,
-  } = useForm<CreateInvestmentFormInput>({
+  const form = useForm<CreateInvestmentFormInput>({
     resolver: zodResolver(createInvestmentSchema),
     defaultValues: {
       symbol: "",
@@ -261,6 +255,14 @@ export function AddInvestmentForm({
       currency: "USD",
     },
   });
+
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting, errors },
+    watch,
+    setValue,
+  } = form;
 
   // Watch investment type to update quantity input config dynamically
   const investmentType = watch("type");
@@ -376,7 +378,7 @@ export function AddInvestmentForm({
   );
 
   // Fetch exchange rate from wallet currency to preferred currency for display
-  const { rate: walletToPreferredRate, isLoading: isLoadingPreferredRate } =
+  const { rate: walletToPreferredRate } =
     useExchangeRate(walletCurrency, preferredCurrency);
 
   // Convert wallet balance to preferred currency for display
@@ -695,6 +697,7 @@ export function AddInvestmentForm({
         required
         disabled={isSubmitting}
         className="mb-4"
+        parseAsNumber={true}
       />
 
       {/* Gold Type Selector - shown only for gold investments */}

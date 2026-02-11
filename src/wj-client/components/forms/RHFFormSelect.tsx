@@ -7,6 +7,10 @@ interface RHFFormSelectProps
   extends Omit<FormSelectProps, "error" | "value" | "onChange" | "name" | "defaultValue">,
     Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
+  /**
+   * If true, converts string values to numbers (useful for enum fields)
+   */
+  parseAsNumber?: boolean;
 }
 
 /**
@@ -20,6 +24,7 @@ export const RHFFormSelect = ({
   shouldUnregister,
   defaultValue,
   disabled,
+  parseAsNumber = false,
   ...selectProps
 }: RHFFormSelectProps) => {
   const {
@@ -34,11 +39,17 @@ export const RHFFormSelect = ({
     disabled,
   });
 
+  const handleChange = (newValue: string) => {
+    // Convert to number if needed (e.g., for enum fields)
+    const parsedValue = parseAsNumber ? parseInt(newValue, 10) : newValue;
+    onChange(parsedValue);
+  };
+
   return (
     <FormSelect
       {...selectProps}
-      value={value}
-      onChange={onChange}
+      value={String(value)}
+      onChange={handleChange}
       error={error?.message}
       disabled={disabled}
     />

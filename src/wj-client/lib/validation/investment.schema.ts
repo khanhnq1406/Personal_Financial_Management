@@ -8,21 +8,6 @@ import {
  * Zod schema for investment creation
  */
 
-// Helper to coerce string to number for enum validation (FormSelect returns strings)
-function coerceStringToEnum<T extends z.ZodNativeEnumEnumType>(
-  enumType: T,
-): z.ZodType<z.infer<ReturnType<typeof z.nativeEnum<typeof enumType>>>> {
-  return z.preprocess((val) => {
-    if (typeof val === "string") {
-      const num = parseInt(val, 10);
-      return isNaN(num) ? val : num;
-    }
-    return val;
-  }, z.nativeEnum(enumType));
-}
-
-const investmentTypeEnum = coerceStringToEnum(InvestmentType);
-
 export const createInvestmentSchema = z
   .object({
     symbol: z
@@ -43,7 +28,7 @@ export const createInvestmentSchema = z
       .string()
       .min(1, "Name is required")
       .max(100, "Name must be 100 characters or less"),
-    type: investmentTypeEnum,
+    type: z.nativeEnum(InvestmentType),
     initialQuantity: z.number().min(0.00000001, "Quantity must be positive"),
     initialCost: z.number().min(0, "Initial cost must be 0 or greater"),
     currency: z
@@ -58,11 +43,9 @@ export const createInvestmentSchema = z
     { message: "Quantity must be greater than 0", path: ["initialQuantity"] },
   );
 
-const investmentTransactionTypeEnum = coerceStringToEnum(InvestmentTransactionType);
-
 // Dynamic validation schema based on investment type (crypto vs others)
 export const addTransactionSchema = z.object({
-  type: investmentTransactionTypeEnum,
+  type: z.nativeEnum(InvestmentTransactionType),
   quantity: z.number().min(0.00000001, "Quantity must be greater than 0"),
   price: z.number().min(0, "Price must be non-negative"),
   fees: z.number().min(0, "Fees must be non-negative"),
