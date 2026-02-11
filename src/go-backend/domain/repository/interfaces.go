@@ -135,6 +135,9 @@ type TransactionRepository interface {
 
 	// GetCategoryBreakdown retrieves category-wise transaction summary grouped by currency.
 	GetCategoryBreakdown(ctx context.Context, userID int32, filter TransactionFilter) ([]*CategoryBreakdownByCurrency, error)
+
+	// BulkCreate creates multiple transactions atomically with wallet balance updates.
+	BulkCreate(ctx context.Context, transactions []*models.Transaction) ([]int32, error)
 }
 
 // CategoryBreakdownItem represents category-wise transaction summary

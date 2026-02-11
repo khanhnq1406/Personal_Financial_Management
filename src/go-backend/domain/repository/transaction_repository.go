@@ -384,3 +384,75 @@ func (r *transactionRepository) GetCategoryBreakdown(ctx context.Context, userID
 
 	return results, nil
 }
+
+// BulkCreate creates multiple transactions atomically with wallet balance updates
+func (r *transactionRepository) BulkCreate(ctx context.Context, transactions []*models.Transaction) ([]int32, error) {
+	// Start database transaction
+	tx := r.db.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Group transactions by wallet for balance updates
+	walletDeltas := make(map[int32]int64)
+	for _, t := range transactions {
+		walletDeltas[t.WalletID] += t.Amount
+	}
+
+	// Lock wallets and validate balances
+	for walletID, delta := range walletDeltas {
+		var wallet models.Wallet
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", walletID).
+			First(&wallet).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to lock wallet", err)
+		}
+
+		newBalance := wallet.Balance + delta
+		if newBalance < 0 {
+			tx.Rollback()
+			return nil, apperrors.NewValidationError("Insufficient balance in wallet")
+		}
+	}
+
+	// Insert transactions in batches
+	const batchSize = 100
+	var createdIDs []int32
+
+	for i := 0; i < len(transactions); i += batchSize {
+		end := i + batchSize
+		if end > len(transactions) {
+			end = len(transactions)
+		}
+
+		batch := transactions[i:end]
+		if err := tx.CreateInBatches(batch, batchSize).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to create transaction batch", err)
+		}
+
+		for _, t := range batch {
+			createdIDs = append(createdIDs, t.ID)
+		}
+	}
+
+	// Update wallet balances
+	for walletID, delta := range walletDeltas {
+		if err := tx.Model(&models.Wallet{}).
+			Where("id = ?", walletID).
+			Update("balance", gorm.Expr("balance + ?", delta)).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to update wallet balance", err)
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to commit transaction", err)
+	}
+
+	return createdIDs, nil
+}
