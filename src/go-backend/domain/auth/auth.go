@@ -110,7 +110,7 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 	result := s.db.DB.Where("email = ?", email).First(&user)
 	if result.Error == nil {
 		// User already exists - generate token and login
-		return s.generateLoginResponse(ctx, user)
+		return s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
 	} else if result.Error != gorm.ErrRecordNotFound {
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
@@ -147,15 +147,19 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 	}
 
 	// Generate token and return login response for new user
-	return s.generateLoginResponse(ctx, user)
+	return s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
 }
 
-// generateLoginResponse generates JWT token and returns RegisterResponse with LoginData
-func (s *Server) generateLoginResponse(ctx context.Context, user models.User) (*authv1.RegisterResponse, error) {
-	// Generate JWT token
+// generateLoginResponse generates JWT token with session support
+func (s *Server) generateLoginResponse(ctx context.Context, user models.User, deviceInfo *redis.SessionData) (*authv1.RegisterResponse, error) {
+	// Generate unique session ID
+	sessionID := models.GenerateSessionID()
+
+	// Generate JWT token with session ID
 	claims := JWTClaims{
-		UserID: user.ID,
-		Email:  user.Email,
+		UserID:    user.ID,
+		Email:     user.Email,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWT.Expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -168,9 +172,40 @@ func (s *Server) generateLoginResponse(ctx context.Context, user models.User) (*
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	// Store token in Redis whitelist
-	if err := s.rdb.AddToWhitelist(user.Email, tokenString); err != nil {
-		return nil, fmt.Errorf("failed to store token: %w", err)
+	// Prepare session metadata
+	now := time.Now()
+	sessionData := &redis.SessionData{
+		SessionID:    sessionID,
+		DeviceName:   deviceInfo.DeviceName,
+		DeviceType:   deviceInfo.DeviceType,
+		IPAddress:    deviceInfo.IPAddress,
+		UserAgent:    deviceInfo.UserAgent,
+		CreatedAt:    now,
+		LastActiveAt: now,
+		ExpiresAt:    now.Add(s.cfg.JWT.Expiration),
+	}
+
+	// Store session in Redis
+	if err := s.rdb.AddSession(user.Email, sessionID, tokenString, sessionData); err != nil {
+		return nil, fmt.Errorf("failed to store session: %w", err)
+	}
+
+	// Also save session to database for long-term tracking
+	dbSession := &models.Session{
+		SessionID:    sessionID,
+		UserID:       user.ID,
+		Token:        tokenString,
+		DeviceName:   deviceInfo.DeviceName,
+		DeviceType:   deviceInfo.DeviceType,
+		IpAddress:    deviceInfo.IPAddress,
+		UserAgent:    deviceInfo.UserAgent,
+		LastActiveAt: now,
+		ExpiresAt:    now.Add(s.cfg.JWT.Expiration),
+	}
+
+	if err := s.db.DB.Create(dbSession).Error; err != nil {
+		// Log error but don't fail the login (Redis is source of truth)
+		log.Printf("Warning: Failed to save session to database: %v", err)
 	}
 
 	return &authv1.RegisterResponse{
@@ -184,6 +219,18 @@ func (s *Server) generateLoginResponse(ctx context.Context, user models.User) (*
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// extractDeviceInfo extracts device information from context (from request headers)
+func extractDeviceInfo(ctx context.Context) *redis.SessionData {
+	// This is a placeholder - in real implementation, extract from HTTP headers
+	// For now, return empty device info
+	return &redis.SessionData{
+		DeviceName: "Unknown Device",
+		DeviceType: "unknown",
+		IPAddress:  "0.0.0.0",
+		UserAgent:  "Unknown",
+	}
 }
 
 // Login logs in a user using Google OAuth token
@@ -206,43 +253,24 @@ func (s *Server) Login(ctx context.Context, googleToken string) (*authv1.LoginRe
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
-	// Generate JWT token
-	claims := JWTClaims{
-		UserID: user.ID,
-		Email:  user.Email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWT.Expiration)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(s.cfg.JWT.Secret))
+	// Generate token with session support
+	resp, err := s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate token: %w", err)
+		return nil, err
 	}
 
-	// Store token in Redis whitelist
-	if err := s.rdb.AddToWhitelist(email, tokenString); err != nil {
-		return nil, fmt.Errorf("failed to store token: %w", err)
-	}
-
+	// Convert RegisterResponse to LoginResponse
 	return &authv1.LoginResponse{
-		Success: true,
-		Message: "Login successful",
-		Data: &authv1.LoginData{
-			AccessToken: tokenString,
-			Email:       user.Email,
-			Fullname:    user.Name,
-			Picture:     user.Picture,
-		},
-		Timestamp: time.Now().Format(time.RFC3339),
+		Success:   resp.Success,
+		Message:   "Login successful",
+		Data:      resp.Data,
+		Timestamp: resp.Timestamp,
 	}, nil
 }
 
 // Logout logs out a user and invalidates the token
 func (s *Server) Logout(tokenString string) (*authv1.LogoutResponse, error) {
-	// Parse token to get email
+	// Parse token to get email and session ID
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWT.Secret), nil
 	})
@@ -255,9 +283,14 @@ func (s *Server) Logout(tokenString string) (*authv1.LogoutResponse, error) {
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	// Remove token from Redis whitelist
-	if err := s.rdb.RemoveFromWhitelist(claims.Email); err != nil {
+	// Remove specific session from Redis
+	if err := s.rdb.RemoveSession(claims.Email, claims.SessionID); err != nil {
 		return nil, fmt.Errorf("failed to logout: %w", err)
+	}
+
+	// Mark session as deleted in database (soft delete)
+	if err := s.db.DB.Where("session_id = ?", claims.SessionID).Delete(&models.Session{}).Error; err != nil {
+		log.Printf("Warning: Failed to delete session from database: %v", err)
 	}
 
 	return &authv1.LogoutResponse{
@@ -282,10 +315,24 @@ func (s *Server) VerifyAuth(tokenString string) (*authv1.VerifyAuthResponse, err
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	// Verify token is in whitelist
-	storedToken, err := s.rdb.GetFromWhitelist(claims.Email)
+	// Verify session exists in Redis
+	exists, err := s.rdb.SessionExists(claims.Email, claims.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify session: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("session not found or expired")
+	}
+
+	// Verify token matches the one stored for this session
+	storedToken, err := s.rdb.GetSessionToken(claims.SessionID)
 	if err != nil || storedToken != tokenString {
-		return nil, fmt.Errorf("token not found in whitelist")
+		return nil, fmt.Errorf("token mismatch for session")
+	}
+
+	// Update last active time
+	if err := s.rdb.UpdateSessionActivity(claims.SessionID); err != nil {
+		log.Printf("Warning: Failed to update session activity: %v", err)
 	}
 
 	// Get user from database
@@ -357,4 +404,26 @@ func (s *Server) GetAuth(ctx context.Context, email string) (*authv1.GetAuthResp
 		}),
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// LoginWithDevice is a helper for testing multi-device login
+// In production, device info is extracted from HTTP headers
+func (s *Server) LoginWithDevice(ctx context.Context, email string, deviceInfo *redis.SessionData) (string, string, error) {
+	var user models.User
+	if err := s.db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return "", "", fmt.Errorf("user not found: %w", err)
+	}
+
+	resp, err := s.generateLoginResponse(ctx, user, deviceInfo)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Parse token to get session ID
+	token, _ := jwt.ParseWithClaims(resp.Data.AccessToken, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.cfg.JWT.Secret), nil
+	})
+	claims := token.Claims.(*JWTClaims)
+
+	return resp.Data.AccessToken, claims.SessionID, nil
 }
