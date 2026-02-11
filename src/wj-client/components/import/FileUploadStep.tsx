@@ -13,7 +13,9 @@ export interface FileUploadStepProps {
 const ACCEPTED_FILE_TYPES = {
   "text/csv": [".csv"],
   "application/vnd.ms-excel": [".xls"],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
   "application/pdf": [".pdf"],
 };
 
@@ -23,7 +25,11 @@ const MAX_FILE_SIZE = {
   pdf: 20 * 1024 * 1024, // 20MB
 };
 
-export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUploadStepProps) {
+export function FileUploadStep({
+  onFileSelected,
+  onNext,
+  isUploading,
+}: FileUploadStepProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string>("");
   const [isDragOver, setIsDragOver] = useState(false);
@@ -55,24 +61,27 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
     return null;
   };
 
-  const handleFileChange = useCallback((file: File | null) => {
-    if (!file) {
-      setSelectedFile(null);
+  const handleFileChange = useCallback(
+    (file: File | null) => {
+      if (!file) {
+        setSelectedFile(null);
+        setError("");
+        return;
+      }
+
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        setSelectedFile(null);
+        return;
+      }
+
       setError("");
-      return;
-    }
-
-    const validationError = validateFile(file);
-    if (validationError) {
-      setError(validationError);
-      setSelectedFile(null);
-      return;
-    }
-
-    setError("");
-    setSelectedFile(file);
-    onFileSelected(file);
-  }, [onFileSelected]);
+      setSelectedFile(file);
+      onFileSelected(file);
+    },
+    [onFileSelected],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -86,23 +95,29 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
 
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFileChange(files[0]);
-    }
-  }, [handleFileChange]);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileChange(files[0]);
+      }
+    },
+    [handleFileChange],
+  );
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileChange(files[0]);
-    }
-  }, [handleFileChange]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFileChange(files[0]);
+      }
+    },
+    [handleFileChange],
+  );
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -114,9 +129,12 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
     <div className="space-y-4 sm:space-y-6">
       {/* Instructions */}
       <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-        <p className="mb-2">Upload your bank or credit card statement to import transactions.</p>
+        <p className="mb-2">
+          Upload your bank or credit card statement to import transactions.
+        </p>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          Supported formats: CSV, Excel (.xlsx, .xls), PDF • Max size: 10MB (CSV/Excel), 20MB (PDF)
+          Supported formats: CSV, Excel (.xlsx, .xls), PDF • Max size: 10MB
+          (CSV/Excel), 20MB (PDF)
         </p>
       </div>
 
@@ -131,7 +149,7 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
               : error
                 ? "border-danger-500 bg-danger-50 dark:bg-danger-950 dark:border-danger-600"
                 : "border-neutral-300 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-700 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
-          "cursor-pointer active:scale-[0.99]"
+          "cursor-pointer active:scale-[0.99]",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -192,7 +210,10 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
         ) : (
           <div>
             <p className="text-base sm:text-lg font-semibold text-neutral-700 dark:text-dark-text mb-2">
-              Drop your file here, or <span className="text-primary-600 dark:text-primary-500">browse</span>
+              Drop your file here, or{" "}
+              <span className="text-primary-600 dark:text-primary-500">
+                browse
+              </span>
             </p>
             <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
               CSV, Excel, or PDF up to 20MB
@@ -215,7 +236,9 @@ export function FileUploadStep({ onFileSelected, onNext, isUploading }: FileUplo
               clipRule="evenodd"
             />
           </svg>
-          <p className="text-sm text-danger-700 dark:text-danger-300">{error}</p>
+          <p className="text-sm text-danger-700 dark:text-danger-300">
+            {error}
+          </p>
         </div>
       )}
 
