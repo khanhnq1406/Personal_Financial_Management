@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package wealthjourney.v1;
+
+option go_package = "wealthjourney/protobuf/v1;v1";
+
+import "google/api/annotations.proto";
+
+// SessionService provides session management operations
+service SessionService {
+  // ListSessions lists all active sessions for the authenticated user
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/sessions"
+    };
+  }
+
+  // RevokeSession revokes a specific session
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/sessions/{session_id}"
+    };
+  }
+
+  // RevokeAllSessions revokes all sessions except the current one
+  rpc RevokeAllSessions(RevokeAllSessionsRequest) returns (RevokeAllSessionsResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/sessions"
+    };
+  }
+}
+
+message SessionInfo {
+  string session_id = 1;
+  string device_name = 2;
+  string device_type = 3;
+  string ip_address = 4;
+  int64 created_at = 5;
+  int64 last_active_at = 6;
+  int64 expires_at = 7;
+  bool is_current = 8; // True if this is the session making the request
+}
+
+message ListSessionsRequest {}
+
+message ListSessionsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated SessionInfo sessions = 3;
+  string timestamp = 4;
+}
+
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+message RevokeSessionResponse {
+  bool success = 1;
+  string message = 2;
+  string timestamp = 3;
+}
+
+message RevokeAllSessionsRequest {
+  string current_session_id = 1; // Session to keep active
+}
+
+message RevokeAllSessionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 revoked_count = 3;
+  string timestamp = 4;
+}

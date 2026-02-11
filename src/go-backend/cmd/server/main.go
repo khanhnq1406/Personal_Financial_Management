@@ -22,6 +22,7 @@ import (
 	"wealthjourney/handlers"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
+	"wealthjourney/pkg/jobs"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
 	"wealthjourney/pkg/types"
@@ -95,6 +96,14 @@ func main() {
 	// Create context for background jobs cancellation
 	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())
 	defer backgroundCancel()
+
+	// Initialize session cleanup job (runs every 6 hours)
+	// This cleans up expired sessions from Redis and database
+	if redisClient != nil {
+		sessionCleanupJob := jobs.NewSessionCleanupJob(db, redisClient)
+		go sessionCleanupJob.Start(backgroundCtx, 6*time.Hour)
+		log.Println("Background session cleanup job started (runs every 6 hours)")
+	}
 
 	// Initialize background price update job
 	// This runs every 15 minutes to update investment prices from Yahoo Finance

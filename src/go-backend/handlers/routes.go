@@ -36,6 +36,18 @@ func RegisterRoutes(
 		authProtected.GET("", GetAuth) // Get current authenticated user
 	}
 
+	// Session management endpoints (protected)
+	sessions := v1.Group("/sessions")
+	sessions.Use(AuthMiddleware())
+	if rateLimiter != nil {
+		sessions.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	{
+		sessions.GET("", ListSessions)
+		sessions.DELETE("/:session_id", RevokeSession)
+		sessions.DELETE("", RevokeAllSessions)
+	}
+
 	// User routes (protected)
 	users := v1.Group("/users")
 	if rateLimiter != nil {
