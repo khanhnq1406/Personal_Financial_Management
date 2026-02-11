@@ -93,41 +93,49 @@ func userDataToProto(data *UserData) *authv1.User {
 
 // Register registers a new user using Google OAuth token
 func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.RegisterResponse, error) {
+	return s.RegisterWithDevice(ctx, googleToken, &redis.SessionData{
+		DeviceName: "Unknown Device",
+		DeviceType: "unknown",
+		IPAddress:  "unknown",
+		UserAgent:  "unknown",
+	})
+}
+
+// RegisterWithDevice registers with device information
+func (s *Server) RegisterWithDevice(ctx context.Context, googleToken string, deviceInfo *redis.SessionData) (*authv1.RegisterResponse, error) {
 	// Verify Google token
 	payload, err := idtoken.Validate(ctx, googleToken, s.cfg.Google.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Google token: %w", err)
 	}
 
-	// Extract user info from Google token
+	// Extract user info
 	email := payload.Claims["email"].(string)
 	name := payload.Claims["name"].(string)
 	picture := payload.Claims["picture"].(string)
 
 	var user models.User
 
-	// Check if user already exists
+	// Check if user exists
 	result := s.db.DB.Where("email = ?", email).First(&user)
 	if result.Error == nil {
-		// User already exists - generate token and login
-		return s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
+		// User exists - login instead
+		return s.generateLoginResponse(ctx, user, deviceInfo)
 	} else if result.Error != gorm.ErrRecordNotFound {
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
-	// Create new user using UserService if available (includes default categories creation)
+	// Create new user
 	if s.userSvc != nil {
 		_, err := s.userSvc.CreateUser(ctx, email, name, picture)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user via UserService: %w", err)
 		}
 
-		// Get the created user from database
 		if err := s.db.DB.Where("email = ?", email).First(&user).Error; err != nil {
 			return nil, fmt.Errorf("failed to retrieve created user: %w", err)
 		}
 	} else {
-		// Fallback: Create user directly in database (without default categories)
 		user = models.User{
 			Email:   email,
 			Name:    name,
@@ -138,7 +146,6 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
 
-		// Try to create default categories manually if CategoryService is available
 		if s.categorySvc != nil {
 			if err := s.categorySvc.CreateDefaultCategories(ctx, user.ID); err != nil {
 				log.Printf("Warning: Failed to create default categories for user %d (%s): %v", user.ID, email, err)
@@ -146,8 +153,7 @@ func (s *Server) Register(ctx context.Context, googleToken string) (*authv1.Regi
 		}
 	}
 
-	// Generate token and return login response for new user
-	return s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
+	return s.generateLoginResponse(ctx, user, deviceInfo)
 }
 
 // generateLoginResponse generates JWT token with session support
@@ -235,16 +241,25 @@ func extractDeviceInfo(ctx context.Context) *redis.SessionData {
 
 // Login logs in a user using Google OAuth token
 func (s *Server) Login(ctx context.Context, googleToken string) (*authv1.LoginResponse, error) {
+	return s.LoginWithDeviceInfo(ctx, googleToken, &redis.SessionData{
+		DeviceName: "Unknown Device",
+		DeviceType: "unknown",
+		IPAddress:  "unknown",
+		UserAgent:  "unknown",
+	})
+}
+
+// LoginWithDeviceInfo logs in with device information
+func (s *Server) LoginWithDeviceInfo(ctx context.Context, googleToken string, deviceInfo *redis.SessionData) (*authv1.LoginResponse, error) {
 	// Verify Google token
 	payload, err := idtoken.Validate(ctx, googleToken, s.cfg.Google.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Google token: %w", err)
 	}
 
-	// Extract email from Google token
 	email := payload.Claims["email"].(string)
 
-	// Find user in database
+	// Find user
 	var user models.User
 	result := s.db.DB.Where("email = ?", email).First(&user)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -253,8 +268,8 @@ func (s *Server) Login(ctx context.Context, googleToken string) (*authv1.LoginRe
 		return nil, fmt.Errorf("database error: %w", result.Error)
 	}
 
-	// Generate token with session support
-	resp, err := s.generateLoginResponse(ctx, user, extractDeviceInfo(ctx))
+	// Generate response with device info
+	resp, err := s.generateLoginResponse(ctx, user, deviceInfo)
 	if err != nil {
 		return nil, err
 	}

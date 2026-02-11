@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"wealthjourney/domain/auth"
+	"wealthjourney/pkg/device"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/handler"
 )
@@ -34,7 +35,8 @@ func Register(c *gin.Context) {
 		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
 	}
 
-	result, err := authServer.Register(c.Request.Context(), req.Token)
+	deviceInfo := device.ExtractDeviceInfo(c)
+	result, err := authServer.RegisterWithDevice(c.Request.Context(), req.Token, deviceInfo)
 
 	if err != nil {
 		// Log detailed error server-side for debugging
@@ -69,7 +71,9 @@ func Login(c *gin.Context) {
 	} else {
 		authServer = auth.NewServer(deps.DB, deps.RDB, deps.Cfg)
 	}
-	result, err := authServer.Login(c.Request.Context(), req.Token)
+
+	deviceInfo := device.ExtractDeviceInfo(c)
+	result, err := authServer.LoginWithDeviceInfo(c.Request.Context(), req.Token, deviceInfo)
 
 	if err != nil {
 		// Log detailed error server-side
