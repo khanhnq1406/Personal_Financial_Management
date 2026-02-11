@@ -4,13 +4,16 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 
 	"wealthjourney/domain/models"
+	"wealthjourney/domain/repository"
 	"wealthjourney/pkg/cache"
 	"wealthjourney/pkg/types"
 	walletv1 "wealthjourney/protobuf/v1"
