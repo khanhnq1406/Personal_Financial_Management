@@ -47,11 +47,45 @@ func NewImportService(
 	}
 }
 
+// validateImportRequest validates import prerequisites and edge cases.
+func (s *importService) validateImportRequest(ctx context.Context, userID int32, req *v1.ExecuteImportRequest) error {
+	// Check max transactions per import
+	if len(req.Transactions) > 10000 {
+		return apperrors.NewValidationError("exceeded maximum transactions per import (10,000)")
+	}
+
+	// Validate date range
+	now := time.Now()
+	tenYearsAgo := now.AddDate(-10, 0, 0)
+	oneDayAhead := now.AddDate(0, 0, 1)
+
+	for _, tx := range req.Transactions {
+		txDate := time.Unix(tx.Date, 0)
+
+		// Check for future dates
+		if txDate.After(oneDayAhead) {
+			return apperrors.NewValidationError("transaction date cannot be in the future")
+		}
+
+		// Check for dates too old
+		if txDate.Before(tenYearsAgo) {
+			return apperrors.NewValidationError("transaction date too old (max 10 years)")
+		}
+	}
+
+	return nil
+}
+
 // ExecuteImport executes the import of transactions with duplicate handling.
 func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1.ExecuteImportRequest) (*v1.ExecuteImportResponse, error) {
 	// Validate wallet ownership
 	wallet, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
 	if err != nil {
+		return nil, err
+	}
+
+	// Validate import request prerequisites
+	if err := s.validateImportRequest(ctx, userID, req); err != nil {
 		return nil, err
 	}
 
