@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { FileUploadStep } from "@/components/import/FileUploadStep";
+import { BankTemplateStep } from "@/components/import/BankTemplateStep";
 
 interface ImportTransactionsFormProps {
   onSuccess?: () => void;
@@ -11,12 +12,12 @@ interface ImportTransactionsFormProps {
 /**
  * Import Transactions Form - Multi-step wizard for importing bank/credit card statements
  *
- * Current implementation (Task 7):
+ * Current implementation (Tasks 7-8):
  * - Step 1: File Upload (FileUploadStep)
- * - Placeholder for future steps (Tasks 8-12)
+ * - Step 2: Bank Template Selection (BankTemplateStep)
+ * - Placeholder for future steps (Tasks 9-12)
  *
  * Future steps to be implemented:
- * - Step 2: Bank Template Selection (Task 8)
  * - Step 3: Column Mapping Configuration (Task 9)
  * - Step 4: Preview & Validation (Task 10)
  * - Step 5: Import Execution (Task 11)
@@ -25,6 +26,7 @@ interface ImportTransactionsFormProps {
 export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -37,17 +39,25 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
     setSelectedFile(file);
   };
 
-  const handleNext = () => {
-    // TODO: Task 8 - Implement bank template selection step
-    // For now, just log that the user clicked next
-    console.log("Next step - to be implemented in Task 8");
-    console.log("Selected file:", selectedFile?.name);
+  const handleTemplateSelected = (templateId: string | null) => {
+    setSelectedTemplateId(templateId);
+  };
 
-    // In future tasks, this will advance to the next step:
-    // setCurrentStep(2);
-    // setIsUploading(true);
-    // await uploadFile(selectedFile);
-    // setIsUploading(false);
+  const handleStep1Next = () => {
+    // Advance to bank template selection
+    console.log("Step 1 complete - Selected file:", selectedFile?.name);
+    setCurrentStep(2);
+  };
+
+  const handleStep2Back = () => {
+    // Go back to file upload
+    setCurrentStep(1);
+  };
+
+  const handleStep2Next = () => {
+    // TODO: Task 9 - Implement column mapping step
+    console.log("Step 2 complete - Selected template:", selectedTemplateId);
+    console.log("Next: Column Mapping (to be implemented in Task 9)");
   };
 
   return (
@@ -61,13 +71,21 @@ export function ImportTransactionsForm({ onSuccess }: ImportTransactionsFormProp
       {currentStep === 1 && (
         <FileUploadStep
           onFileSelected={handleFileSelected}
-          onNext={handleNext}
+          onNext={handleStep1Next}
           isUploading={isUploading}
         />
       )}
 
+      {/* Step 2: Bank Template Selection */}
+      {currentStep === 2 && (
+        <BankTemplateStep
+          onTemplateSelected={handleTemplateSelected}
+          onNext={handleStep2Next}
+          onBack={handleStep2Back}
+        />
+      )}
+
       {/* Future steps will be added here in subsequent tasks */}
-      {/* Step 2: Bank Template Selection (Task 8) */}
       {/* Step 3: Column Mapping (Task 9) */}
       {/* Step 4: Preview & Validation (Task 10) */}
       {/* Step 5: Import Execution (Task 11) */}
