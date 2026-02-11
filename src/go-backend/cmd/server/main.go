@@ -70,8 +70,12 @@ func main() {
 		InvestmentTransaction: repository.NewInvestmentTransactionRepository(db),
 		MarketData:            repository.NewMarketDataRepository(db),
 		FXRate:                repository.NewFXRateRepository(db),
+		ExchangeRate:          repository.NewExchangeRateRepository(db.DB),
 		PortfolioHistory:      repository.NewPortfolioHistoryRepository(db.DB),
 		Import:                repository.NewImportRepository(db),
+		MerchantRule:          repository.NewMerchantRuleRepository(db),
+		Keyword:               repository.NewKeywordRepository(db),
+		UserMapping:           repository.NewUserMappingRepository(db),
 	}
 
 	// Initialize redis (single instance for both handlers and auth server)
@@ -338,6 +342,13 @@ func main() {
 		CleanupInterval:   time.Minute,
 	})
 
+	// Initialize import rate limiter (10 imports per hour per user)
+	importRateLimiter := appmiddleware.NewImportRateLimiter(
+		cfg.Import.MaxImportsPerHour,
+		time.Hour,
+	)
+	defer importRateLimiter.Stop()
+
 	// Initialize Gin app
 	app := gin.New()
 
@@ -372,7 +383,7 @@ func main() {
 	v1.Use(appmiddleware.RateLimitByIP(rateLimiter))
 
 	// Register routes
-	handlers.RegisterRoutes(v1, h, rateLimiter)
+	handlers.RegisterRoutes(v1, h, rateLimiter, importRateLimiter)
 
 	// Global 404 handler
 	app.NoRoute(func(c *gin.Context) {

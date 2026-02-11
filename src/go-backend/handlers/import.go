@@ -15,6 +15,8 @@ import (
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/fileupload"
 	"wealthjourney/pkg/handler"
+	"wealthjourney/pkg/logger"
+	"wealthjourney/pkg/metrics"
 	"wealthjourney/pkg/parser"
 	v1 "wealthjourney/protobuf/v1"
 )
@@ -37,12 +39,12 @@ func NewImportHandler(importRepo repository.ImportRepository, importService serv
 // @Summary List bank templates
 // @Tags import
 // @Produce json
-// @Success 200 {object} types.APIResponse
+// @Success 200 {object} v1.ListBankTemplatesResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
 // @Router /api/v1/import/templates [get]
 func (h *ImportHandler) ListBankTemplates(c *gin.Context) {
-	templates, err := h.importRepo.ListBankTemplates(c.Request.Context())
+	response, err := h.importService.ListBankTemplates(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -52,12 +54,7 @@ func (h *ImportHandler) ListBankTemplates(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"templates": templates,
-		"message":   "Bank templates fetched successfully",
-		"timestamp": time.Now().Format(time.RFC3339),
-	})
+	c.JSON(http.StatusOK, response)
 }
 
 // UploadFile handles bank statement file upload.
@@ -99,12 +96,52 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Upload file from bytes
-	result, err := fileupload.UploadFileFromBytes(req.FileData, req.FileName, req.FileSize)
+	// Sanitize filename
+	sanitizedName, err := fileupload.SanitizeFileName(req.FileName)
 	if err != nil {
-		handler.BadRequest(c, err)
+		logger.LogImportError(c.Request.Context(), userID, "upload:sanitize_filename", err, map[string]interface{}{
+			"original_filename": req.FileName,
+			"file_size":         req.FileSize,
+		})
+		handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 		return
 	}
+
+	// Validate file content (MIME type and security)
+	if err := fileupload.ValidateFileContent(req.FileData, sanitizedName); err != nil {
+		logger.LogImportError(c.Request.Context(), userID, "upload:validate_content", err, map[string]interface{}{
+			"filename":  sanitizedName,
+			"file_size": req.FileSize,
+		})
+		handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
+		return
+	}
+
+	// Determine file type for metrics
+	fileType, _ := fileupload.ValidateFileType(sanitizedName)
+
+	// Record file upload size metric
+	metrics.FileUploadSize.WithLabelValues(string(fileType)).Observe(float64(req.FileSize))
+
+	// Upload file from bytes
+	result, err := fileupload.UploadFileFromBytes(req.FileData, sanitizedName, req.FileSize)
+	if err != nil {
+		logger.LogImportError(c.Request.Context(), userID, "upload:save_file", err, map[string]interface{}{
+			"filename":  sanitizedName,
+			"file_size": req.FileSize,
+			"file_type": string(fileType),
+		})
+		// Wrap error with user-friendly message
+		handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
+		return
+	}
+
+	// Log success
+	logger.LogImportSuccess(c.Request.Context(), userID, "upload", map[string]interface{}{
+		"file_id":   result.FileID,
+		"file_type": string(fileType),
+		"file_size": req.FileSize,
+	})
 
 	// Build response
 	response := &v1.UploadStatementFileResponse{
@@ -225,21 +262,42 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 	// Parse file based on extension
 	var parsedRows []*parser.ParsedRow
 
+	// Track parsing duration
+	parseStart := time.Now()
+	fileTypeStr := "csv"
+
 	switch fileExt {
 	case ".pdf":
+		fileTypeStr = "pdf"
 		// Use PDF parser
 		pdfParser := parser.NewPDFParser(filePath, columnMapping)
 		parsedRows, err = pdfParser.Parse()
 		if err != nil {
-			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse PDF: %v", err)))
+			metrics.ImportAttempts.WithLabelValues("error", fileTypeStr).Inc()
+			logger.LogImportError(c.Request.Context(), userID, "parse:pdf", err, logger.ImportErrorMetadata(
+				req.FileId, fileTypeStr, 0, 0,
+			))
+			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
 	case ".xlsx", ".xls":
+		fileTypeStr = "excel"
 		// Use Excel parser
 		excelParser := parser.NewExcelParser(filePath, columnMapping)
+		defer excelParser.Close() // Clean up: close the Excel file
+
+		// Set specific sheet if provided
+		if req.SheetName != "" {
+			excelParser.SetSheet(req.SheetName)
+		}
+
 		parsedRows, err = excelParser.Parse()
 		if err != nil {
-			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse Excel: %v", err)))
+			metrics.ImportAttempts.WithLabelValues("error", fileTypeStr).Inc()
+			logger.LogImportError(c.Request.Context(), userID, "parse:excel", err, logger.ImportErrorMetadata(
+				req.FileId, fileTypeStr, 0, 0,
+			))
+			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
 	default:
@@ -247,10 +305,18 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		csvParser := parser.NewCSVParser(filePath, columnMapping)
 		parsedRows, err = csvParser.Parse()
 		if err != nil {
-			handler.BadRequest(c, apperrors.NewValidationError(fmt.Sprintf("failed to parse CSV: %v", err)))
+			metrics.ImportAttempts.WithLabelValues("error", fileTypeStr).Inc()
+			logger.LogImportError(c.Request.Context(), userID, "parse:csv", err, logger.ImportErrorMetadata(
+				req.FileId, fileTypeStr, 0, 0,
+			))
+			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
 	}
+
+	// Record parsing duration
+	parseDuration := time.Since(parseStart).Seconds()
+	metrics.ImportDuration.WithLabelValues("parse").Observe(parseDuration)
 
 	// Convert parsed rows to protobuf format
 	var transactions []*v1.ParsedTransaction
@@ -307,6 +373,35 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		})
 	}
 
+	// Detect currencies used in transactions
+	currenciesUsed := make(map[string]int)
+	for _, tx := range transactions {
+		if tx.Amount != nil && tx.Amount.Currency != "" {
+			currenciesUsed[tx.Amount.Currency]++
+		}
+	}
+
+	// Get wallet to determine wallet currency
+	walletCurrency := columnMapping.Currency
+	if walletCurrency == "" {
+		walletCurrency = "VND" // Default
+	}
+
+	// Determine if conversion needed
+	needsConversion := false
+	for currency := range currenciesUsed {
+		if currency != walletCurrency {
+			needsConversion = true
+			break
+		}
+	}
+
+	// Build currency list
+	currencyList := make([]string, 0, len(currenciesUsed))
+	for currency := range currenciesUsed {
+		currencyList = append(currencyList, currency)
+	}
+
 	// Build response
 	response := &v1.ParseStatementResponse{
 		Success:      true,
@@ -318,10 +413,109 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			ErrorRows:   errorRows,
 			WarningRows: warningRows,
 		},
+		CurrencyInfo: &v1.CurrencyInfo{
+			WalletCurrency:  walletCurrency,
+			CurrenciesFound: currencyList,
+			NeedsConversion: needsConversion,
+		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
 
 	handler.Success(c, response)
+}
+
+// DetectDuplicates detects potential duplicates for imported transactions.
+// @Summary Detect duplicate transactions
+// @Tags import
+// @Accept json
+// @Produce json
+// @Param request body v1.DetectDuplicatesRequest true "Detect duplicates request"
+// @Success 200 {object} v1.DetectDuplicatesResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/detect-duplicates [post]
+func (h *ImportHandler) DetectDuplicates(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Bind and validate request
+	var req v1.DetectDuplicatesRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Validate required fields
+	if req.WalletId == 0 {
+		handler.BadRequest(c, apperrors.NewValidationError("walletId is required"))
+		return
+	}
+
+	if len(req.Transactions) == 0 {
+		handler.BadRequest(c, apperrors.NewValidationError("transactions list cannot be empty"))
+		return
+	}
+
+	// Detect duplicates via service
+	result, err := h.importService.DetectDuplicates(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
+}
+
+// ConvertCurrency converts imported transactions to wallet currency using exchange rates.
+// @Summary Convert transaction currencies
+// @Tags import
+// @Accept json
+// @Produce json
+// @Param request body v1.ConvertCurrencyRequest true "Convert currency request"
+// @Success 200 {object} v1.ConvertCurrencyResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/convert-currency [post]
+func (h *ImportHandler) ConvertCurrency(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Bind and validate request
+	var req v1.ConvertCurrencyRequest
+	if err := handler.BindAndValidate(c, &req); err != nil {
+		handler.BadRequest(c, err)
+		return
+	}
+
+	// Validate required fields
+	if req.WalletId == 0 {
+		handler.BadRequest(c, apperrors.NewValidationError("walletId is required"))
+		return
+	}
+
+	if len(req.Transactions) == 0 {
+		handler.BadRequest(c, apperrors.NewValidationError("transactions list cannot be empty"))
+		return
+	}
+
+	// Convert currencies via service
+	result, err := h.importService.ConvertCurrency(c.Request.Context(), userID, &req)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, result)
 }
 
 // ConfirmImport confirms and imports parsed transactions.
@@ -519,4 +713,40 @@ func (h *ImportHandler) UndoImport(c *gin.Context) {
 	}
 
 	handler.Success(c, result)
+}
+
+// ListExcelSheets lists all available sheets in an Excel file.
+// @Summary List Excel sheets
+// @Tags import
+// @Produce json
+// @Param file_id path string true "File ID from upload"
+// @Success 200 {object} v1.ListExcelSheetsResponse
+// @Failure 400 {object} types.APIResponse
+// @Failure 401 {object} types.APIResponse
+// @Failure 404 {object} types.APIResponse
+// @Failure 500 {object} types.APIResponse
+// @Router /api/v1/import/excel-sheets/{file_id} [get]
+func (h *ImportHandler) ListExcelSheets(c *gin.Context) {
+	// Get user ID from context
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		handler.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get file ID from path parameter
+	fileID := c.Param("file_id")
+	if fileID == "" {
+		handler.BadRequest(c, apperrors.NewValidationError("file ID is required"))
+		return
+	}
+
+	// Call service to list sheets
+	response, err := h.importService.ListExcelSheets(c.Request.Context(), userID, fileID)
+	if err != nil {
+		handler.HandleError(c, err)
+		return
+	}
+
+	handler.Success(c, response)
 }

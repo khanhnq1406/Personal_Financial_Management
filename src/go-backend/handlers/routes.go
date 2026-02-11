@@ -13,6 +13,7 @@ func RegisterRoutes(
 	v1 *gin.RouterGroup,
 	h *AllHandlers,
 	rateLimiter *appmiddleware.RateLimiter,
+	importRateLimiter *appmiddleware.ImportRateLimiter,
 ) {
 	// Auth routes (higher rate limit allowed for auth)
 	auth := v1.Group("/auth")
@@ -211,11 +212,23 @@ func RegisterRoutes(
 	imports.Use(AuthMiddleware())
 	{
 		imports.GET("/templates", h.Import.ListBankTemplates)
-		imports.POST("/upload", h.Import.UploadFile)
-		imports.POST("/parse", h.Import.ParseFile)
-		imports.POST("/confirm", h.Import.ConfirmImport)
+		imports.GET("/excel-sheets/:file_id", h.Import.ListExcelSheets)
 		imports.GET("/history", h.Import.ListImportBatches)
 		imports.GET("/:id", h.Import.GetImportBatch)
-		imports.POST("/:id/undo", h.Import.UndoImport)
+	}
+
+	// Import operations with strict rate limiting (10 per hour)
+	importsRestricted := v1.Group("/import")
+	importsRestricted.Use(AuthMiddleware())
+	if importRateLimiter != nil {
+		importsRestricted.Use(appmiddleware.ImportRateLimitMiddleware(importRateLimiter))
+	}
+	{
+		importsRestricted.POST("/upload", h.Import.UploadFile)
+		importsRestricted.POST("/parse", h.Import.ParseFile)
+		importsRestricted.POST("/convert-currency", h.Import.ConvertCurrency)
+		importsRestricted.POST("/detect-duplicates", h.Import.DetectDuplicates)
+		importsRestricted.POST("/confirm", h.Import.ConfirmImport)
+		importsRestricted.POST("/:id/undo", h.Import.UndoImport)
 	}
 }

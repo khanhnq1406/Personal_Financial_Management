@@ -3,117 +3,348 @@ package duplicate
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"regexp"
+	"strings"
 	"time"
 
 	"wealthjourney/domain/models"
+	v1 "wealthjourney/protobuf/v1"
 )
 
-type ConfidenceLevel int
-
-const (
-	ConfidenceLow       ConfidenceLevel = 40  // 30-50%
-	ConfidenceMedium    ConfidenceLevel = 60  // 50-70%
-	ConfidenceMediumHigh ConfidenceLevel = 80 // 70-90%
-	ConfidenceHigh      ConfidenceLevel = 95  // 90-100%
-)
-
+// DuplicateMatch represents a potential duplicate transaction match
 type DuplicateMatch struct {
+	ImportedTransaction *v1.ParsedTransaction
 	ExistingTransaction *models.Transaction
-	Confidence          int
+	Confidence          int32
 	MatchReason         string
-	MatchLevel          int // 1-4
 }
 
+// Detector provides duplicate detection functionality
 type Detector struct {
 	repo TransactionRepository
 }
 
+// TransactionRepository interface for accessing transaction data
 type TransactionRepository interface {
 	FindByWalletAndDateRange(ctx context.Context, walletID int32, startDate, endDate time.Time) ([]*models.Transaction, error)
-	FindByExternalID(ctx context.Context, walletID int32, externalID string) (*models.Transaction, error)
 }
 
+// NewDetector creates a new Detector instance
 func NewDetector(repo TransactionRepository) *Detector {
 	return &Detector{repo: repo}
 }
 
-// DetectDuplicate checks if a transaction is a duplicate
-func (d *Detector) DetectDuplicate(ctx context.Context, walletID int32, date time.Time, amount int64, description string, externalID string) (*DuplicateMatch, error) {
-	// Level 1: Exact match on external_id (highest confidence)
-	if externalID != "" {
-		existing, err := d.repo.FindByExternalID(ctx, walletID, externalID)
-		if err == nil && existing != nil {
-			return &DuplicateMatch{
-				ExistingTransaction: existing,
-				Confidence:          int(ConfidenceHigh),
-				MatchReason:         "Exact match on external reference ID",
-				MatchLevel:          1,
-			}, nil
+// DetectDuplicates detects potential duplicates for a list of parsed transactions
+func (d *Detector) DetectDuplicates(ctx context.Context, walletID int32, transactions []*v1.ParsedTransaction) ([]*DuplicateMatch, error) {
+	if len(transactions) == 0 {
+		return []*DuplicateMatch{}, nil
+	}
+
+	// Find the date range for the transactions
+	var minDate, maxDate time.Time
+	for _, tx := range transactions {
+		txDate := time.Unix(tx.Date, 0)
+		if minDate.IsZero() || txDate.Before(minDate) {
+			minDate = txDate
+		}
+		if maxDate.IsZero() || txDate.After(maxDate) {
+			maxDate = txDate
 		}
 	}
 
-	// Search in ±3 day range for other levels
-	startDate := date.AddDate(0, 0, -3)
-	endDate := date.AddDate(0, 0, 3)
+	// Expand the search window by 7 days in each direction (for Level 4 matching)
+	searchStart := minDate.AddDate(0, 0, -7)
+	searchEnd := maxDate.AddDate(0, 0, 7)
 
-	candidates, err := d.repo.FindByWalletAndDateRange(ctx, walletID, startDate, endDate)
+	// Fetch existing transactions in the date range
+	existingTxs, err := d.repo.FindByWalletAndDateRange(ctx, walletID, searchStart, searchEnd)
 	if err != nil {
 		return nil, err
 	}
 
+	// If no existing transactions, no duplicates possible
+	if len(existingTxs) == 0 {
+		return []*DuplicateMatch{}, nil
+	}
+
+	// Detect duplicates for each parsed transaction
+	var matches []*DuplicateMatch
+	for _, parsedTx := range transactions {
+		match := d.findBestMatch(parsedTx, existingTxs)
+		if match != nil {
+			matches = append(matches, match)
+		}
+	}
+
+	return matches, nil
+}
+
+// findBestMatch finds the best matching existing transaction for a parsed transaction
+func (d *Detector) findBestMatch(parsed *v1.ParsedTransaction, existingTxs []*models.Transaction) *DuplicateMatch {
 	var bestMatch *DuplicateMatch
 
-	for _, candidate := range candidates {
-		// Level 2: Date + Amount + Note (fuzzy)
-		if candidate.Date.Format("2006-01-02") == date.Format("2006-01-02") && candidate.Amount == amount {
-			similarity := CalculateStringSimilarity(candidate.Note, description)
-			if similarity > 0.8 {
-				match := &DuplicateMatch{
-					ExistingTransaction: candidate,
-					Confidence:          int(ConfidenceMediumHigh),
-					MatchReason:         "Same date, amount, and similar description",
-					MatchLevel:          2,
-				}
-				if bestMatch == nil || match.Confidence > bestMatch.Confidence {
-					bestMatch = match
-				}
-			}
-		}
+	parsedDate := time.Unix(parsed.Date, 0)
+	parsedAmount := parsed.Amount.Amount
+	parsedDesc := parsed.Description
+	parsedRef := parsed.ReferenceNumber
 
-		// Level 3: Amount + Date (within ±1 day)
-		daysDiff := abs(int(date.Sub(candidate.Date).Hours() / 24))
-		if daysDiff <= 1 && candidate.Amount == amount {
-			match := &DuplicateMatch{
-				ExistingTransaction: candidate,
-				Confidence:          int(ConfidenceMedium),
-				MatchReason:         "Same amount within 1 day",
-				MatchLevel:          3,
+	for _, existing := range existingTxs {
+		// Try each matching level in order of confidence
+		if match := d.level1Match(parsed, existing, parsedDate, parsedAmount, parsedDesc, parsedRef); match != nil {
+			if bestMatch == nil || match.Confidence > bestMatch.Confidence {
+				bestMatch = match
 			}
+		} else if match := d.level2Match(parsed, existing, parsedDate, parsedAmount, parsedDesc); match != nil {
+			if bestMatch == nil || match.Confidence > bestMatch.Confidence {
+				bestMatch = match
+			}
+		} else if match := d.level3Match(parsed, existing, parsedDate, parsedAmount, parsedDesc); match != nil {
+			if bestMatch == nil || match.Confidence > bestMatch.Confidence {
+				bestMatch = match
+			}
+		} else if match := d.level4Match(parsed, existing, parsedDate, parsedAmount, parsedDesc); match != nil {
 			if bestMatch == nil || match.Confidence > bestMatch.Confidence {
 				bestMatch = match
 			}
 		}
+	}
 
-		// Level 4: Similar description (Levenshtein distance)
-		if bestMatch == nil {
-			distance := LevenshteinDistance(candidate.Note, description)
-			if distance < 3 && distance > 0 {
-				bestMatch = &DuplicateMatch{
-					ExistingTransaction: candidate,
-					Confidence:          int(ConfidenceLow),
-					MatchReason:         "Similar description",
-					MatchLevel:          4,
-				}
-			}
+	return bestMatch
+}
+
+// level1Match: Exact match (99%) - same wallet, amount, date, reference
+func (d *Detector) level1Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedDesc, parsedRef string) *DuplicateMatch {
+	// Must have reference number for exact match
+	if parsedRef == "" {
+		return nil
+	}
+
+	// Check exact match: same amount, same date, same reference/description
+	if existing.Amount == parsedAmount &&
+		existing.Date.Format("2006-01-02") == parsedDate.Format("2006-01-02") &&
+		strings.EqualFold(existing.Note, parsedDesc) {
+		return &DuplicateMatch{
+			ImportedTransaction: parsed,
+			ExistingTransaction: existing,
+			Confidence:          99,
+			MatchReason:         fmt.Sprintf("Exact match: same amount (%.2f), date (%s), and description", float64(parsedAmount)/10000, parsedDate.Format("2006-01-02")),
 		}
 	}
 
-	return bestMatch, nil
+	return nil
 }
 
-func abs(n int) int {
-	if n < 0 {
-		return -n
+// level2Match: Strong match (90-95%) - same amount, date ±1 day, description similarity >80%
+func (d *Detector) level2Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedDesc string) *DuplicateMatch {
+	// Check amount match
+	if existing.Amount != parsedAmount {
+		return nil
 	}
-	return n
+
+	// Check date within ±1 day
+	daysDiff := math.Abs(parsedDate.Sub(existing.Date).Hours() / 24)
+	if daysDiff > 1.0 {
+		return nil
+	}
+
+	// Check description similarity (requires >80% similarity)
+	similarity := stringSimilarity(existing.Note, parsedDesc)
+	if similarity < 80.0 {
+		return nil
+	}
+
+	// Calculate confidence: 90-95 based on similarity
+	confidence := int32(90 + int((similarity-80.0)/20.0*5.0))
+	if confidence > 95 {
+		confidence = 95
+	}
+	if confidence < 90 {
+		confidence = 90
+	}
+
+	return &DuplicateMatch{
+		ImportedTransaction: parsed,
+		ExistingTransaction: existing,
+		Confidence:          confidence,
+		MatchReason:         fmt.Sprintf("Strong match: same amount (%.2f), date within 1 day, %.0f%% description match", float64(parsedAmount)/10000, similarity),
+	}
+}
+
+// level3Match: Likely match (70-85%) - amount ±5%, date ±3 days, description similarity >60%
+func (d *Detector) level3Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedDesc string) *DuplicateMatch {
+	// Skip if parsedAmount is zero to avoid division by zero
+	if parsedAmount == 0 {
+		return nil
+	}
+
+	// Check amount within ±5%
+	amountDiff := math.Abs(float64(existing.Amount-parsedAmount)) / math.Abs(float64(parsedAmount))
+	if amountDiff > 0.05 {
+		return nil
+	}
+
+	// Check date within ±3 days
+	daysDiff := math.Abs(parsedDate.Sub(existing.Date).Hours() / 24)
+	if daysDiff > 3.0 {
+		return nil
+	}
+
+	// Check description similarity (requires >60% similarity)
+	similarity := stringSimilarity(existing.Note, parsedDesc)
+	if similarity < 60.0 {
+		return nil
+	}
+
+	// Calculate confidence based on similarity and date/amount closeness
+	baseConfidence := 70.0
+	similarityBonus := (similarity - 60.0) / 40.0 * 10.0  // 0-10 bonus (60-100% -> 0-10)
+	dateBonus := (3.0 - daysDiff) / 3.0 * 3.0             // 0-3 bonus
+	amountBonus := (0.05 - amountDiff) / 0.05 * 2.0       // 0-2 bonus
+
+	confidence := int32(baseConfidence + similarityBonus + dateBonus + amountBonus)
+	if confidence > 85 {
+		confidence = 85
+	}
+	if confidence < 70 {
+		confidence = 70
+	}
+
+	return &DuplicateMatch{
+		ImportedTransaction: parsed,
+		ExistingTransaction: existing,
+		Confidence:          confidence,
+		MatchReason:         fmt.Sprintf("Likely match: amount within 5%%, date within 3 days, %.0f%% description match", similarity),
+	}
+}
+
+// level4Match: Possible match (50-65%) - amount ±10%, date ±7 days, merchant name match
+func (d *Detector) level4Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedDesc string) *DuplicateMatch {
+	// Skip if parsedAmount is zero to avoid division by zero
+	if parsedAmount == 0 {
+		return nil
+	}
+
+	// Check amount within ±10%
+	amountDiff := math.Abs(float64(existing.Amount-parsedAmount)) / math.Abs(float64(parsedAmount))
+	if amountDiff > 0.10 {
+		return nil
+	}
+
+	// Check date within ±7 days
+	daysDiff := math.Abs(parsedDate.Sub(existing.Date).Hours() / 24)
+	if daysDiff > 7.0 {
+		return nil
+	}
+
+	// Extract and compare merchant names
+	existingMerchant := extractMerchantName(existing.Note)
+	parsedMerchant := extractMerchantName(parsedDesc)
+
+	merchantSimilarity := stringSimilarity(existingMerchant, parsedMerchant)
+	if merchantSimilarity < 70.0 {
+		return nil
+	}
+
+	// Calculate confidence
+	baseConfidence := 50.0
+	merchantBonus := (merchantSimilarity - 70.0) / 30.0 * 10.0 // 0-10 bonus (70-100% -> 0-10)
+	dateBonus := (7.0 - daysDiff) / 7.0 * 3.0                  // 0-3 bonus
+	amountBonus := (0.10 - amountDiff) / 0.10 * 2.0            // 0-2 bonus
+
+	confidence := int32(baseConfidence + merchantBonus + dateBonus + amountBonus)
+	if confidence > 65 {
+		confidence = 65
+	}
+	if confidence < 50 {
+		confidence = 50
+	}
+
+	return &DuplicateMatch{
+		ImportedTransaction: parsed,
+		ExistingTransaction: existing,
+		Confidence:          confidence,
+		MatchReason:         fmt.Sprintf("Possible match: amount within 10%%, date within 7 days, merchant match (%.0f%%)", merchantSimilarity),
+	}
+}
+
+// levenshteinDistance calculates the Levenshtein distance between two strings
+func levenshteinDistance(s1, s2 string) int {
+	return LevenshteinDistance(s1, s2)
+}
+
+// stringSimilarity calculates the similarity between two strings (0-100%)
+func stringSimilarity(s1, s2 string) float64 {
+	// Use existing CalculateStringSimilarity which returns 0-1
+	similarity := CalculateStringSimilarity(s1, s2)
+	// Convert to percentage (0-100)
+	return similarity * 100.0
+}
+
+// extractMerchantName extracts the merchant name from a transaction description
+func extractMerchantName(description string) string {
+	// Normalize the description
+	desc := strings.ToUpper(strings.TrimSpace(description))
+
+	// Remove common prefixes
+	prefixes := []string{
+		"PAYMENT TO ",
+		"PURCHASE AT ",
+		"PURCHASE FROM ",
+		"PAYMENT FOR ",
+		"PAYMENT ",
+		"PURCHASE ",
+	}
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(desc, prefix) {
+			desc = strings.TrimPrefix(desc, prefix)
+			break
+		}
+	}
+
+	// Extract the first significant word(s) as merchant name
+	// Remove domain extensions
+	desc = regexp.MustCompile(`\.(COM|VN|NET|ORG)$`).ReplaceAllString(desc, "")
+
+	// Take first 1-3 words as merchant name
+	words := strings.Fields(desc)
+	if len(words) == 0 {
+		return desc
+	}
+
+	// Take up to 3 words or until we hit a number/location indicator
+	merchantWords := []string{}
+	for i := 0; i < len(words) && i < 3; i++ {
+		word := words[i]
+		// Stop if we hit a location or number
+		if isLocationWord(word) || isNumeric(word) {
+			break
+		}
+		merchantWords = append(merchantWords, word)
+	}
+
+	if len(merchantWords) == 0 {
+		return words[0]
+	}
+
+	return strings.Join(merchantWords, " ")
+}
+
+// isLocationWord checks if a word is a location indicator
+func isLocationWord(word string) bool {
+	locations := map[string]bool{
+		"HA": true, "NOI": true, "HANOI": true,
+		"SAIGON": true, "HCM": true, "HCMC": true,
+		"DA": true, "NANG": true, "DANANG": true,
+		"STORE": true, "BRANCH": true, "LOCATION": true,
+	}
+	return locations[strings.ToUpper(word)]
+}
+
+// isNumeric checks if a string contains only numbers
+func isNumeric(s string) bool {
+	matched := regexp.MustCompile(`^\d+$`).MatchString(s)
+	return matched
 }

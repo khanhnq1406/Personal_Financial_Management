@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"wealthjourney/domain/service"
+	"wealthjourney/pkg/fx"
 )
 
 // AllHandlers contains all handler instances.
@@ -20,12 +21,25 @@ type AllHandlers struct {
 
 // NewHandlers creates all handler instances with proper dependency injection.
 func NewHandlers(services *service.Services, repos *service.Repositories) *AllHandlers {
-	// Create import service
+	// Get dependencies
+	deps := GetDependencies()
+
+	// Create FX service for currency conversion (for import service)
+	var fxService service.FXService
+	if deps != nil && deps.RDB != nil && deps.Cfg != nil {
+		fxService = fx.NewExchangeService(deps.Cfg.FX, repos.ExchangeRate, deps.RDB.GetClient())
+	}
+
+	// Create import service with categorization and currency conversion support
 	importService := service.NewImportService(
 		repos.Import,
 		repos.Transaction,
 		repos.Wallet,
 		repos.Category,
+		repos.MerchantRule,
+		repos.Keyword,
+		repos.UserMapping,
+		fxService,
 	)
 
 	return &AllHandlers{

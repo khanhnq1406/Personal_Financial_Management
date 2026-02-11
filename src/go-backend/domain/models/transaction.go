@@ -18,6 +18,14 @@ type Transaction struct {
 	Currency      string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
 	Date          time.Time      `gorm:"not null;index" json:"date"`
 	Note          string         `gorm:"type:text" json:"note"`
+
+	// Currency conversion fields (for imported transactions)
+	OriginalAmount    *int64   `gorm:"type:bigint" json:"originalAmount,omitempty"`
+	OriginalCurrency  *string  `gorm:"size:3" json:"originalCurrency,omitempty"`
+	ExchangeRate      *float64 `gorm:"type:decimal(10,4)" json:"exchangeRate,omitempty"`
+	ExchangeRateDate  *time.Time `gorm:"type:date" json:"exchangeRateDate,omitempty"`
+	ExchangeRateSource *string `gorm:"size:20" json:"exchangeRateSource,omitempty"` // 'auto', 'manual'
+
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`

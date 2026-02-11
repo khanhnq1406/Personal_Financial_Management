@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/Button";
 import { ErrorSummary } from "./ErrorSummary";
 import { TransactionReviewTable } from "./TransactionReviewTable";
 import { ParsedTransaction, DuplicateMatch } from "@/gen/protobuf/v1/import";
 import { ColumnMapping } from "./ColumnMappingStep";
 import { useMutationParseStatement } from "@/utils/generated/hooks";
+import { ErrorSection } from "./ErrorSection";
+import { DuplicateSection } from "./DuplicateSection";
+import { CategoryReviewSection } from "./CategoryReviewSection";
+import { ReadyToImportSection } from "./ReadyToImportSection";
+import { DateRangeFilter } from "./DateRangeFilter";
 
 // Props for parsing mode (Task 10)
 export interface ReviewStepParseProps {
@@ -25,6 +30,9 @@ export interface ReviewStepReviewProps {
   onBack: () => void;
   isLoading?: boolean;
   currency?: string;
+  categories?: Array<{ id: number; name: string }>;
+  // New grouped UI props
+  useGroupedUI?: boolean;
 }
 
 export type ReviewStepProps = ReviewStepParseProps | ReviewStepReviewProps;
@@ -42,7 +50,20 @@ export function ReviewStep(props: ReviewStepProps) {
   const onBack = props.onBack;
   const isLoading = 'isLoading' in props ? props.isLoading : false;
   const currency = 'currency' in props ? props.currency : "VND";
+  const categories = 'categories' in props ? props.categories : [];
+  const useGroupedUI = 'useGroupedUI' in props ? props.useGroupedUI : true; // Default to new UI
+
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
+  const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
+  const [handledDuplicates, setHandledDuplicates] = useState<Set<number>>(new Set());
+  const [transactionsState, setTransactionsState] = useState<ParsedTransaction[]>([]);
+
+  // Initialize transactions state
+  useEffect(() => {
+    setTransactionsState(transactions);
+  }, [transactions]);
 
   // Auto-select valid non-duplicate transactions by default
   useEffect(() => {
@@ -50,14 +71,65 @@ export function ReviewStep(props: ReviewStepProps) {
       duplicateMatches?.map((m) => m.importedTransaction?.rowNumber || 0) || [],
     );
 
-    const validNonDuplicateRows = transactions
+    const validNonDuplicateRows = transactionsState
       .filter((t) => t.isValid && !duplicateRowNumbers.has(t.rowNumber))
       .map((t) => t.rowNumber);
 
     setSelectedRows(new Set(validNonDuplicateRows));
-  }, [transactions, duplicateMatches]);
+  }, [transactionsState, duplicateMatches]);
 
-  // Build duplicate confidence map for table display
+  // Filter transactions by date range
+  const filteredTransactions = useMemo(() => {
+    if (!dateRangeStart && !dateRangeEnd) {
+      return transactionsState;
+    }
+
+    const startTime = dateRangeStart ? Math.floor(dateRangeStart.getTime() / 1000) : 0;
+    const endTime = dateRangeEnd ? Math.floor(dateRangeEnd.getTime() / 1000) : Number.MAX_SAFE_INTEGER;
+
+    return transactionsState.filter((tx) => {
+      return tx.date >= startTime && tx.date <= endTime;
+    });
+  }, [transactionsState, dateRangeStart, dateRangeEnd]);
+
+  // Group transactions by status (for new UI)
+  const groups = useMemo(() => {
+    const duplicateRowNumbers = new Set(
+      duplicateMatches
+        ?.filter((m) => !handledDuplicates.has(m.importedTransaction?.rowNumber || 0))
+        .map((m) => m.importedTransaction?.rowNumber || 0) || []
+    );
+
+    const hasErrors = filteredTransactions.filter((tx) => !tx.isValid);
+
+    const hasDuplicates = filteredTransactions.filter((tx) =>
+      duplicateRowNumbers.has(tx.rowNumber)
+    );
+
+    const needsCategoryReview = filteredTransactions.filter(
+      (tx) =>
+        tx.isValid &&
+        !duplicateRowNumbers.has(tx.rowNumber) &&
+        (!tx.suggestedCategoryId || tx.categoryConfidence < 80)
+    );
+
+    const readyToImport = filteredTransactions.filter(
+      (tx) =>
+        tx.isValid &&
+        !duplicateRowNumbers.has(tx.rowNumber) &&
+        tx.suggestedCategoryId &&
+        tx.categoryConfidence >= 80
+    );
+
+    return {
+      hasErrors,
+      hasDuplicates,
+      needsCategoryReview,
+      readyToImport,
+    };
+  }, [filteredTransactions, duplicateMatches, handledDuplicates]);
+
+  // Build duplicate confidence map for table display (old UI)
   const duplicateMap = new Map(
     duplicateMatches?.map((m) => [
       m.importedTransaction?.rowNumber || 0,
@@ -68,8 +140,8 @@ export function ReviewStep(props: ReviewStepProps) {
     ]) || [],
   );
 
-  // Extract validation errors for ErrorSummary
-  const errorsForSummary = transactions
+  // Extract validation errors for ErrorSummary (old UI)
+  const errorsForSummary = transactionsState
     .filter((t) => t.validationErrors.length > 0)
     .map((t) => ({
       rowNumber: t.rowNumber,
@@ -89,7 +161,7 @@ export function ReviewStep(props: ReviewStepProps) {
   };
 
   const handleToggleAll = () => {
-    const validTransactions = transactions.filter((t) => t.isValid);
+    const validTransactions = filteredTransactions.filter((t) => t.isValid);
     const allSelected = validTransactions.every((t) => selectedRows.has(t.rowNumber));
 
     if (allSelected) {
@@ -101,10 +173,187 @@ export function ReviewStep(props: ReviewStepProps) {
     }
   };
 
-  const handleImport = () => {
-    onImport(Array.from(selectedRows));
+  const handleTransactionUpdate = (rowNumber: number, updates: Partial<ParsedTransaction>) => {
+    setTransactionsState((prev) =>
+      prev.map((tx) =>
+        tx.rowNumber === rowNumber ? { ...tx, ...updates } : tx
+      )
+    );
   };
 
+  const handleDuplicateAction = (rowNumber: number, action: "merge" | "keep" | "skip") => {
+    // Mark this duplicate as handled
+    setHandledDuplicates((prev) => new Set(prev).add(rowNumber));
+
+    // If action is "skip", also add to excluded rows
+    if (action === "skip") {
+      setExcludedRows((prev) => new Set(prev).add(rowNumber));
+    }
+  };
+
+  const handleToggleExclude = (rowNumber: number) => {
+    const newExcluded = new Set(excludedRows);
+    if (newExcluded.has(rowNumber)) {
+      newExcluded.delete(rowNumber);
+    } else {
+      newExcluded.add(rowNumber);
+    }
+    setExcludedRows(newExcluded);
+  };
+
+  const handleCategoryChange = (rowNumber: number, categoryId: number) => {
+    handleTransactionUpdate(rowNumber, {
+      suggestedCategoryId: categoryId,
+      categoryConfidence: 100, // Manual selection = 100% confidence
+    });
+  };
+
+  const handleSkipError = (rowNumber: number) => {
+    setExcludedRows((prev) => new Set(prev).add(rowNumber));
+  };
+
+  const handleDateRangeChange = (start: Date | null, end: Date | null) => {
+    setDateRangeStart(start);
+    setDateRangeEnd(end);
+  };
+
+  const handleImport = () => {
+    if (useGroupedUI) {
+      // New UI: exclude rows that are in excludedRows set
+      const importableRows = filteredTransactions
+        .filter((t) => t.isValid && !excludedRows.has(t.rowNumber))
+        .map((t) => t.rowNumber);
+      onImport(importableRows);
+    } else {
+      // Old UI: use selectedRows
+      onImport(Array.from(selectedRows));
+    }
+  };
+
+  // Calculate importable count
+  const importableCount = useGroupedUI
+    ? groups.readyToImport.filter((tx) => !excludedRows.has(tx.rowNumber)).length
+    : selectedRows.size;
+
+  // Blocked count includes errors and unhandled duplicates
+  const blockedCount = groups.hasErrors.length + groups.hasDuplicates.length;
+
+  // Render new grouped UI
+  if (useGroupedUI) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header Summary */}
+        <div>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-dark-text mb-2">
+            Review Import
+          </h2>
+          <p className="text-sm text-neutral-600 dark:text-dark-text-secondary">
+            {transactionsState.length} transaction{transactionsState.length !== 1 ? "s" : ""} from statement
+          </p>
+        </div>
+
+        {/* Date Range Filter */}
+        <DateRangeFilter
+          startDate={dateRangeStart}
+          endDate={dateRangeEnd}
+          onChange={handleDateRangeChange}
+          transactionCount={transactionsState.length}
+        />
+
+        {/* Grouped Sections */}
+        <div className="space-y-3">
+          {/* Error Section */}
+          {groups.hasErrors.length > 0 && (
+            <ErrorSection
+              transactions={groups.hasErrors}
+              onTransactionUpdate={handleTransactionUpdate}
+              onSkip={handleSkipError}
+              currency={currency}
+            />
+          )}
+
+          {/* Duplicate Section */}
+          {groups.hasDuplicates.length > 0 && duplicateMatches && (
+            <DuplicateSection
+              matches={duplicateMatches.filter(
+                (m) => !handledDuplicates.has(m.importedTransaction?.rowNumber || 0)
+              )}
+              onDuplicateHandled={handleDuplicateAction}
+              currency={currency}
+            />
+          )}
+
+          {/* Category Review Section */}
+          {groups.needsCategoryReview.length > 0 && (
+            <CategoryReviewSection
+              transactions={groups.needsCategoryReview}
+              onCategoryChange={handleCategoryChange}
+              categories={categories}
+              currency={currency}
+            />
+          )}
+
+          {/* Ready to Import Section */}
+          {groups.readyToImport.length > 0 && (
+            <ReadyToImportSection
+              transactions={groups.readyToImport}
+              excludedRows={excludedRows}
+              onToggleExclude={handleToggleExclude}
+              categories={categories}
+              currency={currency}
+            />
+          )}
+        </div>
+
+        {/* Summary Stats */}
+        <div className="p-4 bg-neutral-100 dark:bg-dark-surface-hover rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-neutral-600 dark:text-dark-text-secondary text-sm mb-1">
+                Ready to import
+              </p>
+              <p className="text-2xl font-bold text-success-600 dark:text-success-400">
+                {importableCount}
+              </p>
+            </div>
+            <div>
+              <p className="text-neutral-600 dark:text-dark-text-secondary text-sm mb-1">
+                Need attention
+              </p>
+              <p className="text-2xl font-bold text-warning-600 dark:text-warning-400">
+                {blockedCount}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
+          <Button
+            variant="secondary"
+            onClick={onBack}
+            disabled={isLoading}
+            className="flex-1 sm:flex-initial"
+          >
+            Back
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleImport}
+            disabled={importableCount === 0 || isLoading}
+            loading={isLoading}
+            className="flex-1"
+          >
+            {isLoading
+              ? "Importing..."
+              : `Import ${importableCount} Transaction${importableCount !== 1 ? "s" : ""}`}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Render old UI (fallback)
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Instructions */}
@@ -123,7 +372,7 @@ export function ReviewStep(props: ReviewStepProps) {
 
       {/* Transaction Review Table */}
       <TransactionReviewTable
-        transactions={transactions}
+        transactions={filteredTransactions}
         selectedRows={selectedRows}
         onToggleRow={handleToggleRow}
         onToggleAll={handleToggleAll}

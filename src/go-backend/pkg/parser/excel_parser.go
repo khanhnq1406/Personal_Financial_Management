@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 type ExcelParser struct {
 	filePath      string
 	columnMapping *ColumnMapping
+	sheetName     string // Specific sheet to parse (empty = auto-detect or first sheet)
+	file          *excelize.File // Keep file open for multi-operation support
 }
 
 // NewExcelParser creates a new Excel parser instance
@@ -19,33 +22,168 @@ func NewExcelParser(filePath string, mapping *ColumnMapping) *ExcelParser {
 	return &ExcelParser{
 		filePath:      filePath,
 		columnMapping: mapping,
+		sheetName:     "", // Auto-detect or use first sheet
 	}
+}
+
+// SetSheet sets the specific sheet to parse
+func (p *ExcelParser) SetSheet(sheetName string) {
+	p.sheetName = sheetName
+}
+
+// openFile opens the Excel file and keeps it for multiple operations
+func (p *ExcelParser) openFile() error {
+	if p.file != nil {
+		return nil // Already open
+	}
+
+	f, err := excelize.OpenFile(p.filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open Excel file: %w", err)
+	}
+	p.file = f
+	return nil
+}
+
+// Close closes the Excel file
+func (p *ExcelParser) Close() error {
+	if p.file != nil {
+		err := p.file.Close()
+		p.file = nil
+		return err
+	}
+	return nil
+}
+
+// ListSheets returns all sheet names in the Excel file
+func (p *ExcelParser) ListSheets() ([]string, error) {
+	if err := p.openFile(); err != nil {
+		return nil, err
+	}
+
+	sheetList := p.file.GetSheetList()
+
+	// Filter out hidden sheets
+	var visibleSheets []string
+	for _, sheetName := range sheetList {
+		if !p.isSheetHidden(sheetName) {
+			visibleSheets = append(visibleSheets, sheetName)
+		}
+	}
+
+	return visibleSheets, nil
+}
+
+// isSheetHidden checks if a sheet is hidden
+func (p *ExcelParser) isSheetHidden(sheetName string) bool {
+	if p.file == nil {
+		return false
+	}
+
+	// Get sheet index
+	sheetIndex, err := p.file.GetSheetIndex(sheetName)
+	if err != nil || sheetIndex < 0 {
+		return false
+	}
+
+	// Check if sheet is hidden (excelize provides IsSheetVisible method)
+	visible, err := p.file.GetSheetVisible(sheetName)
+	if err != nil {
+		return false
+	}
+
+	return !visible
+}
+
+// DetectDataSheet attempts to auto-detect which sheet contains transaction data
+func (p *ExcelParser) DetectDataSheet() (string, error) {
+	if err := p.openFile(); err != nil {
+		return "", err
+	}
+
+	sheets, err := p.ListSheets()
+	if err != nil {
+		return "", err
+	}
+
+	if len(sheets) == 0 {
+		return "", fmt.Errorf("no visible sheets found")
+	}
+
+	// If only one sheet, use it
+	if len(sheets) == 1 {
+		return sheets[0], nil
+	}
+
+	// Heuristic 1: Look for sheet name keywords
+	transactionKeywords := []string{
+		"transaction", "statement", "detail", "history",
+		"giao dịch", "sao kê", "chi tiết",
+	}
+
+	for _, sheet := range sheets {
+		sheetLower := strings.ToLower(sheet)
+		for _, keyword := range transactionKeywords {
+			if strings.Contains(sheetLower, keyword) {
+				return sheet, nil
+			}
+		}
+	}
+
+	// Heuristic 2: Choose sheet with most data rows
+	maxRows := 0
+	bestSheet := sheets[0]
+
+	for _, sheet := range sheets {
+		rows, err := p.file.GetRows(sheet)
+		if err != nil {
+			continue
+		}
+
+		// Count non-empty rows
+		dataRows := 0
+		for _, row := range rows {
+			if !p.isEmptyRow(row) {
+				dataRows++
+			}
+		}
+
+		if dataRows > maxRows {
+			maxRows = dataRows
+			bestSheet = sheet
+		}
+	}
+
+	return bestSheet, nil
 }
 
 // Parse converts Excel file to ParsedRow format (matching CSV parser output)
 func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 	// Open Excel file
-	f, err := excelize.OpenFile(p.filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open Excel file: %w", err)
+	if err := p.openFile(); err != nil {
+		return nil, err
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			// Log error but don't fail the parse
-			fmt.Printf("Warning: failed to close Excel file: %v\n", err)
-		}
-	}()
 
-	// Get the first sheet name
-	sheetName := f.GetSheetName(0)
+	// Determine which sheet to parse
+	sheetName := p.sheetName
 	if sheetName == "" {
-		return nil, fmt.Errorf("no sheets found in Excel file")
+		// Auto-detect best sheet
+		detected, err := p.DetectDataSheet()
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect data sheet: %w", err)
+		}
+		sheetName = detected
 	}
 
-	// Get all rows from the first sheet
-	rows, err := f.GetRows(sheetName)
+	// Validate sheet exists and is visible
+	if p.isSheetHidden(sheetName) {
+		return nil, fmt.Errorf("sheet '%s' is hidden", sheetName)
+	}
+
+	// Get all rows from the sheet
+	rows, err := p.file.GetRows(sheetName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read rows from Excel: %w", err)
+		return nil, fmt.Errorf("failed to read rows from sheet '%s': %w", sheetName, err)
 	}
 
 	if len(rows) == 0 {
@@ -76,6 +214,11 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 		row := rows[i]
 		rowNumber := i + 1 // 1-indexed for user display
 
+		// Skip hidden rows
+		if p.isRowHidden(sheetName, rowNumber) {
+			continue
+		}
+
 		// Skip empty rows
 		if p.isEmptyRow(row) {
 			continue
@@ -87,15 +230,113 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 		}
 
 		// Parse the row
-		parsedRow := p.parseRow(rowNumber, row, mapping)
+		parsedRow := p.parseRow(sheetName, rowNumber, row, mapping)
 		parsedRows = append(parsedRows, parsedRow)
 	}
 
 	return parsedRows, nil
 }
 
+// isRowHidden checks if a specific row is hidden
+func (p *ExcelParser) isRowHidden(sheetName string, rowNumber int) bool {
+	if p.file == nil {
+		return false
+	}
+
+	// Get row style to check if hidden
+	// Note: excelize doesn't provide direct IsRowHidden method, but we can check row height
+	height, err := p.file.GetRowHeight(sheetName, rowNumber)
+	if err != nil {
+		return false
+	}
+
+	// A row with height 0 is considered hidden
+	return height == 0
+}
+
+// parseExcelDateSerial converts Excel date serial to time.Time
+// Excel dates are stored as days since 1899-12-30 (with a leap year bug)
+func (p *ExcelParser) parseExcelDateSerial(serial float64) time.Time {
+	// Excel's epoch is 1899-12-30 (accounting for the 1900 leap year bug)
+	excelEpoch := time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
+
+	// Add the number of days
+	days := int(serial)
+	fractionalDay := serial - float64(days)
+
+	// Calculate date
+	date := excelEpoch.AddDate(0, 0, days)
+
+	// Add time component (fractional part of the day)
+	if fractionalDay > 0 {
+		seconds := int(fractionalDay * 86400) // 86400 seconds in a day
+		date = date.Add(time.Duration(seconds) * time.Second)
+	}
+
+	return date
+}
+
+// getCellStyle returns the style information for a cell
+func (p *ExcelParser) getCellStyle(sheetName string, cellRef string) (*excelize.Style, error) {
+	if p.file == nil {
+		return nil, fmt.Errorf("file not open")
+	}
+
+	styleID, err := p.file.GetCellStyle(sheetName, cellRef)
+	if err != nil {
+		return nil, err
+	}
+
+	style, err := p.file.GetStyle(styleID)
+	if err != nil {
+		return nil, err
+	}
+
+	return style, nil
+}
+
+// isCellRed checks if a cell has red font color (indicating negative amount)
+func (p *ExcelParser) isCellRed(sheetName string, cellRef string) bool {
+	style, err := p.getCellStyle(sheetName, cellRef)
+	if err != nil {
+		return false
+	}
+
+	if style == nil || style.Font == nil {
+		return false
+	}
+
+	// Check for red color codes
+	// Common red colors: FF0000, DC143C, C00000, FF (short form)
+	color := strings.ToUpper(style.Font.Color)
+	redColors := []string{"FF0000", "DC143C", "C00000", "FF", "RED"}
+
+	for _, redColor := range redColors {
+		if strings.Contains(color, redColor) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// getCellValueWithFormula gets the calculated value of a cell (evaluating formulas)
+func (p *ExcelParser) getCellValueWithFormula(sheetName string, cellRef string) (string, error) {
+	if p.file == nil {
+		return "", fmt.Errorf("file not open")
+	}
+
+	// GetCellValue automatically evaluates formulas and returns the result
+	value, err := p.file.GetCellValue(sheetName, cellRef)
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
 // parseRow converts an Excel row to ParsedRow format
-func (p *ExcelParser) parseRow(rowNumber int, row []string, mapping *ColumnMapping) *ParsedRow {
+func (p *ExcelParser) parseRow(sheetName string, rowNumber int, row []string, mapping *ColumnMapping) *ParsedRow {
 	parsed := &ParsedRow{
 		RowNumber:        rowNumber,
 		IsValid:          true,
@@ -105,33 +346,50 @@ func (p *ExcelParser) parseRow(rowNumber int, row []string, mapping *ColumnMappi
 	// Validate column indices
 	maxCol := len(row) - 1
 
-	// Parse date
+	// Parse date using enhanced date parser
 	if mapping.DateColumn <= maxCol {
 		dateStr := strings.TrimSpace(row[mapping.DateColumn])
 		if dateStr == "" {
 			parsed.addError("date", "Date is required", "error")
 		} else {
-			date, err := p.parseDate(dateStr, mapping.DateFormat)
-			if err != nil {
-				parsed.addError("date", fmt.Sprintf("Invalid date format: %v", err), "error")
+			// Try to parse as Excel date serial first
+			if serial, err := parseFloat(dateStr); err == nil && serial > 1 && serial < 100000 {
+				// Looks like an Excel date serial (reasonable range: 1900-2100)
+				parsed.Date = p.parseExcelDateSerial(serial)
 			} else {
-				parsed.Date = date
+				// Parse as text date
+				dateParser := NewDateParser(mapping.DateFormat)
+				date, err := dateParser.Parse(dateStr)
+				if err != nil {
+					parsed.addError("date", fmt.Sprintf("Invalid date format: %v", err), "error")
+				} else {
+					parsed.Date = date
+				}
 			}
 		}
 	} else {
 		parsed.addError("date", "Date column not found", "error")
 	}
 
-	// Parse amount
+	// Parse amount using enhanced amount parser
 	if mapping.AmountColumn <= maxCol {
 		amountStr := strings.TrimSpace(row[mapping.AmountColumn])
 		if amountStr == "" {
 			parsed.addError("amount", "Amount is required", "error")
 		} else {
-			amount, err := p.parseAmount(amountStr)
+			amountParser := NewAmountParser(mapping.AmountFormat)
+			amount, err := amountParser.Parse(amountStr)
 			if err != nil {
 				parsed.addError("amount", fmt.Sprintf("Invalid amount format: %v", err), "error")
 			} else {
+				// Check if cell has red font (negative amount)
+				cellRef, _ := excelize.CoordinatesToCellName(mapping.AmountColumn+1, rowNumber)
+				if cellRef != "" && p.isCellRed(sheetName, cellRef) {
+					// Make amount negative if it's red and currently positive
+					if amount > 0 {
+						amount = -amount
+					}
+				}
 				parsed.Amount = amount
 			}
 		}
@@ -139,26 +397,25 @@ func (p *ExcelParser) parseRow(rowNumber int, row []string, mapping *ColumnMappi
 		parsed.addError("amount", "Amount column not found", "error")
 	}
 
-	// Parse description
+	// Parse description and clean it
 	if mapping.DescriptionColumn <= maxCol {
 		description := strings.TrimSpace(row[mapping.DescriptionColumn])
 		if description == "" {
 			parsed.Description = "Imported Transaction"
 			parsed.addError("description", "Description is empty, using default", "info")
 		} else {
-			parsed.Description = description
+			// Clean the description
+			cleaner := NewDescriptionCleaner()
+			parsed.Description = cleaner.Clean(description)
 		}
 	} else {
 		parsed.Description = "Imported Transaction"
 		parsed.addError("description", "Description column not found", "info")
 	}
 
-	// Parse type (if column exists)
-	var typeStr string
-	if mapping.TypeColumn >= 0 && mapping.TypeColumn <= maxCol {
-		typeStr = strings.TrimSpace(row[mapping.TypeColumn])
-	}
-	parsed.Type = p.detectType(typeStr, parsed.Amount)
+	// Parse type using enhanced type detector
+	detector := NewTypeDetector()
+	parsed.Type = detector.DetectType(parsed.Description, parsed.Amount)
 
 	// Parse reference (if column exists)
 	if mapping.ReferenceColumn >= 0 && mapping.ReferenceColumn <= maxCol {
@@ -290,49 +547,28 @@ func (p *ExcelParser) detectColumnsFromHeader(headerRow []string) *ColumnMapping
 	return mapping
 }
 
-// parseDate parses a date string using multiple formats
+// parseDate is deprecated - use DateParser instead
 func (p *ExcelParser) parseDate(dateStr string, preferredFormat string) (time.Time, error) {
-	// If a specific format is provided, try it first
-	if preferredFormat != "" {
-		if date, err := time.Parse(preferredFormat, dateStr); err == nil {
-			return date, nil
-		}
-	}
-
-	// Try multiple common date formats
-	formats := []string{
-		"02/01/2006",      // DD/MM/YYYY
-		"01/02/2006",      // MM/DD/YYYY
-		"2006-01-02",      // YYYY-MM-DD
-		"02-01-2006",      // DD-MM-YYYY
-		"02 Jan 2006",     // DD MMM YYYY
-		"02/01/06",        // DD/MM/YY
-		"01/02/06",        // MM/DD/YY
-		"2006/01/02",      // YYYY/MM/DD
-		"02-Jan-2006",     // DD-MMM-YYYY
-		"02 January 2006", // DD Month YYYY
-		"2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
-		"02/01/2006 15:04:05", // DD/MM/YYYY HH:MM:SS
-	}
-
-	for _, format := range formats {
-		if date, err := time.Parse(format, dateStr); err == nil {
-			return date, nil
-		}
-	}
-
-	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
+	dateParser := NewDateParser(preferredFormat)
+	return dateParser.Parse(dateStr)
 }
 
-// parseAmount parses an amount string (reusing CSV parser logic)
+// parseAmount is deprecated - use AmountParser instead
 func (p *ExcelParser) parseAmount(amountStr string) (int64, error) {
-	// Reuse the CSV parser's amount parsing logic
-	csvParser := &CSVParser{}
-	return csvParser.parseAmount(amountStr)
+	amountParser := NewAmountParserWithAutoDetect()
+	return amountParser.Parse(amountStr)
 }
 
-// detectType determines transaction type (reusing CSV parser logic)
+// detectType is deprecated - use TypeDetector instead
 func (p *ExcelParser) detectType(typeStr string, amount int64) string {
-	csvParser := &CSVParser{}
-	return csvParser.detectType(typeStr, amount)
+	detector := NewTypeDetector()
+	if typeStr != "" {
+		return detector.DetectType(typeStr, amount)
+	}
+	return detector.DetectType("", amount)
+}
+
+// parseFloat safely parses a string to float64
+func parseFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
 }

@@ -19,6 +19,13 @@ type ImportRepository interface {
 	ListBankTemplates(ctx context.Context) ([]*models.BankTemplate, error)
 	CreateBankTemplate(ctx context.Context, template *models.BankTemplate) error
 
+	// User Template CRUD
+	GetUserTemplateByID(ctx context.Context, id int32, userID int32) (*models.UserTemplate, error)
+	ListUserTemplatesByUserID(ctx context.Context, userID int32) ([]*models.UserTemplate, error)
+	CreateUserTemplate(ctx context.Context, template *models.UserTemplate) error
+	UpdateUserTemplate(ctx context.Context, template *models.UserTemplate) error
+	DeleteUserTemplate(ctx context.Context, id int32, userID int32) error
+
 	// Transaction linking
 	LinkTransactionsToImport(ctx context.Context, importBatchID string, transactionIDs []int32) error
 	GetTransactionsByImportBatchID(ctx context.Context, importBatchID string) ([]*models.Transaction, error)
@@ -82,7 +89,7 @@ func (r *importRepository) UpdateImportBatch(ctx context.Context, batch *models.
 
 func (r *importRepository) GetBankTemplateByID(ctx context.Context, id string) (*models.BankTemplate, error) {
 	var template models.BankTemplate
-	result := r.db.DB.WithContext(ctx).Where("id = ? AND enabled = ?", id, true).First(&template)
+	result := r.db.DB.WithContext(ctx).Where("id = ? AND is_active = ?", id, true).First(&template)
 	if result.Error != nil {
 		return nil, r.handleDBError(result.Error, "bank template", "get bank template")
 	}
@@ -91,7 +98,7 @@ func (r *importRepository) GetBankTemplateByID(ctx context.Context, id string) (
 
 func (r *importRepository) ListBankTemplates(ctx context.Context) ([]*models.BankTemplate, error) {
 	var templates []*models.BankTemplate
-	result := r.db.DB.WithContext(ctx).Where("enabled = ?", true).Find(&templates)
+	result := r.db.DB.WithContext(ctx).Where("is_active = ?", true).Find(&templates)
 	if result.Error != nil {
 		return nil, r.handleDBError(result.Error, "bank template", "list bank templates")
 	}
@@ -121,4 +128,40 @@ func (r *importRepository) GetTransactionsByImportBatchID(ctx context.Context, i
 		return nil, r.handleDBError(result.Error, "transaction", "get transactions by import batch")
 	}
 	return transactions, nil
+}
+
+func (r *importRepository) GetUserTemplateByID(ctx context.Context, id int32, userID int32) (*models.UserTemplate, error) {
+	var template models.UserTemplate
+	result := r.db.DB.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&template)
+	if result.Error != nil {
+		return nil, r.handleDBError(result.Error, "user template", "get user template")
+	}
+	return &template, nil
+}
+
+func (r *importRepository) ListUserTemplatesByUserID(ctx context.Context, userID int32) ([]*models.UserTemplate, error) {
+	var templates []*models.UserTemplate
+	result := r.db.DB.WithContext(ctx).Where("user_id = ?", userID).Order("created_at desc").Find(&templates)
+	if result.Error != nil {
+		return nil, r.handleDBError(result.Error, "user template", "list user templates")
+	}
+	return templates, nil
+}
+
+func (r *importRepository) CreateUserTemplate(ctx context.Context, template *models.UserTemplate) error {
+	result := r.db.DB.WithContext(ctx).Create(template)
+	return r.handleDBError(result.Error, "user template", "create user template")
+}
+
+func (r *importRepository) UpdateUserTemplate(ctx context.Context, template *models.UserTemplate) error {
+	result := r.db.DB.WithContext(ctx).Save(template)
+	return r.handleDBError(result.Error, "user template", "update user template")
+}
+
+func (r *importRepository) DeleteUserTemplate(ctx context.Context, id int32, userID int32) error {
+	result := r.db.DB.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&models.UserTemplate{})
+	if result.RowsAffected == 0 {
+		return r.handleDBError(nil, "user template", "user template not found or not owned by user")
+	}
+	return r.handleDBError(result.Error, "user template", "delete user template")
 }

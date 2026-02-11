@@ -18,6 +18,8 @@ type Config struct {
 	Google       Google
 	RateLimit    RateLimit
 	YahooFinance YahooFinance
+	FX           FX
+	Import       Import
 }
 
 type Server struct {
@@ -66,6 +68,28 @@ type YahooFinance struct {
 	CacheMaxAge      time.Duration
 	FallbackToStale  bool
 	RequestsPerMin   int
+}
+
+type FX struct {
+	Enabled               bool
+	APIBaseURL            string
+	Timeout               time.Duration
+	HistoricalCacheTTL    time.Duration // 7 days
+	LatestCacheTTL        time.Duration // 1 hour
+	FallbackToLatest      bool
+	MaxRetries            int
+}
+
+type Import struct {
+	MaxCSVSize                  int64         // Maximum CSV file size in bytes
+	MaxExcelSize                int64         // Maximum Excel file size in bytes
+	MaxPDFSize                  int64         // Maximum PDF file size in bytes
+	MaxTransactionsPerImport    int           // Maximum number of transactions per import
+	MaxImportsPerHour           int           // Maximum imports per user per hour
+	ParseTimeout                time.Duration // Timeout for parsing operations
+	EnableOCR                   bool          // Enable OCR for PDFs
+	DuplicateConfidenceThreshold float64       // Minimum confidence to consider as duplicate (0-100)
+	UndoWindowHours             int           // Hours within which undo is allowed
 }
 
 // Load loads configuration from environment variables
@@ -120,6 +144,25 @@ func Load() (*Config, error) {
 	yahooEnabled, _ := strconv.ParseBool(getEnv("YAHOO_FINANCE_ENABLED", "true"))
 	yahooFallbackToStale, _ := strconv.ParseBool(getEnv("YAHOO_FINANCE_FALLBACK_STALE", "true"))
 
+	// FX (Exchange Rate) settings
+	fxEnabled, _ := strconv.ParseBool(getEnv("FX_ENABLED", "true"))
+	fxTimeout, _ := time.ParseDuration(getEnv("FX_TIMEOUT", "10s"))
+	fxHistoricalCacheTTL, _ := time.ParseDuration(getEnv("FX_HISTORICAL_CACHE_TTL", "168h")) // 7 days
+	fxLatestCacheTTL, _ := time.ParseDuration(getEnv("FX_LATEST_CACHE_TTL", "1h"))
+	fxFallbackToLatest, _ := strconv.ParseBool(getEnv("FX_FALLBACK_TO_LATEST", "true"))
+	fxMaxRetries, _ := strconv.Atoi(getEnv("FX_MAX_RETRIES", "3"))
+
+	// Import settings
+	maxCSVSize, _ := strconv.ParseInt(getEnv("IMPORT_MAX_CSV_SIZE", "10485760"), 10, 64)        // 10MB
+	maxExcelSize, _ := strconv.ParseInt(getEnv("IMPORT_MAX_EXCEL_SIZE", "10485760"), 10, 64)    // 10MB
+	maxPDFSize, _ := strconv.ParseInt(getEnv("IMPORT_MAX_PDF_SIZE", "20971520"), 10, 64)        // 20MB
+	maxTransactionsPerImport, _ := strconv.Atoi(getEnv("IMPORT_MAX_TRANSACTIONS", "10000"))
+	maxImportsPerHour, _ := strconv.Atoi(getEnv("IMPORT_MAX_PER_HOUR", "10"))
+	parseTimeout, _ := time.ParseDuration(getEnv("IMPORT_PARSE_TIMEOUT", "30s"))
+	enableOCR, _ := strconv.ParseBool(getEnv("IMPORT_ENABLE_OCR", "true"))
+	duplicateThreshold, _ := strconv.ParseFloat(getEnv("IMPORT_DUPLICATE_THRESHOLD", "80"), 64)
+	undoWindowHours, _ := strconv.Atoi(getEnv("IMPORT_UNDO_WINDOW_HOURS", "24"))
+
 	cfg := &Config{
 		Server: Server{
 			Port:            getEnv("PORT", "5000"),
@@ -161,6 +204,26 @@ func Load() (*Config, error) {
 			CacheMaxAge:     yahooCacheMaxAge,
 			FallbackToStale: yahooFallbackToStale,
 			RequestsPerMin:  yahooRequestsPerMin,
+		},
+		FX: FX{
+			Enabled:            fxEnabled,
+			APIBaseURL:         getEnv("FX_API_BASE_URL", "https://api.exchangerate-api.com/v4"),
+			Timeout:            fxTimeout,
+			HistoricalCacheTTL: fxHistoricalCacheTTL,
+			LatestCacheTTL:     fxLatestCacheTTL,
+			FallbackToLatest:   fxFallbackToLatest,
+			MaxRetries:         fxMaxRetries,
+		},
+		Import: Import{
+			MaxCSVSize:                  maxCSVSize,
+			MaxExcelSize:                maxExcelSize,
+			MaxPDFSize:                  maxPDFSize,
+			MaxTransactionsPerImport:    maxTransactionsPerImport,
+			MaxImportsPerHour:           maxImportsPerHour,
+			ParseTimeout:                parseTimeout,
+			EnableOCR:                   enableOCR,
+			DuplicateConfidenceThreshold: duplicateThreshold,
+			UndoWindowHours:             undoWindowHours,
 		},
 	}
 

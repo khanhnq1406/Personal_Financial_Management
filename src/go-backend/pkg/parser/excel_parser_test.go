@@ -276,13 +276,102 @@ func TestExcelParser_ParseRow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed := parser.parseRow(1, tt.row, mapping)
+			parsed := parser.parseRow("Sheet1", 1, tt.row, mapping)
 
 			assert.Equal(t, tt.expectValid, parsed.IsValid, "IsValid mismatch")
 			assert.Len(t, parsed.ValidationErrors, tt.expectErrors, "Unexpected number of validation errors")
 
 			if tt.checkAmount && parsed.IsValid {
 				assert.Equal(t, tt.expectedAmount, parsed.Amount, "Amount mismatch")
+			}
+		})
+	}
+}
+
+func TestExcelParser_ParseExcelDateSerial(t *testing.T) {
+	parser := &ExcelParser{}
+
+	tests := []struct {
+		name     string
+		serial   float64
+		expected string // Expected date in YYYY-MM-DD format
+	}{
+		{
+			name:     "Excel serial for 2024-01-01",
+			serial:   45292.0, // Excel serial for 2024-01-01
+			expected: "2024-01-01",
+		},
+		{
+			name:     "Excel serial for 2000-01-01",
+			serial:   36526.0, // Excel serial for 2000-01-01
+			expected: "2000-01-01",
+		},
+		{
+			name:     "Excel serial with time (2024-06-14 12:00:00)",
+			serial:   45457.5, // Excel serial for 2024-06-14 at noon
+			expected: "2024-06-14",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parser.parseExcelDateSerial(tt.serial)
+			resultStr := result.Format("2006-01-02")
+			assert.Equal(t, tt.expected, resultStr)
+		})
+	}
+}
+
+func TestExcelParser_SetSheet(t *testing.T) {
+	parser := NewExcelParser("test.xlsx", nil)
+
+	assert.Equal(t, "", parser.sheetName, "Default sheet name should be empty")
+
+	parser.SetSheet("Transactions")
+	assert.Equal(t, "Transactions", parser.sheetName, "Sheet name should be set")
+}
+
+func TestParseFloat(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    float64
+		shouldError bool
+	}{
+		{
+			name:        "Valid integer",
+			input:       "12345",
+			expected:    12345.0,
+			shouldError: false,
+		},
+		{
+			name:        "Valid float",
+			input:       "45292.5",
+			expected:    45292.5,
+			shouldError: false,
+		},
+		{
+			name:        "Invalid string",
+			input:       "not a number",
+			expected:    0,
+			shouldError: true,
+		},
+		{
+			name:        "Empty string",
+			input:       "",
+			expected:    0,
+			shouldError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseFloat(tt.input)
+			if tt.shouldError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}

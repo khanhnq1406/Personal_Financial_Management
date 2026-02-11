@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -20,11 +19,12 @@ type ColumnMapping struct {
 	DateColumn        int
 	AmountColumn      int
 	DescriptionColumn int
-	TypeColumn        int    // -1 if not present
-	CategoryColumn    int    // -1 if not present
-	ReferenceColumn   int    // -1 if not present
-	DateFormat        string // Optional: specific format to try first
+	TypeColumn        int           // -1 if not present
+	CategoryColumn    int           // -1 if not present
+	ReferenceColumn   int           // -1 if not present
+	DateFormat        string        // Optional: specific format to try first
 	Currency          string
+	AmountFormat      *AmountFormat // Optional: specific amount format
 }
 
 // ParsedRow represents a single parsed transaction row
@@ -128,13 +128,14 @@ func (p *CSVParser) parseRow(rowNumber int, row []string) *ParsedRow {
 		parsed.addError("description", "Description column index out of range", "error")
 	}
 
-	// Parse date
+	// Parse date using enhanced date parser
 	if p.mapping.DateColumn <= maxCol {
 		dateStr := strings.TrimSpace(row[p.mapping.DateColumn])
 		if dateStr == "" {
 			parsed.addError("date", "Date is required", "error")
 		} else {
-			date, err := p.parseDate(dateStr)
+			dateParser := NewDateParser(p.mapping.DateFormat)
+			date, err := dateParser.Parse(dateStr)
 			if err != nil {
 				parsed.addError("date", fmt.Sprintf("Invalid date format: %v", err), "error")
 			} else {
@@ -143,13 +144,14 @@ func (p *CSVParser) parseRow(rowNumber int, row []string) *ParsedRow {
 		}
 	}
 
-	// Parse amount
+	// Parse amount using enhanced amount parser
 	if p.mapping.AmountColumn <= maxCol {
 		amountStr := strings.TrimSpace(row[p.mapping.AmountColumn])
 		if amountStr == "" {
 			parsed.addError("amount", "Amount is required", "error")
 		} else {
-			amount, err := p.parseAmount(amountStr)
+			amountParser := NewAmountParser(p.mapping.AmountFormat)
+			amount, err := amountParser.Parse(amountStr)
 			if err != nil {
 				parsed.addError("amount", fmt.Sprintf("Invalid amount format: %v", err), "error")
 			} else {
@@ -158,25 +160,24 @@ func (p *CSVParser) parseRow(rowNumber int, row []string) *ParsedRow {
 		}
 	}
 
-	// Parse description
+	// Parse description and clean it
 	if p.mapping.DescriptionColumn <= maxCol {
 		description := strings.TrimSpace(row[p.mapping.DescriptionColumn])
 		if description == "" {
 			parsed.Description = "Imported Transaction"
 			parsed.addError("description", "Description is empty, using default", "info")
 		} else {
-			parsed.Description = description
+			// Clean the description
+			cleaner := NewDescriptionCleaner()
+			parsed.Description = cleaner.Clean(description)
 		}
 	} else {
 		parsed.Description = "Imported Transaction"
 	}
 
-	// Parse type (if column exists)
-	var typeStr string
-	if p.mapping.TypeColumn >= 0 && p.mapping.TypeColumn <= maxCol {
-		typeStr = strings.TrimSpace(row[p.mapping.TypeColumn])
-	}
-	parsed.Type = p.detectType(typeStr, parsed.Amount)
+	// Parse type using enhanced type detector
+	detector := NewTypeDetector()
+	parsed.Type = detector.DetectType(parsed.Description, parsed.Amount)
 
 	// Parse reference (if column exists)
 	if p.mapping.ReferenceColumn >= 0 && p.mapping.ReferenceColumn <= maxCol {
@@ -196,127 +197,38 @@ func (p *CSVParser) parseRow(rowNumber int, row []string) *ParsedRow {
 	return parsed
 }
 
+// parseDate is deprecated - use DateParser instead
+// Kept for backward compatibility with tests
 func (p *CSVParser) parseDate(dateStr string) (time.Time, error) {
-	// If a specific format is provided, try it first
-	if p.mapping != nil && p.mapping.DateFormat != "" {
-		if date, err := time.Parse(p.mapping.DateFormat, dateStr); err == nil {
-			return date, nil
-		}
+	dateFormat := ""
+	if p.mapping != nil {
+		dateFormat = p.mapping.DateFormat
 	}
-
-	// Try multiple common date formats
-	formats := []string{
-		"02/01/2006",      // DD/MM/YYYY
-		"01/02/2006",      // MM/DD/YYYY
-		"2006-01-02",      // YYYY-MM-DD
-		"02-01-2006",      // DD-MM-YYYY
-		"02 Jan 2006",     // DD MMM YYYY
-		"02/01/06",        // DD/MM/YY
-		"01/02/06",        // MM/DD/YY
-		"2006/01/02",      // YYYY/MM/DD
-		"02-Jan-2006",     // DD-MMM-YYYY
-		"02 January 2006", // DD Month YYYY
-	}
-
-	for _, format := range formats {
-		if date, err := time.Parse(format, dateStr); err == nil {
-			return date, nil
-		}
-	}
-
-	return time.Time{}, fmt.Errorf("unable to parse date: %s", dateStr)
+	dateParser := NewDateParser(dateFormat)
+	return dateParser.Parse(dateStr)
 }
 
+// parseAmount is deprecated - use AmountParser instead
+// Kept for backward compatibility with other parsers
 func (p *CSVParser) parseAmount(amountStr string) (int64, error) {
-	// Remove whitespace
-	amountStr = strings.TrimSpace(amountStr)
-	if amountStr == "" {
-		return 0, fmt.Errorf("empty amount")
+	var amountFormat *AmountFormat
+	if p.mapping != nil {
+		amountFormat = p.mapping.AmountFormat
 	}
-
-	// Track if amount is negative
-	isNegative := false
-
-	// Handle parentheses notation for negative amounts (100) → -100
-	if strings.HasPrefix(amountStr, "(") && strings.HasSuffix(amountStr, ")") {
-		isNegative = true
-		amountStr = strings.TrimPrefix(amountStr, "(")
-		amountStr = strings.TrimSuffix(amountStr, ")")
-		amountStr = strings.TrimSpace(amountStr)
-	}
-
-	// Handle trailing minus: 100- → -100
-	if strings.HasSuffix(amountStr, "-") {
-		isNegative = true
-		amountStr = strings.TrimSuffix(amountStr, "-")
-		amountStr = strings.TrimSpace(amountStr)
-	}
-
-	// Handle leading minus: -100 → -100
-	if strings.HasPrefix(amountStr, "-") {
-		isNegative = true
-		amountStr = strings.TrimPrefix(amountStr, "-")
-		amountStr = strings.TrimSpace(amountStr)
-	}
-
-	// Remove currency symbols
-	currencySymbols := []string{"₫", "$", "€", "£", "¥", "USD", "VND", "EUR", "GBP", "JPY"}
-	for _, symbol := range currencySymbols {
-		amountStr = strings.ReplaceAll(amountStr, symbol, "")
-	}
-	amountStr = strings.TrimSpace(amountStr)
-
-	// Remove thousands separators (comma and space)
-	amountStr = strings.ReplaceAll(amountStr, ",", "")
-	amountStr = strings.ReplaceAll(amountStr, " ", "")
-
-	// Parse as float
-	floatAmount, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid number format: %s", amountStr)
-	}
-
-	// Apply negative sign if needed
-	if isNegative {
-		floatAmount = -floatAmount
-	}
-
-	// Convert to smallest currency unit (×10000 for 4 decimal precision)
-	amount := int64(floatAmount * 10000)
-
-	return amount, nil
+	amountParser := NewAmountParser(amountFormat)
+	return amountParser.Parse(amountStr)
 }
 
+// detectType is deprecated - use TypeDetector instead
+// Kept for backward compatibility with other parsers
 func (p *CSVParser) detectType(typeStr string, amount int64) string {
-	// Check explicit type column if provided
+	detector := NewTypeDetector()
+	// If explicit type string provided, check it first
 	if typeStr != "" {
-		typeLower := strings.ToLower(typeStr)
-
-		// Income keywords
-		if strings.Contains(typeLower, "income") ||
-			strings.Contains(typeLower, "credit") ||
-			strings.Contains(typeLower, "deposit") ||
-			strings.Contains(typeLower, "receive") ||
-			strings.Contains(typeLower, "inflow") {
-			return "income"
-		}
-
-		// Expense keywords
-		if strings.Contains(typeLower, "expense") ||
-			strings.Contains(typeLower, "debit") ||
-			strings.Contains(typeLower, "withdrawal") ||
-			strings.Contains(typeLower, "payment") ||
-			strings.Contains(typeLower, "outflow") ||
-			strings.Contains(typeLower, "spend") {
-			return "expense"
-		}
+		// Try to detect from type string
+		return detector.DetectType(typeStr, amount)
 	}
-
-	// Fall back to amount sign
-	if amount >= 0 {
-		return "income"
-	}
-	return "expense"
+	return detector.DetectType("", amount)
 }
 
 func (p *CSVParser) hasHeader(row []string) bool {

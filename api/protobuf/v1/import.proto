@@ -25,6 +25,14 @@ service ImportService {
     };
   }
 
+  // Convert currencies for imported transactions
+  rpc ConvertCurrency(ConvertCurrencyRequest) returns (ConvertCurrencyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/convert-currency"
+      body: "*"
+    };
+  }
+
   // Detect duplicates for imported transactions
   rpc DetectDuplicates(DetectDuplicatesRequest) returns (DetectDuplicatesResponse) {
     option (google.api.http) = {
@@ -61,6 +69,13 @@ service ImportService {
       post: "/api/v1/import/{import_id}/undo"
     };
   }
+
+  // List Excel sheets for multi-sheet files
+  rpc ListExcelSheets(ListExcelSheetsRequest) returns (ListExcelSheetsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/excel-sheets/{file_id}"
+    };
+  }
 }
 
 // Messages
@@ -83,6 +98,8 @@ message ParseStatementRequest {
   string file_id = 1 [json_name = "fileId"];
   string bank_template_id = 2 [json_name = "bankTemplateId"]; // Optional: e.g., "vcb-credit-card"
   ColumnMapping custom_mapping = 3 [json_name = "customMapping"]; // For custom format
+  string sheet_name = 4 [json_name = "sheetName"]; // Optional: specific Excel sheet to parse
+  bool use_ocr = 5 [json_name = "useOcr"]; // Optional: enable OCR for scanned PDFs (not implemented yet)
 }
 
 message ColumnMapping {
@@ -101,7 +118,8 @@ message ParseStatementResponse {
   string message = 2 [json_name = "message"];
   repeated ParsedTransaction transactions = 3 [json_name = "transactions"];
   ParseStatistics statistics = 4 [json_name = "statistics"];
-  string timestamp = 5 [json_name = "timestamp"];
+  CurrencyInfo currency_info = 5 [json_name = "currencyInfo"];
+  string timestamp = 6 [json_name = "timestamp"];
 }
 
 message ParsedTransaction {
@@ -115,6 +133,12 @@ message ParsedTransaction {
   string reference_number = 8 [json_name = "referenceNumber"];
   repeated ValidationError validation_errors = 9 [json_name = "validationErrors"];
   bool is_valid = 10 [json_name = "isValid"];
+
+  // Currency conversion metadata (populated after ConvertCurrency call)
+  wealthjourney.common.v1.Money original_amount = 11 [json_name = "originalAmount"];
+  double exchange_rate = 12 [json_name = "exchangeRate"];
+  string exchange_rate_source = 13 [json_name = "exchangeRateSource"]; // "auto" or "manual"
+  int64 exchange_rate_date = 14 [json_name = "exchangeRateDate"]; // Unix timestamp
 }
 
 message ValidationError {
@@ -236,4 +260,56 @@ message UndoImportResponse {
   bool success = 1 [json_name = "success"];
   string message = 2 [json_name = "message"];
   string timestamp = 3 [json_name = "timestamp"];
+}
+
+// Currency conversion messages
+
+message CurrencyInfo {
+  string wallet_currency = 1 [json_name = "walletCurrency"];
+  repeated string currencies_found = 2 [json_name = "currenciesFound"];
+  bool needs_conversion = 3 [json_name = "needsConversion"];
+}
+
+message ConvertCurrencyRequest {
+  int32 wallet_id = 1 [json_name = "walletId"];
+  repeated ParsedTransaction transactions = 2 [json_name = "transactions"];
+  map<string, ManualExchangeRate> manual_rates = 3 [json_name = "manualRates"]; // currency -> rate
+}
+
+message ManualExchangeRate {
+  string from_currency = 1 [json_name = "fromCurrency"];
+  string to_currency = 2 [json_name = "toCurrency"];
+  double exchange_rate = 3 [json_name = "exchangeRate"];
+  int64 rate_date = 4 [json_name = "rateDate"]; // Unix timestamp
+}
+
+message ConvertCurrencyResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated CurrencyConversion conversions = 3 [json_name = "conversions"];
+  repeated ParsedTransaction converted_transactions = 4 [json_name = "convertedTransactions"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ListExcelSheetsRequest {
+  string file_id = 1 [json_name = "fileId"];
+}
+
+message ListExcelSheetsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated string sheet_names = 3 [json_name = "sheetNames"];
+  string default_sheet = 4 [json_name = "defaultSheet"]; // Recommended sheet to use
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message CurrencyConversion {
+  string from_currency = 1 [json_name = "fromCurrency"];
+  string to_currency = 2 [json_name = "toCurrency"];
+  double exchange_rate = 3 [json_name = "exchangeRate"];
+  string rate_source = 4 [json_name = "rateSource"]; // "auto" or "manual"
+  int64 rate_date = 5 [json_name = "rateDate"]; // Unix timestamp
+  int32 transaction_count = 6 [json_name = "transactionCount"];
+  wealthjourney.common.v1.Money total_original = 7 [json_name = "totalOriginal"];
+  wealthjourney.common.v1.Money total_converted = 8 [json_name = "totalConverted"];
 }

@@ -159,6 +159,9 @@ export function ReviewStepWrapper({
       onBack={onBack}
       currency={currency}
       isLoading={executeImportMutation.isPending}
+      useGroupedUI={true}
+      categories={[]}
+      duplicateMatches={[]}
     />
   );
 }

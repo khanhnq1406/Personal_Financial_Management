@@ -1,35 +1,66 @@
+import { render, screen } from "@testing-library/react";
 import { BankTemplateStep } from "../BankTemplateStep";
 
-/**
- * Integration test to verify BankTemplateStep component structure
- *
- * This is a simple type-check test to ensure:
- * 1. Component exports correctly
- * 2. Props interface is properly defined
- * 3. TypeScript types are valid
- */
+// Mock the query hook
+jest.mock("@/utils/generated/hooks", () => ({
+  useQueryListBankTemplates: jest.fn(() => ({
+    data: {
+      success: true,
+      templates: [
+        { id: "vcb-csv", name: "Vietcombank CSV", bankCode: "VCB" },
+        { id: "tcb-csv", name: "Techcombank CSV", bankCode: "TCB" },
+      ],
+    },
+    isLoading: false,
+    error: null,
+  })),
+}));
 
-// Type check: Verify component accepts required props
-const TestUsage = () => {
-  const handleTemplateSelected = (templateId: string | null) => {
-    console.log("Selected template:", templateId);
-  };
+describe("BankTemplateStep", () => {
+  const mockOnTemplateSelected = jest.fn();
+  const mockOnNext = jest.fn();
+  const mockOnBack = jest.fn();
 
-  const handleNext = () => {
-    console.log("Next clicked");
-  };
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-  const handleBack = () => {
-    console.log("Back clicked");
-  };
+  it("renders without crashing", () => {
+    render(
+      <BankTemplateStep
+        onTemplateSelected={mockOnTemplateSelected}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />
+    );
 
-  return (
-    <BankTemplateStep
-      onTemplateSelected={handleTemplateSelected}
-      onNext={handleNext}
-      onBack={handleBack}
-    />
-  );
-};
+    // Should render the component
+    expect(screen.getByText(/Select Bank Template/i)).toBeInTheDocument();
+  });
 
-export default TestUsage;
+  it("displays bank template options when loaded", () => {
+    render(
+      <BankTemplateStep
+        onTemplateSelected={mockOnTemplateSelected}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />
+    );
+
+    expect(screen.getByText(/Vietcombank CSV/i)).toBeInTheDocument();
+    expect(screen.getByText(/Techcombank CSV/i)).toBeInTheDocument();
+  });
+
+  it("accepts required props correctly", () => {
+    // This is a type-check test to ensure props interface is correct
+    const { container } = render(
+      <BankTemplateStep
+        onTemplateSelected={mockOnTemplateSelected}
+        onNext={mockOnNext}
+        onBack={mockOnBack}
+      />
+    );
+
+    expect(container).toBeInTheDocument();
+  });
+});

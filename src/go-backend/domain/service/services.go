@@ -80,8 +80,12 @@ type Repositories struct {
 	InvestmentTransaction repository.InvestmentTransactionRepository
 	MarketData            repository.MarketDataRepository
 	FXRate                repository.FXRateRepository
+	ExchangeRate          repository.ExchangeRateRepository
 	PortfolioHistory      repository.PortfolioHistoryRepository
 	Import                repository.ImportRepository
+	MerchantRule          repository.MerchantRuleRepository
+	Keyword               repository.KeywordRepository
+	UserMapping           repository.UserMappingRepository
 }
 
 // NewRepositories creates all repository instances.

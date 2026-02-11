@@ -21,11 +21,13 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	ImportService_UploadStatementFile_FullMethodName = "/wealthjourney.import.v1.ImportService/UploadStatementFile"
 	ImportService_ParseStatement_FullMethodName      = "/wealthjourney.import.v1.ImportService/ParseStatement"
+	ImportService_ConvertCurrency_FullMethodName     = "/wealthjourney.import.v1.ImportService/ConvertCurrency"
 	ImportService_DetectDuplicates_FullMethodName    = "/wealthjourney.import.v1.ImportService/DetectDuplicates"
 	ImportService_ExecuteImport_FullMethodName       = "/wealthjourney.import.v1.ImportService/ExecuteImport"
 	ImportService_ListBankTemplates_FullMethodName   = "/wealthjourney.import.v1.ImportService/ListBankTemplates"
 	ImportService_GetImportHistory_FullMethodName    = "/wealthjourney.import.v1.ImportService/GetImportHistory"
 	ImportService_UndoImport_FullMethodName          = "/wealthjourney.import.v1.ImportService/UndoImport"
+	ImportService_ListExcelSheets_FullMethodName     = "/wealthjourney.import.v1.ImportService/ListExcelSheets"
 )
 
 // ImportServiceClient is the client API for ImportService service.
@@ -36,6 +38,8 @@ type ImportServiceClient interface {
 	UploadStatementFile(ctx context.Context, in *UploadStatementFileRequest, opts ...grpc.CallOption) (*UploadStatementFileResponse, error)
 	// Parse uploaded file with bank template
 	ParseStatement(ctx context.Context, in *ParseStatementRequest, opts ...grpc.CallOption) (*ParseStatementResponse, error)
+	// Convert currencies for imported transactions
+	ConvertCurrency(ctx context.Context, in *ConvertCurrencyRequest, opts ...grpc.CallOption) (*ConvertCurrencyResponse, error)
 	// Detect duplicates for imported transactions
 	DetectDuplicates(ctx context.Context, in *DetectDuplicatesRequest, opts ...grpc.CallOption) (*DetectDuplicatesResponse, error)
 	// Execute import of reviewed transactions
@@ -46,6 +50,8 @@ type ImportServiceClient interface {
 	GetImportHistory(ctx context.Context, in *GetImportHistoryRequest, opts ...grpc.CallOption) (*GetImportHistoryResponse, error)
 	// Undo import (within 24 hours)
 	UndoImport(ctx context.Context, in *UndoImportRequest, opts ...grpc.CallOption) (*UndoImportResponse, error)
+	// List Excel sheets for multi-sheet files
+	ListExcelSheets(ctx context.Context, in *ListExcelSheetsRequest, opts ...grpc.CallOption) (*ListExcelSheetsResponse, error)
 }
 
 type importServiceClient struct {
@@ -68,6 +74,15 @@ func (c *importServiceClient) UploadStatementFile(ctx context.Context, in *Uploa
 func (c *importServiceClient) ParseStatement(ctx context.Context, in *ParseStatementRequest, opts ...grpc.CallOption) (*ParseStatementResponse, error) {
 	out := new(ParseStatementResponse)
 	err := c.cc.Invoke(ctx, ImportService_ParseStatement_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *importServiceClient) ConvertCurrency(ctx context.Context, in *ConvertCurrencyRequest, opts ...grpc.CallOption) (*ConvertCurrencyResponse, error) {
+	out := new(ConvertCurrencyResponse)
+	err := c.cc.Invoke(ctx, ImportService_ConvertCurrency_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +134,15 @@ func (c *importServiceClient) UndoImport(ctx context.Context, in *UndoImportRequ
 	return out, nil
 }
 
+func (c *importServiceClient) ListExcelSheets(ctx context.Context, in *ListExcelSheetsRequest, opts ...grpc.CallOption) (*ListExcelSheetsResponse, error) {
+	out := new(ListExcelSheetsResponse)
+	err := c.cc.Invoke(ctx, ImportService_ListExcelSheets_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ImportServiceServer is the server API for ImportService service.
 // All implementations must embed UnimplementedImportServiceServer
 // for forward compatibility
@@ -127,6 +151,8 @@ type ImportServiceServer interface {
 	UploadStatementFile(context.Context, *UploadStatementFileRequest) (*UploadStatementFileResponse, error)
 	// Parse uploaded file with bank template
 	ParseStatement(context.Context, *ParseStatementRequest) (*ParseStatementResponse, error)
+	// Convert currencies for imported transactions
+	ConvertCurrency(context.Context, *ConvertCurrencyRequest) (*ConvertCurrencyResponse, error)
 	// Detect duplicates for imported transactions
 	DetectDuplicates(context.Context, *DetectDuplicatesRequest) (*DetectDuplicatesResponse, error)
 	// Execute import of reviewed transactions
@@ -137,6 +163,8 @@ type ImportServiceServer interface {
 	GetImportHistory(context.Context, *GetImportHistoryRequest) (*GetImportHistoryResponse, error)
 	// Undo import (within 24 hours)
 	UndoImport(context.Context, *UndoImportRequest) (*UndoImportResponse, error)
+	// List Excel sheets for multi-sheet files
+	ListExcelSheets(context.Context, *ListExcelSheetsRequest) (*ListExcelSheetsResponse, error)
 	mustEmbedUnimplementedImportServiceServer()
 }
 
@@ -149,6 +177,9 @@ func (UnimplementedImportServiceServer) UploadStatementFile(context.Context, *Up
 }
 func (UnimplementedImportServiceServer) ParseStatement(context.Context, *ParseStatementRequest) (*ParseStatementResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ParseStatement not implemented")
+}
+func (UnimplementedImportServiceServer) ConvertCurrency(context.Context, *ConvertCurrencyRequest) (*ConvertCurrencyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertCurrency not implemented")
 }
 func (UnimplementedImportServiceServer) DetectDuplicates(context.Context, *DetectDuplicatesRequest) (*DetectDuplicatesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DetectDuplicates not implemented")
@@ -164,6 +195,9 @@ func (UnimplementedImportServiceServer) GetImportHistory(context.Context, *GetIm
 }
 func (UnimplementedImportServiceServer) UndoImport(context.Context, *UndoImportRequest) (*UndoImportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndoImport not implemented")
+}
+func (UnimplementedImportServiceServer) ListExcelSheets(context.Context, *ListExcelSheetsRequest) (*ListExcelSheetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListExcelSheets not implemented")
 }
 func (UnimplementedImportServiceServer) mustEmbedUnimplementedImportServiceServer() {}
 
@@ -210,6 +244,24 @@ func _ImportService_ParseStatement_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ImportServiceServer).ParseStatement(ctx, req.(*ParseStatementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ImportService_ConvertCurrency_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConvertCurrencyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).ConvertCurrency(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_ConvertCurrency_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).ConvertCurrency(ctx, req.(*ConvertCurrencyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -304,6 +356,24 @@ func _ImportService_UndoImport_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ImportService_ListExcelSheets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListExcelSheetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).ListExcelSheets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ImportService_ListExcelSheets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).ListExcelSheets(ctx, req.(*ListExcelSheetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ImportService_ServiceDesc is the grpc.ServiceDesc for ImportService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -318,6 +388,10 @@ var ImportService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ParseStatement",
 			Handler:    _ImportService_ParseStatement_Handler,
+		},
+		{
+			MethodName: "ConvertCurrency",
+			Handler:    _ImportService_ConvertCurrency_Handler,
 		},
 		{
 			MethodName: "DetectDuplicates",
@@ -338,6 +412,10 @@ var ImportService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndoImport",
 			Handler:    _ImportService_UndoImport_Handler,
+		},
+		{
+			MethodName: "ListExcelSheets",
+			Handler:    _ImportService_ListExcelSheets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

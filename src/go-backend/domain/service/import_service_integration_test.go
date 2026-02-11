@@ -771,3 +771,187 @@ func countTransactionsByWallet(walletID int32) (int, error) {
 }
 
 // Note: Test helper functions are defined in test_helpers_integration.go
+
+// TestImportService_CurrencyConversion_Integration tests the full currency conversion flow
+func TestImportService_CurrencyConversion_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	// Setup test environment
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Setup repositories
+	userRepo := setupUserRepository(db)
+	walletRepo := setupWalletRepository(db)
+	categoryRepo := setupCategoryRepository(db)
+	transactionRepo := setupTransactionRepository(db)
+	importRepo := setupImportRepository(db)
+	merchantRepo := setupMerchantRuleRepository(db)
+	keywordRepo := setupKeywordRepository(db)
+	userMappingRepo := setupUserMappingRepository(db)
+
+	// Mock FX service for testing
+	mockFXService := &mockFXService{
+		rates: map[string]float64{
+			"USD:VND": 24000.0,
+			"EUR:VND": 26000.0,
+		},
+	}
+
+	// Setup service with mock FX service
+	importService := NewImportService(
+		importRepo,
+		transactionRepo,
+		walletRepo,
+		categoryRepo,
+		merchantRepo,
+		keywordRepo,
+		userMappingRepo,
+		mockFXService,
+	)
+
+	// Create test user
+	user := &models.User{
+		Email:             "fx-test@example.com",
+		Name:              "FX Test User",
+		EmailVerified:     true,
+	}
+	err := userRepo.Create(ctx, user)
+	require.NoError(t, err)
+	require.NotZero(t, user.ID)
+
+	// Create VND wallet
+	wallet := &models.Wallet{
+		UserID:     user.ID,
+		WalletName: "VND Wallet",
+		Balance:    0,
+		Currency:   "VND",
+		Type:       v1.WalletType_WALLET_TYPE_BASIC,
+	}
+	err = walletRepo.Create(ctx, wallet)
+	require.NoError(t, err)
+	require.NotZero(t, wallet.ID)
+
+	// Create parsed transactions with USD currency
+	parsedTransactions := []*v1.ParsedTransaction{
+		{
+			RowNumber: 1,
+			Date:      time.Now().Unix(),
+			Amount:    &v1.Money{Amount: 4200, Currency: "USD"}, // $42.00
+			Description: "Amazon purchase",
+			Type:      v1.TransactionType_TRANSACTION_TYPE_EXPENSE,
+			IsValid:   true,
+		},
+		{
+			RowNumber: 2,
+			Date:      time.Now().Unix(),
+			Amount:    &v1.Money{Amount: 10000, Currency: "USD"}, // $100.00
+			Description: "Freelance income",
+			Type:      v1.TransactionType_TRANSACTION_TYPE_INCOME,
+			IsValid:   true,
+		},
+	}
+
+	// Test ConvertCurrency
+	convertReq := &v1.ConvertCurrencyRequest{
+		WalletId:     wallet.ID,
+		Transactions: parsedTransactions,
+	}
+
+	convertResp, err := importService.ConvertCurrency(ctx, user.ID, convertReq)
+	require.NoError(t, err)
+	require.True(t, convertResp.Success)
+	require.NotNil(t, convertResp.ConvertedTransactions)
+	require.Len(t, convertResp.ConvertedTransactions, 2)
+	require.Len(t, convertResp.Conversions, 1)
+
+	// Verify conversion metadata
+	conversion := convertResp.Conversions[0]
+	assert.Equal(t, "USD", conversion.FromCurrency)
+	assert.Equal(t, "VND", conversion.ToCurrency)
+	assert.Equal(t, 24000.0, conversion.ExchangeRate)
+	assert.Equal(t, "auto", conversion.RateSource)
+	assert.Equal(t, int32(2), conversion.TransactionCount)
+
+	// Verify converted amounts
+	convertedTx1 := convertResp.ConvertedTransactions[0]
+	assert.Equal(t, "VND", convertedTx1.Amount.Currency)
+	assert.Equal(t, int64(100800000), convertedTx1.Amount.Amount) // 4200 * 24000
+	assert.NotNil(t, convertedTx1.OriginalAmount)
+	assert.Equal(t, int64(4200), convertedTx1.OriginalAmount.Amount)
+	assert.Equal(t, "USD", convertedTx1.OriginalAmount.Currency)
+	assert.Equal(t, 24000.0, convertedTx1.ExchangeRate)
+	assert.Equal(t, "auto", convertedTx1.ExchangeRateSource)
+
+	// Execute import with converted transactions
+	executeReq := &v1.ExecuteImportRequest{
+		FileId:       "test-file-id",
+		WalletId:     wallet.ID,
+		Transactions: convertResp.ConvertedTransactions,
+		Strategy:     v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_KEEP_ALL,
+	}
+
+	executeResp, err := importService.ExecuteImport(ctx, user.ID, executeReq)
+	require.NoError(t, err)
+	require.True(t, executeResp.Success)
+	require.NotNil(t, executeResp.Summary)
+	assert.Equal(t, int32(2), executeResp.Summary.TotalImported)
+
+	// Verify transactions were stored with conversion metadata
+	transactions, err := transactionRepo.ListByWalletID(ctx, wallet.ID, types.PaginationParams{
+		Page:     1,
+		PageSize: 10,
+	})
+	require.NoError(t, err)
+	require.Len(t, transactions, 2)
+
+	// Check first transaction metadata
+	tx1 := transactions[0]
+	assert.Equal(t, "VND", tx1.Currency)
+	assert.NotNil(t, tx1.OriginalAmount)
+	assert.NotNil(t, tx1.OriginalCurrency)
+	assert.NotNil(t, tx1.ExchangeRate)
+	assert.NotNil(t, tx1.ExchangeRateSource)
+	assert.Equal(t, int64(4200), *tx1.OriginalAmount)
+	assert.Equal(t, "USD", *tx1.OriginalCurrency)
+	assert.Equal(t, 24000.0, *tx1.ExchangeRate)
+	assert.Equal(t, "auto", *tx1.ExchangeRateSource)
+
+	t.Logf("✓ Currency conversion integration test passed")
+}
+
+// mockFXService implements FXService for testing
+type mockFXService struct {
+	rates map[string]float64
+}
+
+func (m *mockFXService) GetHistoricalRate(ctx context.Context, fromCurrency, toCurrency string, date time.Time) (float64, error) {
+	key := fmt.Sprintf("%s:%s", fromCurrency, toCurrency)
+	if rate, ok := m.rates[key]; ok {
+		return rate, nil
+	}
+	return 0, fmt.Errorf("rate not found for %s", key)
+}
+
+func (m *mockFXService) GetLatestRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error) {
+	if fromCurrency == toCurrency {
+		return 1.0, nil
+	}
+	key := fmt.Sprintf("%s:%s", fromCurrency, toCurrency)
+	if rate, ok := m.rates[key]; ok {
+		return rate, nil
+	}
+	return 0, fmt.Errorf("rate not found for %s", key)
+}
+
+func (m *mockFXService) Convert(ctx context.Context, amount int64, fromCurrency, toCurrency string, date time.Time) (int64, float64, error) {
+	rate, err := m.GetHistoricalRate(ctx, fromCurrency, toCurrency, date)
+	if err != nil {
+		return 0, 0, err
+	}
+	return int64(float64(amount) * rate), rate, nil
+}

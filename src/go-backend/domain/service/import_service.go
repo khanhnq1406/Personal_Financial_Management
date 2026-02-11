@@ -2,12 +2,21 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
+	"wealthjourney/pkg/categorization"
+	"wealthjourney/pkg/duplicate"
 	apperrors "wealthjourney/pkg/errors"
+	"wealthjourney/pkg/fileupload"
+	"wealthjourney/pkg/logger"
+	"wealthjourney/pkg/metrics"
+	"wealthjourney/pkg/parser"
+	"wealthjourney/pkg/validator"
 	v1 "wealthjourney/protobuf/v1"
 
 	"github.com/google/uuid"
@@ -18,18 +27,43 @@ type ImportService interface {
 	// ExecuteImport executes the import of transactions with duplicate handling.
 	ExecuteImport(ctx context.Context, userID int32, req *v1.ExecuteImportRequest) (*v1.ExecuteImportResponse, error)
 
+	// DetectDuplicates detects potential duplicates for parsed transactions.
+	DetectDuplicates(ctx context.Context, userID int32, req *v1.DetectDuplicatesRequest) (*v1.DetectDuplicatesResponse, error)
+
+	// ConvertCurrency converts imported transactions to wallet currency.
+	ConvertCurrency(ctx context.Context, userID int32, req *v1.ConvertCurrencyRequest) (*v1.ConvertCurrencyResponse, error)
+
 	// UndoImport undoes an import within 24 hours of creation.
 	UndoImport(ctx context.Context, userID int32, importID string) (*v1.UndoImportResponse, error)
 
 	// GetImportHistory retrieves import history for a user.
 	GetImportHistory(ctx context.Context, userID int32, req *v1.GetImportHistoryRequest) (*v1.GetImportHistoryResponse, error)
+
+	// ListBankTemplates retrieves available bank templates.
+	ListBankTemplates(ctx context.Context) (*v1.ListBankTemplatesResponse, error)
+
+	// ListExcelSheets lists all sheets in an Excel file.
+	ListExcelSheets(ctx context.Context, userID int32, fileID string) (*v1.ListExcelSheetsResponse, error)
+
+	// LearnFromUserCorrections learns from user's category corrections during import.
+	LearnFromUserCorrections(ctx context.Context, userID int32, corrections map[string]int32) error
 }
 
 type importService struct {
-	importRepo      repository.ImportRepository
-	transactionRepo repository.TransactionRepository
-	walletRepo      repository.WalletRepository
-	categoryRepo    repository.CategoryRepository
+	importRepo        repository.ImportRepository
+	transactionRepo   repository.TransactionRepository
+	walletRepo        repository.WalletRepository
+	categoryRepo      repository.CategoryRepository
+	duplicateDetector *duplicate.Detector
+	categorizer       *categorization.Categorizer
+	fxService         FXService // For currency conversion
+}
+
+// FXService defines the interface for exchange rate operations
+type FXService interface {
+	GetHistoricalRate(ctx context.Context, fromCurrency, toCurrency string, date time.Time) (float64, error)
+	GetLatestRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error)
+	Convert(ctx context.Context, amount int64, fromCurrency, toCurrency string, date time.Time) (int64, float64, error)
 }
 
 // NewImportService creates a new ImportService.
@@ -38,12 +72,28 @@ func NewImportService(
 	transactionRepo repository.TransactionRepository,
 	walletRepo repository.WalletRepository,
 	categoryRepo repository.CategoryRepository,
+	merchantRepo repository.MerchantRuleRepository,
+	keywordRepo repository.KeywordRepository,
+	userMappingRepo repository.UserMappingRepository,
+	fxService FXService,
 ) ImportService {
+	// Create categorizer with VN region by default
+	categorizer := categorization.NewCategorizer(
+		merchantRepo,
+		keywordRepo,
+		userMappingRepo,
+		categoryRepo,
+		"VN", // Default region
+	)
+
 	return &importService{
-		importRepo:      importRepo,
-		transactionRepo: transactionRepo,
-		walletRepo:      walletRepo,
-		categoryRepo:    categoryRepo,
+		importRepo:        importRepo,
+		transactionRepo:   transactionRepo,
+		walletRepo:        walletRepo,
+		categoryRepo:      categoryRepo,
+		duplicateDetector: duplicate.NewDetector(transactionRepo),
+		categorizer:       categorizer,
+		fxService:         fxService,
 	}
 }
 
@@ -76,16 +126,109 @@ func (s *importService) validateImportRequest(ctx context.Context, userID int32,
 	return nil
 }
 
+// DetectDuplicates detects potential duplicates for parsed transactions.
+func (s *importService) DetectDuplicates(ctx context.Context, userID int32, req *v1.DetectDuplicatesRequest) (*v1.DetectDuplicatesResponse, error) {
+	// Track duplicate detection duration
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime).Seconds()
+		metrics.DuplicateDetectionDuration.Observe(duration)
+	}()
+
+	// Validate wallet ownership
+	_, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
+	if err != nil {
+		return nil, apperrors.WrapWithUserMessage(err)
+	}
+
+	// Detect duplicates using the detector
+	duplicateMatches, err := s.duplicateDetector.DetectDuplicates(ctx, req.WalletId, req.Transactions)
+	if err != nil {
+		return nil, apperrors.WrapWithUserMessage(err)
+	}
+
+	// Record duplicate count metric
+	metrics.DuplicatesFound.Observe(float64(len(duplicateMatches)))
+
+	// Convert duplicate matches to protobuf format
+	pbMatches := make([]*v1.DuplicateMatch, 0, len(duplicateMatches))
+	for _, match := range duplicateMatches {
+		// Convert existing transaction to protobuf
+		existingPb := &v1.Transaction{
+			Id:         match.ExistingTransaction.ID,
+			WalletId:   match.ExistingTransaction.WalletID,
+			CategoryId: 0,
+			Amount: &v1.Money{
+				Amount:   match.ExistingTransaction.Amount,
+				Currency: match.ExistingTransaction.Currency,
+			},
+			Date: match.ExistingTransaction.Date.Unix(),
+			Note: match.ExistingTransaction.Note,
+		}
+
+		if match.ExistingTransaction.CategoryID != nil {
+			existingPb.CategoryId = *match.ExistingTransaction.CategoryID
+		}
+
+		pbMatch := &v1.DuplicateMatch{
+			ImportedTransaction:  match.ImportedTransaction,
+			ExistingTransaction:  existingPb,
+			Confidence:           match.Confidence,
+			MatchReason:          match.MatchReason,
+		}
+
+		pbMatches = append(pbMatches, pbMatch)
+	}
+
+	return &v1.DetectDuplicatesResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Found %d potential duplicate(s)", len(pbMatches)),
+		Matches:   pbMatches,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
 // ExecuteImport executes the import of transactions with duplicate handling.
 func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1.ExecuteImportRequest) (*v1.ExecuteImportResponse, error) {
+	// Track import duration
+	startTime := time.Now()
+	var fileType string = "unknown"
+	var importSuccess bool = false
+
+	defer func() {
+		duration := time.Since(startTime).Seconds()
+		metrics.ImportDuration.WithLabelValues("execute").Observe(duration)
+
+		// Record transaction count
+		if len(req.Transactions) > 0 {
+			metrics.ImportTransactionCount.Observe(float64(len(req.Transactions)))
+		}
+
+		// Record import attempt
+		status := "error"
+		if importSuccess {
+			status = "success"
+		}
+		metrics.ImportAttempts.WithLabelValues(status, fileType).Inc()
+	}()
+
 	// Validate wallet ownership
 	wallet, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
 	if err != nil {
-		return nil, err
+		logger.LogImportError(ctx, userID, "execute:validate_wallet", err, map[string]interface{}{
+			"wallet_id": req.WalletId,
+			"file_id":   req.FileId,
+		})
+		return nil, apperrors.WrapWithUserMessage(err)
 	}
 
 	// Validate import request prerequisites
 	if err := s.validateImportRequest(ctx, userID, req); err != nil {
+		logger.LogImportError(ctx, userID, "execute:validate_request", err, map[string]interface{}{
+			"wallet_id":         req.WalletId,
+			"file_id":           req.FileId,
+			"transaction_count": len(req.Transactions),
+		})
 		return nil, err
 	}
 
@@ -109,13 +252,43 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 	}
 
 	if len(validTransactions) == 0 {
-		return nil, apperrors.NewValidationError("No valid transactions to import")
+		err := apperrors.NewValidationError("No valid transactions to import")
+		logger.LogImportError(ctx, userID, "execute:no_valid_transactions", err, map[string]interface{}{
+			"wallet_id":       req.WalletId,
+			"file_id":         req.FileId,
+			"total_rows":      len(req.Transactions),
+			"excluded_count":  len(req.ExcludedRowNumbers),
+		})
+		return nil, err
+	}
+
+	// Detect duplicates if strategy is AUTO_MERGE or SKIP_ALL
+	var duplicateMatches []*duplicate.DuplicateMatch
+	duplicateMatchMap := make(map[int32]int32) // parsedTx row number -> existing tx ID
+	if req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_AUTO_MERGE ||
+		req.Strategy == v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_SKIP_ALL {
+		duplicateMatches, err = s.duplicateDetector.DetectDuplicates(ctx, req.WalletId, validTransactions)
+		if err != nil {
+			logger.LogImportError(ctx, userID, "execute:detect_duplicates", err, map[string]interface{}{
+				"wallet_id":         req.WalletId,
+				"file_id":           req.FileId,
+				"transaction_count": len(validTransactions),
+			})
+			return nil, err
+		}
+
+		// Build map for quick lookup
+		for _, match := range duplicateMatches {
+			duplicateMatchMap[match.ImportedTransaction.RowNumber] = match.ExistingTransaction.ID
+		}
 	}
 
 	// Convert parsed transactions to models
 	var transactionsToCreate []*models.Transaction
+	var transactionsToUpdate []*models.Transaction
 	var totalIncome, totalExpenses int64
 	var minDate, maxDate time.Time
+	var duplicatesMerged, duplicatesSkipped int32
 
 	for _, parsedTx := range validTransactions {
 		// Convert Unix timestamp to time.Time
@@ -129,6 +302,44 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 			maxDate = txDate
 		}
 
+		// Check if this transaction is a duplicate
+		existingTxID, isDuplicate := duplicateMatchMap[parsedTx.RowNumber]
+
+		// Handle duplicates based on strategy
+		if isDuplicate {
+			switch req.Strategy {
+			case v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_SKIP_ALL:
+				// Skip this transaction
+				duplicatesSkipped++
+				continue
+			case v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_AUTO_MERGE:
+				// Update the existing transaction
+				existingTx, err := s.transactionRepo.GetByID(ctx, existingTxID)
+				if err != nil {
+					// If we can't get the existing transaction, skip it
+					duplicatesSkipped++
+					continue
+				}
+
+				// Update fields from parsed transaction
+				existingTx.Amount = parsedTx.Amount.Amount
+				existingTx.Date = txDate
+				existingTx.Note = parsedTx.Description
+
+				// Update category if provided
+				if parsedTx.SuggestedCategoryId > 0 {
+					_, err := s.categoryRepo.GetByIDForUser(ctx, parsedTx.SuggestedCategoryId, userID)
+					if err == nil {
+						existingTx.CategoryID = &parsedTx.SuggestedCategoryId
+					}
+				}
+
+				transactionsToUpdate = append(transactionsToUpdate, existingTx)
+				duplicatesMerged++
+				continue
+			}
+		}
+
 		// Get or create category
 		var categoryID *int32
 		if parsedTx.SuggestedCategoryId > 0 {
@@ -136,6 +347,17 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 			_, err := s.categoryRepo.GetByIDForUser(ctx, parsedTx.SuggestedCategoryId, userID)
 			if err == nil {
 				categoryID = &parsedTx.SuggestedCategoryId
+			}
+		} else if s.categorizer != nil && parsedTx.Description != "" {
+			// Try to suggest a category using the categorizer
+			suggestion, err := s.categorizer.SuggestCategory(ctx, userID, parsedTx.Description)
+			if err == nil && suggestion != nil && suggestion.Confidence >= 70 {
+				// Only use suggestions with confidence >= 70%
+				// Verify the suggested category exists and belongs to user
+				_, err := s.categoryRepo.GetByIDForUser(ctx, suggestion.CategoryID, userID)
+				if err == nil {
+					categoryID = &suggestion.CategoryID
+				}
 			}
 		}
 
@@ -149,13 +371,35 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 			totalExpenses += -amount // Store as positive for summary
 		}
 
+		// Sanitize description
+		sanitizedDescription, err := validator.SanitizeDescription(parsedTx.Description)
+		if err != nil {
+			// If sanitization fails, use empty string
+			sanitizedDescription = ""
+		}
+
 		transaction := &models.Transaction{
 			WalletID:   req.WalletId,
 			CategoryID: categoryID,
 			Amount:     amount,
 			Currency:   parsedTx.Amount.Currency,
 			Date:       txDate,
-			Note:       parsedTx.Description,
+			Note:       sanitizedDescription,
+		}
+
+		// Store currency conversion metadata if present
+		if parsedTx.OriginalAmount != nil && parsedTx.OriginalAmount.Amount != 0 {
+			originalAmount := parsedTx.OriginalAmount.Amount
+			originalCurrency := parsedTx.OriginalAmount.Currency
+			exchangeRate := parsedTx.ExchangeRate
+			exchangeRateSource := parsedTx.ExchangeRateSource
+			exchangeRateDate := time.Unix(parsedTx.ExchangeRateDate, 0)
+
+			transaction.OriginalAmount = &originalAmount
+			transaction.OriginalCurrency = &originalCurrency
+			transaction.ExchangeRate = &exchangeRate
+			transaction.ExchangeRateDate = &exchangeRateDate
+			transaction.ExchangeRateSource = &exchangeRateSource
 		}
 
 		transactionsToCreate = append(transactionsToCreate, transaction)
@@ -176,8 +420,8 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		TotalRows:         int32(len(req.Transactions)),
 		ValidRows:         int32(len(validTransactions)),
 		SkippedRows:       int32(len(req.Transactions) - len(validTransactions)),
-		DuplicatesMerged:  0,
-		DuplicatesSkipped: 0,
+		DuplicatesMerged:  duplicatesMerged,
+		DuplicatesSkipped: duplicatesSkipped,
 		TotalIncome:       totalIncome,
 		TotalExpenses:     totalExpenses,
 		NetChange:         totalIncome - totalExpenses,
@@ -189,25 +433,83 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 
 	// Create import batch
 	if err := s.importRepo.CreateImportBatch(ctx, importBatch); err != nil {
+		logger.LogImportError(ctx, userID, "execute:create_batch", err, map[string]interface{}{
+			"batch_id":  batchID,
+			"wallet_id": req.WalletId,
+			"file_id":   req.FileId,
+		})
 		return nil, err
 	}
 
-	// Bulk create transactions atomically
-	createdIDs, err := s.transactionRepo.BulkCreate(ctx, transactionsToCreate)
-	if err != nil {
-		return nil, err
+	// Update merged duplicate transactions
+	for _, tx := range transactionsToUpdate {
+		if err := s.transactionRepo.Update(ctx, tx); err != nil {
+			logger.LogImportError(ctx, userID, "execute:update_duplicate", err, map[string]interface{}{
+				"batch_id":       batchID,
+				"transaction_id": tx.ID,
+			})
+			return nil, fmt.Errorf("failed to update duplicate transaction: %w", err)
+		}
 	}
 
-	// Link transactions to import batch
-	if err := s.importRepo.LinkTransactionsToImport(ctx, batchID, createdIDs); err != nil {
-		return nil, err
+	// Bulk create new transactions atomically
+	var createdIDs []int32
+	if len(transactionsToCreate) > 0 {
+		createdIDs, err = s.transactionRepo.BulkCreate(ctx, transactionsToCreate)
+		if err != nil {
+			logger.LogImportError(ctx, userID, "execute:bulk_create", err, map[string]interface{}{
+				"batch_id":          batchID,
+				"transaction_count": len(transactionsToCreate),
+				"wallet_id":         req.WalletId,
+			})
+			return nil, err
+		}
+
+		// Link transactions to import batch
+		if err := s.importRepo.LinkTransactionsToImport(ctx, batchID, createdIDs); err != nil {
+			logger.LogImportError(ctx, userID, "execute:link_transactions", err, map[string]interface{}{
+				"batch_id":          batchID,
+				"transaction_count": len(createdIDs),
+			})
+			return nil, err
+		}
+	}
+
+	// Learn from user's category selections (if they differ from suggestions)
+	if s.categorizer != nil {
+		corrections := make(map[string]int32)
+		for _, parsedTx := range validTransactions {
+			// If user manually selected a category that differs from what we suggested
+			if parsedTx.SuggestedCategoryId > 0 && parsedTx.CategoryConfidence < 100 {
+				corrections[parsedTx.Description] = parsedTx.SuggestedCategoryId
+			}
+		}
+		if len(corrections) > 0 {
+			// Learn from corrections asynchronously
+			go func() {
+				_ = s.LearnFromUserCorrections(context.Background(), userID, corrections)
+			}()
+		}
 	}
 
 	// Get updated wallet balance
 	wallet, err = s.walletRepo.GetByID(ctx, req.WalletId)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.WrapWithUserMessage(err)
 	}
+
+	// Mark import as successful
+	importSuccess = true
+
+	// Log successful import
+	logger.LogImportSuccess(ctx, userID, "execute", map[string]interface{}{
+		"batch_id":          batchID,
+		"wallet_id":         req.WalletId,
+		"file_id":           req.FileId,
+		"imported_count":    len(createdIDs),
+		"duplicates_merged": duplicatesMerged,
+		"duplicates_skip":   duplicatesSkipped,
+	})
 
 	// Build response
 	return &v1.ExecuteImportResponse{
@@ -378,4 +680,223 @@ func (s *importService) GetImportHistory(ctx context.Context, userID int32, req 
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}, nil
+}
+
+// ListBankTemplates retrieves available bank templates.
+func (s *importService) ListBankTemplates(ctx context.Context) (*v1.ListBankTemplatesResponse, error) {
+	templates, err := s.importRepo.ListBankTemplates(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf format
+	pbTemplates := make([]*v1.BankTemplate, 0, len(templates))
+	for _, template := range templates {
+		// Parse file formats from JSON
+		var fileFormats []string
+		if err := json.Unmarshal(template.FileFormats, &fileFormats); err != nil {
+			// Skip template if JSON is invalid
+			continue
+		}
+
+		pbTemplate := &v1.BankTemplate{
+			Id:            template.ID,
+			Name:          template.Name,
+			BankCode:      template.BankCode,
+			StatementType: template.StatementType,
+			FileFormats:   fileFormats,
+		}
+		pbTemplates = append(pbTemplates, pbTemplate)
+	}
+
+	return &v1.ListBankTemplatesResponse{
+		Success:   true,
+		Message:   fmt.Sprintf("Retrieved %d bank templates", len(pbTemplates)),
+		Templates: pbTemplates,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// ConvertCurrency converts imported transactions to wallet currency using exchange rates
+func (s *importService) ConvertCurrency(ctx context.Context, userID int32, req *v1.ConvertCurrencyRequest) (*v1.ConvertCurrencyResponse, error) {
+	// Validate wallet ownership
+	wallet, err := s.walletRepo.GetByIDForUser(ctx, req.WalletId, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	walletCurrency := wallet.Currency
+	if walletCurrency == "" {
+		walletCurrency = "VND" // Default
+	}
+
+	// Group transactions by currency
+	currencyGroups := make(map[string][]*v1.ParsedTransaction)
+	for _, tx := range req.Transactions {
+		currency := tx.Amount.Currency
+		if currency == "" {
+			currency = walletCurrency // Use wallet currency if not specified
+		}
+		currencyGroups[currency] = append(currencyGroups[currency], tx)
+	}
+
+	// Process each currency group
+	var conversions []*v1.CurrencyConversion
+	var convertedTransactions []*v1.ParsedTransaction
+
+	for currency, transactions := range currencyGroups {
+		// Skip if same as wallet currency
+		if currency == walletCurrency {
+			convertedTransactions = append(convertedTransactions, transactions...)
+			continue
+		}
+
+		// Check for manual rate override
+		var exchangeRate float64
+		var rateSource string
+		var rateDate time.Time
+
+		manualRate, hasManual := req.ManualRates[currency]
+		if hasManual && manualRate != nil {
+			exchangeRate = manualRate.ExchangeRate
+			rateSource = "manual"
+			rateDate = time.Unix(manualRate.RateDate, 0)
+		} else {
+			// Fetch automatic rate (use latest rate for all transactions)
+			if s.fxService == nil {
+				return nil, apperrors.NewValidationError("currency conversion service not available")
+			}
+
+			rate, err := s.fxService.GetLatestRate(ctx, currency, walletCurrency)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get exchange rate for %s -> %s: %w", currency, walletCurrency, err)
+			}
+			exchangeRate = rate
+			rateSource = "auto"
+			rateDate = time.Now()
+		}
+
+		// Convert transactions
+		var totalOriginal, totalConverted int64
+		for _, tx := range transactions {
+			originalAmount := tx.Amount.Amount
+			originalCurrency := tx.Amount.Currency
+			convertedAmount := int64(float64(originalAmount) * exchangeRate)
+
+			totalOriginal += originalAmount
+			totalConverted += convertedAmount
+
+			// Create converted transaction with conversion metadata
+			convertedTx := &v1.ParsedTransaction{
+				RowNumber:           tx.RowNumber,
+				Date:                tx.Date,
+				Amount:              &v1.Money{Amount: convertedAmount, Currency: walletCurrency},
+				Description:         tx.Description,
+				Type:                tx.Type,
+				SuggestedCategoryId: tx.SuggestedCategoryId,
+				CategoryConfidence:  tx.CategoryConfidence,
+				ReferenceNumber:     tx.ReferenceNumber,
+				ValidationErrors:    tx.ValidationErrors,
+				IsValid:             tx.IsValid,
+				// Populate conversion metadata
+				OriginalAmount:       &v1.Money{Amount: originalAmount, Currency: originalCurrency},
+				ExchangeRate:         exchangeRate,
+				ExchangeRateSource:   rateSource,
+				ExchangeRateDate:     rateDate.Unix(),
+			}
+			convertedTransactions = append(convertedTransactions, convertedTx)
+		}
+
+		// Record conversion info
+		conversion := &v1.CurrencyConversion{
+			FromCurrency:     currency,
+			ToCurrency:       walletCurrency,
+			ExchangeRate:     exchangeRate,
+			RateSource:       rateSource,
+			RateDate:         rateDate.Unix(),
+			TransactionCount: int32(len(transactions)),
+			TotalOriginal:    &v1.Money{Amount: totalOriginal, Currency: currency},
+			TotalConverted:   &v1.Money{Amount: totalConverted, Currency: walletCurrency},
+		}
+		conversions = append(conversions, conversion)
+	}
+
+	return &v1.ConvertCurrencyResponse{
+		Success:               true,
+		Message:               fmt.Sprintf("Converted %d transaction(s) from %d currency group(s)", len(convertedTransactions), len(conversions)),
+		Conversions:           conversions,
+		ConvertedTransactions: convertedTransactions,
+		Timestamp:             time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// ListExcelSheets lists all available sheets in an Excel file.
+func (s *importService) ListExcelSheets(ctx context.Context, userID int32, fileID string) (*v1.ListExcelSheetsResponse, error) {
+	// Validate file ID
+	if fileID == "" {
+		return nil, apperrors.NewValidationError("fileId is required")
+	}
+
+	// Get file path from upload directory
+	matches, err := filepath.Glob(filepath.Join(fileupload.UploadDir, fileID+".*"))
+	if err != nil || len(matches) == 0 {
+		return nil, apperrors.NewNotFoundError("uploaded file not found")
+	}
+	filePath := matches[0]
+	fileExt := filepath.Ext(filePath)
+
+	// Validate it's an Excel file
+	if fileExt != ".xlsx" && fileExt != ".xls" {
+		return nil, apperrors.NewValidationError("file is not an Excel file (.xlsx or .xls)")
+	}
+
+	// Create Excel parser
+	excelParser := parser.NewExcelParser(filePath, nil)
+	defer excelParser.Close()
+
+	// List all visible sheets
+	sheets, err := excelParser.ListSheets()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list sheets: %w", err)
+	}
+
+	if len(sheets) == 0 {
+		return nil, apperrors.NewValidationError("no visible sheets found in Excel file")
+	}
+
+	// Auto-detect best sheet
+	defaultSheet, err := excelParser.DetectDataSheet()
+	if err != nil {
+		// If detection fails, use first sheet
+		if len(sheets) > 0 {
+			defaultSheet = sheets[0]
+		} else {
+			return nil, apperrors.NewValidationError("no sheets available for detection")
+		}
+	}
+
+	return &v1.ListExcelSheetsResponse{
+		Success:      true,
+		Message:      fmt.Sprintf("Found %d sheet(s) in Excel file", len(sheets)),
+		SheetNames:   sheets,
+		DefaultSheet: defaultSheet,
+		Timestamp:    time.Now().Format(time.RFC3339),
+	}, nil
+}
+
+// LearnFromUserCorrections learns from user's category corrections during import.
+// The corrections map contains description -> categoryID mappings that the user manually selected.
+func (s *importService) LearnFromUserCorrections(ctx context.Context, userID int32, corrections map[string]int32) error {
+	if s.categorizer == nil {
+		return nil // Categorizer not initialized, skip learning
+	}
+
+	for description, categoryID := range corrections {
+		if err := s.categorizer.LearnFromCorrection(ctx, userID, description, categoryID); err != nil {
+			// Log error but continue with other corrections
+			fmt.Printf("Warning: Failed to learn correction for '%s': %v\n", description, err)
+		}
+	}
+
+	return nil
 }
