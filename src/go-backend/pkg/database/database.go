@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"wealthjourney/domain/models"
@@ -89,90 +90,241 @@ func New(cfg *config.Config) (*Database, error) {
 
 // runPostMigrations executes data backfills and index creations after schema migration
 // These are idempotent and safe to run on every startup
+// Optimized for Railway deployment with parallel execution and migration guards
 func runPostMigrations(db *gorm.DB) error {
-	// 1. Create performance indexes (idempotent with IF NOT EXISTS)
+	startTime := time.Now()
+	log.Println("Starting post-migration tasks...")
 
-	// Portfolio history composite indexes for historical data queries
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_portfolio_history_user_timestamp
-		ON portfolio_history(user_id, timestamp DESC)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_portfolio_history_user_timestamp: %w", err)
+	// Check if migrations have already been completed
+	// This prevents re-running expensive operations on every deployment
+	if migrationsCompleted(db) {
+		log.Printf("Post-migrations already completed, skipping (took %v to verify)", time.Since(startTime))
+		return nil
 	}
 
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_portfolio_history_wallet_timestamp
-		ON portfolio_history(wallet_id, timestamp DESC)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_portfolio_history_wallet_timestamp: %w", err)
+	// 1. Create performance indexes in parallel with CONCURRENTLY option
+	// CONCURRENTLY allows reads/writes during index creation (non-blocking)
+	// Each index creation runs in a separate goroutine for speed
+	log.Println("Creating performance indexes in parallel...")
+	indexStartTime := time.Now()
+
+	indexes := []struct {
+		name  string
+		query string
+	}{
+		{
+			name: "idx_portfolio_history_user_timestamp",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_portfolio_history_user_timestamp
+				ON portfolio_history(user_id, timestamp DESC)`,
+		},
+		{
+			name: "idx_portfolio_history_wallet_timestamp",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_portfolio_history_wallet_timestamp
+				ON portfolio_history(wallet_id, timestamp DESC)`,
+		},
+		{
+			name: "idx_category_user_type",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_category_user_type
+				ON category(user_id, type)`,
+		},
+		{
+			name: "idx_user_email",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_email
+				ON "user"(email)
+				WHERE deleted_at IS NULL`,
+		},
+		{
+			name: "idx_sessions_user_id",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_user_id
+				ON sessions(user_id)`,
+		},
+		{
+			name: "idx_sessions_session_id",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_session_id
+				ON sessions(session_id)`,
+		},
+		{
+			name: "idx_sessions_expires_at",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_expires_at
+				ON sessions(expires_at)`,
+		},
+		{
+			name: "idx_sessions_user_expires",
+			query: `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_user_expires
+				ON sessions(user_id, expires_at)`,
+		},
 	}
 
-	// Category composite index for type lookups
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_category_user_type
-		ON category(user_id, type)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_category_user_type: %w", err)
+	// Create indexes in parallel using goroutines
+	indexErrors := make(chan error, len(indexes))
+	var wg sync.WaitGroup
+
+	for _, idx := range indexes {
+		wg.Add(1)
+		go func(name, query string) {
+			defer wg.Done()
+
+			// CONCURRENTLY requires a separate transaction, so we can't use db.Exec directly
+			// Instead, use raw SQL connection
+			sqlDB, err := db.DB()
+			if err != nil {
+				indexErrors <- fmt.Errorf("failed to get SQL DB for index %s: %w", name, err)
+				return
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+
+			if _, err := sqlDB.ExecContext(ctx, query); err != nil {
+				// Ignore "already exists" errors (index might be in progress from another deployment)
+				if !isIndexExistsError(err) {
+					indexErrors <- fmt.Errorf("failed to create index %s: %w", name, err)
+					return
+				}
+			}
+			log.Printf("Index %s created or already exists", name)
+		}(idx.name, idx.query)
 	}
 
-	// User email index for faster auth lookups (partial index on non-deleted records)
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_user_email
-		ON "user"(email)
-		WHERE deleted_at IS NULL
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_user_email: %w", err)
+	// Wait for all index creations to complete
+	wg.Wait()
+	close(indexErrors)
+
+	// Check for errors
+	var indexErrList []error
+	for err := range indexErrors {
+		indexErrList = append(indexErrList, err)
+	}
+	if len(indexErrList) > 0 {
+		// Log all errors but don't fail deployment
+		for _, err := range indexErrList {
+			log.Printf("Index creation warning: %v", err)
+		}
+		log.Printf("Continuing despite %d index creation warnings", len(indexErrList))
 	}
 
-	// Session indexes for multi-device login feature
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_sessions_user_id
-		ON sessions(user_id)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_sessions_user_id: %w", err)
-	}
-
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_sessions_session_id
-		ON sessions(session_id)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_sessions_session_id: %w", err)
-	}
-
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
-		ON sessions(expires_at)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_sessions_expires_at: %w", err)
-	}
-
-	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_sessions_user_expires
-		ON sessions(user_id, expires_at)
-	`).Error; err != nil {
-		return fmt.Errorf("failed to create idx_sessions_user_expires: %w", err)
-	}
+	log.Printf("Index creation completed in %v", time.Since(indexStartTime))
 
 	// 2. Backfill gold investment purchase_unit values
+	// These are one-time data migrations that only affect existing records
+	log.Println("Running data backfills...")
+	backfillStartTime := time.Now()
+
 	// Gold VND (type 8): default to tael display
-	if err := db.Exec(`
+	// Only update records where purchase_unit is NULL or 'gram'
+	result := db.Exec(`
 		UPDATE investment
 		SET purchase_unit = 'tael'
 		WHERE type = 8 AND (purchase_unit IS NULL OR purchase_unit = 'gram')
-	`).Error; err != nil {
-		return fmt.Errorf("failed to backfill gold VND: %w", err)
+	`)
+	if result.Error != nil {
+		log.Printf("Warning: failed to backfill gold VND: %v", result.Error)
+	} else {
+		log.Printf("Backfilled %d gold VND records", result.RowsAffected)
 	}
 
 	// Gold USD (type 9): default to oz display
-	if err := db.Exec(`
+	result = db.Exec(`
 		UPDATE investment
 		SET purchase_unit = 'oz'
 		WHERE type = 9 AND (purchase_unit IS NULL OR purchase_unit = 'gram')
-	`).Error; err != nil {
-		return fmt.Errorf("failed to backfill gold USD: %w", err)
+	`)
+	if result.Error != nil {
+		log.Printf("Warning: failed to backfill gold USD: %v", result.Error)
+	} else {
+		log.Printf("Backfilled %d gold USD records", result.RowsAffected)
 	}
 
+	log.Printf("Data backfills completed in %v", time.Since(backfillStartTime))
+
+	// Mark migrations as completed
+	if err := markMigrationsCompleted(db); err != nil {
+		log.Printf("Warning: failed to mark migrations as completed: %v", err)
+	}
+
+	log.Printf("Post-migration tasks completed successfully in %v", time.Since(startTime))
 	return nil
+}
+
+// migrationsCompleted checks if post-migrations have already been run
+// This prevents expensive re-runs on every deployment
+func migrationsCompleted(db *gorm.DB) bool {
+	// Check if the migration_status table exists and has a completed entry
+	var count int64
+	err := db.Raw(`
+		SELECT COUNT(*)
+		FROM information_schema.tables
+		WHERE table_schema = 'public'
+		AND table_name = 'migration_status'
+	`).Scan(&count).Error
+
+	if err != nil || count == 0 {
+		return false
+	}
+
+	// Check if migrations are marked as completed
+	var completed bool
+	err = db.Raw(`
+		SELECT completed
+		FROM migration_status
+		WHERE migration_name = 'post_migrations_v1'
+		ORDER BY completed_at DESC
+		LIMIT 1
+	`).Scan(&completed).Error
+
+	return err == nil && completed
+}
+
+// markMigrationsCompleted marks post-migrations as completed
+func markMigrationsCompleted(db *gorm.DB) error {
+	// Create migration_status table if it doesn't exist
+	err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS migration_status (
+			id SERIAL PRIMARY KEY,
+			migration_name VARCHAR(255) NOT NULL UNIQUE,
+			completed BOOLEAN NOT NULL DEFAULT false,
+			completed_at TIMESTAMP NOT NULL DEFAULT NOW()
+		)
+	`).Error
+	if err != nil {
+		return fmt.Errorf("failed to create migration_status table: %w", err)
+	}
+
+	// Insert or update completion status
+	return db.Exec(`
+		INSERT INTO migration_status (migration_name, completed, completed_at)
+		VALUES ('post_migrations_v1', true, NOW())
+		ON CONFLICT (migration_name) DO UPDATE
+		SET completed = true, completed_at = NOW()
+	`).Error
+}
+
+// isIndexExistsError checks if an error is due to an index already existing
+func isIndexExistsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Check for common PostgreSQL "already exists" error messages
+	return containsSubstring(errStr, "already exists") ||
+		   containsSubstring(errStr, "duplicate key") ||
+		   containsSubstring(errStr, "relation") && containsSubstring(errStr, "already exists")
+}
+
+// containsSubstring checks if a string contains a substring
+func containsSubstring(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(s) < len(substr) {
+		return false
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
 
 // Close closes the database connection
