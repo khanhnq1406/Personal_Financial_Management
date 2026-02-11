@@ -1,147 +1,104 @@
+// src/wj-client/components/import/ImportSuccess.tsx
 "use client";
 
 import { Button } from "@/components/Button";
-import { CheckIcon } from "@/components/icons";
 import { formatCurrency } from "@/utils/currency-formatter";
-import { ImportSummary } from "@/gen/protobuf/v1/import";
+
+export interface ImportSummary {
+  importBatchId: string;
+  totalImported: number;
+  totalSkipped: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netChange: number;
+  newWalletBalance: number;
+  currency: string;
+  canUndo: boolean;
+  undoExpiresAt: number; // Unix timestamp
+}
 
 export interface ImportSuccessProps {
   summary: ImportSummary;
-  currency?: string;
-  canUndo?: boolean;
-  onUndo?: () => void;
   onDone: () => void;
-  isUndoing?: boolean;
+  onUndo?: () => void;
 }
 
-export function ImportSuccess({
-  summary,
-  currency = "VND",
-  canUndo = false,
-  onUndo,
-  onDone,
-  isUndoing = false,
-}: ImportSuccessProps) {
-  // Calculate undo countdown (in hours)
-  const now = Math.floor(Date.now() / 1000);
-  const expiresAt = Number(summary.undoExpiresAt || 0);
-  const hoursRemaining = Math.max(
-    0,
-    Math.ceil((expiresAt - now) / 3600),
-  );
-
-  // Calculate net change
-  const netChange = (summary.totalIncome || 0) - (summary.totalExpenses || 0);
-  const isPositive = netChange >= 0;
+export function ImportSuccess({ summary, onDone, onUndo }: ImportSuccessProps) {
+  const undoExpiresIn = Math.max(0, Math.floor((summary.undoExpiresAt * 1000 - Date.now()) / (1000 * 60 * 60)));
 
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4 sm:px-6">
+    <div className="space-y-6">
       {/* Success Icon */}
-      <div className="mb-6 p-4 bg-success-100 dark:bg-success-900/20 rounded-full">
-        <CheckIcon
-          size="xl"
-          className="text-success-600 dark:text-success-500"
-        />
+      <div className="flex flex-col items-center text-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-success-100 dark:bg-success-900 flex items-center justify-center mb-4">
+          <svg
+            className="w-10 h-10 sm:w-12 sm:h-12 text-success-600 dark:text-success-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-dark-text mb-2">
+          Import Successful!
+        </h2>
+        <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
+          {summary.totalImported} transactions imported
+        </p>
       </div>
 
-      {/* Success Message */}
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 text-center">
-        Import Successful!
-      </h2>
-      <p className="text-base text-neutral-600 dark:text-neutral-400 mb-8 text-center">
-        {summary.totalImported || 0} transaction
-        {(summary.totalImported || 0) !== 1 ? "s" : ""} imported successfully
-      </p>
-
-      {/* Summary Statistics Grid */}
-      <div className="w-full max-w-2xl mb-8">
-        <div className="grid grid-cols-2 gap-4">
-          {/* Income */}
-          <div className="bg-success-50 dark:bg-success-900/10 border border-success-200 dark:border-success-800 rounded-lg p-4">
-            <p className="text-sm font-medium text-success-700 dark:text-success-400 mb-1">
-              Income
-            </p>
-            <p className="text-xl font-bold text-success-900 dark:text-success-300">
-              {formatCurrency(summary.totalIncome || 0, currency)}
-            </p>
-          </div>
-
-          {/* Expenses */}
-          <div className="bg-danger-50 dark:bg-danger-900/10 border border-danger-200 dark:border-danger-800 rounded-lg p-4">
-            <p className="text-sm font-medium text-danger-700 dark:text-danger-400 mb-1">
-              Expenses
-            </p>
-            <p className="text-xl font-bold text-danger-900 dark:text-danger-300">
-              {formatCurrency(summary.totalExpenses || 0, currency)}
-            </p>
-          </div>
-
-          {/* Net Change */}
-          <div
-            className={`${
-              isPositive
-                ? "bg-success-50 dark:bg-success-900/10 border-success-200 dark:border-success-800"
-                : "bg-danger-50 dark:bg-danger-900/10 border-danger-200 dark:border-danger-800"
-            } border rounded-lg p-4`}
-          >
-            <p
-              className={`text-sm font-medium mb-1 ${
-                isPositive
-                  ? "text-success-700 dark:text-success-400"
-                  : "text-danger-700 dark:text-danger-400"
-              }`}
-            >
-              Net Change
-            </p>
-            <p
-              className={`text-xl font-bold ${
-                isPositive
-                  ? "text-success-900 dark:text-success-300"
-                  : "text-danger-900 dark:text-danger-300"
-              }`}
-            >
-              {isPositive && netChange > 0 ? "+" : ""}
-              {formatCurrency(netChange, currency)}
-            </p>
-          </div>
-
-          {/* New Balance */}
-          <div className="bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4">
-            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">
-              New Balance
-            </p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-neutral-200">
-              {formatCurrency(summary.newBalance || 0, currency)}
-            </p>
-          </div>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 bg-success-50 dark:bg-success-950 rounded-lg border border-success-200 dark:border-success-800">
+          <p className="text-xs text-success-600 dark:text-success-400 mb-1">Income</p>
+          <p className="text-lg font-semibold text-success-700 dark:text-success-300">
+            {formatCurrency(summary.totalIncome, summary.currency)}
+          </p>
+        </div>
+        <div className="p-4 bg-danger-50 dark:bg-danger-950 rounded-lg border border-danger-200 dark:border-danger-800">
+          <p className="text-xs text-danger-600 dark:text-danger-400 mb-1">Expenses</p>
+          <p className="text-lg font-semibold text-danger-700 dark:text-danger-300">
+            {formatCurrency(Math.abs(summary.totalExpenses), summary.currency)}
+          </p>
+        </div>
+        <div className="p-4 bg-neutral-50 dark:bg-dark-surface-hover rounded-lg border border-neutral-200 dark:border-dark-border">
+          <p className="text-xs text-neutral-600 dark:text-dark-text-secondary mb-1">Net Change</p>
+          <p className={`text-lg font-semibold ${
+            summary.netChange >= 0
+              ? "text-success-700 dark:text-success-300"
+              : "text-danger-700 dark:text-danger-300"
+          }`}>
+            {summary.netChange >= 0 ? "+" : ""}
+            {formatCurrency(summary.netChange, summary.currency)}
+          </p>
+        </div>
+        <div className="p-4 bg-neutral-50 dark:bg-dark-surface-hover rounded-lg border border-neutral-200 dark:border-dark-border">
+          <p className="text-xs text-neutral-600 dark:text-dark-text-secondary mb-1">New Balance</p>
+          <p className="text-lg font-semibold text-neutral-900 dark:text-dark-text">
+            {formatCurrency(summary.newWalletBalance, summary.currency)}
+          </p>
         </div>
       </div>
 
       {/* Undo Notice */}
-      {canUndo && onUndo && (
-        <div className="w-full max-w-2xl mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+      {summary.canUndo && (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <svg
-                className="w-5 h-5 text-yellow-600 dark:text-yellow-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
+            <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div>
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
-                Undo Available
+                You can undo this import within {undoExpiresIn} hours
               </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
-                You can undo this import within the next {hoursRemaining} hour
-                {hoursRemaining !== 1 ? "s" : ""}. After that, the import will be
-                permanent.
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                All imported transactions will be deleted and wallet balance will be restored.
               </p>
             </div>
           </div>
@@ -149,19 +106,21 @@ export function ImportSuccess({
       )}
 
       {/* Action Buttons */}
-      <div className="w-full max-w-md flex flex-col gap-3">
-        {canUndo && onUndo && (
+      <div className="flex gap-3">
+        {summary.canUndo && onUndo && (
           <Button
             variant="secondary"
             onClick={onUndo}
-            loading={isUndoing}
-            disabled={isUndoing}
-            fullWidth
+            className="flex-1"
           >
             Undo Import
           </Button>
         )}
-        <Button variant="primary" onClick={onDone} fullWidth disabled={isUndoing}>
+        <Button
+          variant="primary"
+          onClick={onDone}
+          className="flex-1"
+        >
           Done
         </Button>
       </div>
