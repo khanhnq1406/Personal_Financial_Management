@@ -13,6 +13,12 @@ import (
 	v1 "wealthjourney/protobuf/v1"
 )
 
+// Package-level compiled regex patterns for performance
+var (
+	refPatternParens = regexp.MustCompile(`\(Ref:\s*([^\)]+)\)`)
+	refPatternPipe   = regexp.MustCompile(`\|\s*Ref:\s*(.+)$`)
+)
+
 // DuplicateMatch represents a potential duplicate transaction match
 type DuplicateMatch struct {
 	ImportedTransaction *v1.ParsedTransaction
@@ -92,7 +98,7 @@ func (d *Detector) findBestMatch(parsed *v1.ParsedTransaction, existingTxs []*mo
 
 	for _, existing := range existingTxs {
 		// Try each matching level in order of confidence
-		if match := d.level1Match(parsed, existing, parsedDate, parsedAmount, parsedDesc, parsedRef); match != nil {
+		if match := d.level1Match(parsed, existing, parsedDate, parsedAmount, parsedRef); match != nil {
 			if bestMatch == nil || match.Confidence > bestMatch.Confidence {
 				bestMatch = match
 			}
@@ -115,25 +121,57 @@ func (d *Detector) findBestMatch(parsed *v1.ParsedTransaction, existingTxs []*mo
 }
 
 // level1Match: Exact match (99%) - same wallet, amount, date, reference
-func (d *Detector) level1Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedDesc, parsedRef string) *DuplicateMatch {
-	// Must have reference number for exact match
-	if parsedRef == "" {
+func (d *Detector) level1Match(parsed *v1.ParsedTransaction, existing *models.Transaction, parsedDate time.Time, parsedAmount int64, parsedRef string) *DuplicateMatch {
+	// 1. Check amount match (required)
+	if existing.Amount != parsedAmount {
 		return nil
 	}
 
-	// Check exact match: same amount, same date, same reference/description
-	if existing.Amount == parsedAmount &&
-		existing.Date.Format("2006-01-02") == parsedDate.Format("2006-01-02") &&
-		strings.EqualFold(existing.Note, parsedDesc) {
-		return &DuplicateMatch{
-			ImportedTransaction: parsed,
-			ExistingTransaction: existing,
-			Confidence:          99,
-			MatchReason:         fmt.Sprintf("Exact match: same amount (%.2f), date (%s), and description", float64(parsedAmount)/10000, parsedDate.Format("2006-01-02")),
+	// 2. Check date match (required)
+	existingDateStr := existing.Date.Format("2006-01-02")
+	parsedDateStr := parsedDate.Format("2006-01-02")
+	if existingDateStr != parsedDateStr {
+		return nil
+	}
+
+	// 3. Check reference number match (if available on both)
+	if parsedRef != "" {
+		existingRef := d.extractReferenceFromNote(existing.Note)
+
+		// Both have reference numbers - must match exactly
+		if existingRef != "" {
+			if parsedRef == existingRef { // Exact comparison - reference numbers are case-sensitive
+				return &DuplicateMatch{
+					ImportedTransaction: parsed,
+					ExistingTransaction: existing,
+					Confidence:          99,
+					MatchReason:         "Exact match: same amount, date, and reference number",
+				}
+			}
+			// Reference numbers exist but don't match
+			return nil
 		}
 	}
 
+	// If we reach here: not a Level 1 exact match
 	return nil
+}
+
+// extractReferenceFromNote extracts reference number from transaction note
+func (d *Detector) extractReferenceFromNote(note string) string {
+	// Match "(Ref: XXXXX)" pattern
+	matches := refPatternParens.FindStringSubmatch(note)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	// Match "| Ref: XXXXX" pattern
+	matches = refPatternPipe.FindStringSubmatch(note)
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	return ""
 }
 
 // level2Match: Strong match (90-95%) - same amount, date ±1 day, description similarity >80%

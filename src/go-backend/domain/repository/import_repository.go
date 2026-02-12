@@ -5,6 +5,8 @@ import (
 
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
+
+	"gorm.io/gorm"
 )
 
 type ImportRepository interface {
@@ -13,6 +15,7 @@ type ImportRepository interface {
 	GetImportBatchByID(ctx context.Context, id string) (*models.ImportBatch, error)
 	ListImportBatchesByUserID(ctx context.Context, userID int32, opts ListOptions) ([]*models.ImportBatch, int, error)
 	UpdateImportBatch(ctx context.Context, batch *models.ImportBatch) error
+	UpdateImportBatchWithTx(ctx context.Context, dbTx interface{}, batch *models.ImportBatch) error
 
 	// Bank Template CRUD
 	GetBankTemplateByID(ctx context.Context, id string) (*models.BankTemplate, error)
@@ -84,6 +87,16 @@ func (r *importRepository) ListImportBatchesByUserID(ctx context.Context, userID
 
 func (r *importRepository) UpdateImportBatch(ctx context.Context, batch *models.ImportBatch) error {
 	result := r.db.DB.WithContext(ctx).Save(batch)
+	return r.handleDBError(result.Error, "import batch", "update import batch")
+}
+
+func (r *importRepository) UpdateImportBatchWithTx(ctx context.Context, dbTx interface{}, batch *models.ImportBatch) error {
+	tx, ok := dbTx.(*gorm.DB)
+	if !ok {
+		return r.handleDBError(nil, "import batch", "invalid transaction type")
+	}
+
+	result := tx.WithContext(ctx).Save(batch)
 	return r.handleDBError(result.Error, "import batch", "update import batch")
 }
 

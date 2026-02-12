@@ -216,8 +216,189 @@ func TestUploadFile_OversizedFile(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for oversized file, got none")
 	}
-	if !strings.Contains(err.Error(), "exceeds maximum") {
-		t.Errorf("Expected size exceeded error, got: %v", err)
+	if !strings.Contains(err.Error(), "file too large") {
+		t.Errorf("Expected 'file too large' error, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "MB") {
+		t.Errorf("Expected error message to include MB unit, got: %v", err)
+	}
+}
+
+func TestValidateFileSizeMatch(t *testing.T) {
+	tests := []struct {
+		name          string
+		declaredSize  int64
+		actualData    []byte
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:         "matching sizes",
+			declaredSize: 10,
+			actualData:   []byte("1234567890"),
+			expectError:  false,
+		},
+		{
+			name:          "declared size larger than actual",
+			declaredSize:  20,
+			actualData:    []byte("1234567890"),
+			expectError:   true,
+			errorContains: "size mismatch",
+		},
+		{
+			name:          "declared size smaller than actual",
+			declaredSize:  5,
+			actualData:    []byte("1234567890"),
+			expectError:   true,
+			errorContains: "size mismatch",
+		},
+		{
+			name:         "both empty",
+			declaredSize: 0,
+			actualData:   []byte{},
+			expectError:  false,
+		},
+		{
+			name:         "large matching sizes",
+			declaredSize: 1024 * 1024, // 1MB
+			actualData:   make([]byte, 1024*1024),
+			expectError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateFileSizeMatch(tt.declaredSize, tt.actualData)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for %s, got none", tt.name)
+				} else if tt.errorContains != "" && !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("Expected error to contain '%s', got: %v", tt.errorContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error for %s, got: %v", tt.name, err)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateFileSize_UserFriendlyMessages(t *testing.T) {
+	tests := []struct {
+		name              string
+		size              int64
+		fileType          FileType
+		expectedContains  []string
+		expectError       bool
+	}{
+		{
+			name:             "CSV oversized shows MB limit",
+			size:             11 * 1024 * 1024,
+			fileType:         FileTypeCSV,
+			expectedContains: []string{"file too large", "10MB", "csv"},
+			expectError:      true,
+		},
+		{
+			name:             "Excel oversized shows MB limit",
+			size:             11 * 1024 * 1024,
+			fileType:         FileTypeExcel,
+			expectedContains: []string{"file too large", "10MB", "excel"},
+			expectError:      true,
+		},
+		{
+			name:             "PDF oversized shows MB limit",
+			size:             21 * 1024 * 1024,
+			fileType:         FileTypePDF,
+			expectedContains: []string{"file too large", "20MB", "pdf"},
+			expectError:      true,
+		},
+		{
+			name:        "valid CSV size",
+			size:        5 * 1024 * 1024,
+			fileType:    FileTypeCSV,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateFileSize(tt.size, tt.fileType)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for %s, got none", tt.name)
+				} else {
+					errMsg := err.Error()
+					for _, expectedStr := range tt.expectedContains {
+						if !strings.Contains(errMsg, expectedStr) {
+							t.Errorf("Expected error message to contain '%s', got: %v", expectedStr, errMsg)
+						}
+					}
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error for %s, got: %v", tt.name, err)
+				}
+			}
+		})
+	}
+}
+
+func TestUploadFileFromBytes_SizeMismatch(t *testing.T) {
+	tests := []struct {
+		name         string
+		fileData     []byte
+		fileName     string
+		declaredSize int64
+		expectError  bool
+		errorMsg     string
+	}{
+		{
+			name:         "matching size",
+			fileData:     []byte("test data"),
+			fileName:     "test.csv",
+			declaredSize: 9,
+			expectError:  false,
+		},
+		{
+			name:         "size mismatch - declared larger",
+			fileData:     []byte("test data"),
+			fileName:     "test.csv",
+			declaredSize: 100,
+			expectError:  true,
+			errorMsg:     "size mismatch",
+		},
+		{
+			name:         "size mismatch - declared smaller",
+			fileData:     []byte("test data"),
+			fileName:     "test.csv",
+			declaredSize: 5,
+			expectError:  true,
+			errorMsg:     "size mismatch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := UploadFileFromBytes(tt.fileData, tt.fileName, tt.declaredSize)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for %s, got none", tt.name)
+				} else if !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("Expected error to contain '%s', got: %v", tt.errorMsg, err)
+				}
+			} else {
+				if err != nil {
+					// Clean up created file if any
+					if err == nil {
+						CleanupFile(tt.fileName)
+					}
+					t.Errorf("Expected no error for %s, got: %v", tt.name, err)
+				}
+				// Clean up on success
+				CleanupFile(tt.fileName)
+			}
+		})
 	}
 }
 

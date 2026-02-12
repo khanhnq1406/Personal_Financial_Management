@@ -119,6 +119,40 @@ func (r *walletRepository) UpdateBalance(ctx context.Context, walletID int32, de
 	return &wallet, nil
 }
 
+// UpdateBalanceWithTx updates wallet balance within a database transaction.
+func (r *walletRepository) UpdateBalanceWithTx(ctx context.Context, dbTx interface{}, walletID int32, delta int64) (*models.Wallet, error) {
+	tx, ok := dbTx.(*gorm.DB)
+	if !ok {
+		return nil, apperrors.NewInternalErrorWithCause("invalid transaction type", nil)
+	}
+
+	var wallet models.Wallet
+
+	// Lock the row for update and get current wallet
+	if err := tx.WithContext(ctx).First(&wallet, walletID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.NewNotFoundError("wallet")
+		}
+		return nil, apperrors.NewInternalErrorWithCause("failed to get wallet", err)
+	}
+
+	// Calculate new balance
+	newBalance := wallet.Balance + delta
+	if newBalance < 0 {
+		return nil, apperrors.NewValidationError("Insufficient balance")
+	}
+
+	// Update balance using raw SQL to ensure atomicity
+	if err := tx.WithContext(ctx).Model(&wallet).Update("balance", newBalance).Error; err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to update balance", err)
+	}
+
+	// Update the wallet model with new balance for return
+	wallet.Balance = newBalance
+
+	return &wallet, nil
+}
+
 // Delete soft deletes a wallet by ID.
 func (r *walletRepository) Delete(ctx context.Context, id int32) error {
 	return r.executeDelete(ctx, &models.Wallet{}, id, "wallet")

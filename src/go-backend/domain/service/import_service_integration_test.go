@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"wealthjourney/domain/models"
+	"wealthjourney/domain/repository"
 	"wealthjourney/pkg/types"
 	v1 "wealthjourney/protobuf/v1"
 )
@@ -40,9 +41,23 @@ func TestImportService_ExecuteImport(t *testing.T) {
 	categoryRepo := setupCategoryRepository(db)
 	transactionRepo := setupTransactionRepository(db)
 	importRepo := setupImportRepository(db)
+	merchantRepo := repository.NewMerchantRuleRepository(db)
+	keywordRepo := repository.NewKeywordRepository(db)
+	userMappingRepo := repository.NewUserMappingRepository(db)
 
 	// Setup service
-	importService := NewImportService(importRepo, transactionRepo, walletRepo, categoryRepo)
+	importService := NewImportService(
+		db,
+		importRepo,
+		transactionRepo,
+		walletRepo,
+		categoryRepo,
+		merchantRepo,
+		keywordRepo,
+		userMappingRepo,
+		nil, // fxService
+		nil, // jobQueue
+	)
 
 	// Create test user
 	user := &models.User{
@@ -790,9 +805,9 @@ func TestImportService_CurrencyConversion_Integration(t *testing.T) {
 	categoryRepo := setupCategoryRepository(db)
 	transactionRepo := setupTransactionRepository(db)
 	importRepo := setupImportRepository(db)
-	merchantRepo := setupMerchantRuleRepository(db)
-	keywordRepo := setupKeywordRepository(db)
-	userMappingRepo := setupUserMappingRepository(db)
+	merchantRepo := repository.NewMerchantRuleRepository(db)
+	keywordRepo := repository.NewKeywordRepository(db)
+	userMappingRepo := repository.NewUserMappingRepository(db)
 
 	// Mock FX service for testing
 	mockFXService := &mockFXService{
@@ -804,6 +819,7 @@ func TestImportService_CurrencyConversion_Integration(t *testing.T) {
 
 	// Setup service with mock FX service
 	importService := NewImportService(
+		db,
 		importRepo,
 		transactionRepo,
 		walletRepo,
@@ -812,6 +828,7 @@ func TestImportService_CurrencyConversion_Integration(t *testing.T) {
 		keywordRepo,
 		userMappingRepo,
 		mockFXService,
+		nil, // jobQueue
 	)
 
 	// Create test user

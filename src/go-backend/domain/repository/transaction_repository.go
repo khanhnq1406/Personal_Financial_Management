@@ -84,6 +84,27 @@ func (r *transactionRepository) Delete(ctx context.Context, id int32) error {
 	return r.executeDelete(ctx, &models.Transaction{}, id, "transaction")
 }
 
+// DeleteWithTx deletes a transaction within a database transaction.
+func (r *transactionRepository) DeleteWithTx(ctx context.Context, dbTx interface{}, id int32) error {
+	tx, ok := dbTx.(*gorm.DB)
+	if !ok {
+		return apperrors.NewInternalErrorWithCause("invalid transaction type", nil)
+	}
+
+	result := tx.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Where("id = ?", id).
+		Update("deleted_at", time.Now())
+
+	if result.Error != nil {
+		return apperrors.NewInternalErrorWithCause("failed to delete transaction", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return apperrors.NewNotFoundError("transaction")
+	}
+	return nil
+}
+
 // List retrieves transactions with filtering and pagination.
 func (r *transactionRepository) List(ctx context.Context, userID int32, filter TransactionFilter, opts ListOptions) ([]*models.Transaction, int, error) {
 	var transactions []*models.Transaction

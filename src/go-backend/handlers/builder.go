@@ -39,6 +39,7 @@ func NewHandlers(services *service.Services, repos *service.Repositories) *AllHa
 
 	// Create import service with categorization and currency conversion support
 	importService := service.NewImportService(
+		deps.DB,
 		repos.Import,
 		repos.Transaction,
 		repos.Wallet,

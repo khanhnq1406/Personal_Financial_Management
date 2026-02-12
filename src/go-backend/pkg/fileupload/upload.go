@@ -84,6 +84,11 @@ func UploadFileFromBytes(fileData []byte, fileName string, fileSize int64) (*Upl
 		return nil, err
 	}
 
+	// Validate size match
+	if err := ValidateFileSizeMatch(fileSize, fileData); err != nil {
+		return nil, err
+	}
+
 	// Validate file size
 	if err := ValidateFileSize(fileSize, fileType); err != nil {
 		return nil, err
@@ -126,5 +131,51 @@ func CleanupFile(fileID string) error {
 		}
 	}
 
+	return nil
+}
+
+// FileInfo represents metadata about an uploaded file
+type FileInfo struct {
+	Path    string
+	ModTime os.FileInfo
+	Size    int64
+}
+
+// ListFiles returns all uploaded files with metadata
+func ListFiles(uploadDir string) ([]FileInfo, error) {
+	var files []FileInfo
+
+	entries, err := os.ReadDir(uploadDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read upload directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			// Log warning but continue with other files
+			fmt.Printf("WARN: Failed to get info for file %s: %v\n", entry.Name(), err)
+			continue
+		}
+
+		files = append(files, FileInfo{
+			Path:    filepath.Join(uploadDir, entry.Name()),
+			ModTime: info,
+			Size:    info.Size(),
+		})
+	}
+
+	return files, nil
+}
+
+// DeleteFile removes a file from disk
+func DeleteFile(filePath string) error {
+	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to delete file %s: %w", filePath, err)
+	}
 	return nil
 }

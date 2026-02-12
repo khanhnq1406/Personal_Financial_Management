@@ -12,6 +12,7 @@ import (
 
 	"wealthjourney/domain/repository"
 	"wealthjourney/domain/service"
+	"wealthjourney/pkg/device"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/fileupload"
 	"wealthjourney/pkg/handler"
@@ -107,6 +108,35 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
+	// Validate file type
+	fileType, err := fileupload.ValidateFileType(sanitizedName)
+	if err != nil {
+		handler.BadRequest(c, apperrors.NewValidationError(err.Error()))
+		return
+	}
+
+	// Validate actual file data size matches declared size
+	if err := fileupload.ValidateFileSizeMatch(req.FileSize, req.FileData); err != nil {
+		logger.LogImportError(c.Request.Context(), userID, "upload:size_mismatch", err, map[string]interface{}{
+			"filename":       sanitizedName,
+			"declared_size":  req.FileSize,
+			"actual_size":    len(req.FileData),
+		})
+		handler.BadRequest(c, apperrors.NewValidationError(err.Error()))
+		return
+	}
+
+	// Validate file size limits
+	if err := fileupload.ValidateFileSize(req.FileSize, fileType); err != nil {
+		logger.LogImportError(c.Request.Context(), userID, "upload:size_limit", err, map[string]interface{}{
+			"filename":  sanitizedName,
+			"file_size": req.FileSize,
+			"file_type": string(fileType),
+		})
+		handler.BadRequest(c, apperrors.NewValidationError(err.Error()))
+		return
+	}
+
 	// Validate file content (MIME type and security)
 	if err := fileupload.ValidateFileContent(req.FileData, sanitizedName); err != nil {
 		logger.LogImportError(c.Request.Context(), userID, "upload:validate_content", err, map[string]interface{}{
@@ -117,11 +147,12 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Determine file type for metrics
-	fileType, _ := fileupload.ValidateFileType(sanitizedName)
-
 	// Record file upload size metric
 	metrics.FileUploadSize.WithLabelValues(string(fileType)).Observe(float64(req.FileSize))
+
+	// Extract IP address and user agent for audit logging
+	ipAddress := device.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
 
 	// Upload file from bytes
 	result, err := fileupload.UploadFileFromBytes(req.FileData, sanitizedName, req.FileSize)
@@ -131,17 +162,42 @@ func (h *ImportHandler) UploadFile(c *gin.Context) {
 			"file_size": req.FileSize,
 			"file_type": string(fileType),
 		})
+
+		// Audit log: Failed upload
+		logger.LogImportAudit(c.Request.Context(), logger.NewUploadAuditLog(
+			userID,
+			"", // No file ID yet
+			sanitizedName,
+			string(fileType),
+			ipAddress,
+			userAgent,
+			false,
+			err.Error(),
+		))
+
 		// Wrap error with user-friendly message
 		handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 		return
 	}
 
-	// Log success
+	// Log success (legacy format - kept for backwards compatibility)
 	logger.LogImportSuccess(c.Request.Context(), userID, "upload", map[string]interface{}{
 		"file_id":   result.FileID,
 		"file_type": string(fileType),
 		"file_size": req.FileSize,
 	})
+
+	// Audit log: Successful upload
+	logger.LogImportAudit(c.Request.Context(), logger.NewUploadAuditLog(
+		userID,
+		result.FileID,
+		sanitizedName,
+		string(fileType),
+		ipAddress,
+		userAgent,
+		true,
+		"",
+	))
 
 	// Build response
 	response := &v1.UploadStatementFileResponse{
@@ -259,6 +315,10 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and user agent for audit logging
+	ipAddress := device.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+
 	// Parse file based on extension
 	var parsedRows []*parser.ParsedRow
 
@@ -277,6 +337,19 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			logger.LogImportError(c.Request.Context(), userID, "parse:pdf", err, logger.ImportErrorMetadata(
 				req.FileId, fileTypeStr, 0, 0,
 			))
+
+			// Audit log: Failed parse
+			logger.LogImportAudit(c.Request.Context(), logger.NewParseAuditLog(
+				userID,
+				req.FileId,
+				fileTypeStr,
+				ipAddress,
+				userAgent,
+				0,
+				false,
+				err.Error(),
+			))
+
 			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
@@ -297,6 +370,19 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			logger.LogImportError(c.Request.Context(), userID, "parse:excel", err, logger.ImportErrorMetadata(
 				req.FileId, fileTypeStr, 0, 0,
 			))
+
+			// Audit log: Failed parse
+			logger.LogImportAudit(c.Request.Context(), logger.NewParseAuditLog(
+				userID,
+				req.FileId,
+				fileTypeStr,
+				ipAddress,
+				userAgent,
+				0,
+				false,
+				err.Error(),
+			))
+
 			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
@@ -309,6 +395,19 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			logger.LogImportError(c.Request.Context(), userID, "parse:csv", err, logger.ImportErrorMetadata(
 				req.FileId, fileTypeStr, 0, 0,
 			))
+
+			// Audit log: Failed parse
+			logger.LogImportAudit(c.Request.Context(), logger.NewParseAuditLog(
+				userID,
+				req.FileId,
+				fileTypeStr,
+				ipAddress,
+				userAgent,
+				0,
+				false,
+				err.Error(),
+			))
+
 			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
@@ -420,6 +519,18 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
+
+	// Audit log: Successful parse
+	logger.LogImportAudit(c.Request.Context(), logger.NewParseAuditLog(
+		userID,
+		req.FileId,
+		fileTypeStr,
+		ipAddress,
+		userAgent,
+		int(totalRows),
+		true,
+		"",
+	))
 
 	handler.Success(c, response)
 }
@@ -555,12 +666,40 @@ func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and user agent for audit logging
+	ipAddress := device.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+
 	// Execute import via service
 	result, err := h.importService.ExecuteImport(c.Request.Context(), userID, &req)
 	if err != nil {
+		// Audit log: Failed import execution
+		logger.LogImportAudit(c.Request.Context(), logger.NewExecuteAuditLog(
+			userID,
+			req.WalletId,
+			"",
+			len(req.Transactions),
+			ipAddress,
+			userAgent,
+			false,
+			err.Error(),
+		))
+
 		handler.HandleError(c, err)
 		return
 	}
+
+	// Audit log: Successful import execution
+	logger.LogImportAudit(c.Request.Context(), logger.NewExecuteAuditLog(
+		userID,
+		req.WalletId,
+		result.ImportBatchId,
+		len(req.Transactions),
+		ipAddress,
+		userAgent,
+		true,
+		"",
+	))
 
 	// Cleanup uploaded file after successful import
 	if req.FileId != "" {
@@ -705,12 +844,49 @@ func (h *ImportHandler) UndoImport(c *gin.Context) {
 		return
 	}
 
+	// Extract IP address and user agent for audit logging
+	ipAddress := device.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+
+	// Get import batch info for audit logging (before undo)
+	batch, err := h.importRepo.GetImportBatchByID(c.Request.Context(), importID)
+	var walletID int32
+	var transactionCount int32
+	if err == nil && batch != nil {
+		walletID = batch.WalletID
+		transactionCount = batch.ValidRows
+	}
+
 	// Call service to undo import
 	result, err := h.importService.UndoImport(c.Request.Context(), userID, importID)
 	if err != nil {
+		// Audit log: Failed undo
+		logger.LogImportAudit(c.Request.Context(), logger.NewUndoAuditLog(
+			userID,
+			walletID,
+			importID,
+			int(transactionCount),
+			ipAddress,
+			userAgent,
+			false,
+			err.Error(),
+		))
+
 		handler.HandleError(c, err)
 		return
 	}
+
+	// Audit log: Successful undo
+	logger.LogImportAudit(c.Request.Context(), logger.NewUndoAuditLog(
+		userID,
+		walletID,
+		importID,
+		int(transactionCount),
+		ipAddress,
+		userAgent,
+		true,
+		"",
+	))
 
 	handler.Success(c, result)
 }

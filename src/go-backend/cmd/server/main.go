@@ -106,14 +106,33 @@ func main() {
 		// Create Redis-based job queue
 		jobQueue := jobs.NewRedisImportQueue(underlyingRedisClient)
 
-		// Create FX rate service for currency conversion (needed by import service)
-		var fxService service.FXRateService
-		if cfg != nil && repos.FXRate != nil {
-			fxService = service.NewFXRateService(repos.FXRate, underlyingRedisClient)
-		}
+		// Wrap the job queue with an adapter for the service layer
+		jobQueueAdapter := jobs.NewImportQueueAdapter(jobQueue)
 
-		// Create dedicated import service for workers
+		// Create FX rate service for currency conversion (needed by import service)
+		// Note: We reuse the existing FXRate service from services
+		fxService := services.FXRate
+
+		// Create main import service with job queue for API handlers
+		mainImportService := service.NewImportService(
+			db,
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			jobQueueAdapter, // Main service can enqueue jobs (using adapter)
+		)
+
+		// Set the import service in the services struct
+		services.Import = mainImportService
+
+		// Create dedicated import service for workers (without job queue to prevent recursion)
 		workerImportService := service.NewImportService(
+			db,
 			repos.Import,
 			repos.Transaction,
 			repos.Wallet,
@@ -137,25 +156,45 @@ func main() {
 		importWorkerPool.Start()
 		log.Printf("Import worker pool started with %d workers", numWorkers)
 
-		// Schedule job cleanup every 6 hours
+		// Schedule job cleanup every hour
 		go func() {
-			ticker := time.NewTicker(6 * time.Hour)
+			ticker := time.NewTicker(1 * time.Hour)
 			defer ticker.Stop()
+
+			log.Println("INFO: Background job - job cleanup started (runs every hour)")
 
 			for {
 				select {
 				case <-ticker.C:
-					count, err := jobQueue.CleanupExpiredJobs(context.Background())
+					cleanupCtx := context.Background()
+					deleted, err := jobQueue.CleanupExpiredJobs(cleanupCtx)
 					if err != nil {
-						log.Printf("Error cleaning up expired jobs: %v", err)
-					} else if count > 0 {
-						log.Printf("Cleaned up %d expired import jobs", count)
+						log.Printf("ERROR: Job cleanup failed: %v", err)
+					} else {
+						log.Printf("INFO: Job cleanup completed: %d jobs deleted", deleted)
 					}
 				case <-backgroundCtx.Done():
+					log.Println("INFO: Job cleanup stopped")
 					return
 				}
 			}
 		}()
+	} else {
+		// Create import service without job queue if Redis is not available
+		fxService := services.FXRate
+		mainImportService := service.NewImportService(
+			db,
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			nil, // No job queue
+		)
+		services.Import = mainImportService
 	}
 	defer func() {
 		if importWorkerPool != nil {
@@ -174,6 +213,37 @@ func main() {
 		go sessionCleanupJob.Start(backgroundCtx, 6*time.Hour)
 		log.Println("Background session cleanup job started (runs every 6 hours)")
 	}
+
+	// Initialize file cleanup job (runs every hour)
+	// This removes uploaded files older than 1 hour to prevent disk exhaustion
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(5 * time.Second)
+
+		log.Println("Background file cleanup job started (runs every hour)")
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("Running file cleanup...")
+
+				cleanupCtx := context.Background()
+				deleted, err := services.Import.CleanupExpiredFiles(cleanupCtx)
+				if err != nil {
+					log.Printf("ERROR: File cleanup failed: %v", err)
+				} else {
+					log.Printf("INFO: File cleanup completed: %d files deleted", deleted)
+				}
+
+			case <-backgroundCtx.Done():
+				log.Println("Background file cleanup job stopped (shutting down)")
+				return
+			}
+		}
+	}()
 
 	// Initialize background price update job
 	// This runs every 15 minutes to update investment prices from Yahoo Finance

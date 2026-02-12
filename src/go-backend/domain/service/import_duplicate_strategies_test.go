@@ -288,6 +288,146 @@ func TestExecuteImport_KeepAllStrategy(t *testing.T) {
 	})
 }
 
+// TestExecuteImport_RejectsZeroAmount tests that zero-amount transactions are rejected
+func TestExecuteImport_RejectsZeroAmount(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	ctx := context.Background()
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Setup repositories and services
+	userRepo, walletRepo, categoryRepo, transactionRepo, importRepo := setupRepositories(db)
+	importService := setupImportService(importRepo, transactionRepo, walletRepo, categoryRepo, db)
+
+	// Create test user, wallet, and category
+	user, wallet, category := setupTestUserWalletCategory(t, ctx, userRepo, walletRepo, categoryRepo)
+
+	t.Run("Zero-amount transactions are skipped", func(t *testing.T) {
+		// Prepare transactions including zero-amount ones
+		parsedTransactions := []*v1.ParsedTransaction{
+			{
+				RowNumber:   1,
+				Date:        time.Now().Unix(),
+				Description: "Valid transaction",
+				Amount: &v1.Money{
+					Amount:   -100000, // Valid amount
+					Currency: "VND",
+				},
+				Type:                v1.TransactionType_TRANSACTION_TYPE_EXPENSE,
+				SuggestedCategoryId: category.ID,
+				IsValid:             true,
+			},
+			{
+				RowNumber:   2,
+				Date:        time.Now().Unix(),
+				Description: "Zero amount transaction",
+				Amount: &v1.Money{
+					Amount:   0, // Zero amount - should be rejected
+					Currency: "VND",
+				},
+				Type:                v1.TransactionType_TRANSACTION_TYPE_EXPENSE,
+				SuggestedCategoryId: category.ID,
+				IsValid:             true,
+			},
+			{
+				RowNumber:   3,
+				Date:        time.Now().Unix(),
+				Description: "Another valid transaction",
+				Amount: &v1.Money{
+					Amount:   50000, // Valid amount
+					Currency: "VND",
+				},
+				Type:                v1.TransactionType_TRANSACTION_TYPE_INCOME,
+				SuggestedCategoryId: category.ID,
+				IsValid:             true,
+			},
+		}
+
+		req := &v1.ExecuteImportRequest{
+			FileId:       "test-file-zero-amount",
+			WalletId:     wallet.ID,
+			Transactions: parsedTransactions,
+			Strategy:     v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_KEEP_ALL,
+		}
+
+		resp, err := importService.ExecuteImport(ctx, user.ID, req)
+		require.NoError(t, err)
+		require.True(t, resp.Success)
+
+		// Should only import 2 transactions (skip the zero-amount one)
+		assert.Equal(t, int32(2), resp.Summary.TotalImported, "Should import only 2 valid transactions")
+
+		// Verify the correct transactions were imported
+		filter := repository.TransactionFilter{
+			WalletID: &wallet.ID,
+		}
+		importedTxs, _, err := transactionRepo.List(ctx, user.ID, filter, repository.ListOptions{
+			Limit:  100,
+			Offset: 0,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(importedTxs), "Should have exactly 2 transactions in database")
+
+		// Verify amounts are correct (not zero)
+		for _, tx := range importedTxs {
+			assert.NotEqual(t, int64(0), tx.Amount, "Imported transaction should not have zero amount")
+		}
+
+		// Verify expense and income totals don't include zero-amount transaction
+		assert.Equal(t, int64(100000), resp.Summary.TotalExpenses, "Total expenses should be 100,000 VND")
+		assert.Equal(t, int64(50000), resp.Summary.TotalIncome, "Total income should be 50,000 VND")
+	})
+
+	t.Run("All zero-amount transactions results in no imports", func(t *testing.T) {
+		// Prepare only zero-amount transactions
+		parsedTransactions := []*v1.ParsedTransaction{
+			{
+				RowNumber:   1,
+				Date:        time.Now().Unix(),
+				Description: "Zero amount 1",
+				Amount: &v1.Money{
+					Amount:   0,
+					Currency: "VND",
+				},
+				Type:                v1.TransactionType_TRANSACTION_TYPE_EXPENSE,
+				SuggestedCategoryId: category.ID,
+				IsValid:             true,
+			},
+			{
+				RowNumber:   2,
+				Date:        time.Now().Unix(),
+				Description: "Zero amount 2",
+				Amount: &v1.Money{
+					Amount:   0,
+					Currency: "VND",
+				},
+				Type:                v1.TransactionType_TRANSACTION_TYPE_INCOME,
+				SuggestedCategoryId: category.ID,
+				IsValid:             true,
+			},
+		}
+
+		req := &v1.ExecuteImportRequest{
+			FileId:       "test-file-all-zero",
+			WalletId:     wallet.ID,
+			Transactions: parsedTransactions,
+			Strategy:     v1.DuplicateHandlingStrategy_DUPLICATE_STRATEGY_KEEP_ALL,
+		}
+
+		resp, err := importService.ExecuteImport(ctx, user.ID, req)
+		require.NoError(t, err)
+		require.True(t, resp.Success)
+
+		// Should import 0 transactions
+		assert.Equal(t, int32(0), resp.Summary.TotalImported, "Should import 0 transactions")
+		assert.Equal(t, int64(0), resp.Summary.TotalExpenses, "Total expenses should be 0")
+		assert.Equal(t, int64(0), resp.Summary.TotalIncome, "Total income should be 0")
+	})
+}
+
 // Helper functions for test setup
 func setupRepositories(db *database.Database) (
 	userRepo repository.UserRepository,
@@ -317,6 +457,7 @@ func setupImportService(
 	fxService := &mockFXService{}
 
 	return NewImportService(
+		db,
 		importRepo,
 		transactionRepo,
 		walletRepo,

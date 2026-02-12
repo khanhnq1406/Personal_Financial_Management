@@ -204,10 +204,10 @@ func TestLevel1Match_ExactMatch(t *testing.T) {
 	testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
 	walletID := int32(1)
 
-	// Existing transaction
-	existingTx := createTestTransaction(1, walletID, 100000, testDate, "PAYMENT TO STARBUCKS", "REF123")
+	// Existing transaction with reference in note
+	existingTx := createTestTransaction(1, walletID, 100000, testDate, "PAYMENT TO STARBUCKS (Ref: REF123)", "")
 
-	// Parsed transaction with exact match
+	// Parsed transaction with matching reference
 	parsedTx := createTestParsedTransaction(100000, testDate.Unix(), "PAYMENT TO STARBUCKS", "REF123")
 
 	// Mock repository to return existing transaction
@@ -398,4 +398,154 @@ func TestPerformance_LevenshteinDistance(t *testing.T) {
 
 	// Should complete 1000 comparisons in less than 100ms
 	assert.Less(t, duration.Milliseconds(), int64(100), "Levenshtein distance should be fast")
+}
+
+// Test Level 1 matching with reference numbers
+func TestLevel1Match_WithMatchingReferences(t *testing.T) {
+	mockRepo := new(MockTransactionRepository)
+	detector := NewDetector(mockRepo)
+
+	testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	walletID := int32(1)
+
+	// Existing transaction with reference in note
+	existingTx := createTestTransaction(1, walletID, 100000, testDate, "Bank transfer (Ref: FT123456789)", "")
+
+	// Parsed transaction with matching reference
+	parsedTx := createTestParsedTransaction(100000, testDate.Unix(), "Transfer payment", "FT123456789")
+
+	mockRepo.On("FindByWalletAndDateRange", mock.Anything, walletID, mock.Anything, mock.Anything).
+		Return([]*models.Transaction{existingTx}, nil)
+
+	matches, err := detector.DetectDuplicates(context.Background(), walletID, []*v1.ParsedTransaction{parsedTx})
+
+	assert.NoError(t, err)
+	assert.Len(t, matches, 1)
+	assert.Equal(t, int32(99), matches[0].Confidence)
+	assert.Contains(t, matches[0].MatchReason, "Exact match")
+	assert.Contains(t, matches[0].MatchReason, "reference number")
+}
+
+func TestLevel1Match_NoReferences(t *testing.T) {
+	mockRepo := new(MockTransactionRepository)
+	detector := NewDetector(mockRepo)
+
+	testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	walletID := int32(1)
+
+	// Existing transaction without reference
+	existingTx := createTestTransaction(1, walletID, 100000, testDate, "Coffee shop purchase", "")
+
+	// Parsed transaction without reference
+	parsedTx := createTestParsedTransaction(100000, testDate.Unix(), "Coffee shop purchase", "")
+
+	mockRepo.On("FindByWalletAndDateRange", mock.Anything, walletID, mock.Anything, mock.Anything).
+		Return([]*models.Transaction{existingTx}, nil)
+
+	matches, err := detector.DetectDuplicates(context.Background(), walletID, []*v1.ParsedTransaction{parsedTx})
+
+	assert.NoError(t, err)
+	// Should fall through to Level 2 match (description similarity >80%)
+	if len(matches) > 0 {
+		assert.NotEqual(t, int32(99), matches[0].Confidence, "Should not be Level 1 match without reference")
+	}
+}
+
+func TestLevel1Match_OnlyOneHasReference(t *testing.T) {
+	mockRepo := new(MockTransactionRepository)
+	detector := NewDetector(mockRepo)
+
+	testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	walletID := int32(1)
+
+	// Existing transaction without reference
+	existingTx := createTestTransaction(1, walletID, 100000, testDate, "Bank transfer", "")
+
+	// Parsed transaction with reference
+	parsedTx := createTestParsedTransaction(100000, testDate.Unix(), "Bank transfer", "FT123456789")
+
+	mockRepo.On("FindByWalletAndDateRange", mock.Anything, walletID, mock.Anything, mock.Anything).
+		Return([]*models.Transaction{existingTx}, nil)
+
+	matches, err := detector.DetectDuplicates(context.Background(), walletID, []*v1.ParsedTransaction{parsedTx})
+
+	assert.NoError(t, err)
+	// Should fall through to Level 2 match (description match)
+	if len(matches) > 0 {
+		assert.NotEqual(t, int32(99), matches[0].Confidence, "Should not be Level 1 match when only one has reference")
+	}
+}
+
+func TestLevel1Match_DifferentReferences(t *testing.T) {
+	mockRepo := new(MockTransactionRepository)
+	detector := NewDetector(mockRepo)
+
+	testDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	walletID := int32(1)
+
+	// Existing transaction with reference
+	existingTx := createTestTransaction(1, walletID, 100000, testDate, "Transfer (Ref: FT111111111)", "")
+
+	// Parsed transaction with different reference
+	parsedTx := createTestParsedTransaction(100000, testDate.Unix(), "Transfer payment", "FT999999999")
+
+	mockRepo.On("FindByWalletAndDateRange", mock.Anything, walletID, mock.Anything, mock.Anything).
+		Return([]*models.Transaction{existingTx}, nil)
+
+	matches, err := detector.DetectDuplicates(context.Background(), walletID, []*v1.ParsedTransaction{parsedTx})
+
+	assert.NoError(t, err)
+	// Should not match at Level 1 due to different reference numbers
+	// May fall through to lower levels depending on description similarity
+	if len(matches) > 0 {
+		assert.NotEqual(t, int32(99), matches[0].Confidence, "Should not be Level 1 match with different references")
+	}
+}
+
+func TestExtractReferenceFromNote(t *testing.T) {
+	detector := NewDetector(nil)
+
+	tests := []struct {
+		name     string
+		note     string
+		expected string
+	}{
+		{
+			name:     "reference with parentheses",
+			note:     "Bank transfer (Ref: FT123456789)",
+			expected: "FT123456789",
+		},
+		{
+			name:     "reference with pipe separator",
+			note:     "Online payment | Ref: PAY987654321",
+			expected: "PAY987654321",
+		},
+		{
+			name:     "reference with extra spaces",
+			note:     "Transfer (Ref:   ABC123   )",
+			expected: "ABC123",
+		},
+		{
+			name:     "no reference",
+			note:     "Coffee shop purchase",
+			expected: "",
+		},
+		{
+			name:     "multiple possible patterns, take first",
+			note:     "Transfer (Ref: FIRST123) | Ref: SECOND456",
+			expected: "FIRST123",
+		},
+		{
+			name:     "reference at end of note",
+			note:     "BIDV transfer | Ref: FT20240115123",
+			expected: "FT20240115123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := detector.extractReferenceFromNote(tt.note)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

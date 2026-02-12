@@ -60,6 +60,9 @@ type WalletRepository interface {
 	// Use positive delta to add, negative to subtract.
 	UpdateBalance(ctx context.Context, walletID int32, delta int64) (*models.Wallet, error)
 
+	// UpdateBalanceWithTx updates wallet balance within a database transaction.
+	UpdateBalanceWithTx(ctx context.Context, dbTx interface{}, walletID int32, delta int64) (*models.Wallet, error)
+
 	// Delete soft deletes a wallet by ID.
 	Delete(ctx context.Context, id int32) error
 
@@ -113,6 +116,9 @@ type TransactionRepository interface {
 
 	// Delete soft deletes a transaction by ID.
 	Delete(ctx context.Context, id int32) error
+
+	// DeleteWithTx deletes a transaction within a database transaction.
+	DeleteWithTx(ctx context.Context, dbTx interface{}, id int32) error
 
 	// List retrieves transactions with filtering and pagination.
 	List(ctx context.Context, userID int32, filter TransactionFilter, opts ListOptions) ([]*models.Transaction, int, error)

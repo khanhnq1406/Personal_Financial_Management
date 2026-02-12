@@ -11,6 +11,7 @@ import (
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
 	"wealthjourney/pkg/categorization"
+	"wealthjourney/pkg/database"
 	"wealthjourney/pkg/duplicate"
 	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/fileupload"
@@ -60,9 +61,14 @@ type ImportService interface {
 	GetJobStatus(ctx context.Context, userID int32, jobID string) (*v1.GetJobStatusResponse, error)
 	CancelJob(ctx context.Context, userID int32, jobID string) (*v1.CancelJobResponse, error)
 	ListUserJobs(ctx context.Context, userID int32, statusFilter v1.JobStatus) (*v1.ListUserJobsResponse, error)
+
+	// File Cleanup
+	// CleanupExpiredFiles removes uploaded files older than retention period (1 hour)
+	CleanupExpiredFiles(ctx context.Context) (int, error)
 }
 
 type importService struct {
+	db                *database.Database
 	importRepo        repository.ImportRepository
 	transactionRepo   repository.TransactionRepository
 	walletRepo        repository.WalletRepository
@@ -113,6 +119,7 @@ type ImportJobData struct {
 
 // NewImportService creates a new ImportService.
 func NewImportService(
+	db *database.Database,
 	importRepo repository.ImportRepository,
 	transactionRepo repository.TransactionRepository,
 	walletRepo repository.WalletRepository,
@@ -133,6 +140,7 @@ func NewImportService(
 	)
 
 	return &importService{
+		db:                db,
 		importRepo:        importRepo,
 		transactionRepo:   transactionRepo,
 		walletRepo:        walletRepo,
@@ -552,6 +560,20 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		// Calculate amount (stored in smallest currency unit)
 		amount := parsedTx.Amount.Amount
 
+		// Validate amount is not zero
+		if amount == 0 {
+			logger.LogImportError(ctx, userID, "execute:zero_amount",
+				fmt.Errorf("transaction has zero amount"),
+				map[string]interface{}{
+					"row_number":  parsedTx.RowNumber,
+					"description": parsedTx.Description,
+					"wallet_id":   req.WalletId,
+				})
+
+			// Skip this transaction (don't import zero-amount transactions)
+			continue
+		}
+
 		// Track income/expenses
 		if amount > 0 {
 			totalIncome += amount
@@ -629,7 +651,11 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		return nil, err
 	}
 
+	// Calculate expected balance change (net change from new transactions)
+	expectedBalanceChange := totalIncome - totalExpenses
+
 	// Update merged duplicate transactions
+	// Note: Merged transactions don't affect wallet balance (they update existing amounts in-place)
 	for _, tx := range transactionsToUpdate {
 		if err := s.transactionRepo.Update(ctx, tx); err != nil {
 			logger.LogImportError(ctx, userID, "execute:update_duplicate", err, map[string]interface{}{
@@ -641,6 +667,7 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 	}
 
 	// Bulk create new transactions atomically
+	// BulkCreate automatically updates wallet balance as part of the transaction
 	var createdIDs []int32
 	if len(transactionsToCreate) > 0 {
 		createdIDs, err = s.transactionRepo.BulkCreate(ctx, transactionsToCreate)
@@ -649,6 +676,7 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 				"batch_id":          batchID,
 				"transaction_count": len(transactionsToCreate),
 				"wallet_id":         req.WalletId,
+				"expected_change":   expectedBalanceChange,
 			})
 			return nil, err
 		}
@@ -680,11 +708,39 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 		}
 	}
 
-	// Get updated wallet balance
-	wallet, err = s.walletRepo.GetByID(ctx, req.WalletId)
+	// Get updated wallet balance and verify the update was successful
+	walletAfter, err := s.walletRepo.GetByID(ctx, req.WalletId)
 	if err != nil {
+		logger.LogImportError(ctx, userID, "execute:get_wallet_after", err, map[string]interface{}{
+			"wallet_id": req.WalletId,
+			"batch_id":  batchID,
+		})
 		return nil, apperrors.WrapWithUserMessage(err)
 	}
+
+	// Verify balance was updated correctly
+	// Note: We compare expected change vs actual change from initial balance
+	actualBalanceChange := walletAfter.Balance - wallet.Balance
+	if actualBalanceChange != expectedBalanceChange {
+		err := fmt.Errorf("wallet balance verification failed: expected change %d, actual change %d",
+			expectedBalanceChange, actualBalanceChange)
+		logger.LogImportError(ctx, userID, "execute:balance_verification_failed", err, map[string]interface{}{
+			"wallet_id":              req.WalletId,
+			"batch_id":               batchID,
+			"balance_before":         wallet.Balance,
+			"balance_after":          walletAfter.Balance,
+			"expected_change":        expectedBalanceChange,
+			"actual_change":          actualBalanceChange,
+			"transaction_count":      len(createdIDs),
+			"total_income":           totalIncome,
+			"total_expenses":         totalExpenses,
+		})
+		// This is a critical data integrity issue - return error
+		return nil, apperrors.NewInternalErrorWithCause("wallet balance update verification failed", err)
+	}
+
+	// Use the verified wallet for response
+	wallet = walletAfter
 
 	// Mark import as successful
 	importSuccess = true
@@ -770,27 +826,77 @@ func (s *importService) UndoImport(ctx context.Context, userID int32, importID s
 		walletReversals[tx.WalletID] += -tx.Amount
 	}
 
-	// Delete transactions
-	for _, tx := range transactions {
-		if err := s.transactionRepo.Delete(ctx, tx.ID); err != nil {
-			return nil, fmt.Errorf("failed to delete transaction: %w", err)
+	// BEGIN DATABASE TRANSACTION
+	dbTx := s.db.DB.Begin()
+	if dbTx.Error != nil {
+		logger.LogImportError(ctx, userID, "undo:begin_transaction", dbTx.Error, map[string]interface{}{
+			"batch_id": batch.ID,
+		})
+		return nil, fmt.Errorf("failed to begin transaction: %w", dbTx.Error)
+	}
+
+	// Defer rollback in case of panic or early return
+	defer func() {
+		if r := recover(); r != nil {
+			dbTx.Rollback()
+			logger.LogImportError(ctx, userID, "undo:panic", fmt.Errorf("panic during undo: %v", r), map[string]interface{}{
+				"batch_id": batch.ID,
+			})
+			panic(r) // Re-panic after rollback
+		}
+	}()
+
+	// 1. Soft-delete all transactions in batch
+	for _, transaction := range transactions {
+		if err := s.transactionRepo.DeleteWithTx(ctx, dbTx, transaction.ID); err != nil {
+			dbTx.Rollback()
+			logger.LogImportError(ctx, userID, "undo:delete_transaction", err, map[string]interface{}{
+				"batch_id":       batch.ID,
+				"transaction_id": transaction.ID,
+			})
+			return nil, fmt.Errorf("failed to delete transaction %d: %w", transaction.ID, err)
 		}
 	}
 
-	// Update wallet balances
+	// 2. Restore wallet balances
 	for walletID, delta := range walletReversals {
-		if _, err := s.walletRepo.UpdateBalance(ctx, walletID, delta); err != nil {
-			return nil, fmt.Errorf("failed to update wallet balance: %w", err)
+		if _, err := s.walletRepo.UpdateBalanceWithTx(ctx, dbTx, walletID, delta); err != nil {
+			dbTx.Rollback()
+			logger.LogImportError(ctx, userID, "undo:update_balance", err, map[string]interface{}{
+				"batch_id":  batch.ID,
+				"wallet_id": walletID,
+				"delta":     delta,
+			})
+			return nil, fmt.Errorf("failed to restore wallet %d balance: %w", walletID, err)
 		}
 	}
 
-	// Mark import batch as undone
+	// 3. Mark import batch as undone
 	now := time.Now()
 	batch.UndoneAt = &now
 	batch.CanUndo = false
-	if err := s.importRepo.UpdateImportBatch(ctx, batch); err != nil {
-		return nil, err
+
+	if err := s.importRepo.UpdateImportBatchWithTx(ctx, dbTx, batch); err != nil {
+		dbTx.Rollback()
+		logger.LogImportError(ctx, userID, "undo:update_batch", err, map[string]interface{}{
+			"batch_id": batch.ID,
+		})
+		return nil, fmt.Errorf("failed to mark batch as undone: %w", err)
 	}
+
+	// COMMIT DATABASE TRANSACTION
+	if err := dbTx.Commit().Error; err != nil {
+		logger.LogImportError(ctx, userID, "undo:commit", err, map[string]interface{}{
+			"batch_id": batch.ID,
+		})
+		return nil, fmt.Errorf("failed to commit undo transaction: %w", err)
+	}
+
+	// Log successful undo
+	logger.LogImportSuccess(ctx, userID, "undo", map[string]interface{}{
+		"batch_id":           batch.ID,
+		"transactions_count": len(transactions),
+	})
 
 	return &v1.UndoImportResponse{
 		Success:   true,
@@ -1532,4 +1638,48 @@ func (s *importService) mapJobStatusToProto(status string) v1.JobStatus {
 	default:
 		return v1.JobStatus_JOB_STATUS_UNSPECIFIED
 	}
+}
+
+// CleanupExpiredFiles removes uploaded files older than retention period (1 hour)
+func (s *importService) CleanupExpiredFiles(ctx context.Context) (int, error) {
+	const FileRetentionHours = 1 // As per Section 13.1 requirements
+	cutoffTime := time.Now().Add(-FileRetentionHours * time.Hour)
+
+	// Use upload directory from fileupload package
+	uploadDir := fileupload.UploadDir
+
+	files, err := fileupload.ListFiles(uploadDir)
+	if err != nil {
+		log.Printf("[FILE_CLEANUP_ERROR] operation=list_files upload_dir=%s error=%v", uploadDir, err)
+		return 0, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	var deletedCount int
+	var errors []error
+
+	for _, file := range files {
+		// Skip files modified within retention period
+		if file.ModTime.ModTime().After(cutoffTime) {
+			continue
+		}
+
+		// Delete expired file
+		if err := fileupload.DeleteFile(file.Path); err != nil {
+			log.Printf("[FILE_CLEANUP_ERROR] operation=delete_file file_path=%s file_age=%s error=%v",
+				file.Path, time.Since(file.ModTime.ModTime()).String(), err)
+			errors = append(errors, fmt.Errorf("failed to delete %s: %w", file.Path, err))
+			continue
+		}
+
+		deletedCount++
+		log.Printf("[FILE_CLEANUP_SUCCESS] operation=file_deleted file_path=%s file_age=%s",
+			file.Path, time.Since(file.ModTime.ModTime()).String())
+	}
+
+	// Log summary
+	log.Printf("[FILE_CLEANUP_SUMMARY] deleted_count=%d error_count=%d total_files=%d",
+		deletedCount, len(errors), len(files))
+
+	// Return success even if some files failed to delete
+	return deletedCount, nil
 }

@@ -77,6 +77,14 @@ func (m *MockWalletRepository) UpdateBalance(ctx context.Context, walletID int32
 	return args.Get(0).(*models.Wallet), args.Error(1)
 }
 
+func (m *MockWalletRepository) UpdateBalanceWithTx(ctx context.Context, dbTx interface{}, walletID int32, delta int64) (*models.Wallet, error) {
+	args := m.Called(ctx, dbTx, walletID, delta)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Wallet), args.Error(1)
+}
+
 func (m *MockWalletRepository) GetTotalBalance(ctx context.Context, userID int32) (int64, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).(int64), args.Error(1)

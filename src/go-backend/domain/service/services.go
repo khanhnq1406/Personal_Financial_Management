@@ -18,6 +18,7 @@ type Services struct {
 	FXRate             FXRateService
 	PortfolioHistory   PortfolioHistoryService
 	MarketData         MarketDataService
+	Import             ImportService
 }
 
 // NewServices creates all service instances.
@@ -65,6 +66,7 @@ func NewServices(repos *Repositories, redisClient *redis.Client) *Services {
 		FXRate:           fxRateSvc,
 		PortfolioHistory: portfolioHistorySvc,
 		MarketData:       marketDataSvc,
+		Import:           nil, // Import service is created separately in main.go with job queue
 	}
 }
 

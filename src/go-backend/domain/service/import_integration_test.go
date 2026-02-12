@@ -45,6 +45,7 @@ func TestImportService_EndToEnd_CSV(t *testing.T) {
 
 	// Create import service
 	importService := service.NewImportService(
+		db,
 		importRepo,
 		transactionRepo,
 		walletRepo,
@@ -53,6 +54,7 @@ func TestImportService_EndToEnd_CSV(t *testing.T) {
 		keywordRepo,
 		userMappingRepo,
 		fxService,
+		nil, // jobQueue
 	)
 
 	// Create test user
@@ -200,6 +202,7 @@ func TestImportService_DuplicateDetection(t *testing.T) {
 	fxService := &mockFXService{}
 
 	importService := service.NewImportService(
+		db,
 		importRepo,
 		transactionRepo,
 		walletRepo,
@@ -208,6 +211,7 @@ func TestImportService_DuplicateDetection(t *testing.T) {
 		keywordRepo,
 		userMappingRepo,
 		fxService,
+		nil, // jobQueue
 	)
 
 	// Create test user and wallet
@@ -315,6 +319,7 @@ func TestImportService_Performance_1000Transactions(t *testing.T) {
 	fxService := &mockFXService{}
 
 	importService := service.NewImportService(
+		db,
 		importRepo,
 		transactionRepo,
 		walletRepo,
@@ -323,6 +328,7 @@ func TestImportService_Performance_1000Transactions(t *testing.T) {
 		keywordRepo,
 		userMappingRepo,
 		fxService,
+		nil, // jobQueue
 	)
 
 	// Create test user and wallet
