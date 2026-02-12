@@ -51,7 +51,14 @@ export const StepProgress: FC<StepProgressProps> = ({
             {currentStepData?.label}
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+        <div
+          className="w-full bg-gray-200 rounded-full h-2 overflow-hidden"
+          role="progressbar"
+          aria-valuenow={currentStep}
+          aria-valuemin={1}
+          aria-valuemax={steps.length}
+          aria-label={`Step ${currentStep} of ${steps.length}: ${steps.find(s => s.number === currentStep)?.label}`}
+        >
           <div
             className="bg-[#008148] h-2 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
@@ -61,14 +68,14 @@ export const StepProgress: FC<StepProgressProps> = ({
 
       {/* Desktop view: Full step indicators */}
       <div className="hidden sm:block">
-        <div className="flex items-center justify-between">
+        <ol className="flex items-center justify-between" aria-label="Import progress steps">
           {steps.map((step, index) => {
             const isCompleted = step.number < currentStep;
             const isCurrent = step.number === currentStep;
             const isUpcoming = step.number > currentStep;
 
             return (
-              <div key={step.number} className="flex items-center flex-1">
+              <li key={step.number} className="flex items-center flex-1">
                 {/* Step circle and label */}
                 <div className="flex flex-col items-center relative">
                   {/* Circle */}
@@ -84,6 +91,7 @@ export const StepProgress: FC<StepProgressProps> = ({
                             : "bg-white border-gray-300"
                       }
                     `}
+                    {...(isCurrent && { "aria-current": "step" })}
                   >
                     {isCompleted ? (
                       // Checkmark for completed steps
@@ -138,10 +146,10 @@ export const StepProgress: FC<StepProgressProps> = ({
                     />
                   </div>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </div>
     </div>
   );
