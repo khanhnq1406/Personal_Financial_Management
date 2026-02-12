@@ -272,7 +272,7 @@ func (rl *RedisImportRateLimiter) incrementCounter(ctx context.Context, prefix, 
 func RedisImportRateLimitMiddleware(limiter *RedisImportRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract user ID from context (set by auth middleware)
-		userIDInterface, exists := c.Get("userID")
+		userIDInterface, exists := c.Get("user_id")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -296,22 +296,13 @@ func RedisImportRateLimitMiddleware(limiter *RedisImportRateLimiter) gin.Handler
 		ipAddress := c.ClientIP()
 
 		// Get wallet ID from request (if present)
-		// For import endpoints, wallet ID might be in the request body or query params
+		// For import endpoints, wallet ID might be in query params
+		// Note: We don't read from body to avoid consuming it before the handler
+		// Wallet-based rate limiting only applies when walletId is in query params
 		var walletID int32
-
-		// Try to get from JSON body first
-		type RequestWithWallet struct {
-			WalletID int32 `json:"walletId"`
-		}
-		var req RequestWithWallet
-		if err := c.ShouldBindJSON(&req); err == nil && req.WalletID > 0 {
-			walletID = req.WalletID
-		} else {
-			// Try query parameter
-			if walletIDStr := c.Query("walletId"); walletIDStr != "" {
-				if wid, err := strconv.ParseInt(walletIDStr, 10, 32); err == nil {
-					walletID = int32(wid)
-				}
+		if walletIDStr := c.Query("walletId"); walletIDStr != "" {
+			if wid, err := strconv.ParseInt(walletIDStr, 10, 32); err == nil {
+				walletID = int32(wid)
 			}
 		}
 

@@ -4,7 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/Button";
 import { ErrorSummary } from "./ErrorSummary";
 import { TransactionReviewTable } from "./TransactionReviewTable";
-import { ParsedTransaction, DuplicateMatch, DuplicateHandlingStrategy, CurrencyConversion } from "@/gen/protobuf/v1/import";
+import {
+  ParsedTransaction,
+  DuplicateMatch,
+  DuplicateHandlingStrategy,
+  CurrencyConversion,
+  DuplicateAction,
+  DuplicateActionType,
+} from "@/gen/protobuf/v1/import";
 import { ColumnMapping } from "./ColumnMappingStep";
 import { useMutationParseStatement } from "@/utils/generated/hooks";
 import { ErrorSection } from "./ErrorSection";
@@ -29,7 +36,10 @@ export interface ReviewStepParseProps {
 export interface ReviewStepReviewProps {
   transactions: ParsedTransaction[];
   duplicateMatches?: DuplicateMatch[];
-  onImport: (selectedRowNumbers: number[]) => void;
+  onImport: (
+    selectedRowNumbers: number[],
+    duplicateActions?: DuplicateAction[],
+  ) => void;
   onBack: () => void;
   isLoading?: boolean;
   currency?: string;
@@ -41,39 +51,58 @@ export interface ReviewStepReviewProps {
   onDuplicateStrategyChange?: (strategy: DuplicateHandlingStrategy) => void;
   // Currency conversion props
   conversions?: CurrencyConversion[];
-  onChangeRate?: (fromCurrency: string, toCurrency: string, newRate: number) => void;
+  onChangeRate?: (
+    fromCurrency: string,
+    toCurrency: string,
+    newRate: number,
+  ) => void;
 }
 
 export type ReviewStepProps = ReviewStepParseProps | ReviewStepReviewProps;
 
 // Type guard to check if props are for parsing mode
 function isParseProps(props: ReviewStepProps): props is ReviewStepParseProps {
-  return 'file' in props && 'columnMapping' in props;
+  return "file" in props && "columnMapping" in props;
 }
 
 export function ReviewStep(props: ReviewStepProps) {
   // Extract props based on type
-  const transactions = 'transactions' in props ? props.transactions : [];
-  const duplicateMatches = 'duplicateMatches' in props ? props.duplicateMatches : undefined;
-  const onImport = 'onImport' in props ? props.onImport : () => {};
+  const transactions = "transactions" in props ? props.transactions : [];
+  const duplicateMatches =
+    "duplicateMatches" in props ? props.duplicateMatches : undefined;
+  const onImport = "onImport" in props ? props.onImport : () => {};
   const onBack = props.onBack;
-  const isLoading = 'isLoading' in props ? props.isLoading : false;
-  const currency = 'currency' in props ? props.currency : "VND";
-  const categories = 'categories' in props ? props.categories : [];
-  const useGroupedUI = 'useGroupedUI' in props ? props.useGroupedUI : true; // Default to new UI
-  const duplicateStrategy = 'duplicateStrategy' in props ? props.duplicateStrategy : DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL;
-  const onDuplicateStrategyChange = 'onDuplicateStrategyChange' in props ? props.onDuplicateStrategyChange : undefined;
-  const conversions = 'conversions' in props ? props.conversions : undefined;
-  const onChangeRate = 'onChangeRate' in props ? props.onChangeRate : undefined;
+  const isLoading = "isLoading" in props ? props.isLoading : false;
+  const currency = "currency" in props ? props.currency : "VND";
+  const categories = "categories" in props ? props.categories : [];
+  const useGroupedUI = "useGroupedUI" in props ? props.useGroupedUI : true; // Default to new UI
+  const duplicateStrategy =
+    "duplicateStrategy" in props
+      ? props.duplicateStrategy
+      : DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL;
+  const onDuplicateStrategyChange =
+    "onDuplicateStrategyChange" in props
+      ? props.onDuplicateStrategyChange
+      : undefined;
+  const conversions = "conversions" in props ? props.conversions : undefined;
+  const onChangeRate = "onChangeRate" in props ? props.onChangeRate : undefined;
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
   const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
-  const [handledDuplicates, setHandledDuplicates] = useState<Set<number>>(new Set());
-  const [transactionsState, setTransactionsState] = useState<ParsedTransaction[]>([]);
+  const [handledDuplicates, setHandledDuplicates] = useState<Set<number>>(
+    new Set(),
+  );
+  const [duplicateActionsMap, setDuplicateActionsMap] = useState<
+    Map<number, "merge" | "keep" | "skip">
+  >(new Map());
+  const [transactionsState, setTransactionsState] = useState<
+    ParsedTransaction[]
+  >([]);
   const [showChangeRateModal, setShowChangeRateModal] = useState(false);
-  const [selectedConversion, setSelectedConversion] = useState<CurrencyConversion | null>(null);
+  const [selectedConversion, setSelectedConversion] =
+    useState<CurrencyConversion | null>(null);
 
   // Initialize transactions state
   useEffect(() => {
@@ -99,8 +128,12 @@ export function ReviewStep(props: ReviewStepProps) {
       return transactionsState;
     }
 
-    const startTime = dateRangeStart ? Math.floor(dateRangeStart.getTime() / 1000) : 0;
-    const endTime = dateRangeEnd ? Math.floor(dateRangeEnd.getTime() / 1000) : Number.MAX_SAFE_INTEGER;
+    const startTime = dateRangeStart
+      ? Math.floor(dateRangeStart.getTime() / 1000)
+      : 0;
+    const endTime = dateRangeEnd
+      ? Math.floor(dateRangeEnd.getTime() / 1000)
+      : Number.MAX_SAFE_INTEGER;
 
     return transactionsState.filter((tx) => {
       return tx.date >= startTime && tx.date <= endTime;
@@ -111,29 +144,49 @@ export function ReviewStep(props: ReviewStepProps) {
   const groups = useMemo(() => {
     const duplicateRowNumbers = new Set(
       duplicateMatches
-        ?.filter((m) => !handledDuplicates.has(m.importedTransaction?.rowNumber || 0))
-        .map((m) => m.importedTransaction?.rowNumber || 0) || []
+        ?.filter(
+          (m) => !handledDuplicates.has(m.importedTransaction?.rowNumber || 0),
+        )
+        .map((m) => m.importedTransaction?.rowNumber || 0) || [],
     );
 
-    const hasErrors = filteredTransactions.filter((tx) => !tx.isValid);
+    // Only exclude duplicates from other sections if strategy is REVIEW_EACH or SKIP_ALL
+    const shouldExcludeDuplicates =
+      duplicateStrategy ===
+        DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH ||
+      duplicateStrategy ===
+        DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL;
 
-    const hasDuplicates = filteredTransactions.filter((tx) =>
-      duplicateRowNumbers.has(tx.rowNumber)
+    const hasErrors = filteredTransactions.filter(
+      (tx) => !tx.isValid && !excludedRows.has(tx.rowNumber),
+    );
+
+    const hasDuplicates = filteredTransactions.filter(
+      (tx) =>
+        duplicateRowNumbers.has(tx.rowNumber) &&
+        !excludedRows.has(tx.rowNumber),
     );
 
     const needsCategoryReview = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
-        !duplicateRowNumbers.has(tx.rowNumber) &&
-        (!tx.suggestedCategoryId || tx.categoryConfidence < 80)
+        !excludedRows.has(tx.rowNumber) &&
+        (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
+        (tx.suggestedCategoryId === undefined ||
+          isNaN(tx.suggestedCategoryId) ||
+          tx.categoryConfidence < 80 ||
+          tx.suggestedCategoryId === 0), // Also treat 0 as needing review
     );
 
     const readyToImport = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
-        !duplicateRowNumbers.has(tx.rowNumber) &&
-        tx.suggestedCategoryId &&
-        tx.categoryConfidence >= 80
+        !excludedRows.has(tx.rowNumber) &&
+        (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
+        tx.suggestedCategoryId !== undefined &&
+        !isNaN(tx.suggestedCategoryId) &&
+        tx.suggestedCategoryId !== 0 &&
+        tx.categoryConfidence >= 80,
     );
 
     return {
@@ -142,7 +195,13 @@ export function ReviewStep(props: ReviewStepProps) {
       needsCategoryReview,
       readyToImport,
     };
-  }, [filteredTransactions, duplicateMatches, handledDuplicates]);
+  }, [
+    filteredTransactions,
+    duplicateMatches,
+    handledDuplicates,
+    duplicateStrategy,
+    excludedRows,
+  ]);
 
   // Build duplicate confidence map for table display (old UI)
   const duplicateMap = new Map(
@@ -157,7 +216,7 @@ export function ReviewStep(props: ReviewStepProps) {
 
   // Extract validation errors for ErrorSummary (old UI)
   const errorsForSummary = transactionsState
-    .filter((t) => t.validationErrors.length > 0)
+    .filter((t) => t.validationErrors && t.validationErrors.length > 0)
     .map((t) => ({
       rowNumber: t.rowNumber,
       errors: t.validationErrors,
@@ -177,7 +236,9 @@ export function ReviewStep(props: ReviewStepProps) {
 
   const handleToggleAll = () => {
     const validTransactions = filteredTransactions.filter((t) => t.isValid);
-    const allSelected = validTransactions.every((t) => selectedRows.has(t.rowNumber));
+    const allSelected = validTransactions.every((t) =>
+      selectedRows.has(t.rowNumber),
+    );
 
     if (allSelected) {
       // Deselect all
@@ -188,17 +249,26 @@ export function ReviewStep(props: ReviewStepProps) {
     }
   };
 
-  const handleTransactionUpdate = (rowNumber: number, updates: Partial<ParsedTransaction>) => {
+  const handleTransactionUpdate = (
+    rowNumber: number,
+    updates: Partial<ParsedTransaction>,
+  ) => {
     setTransactionsState((prev) =>
       prev.map((tx) =>
-        tx.rowNumber === rowNumber ? { ...tx, ...updates } : tx
-      )
+        tx.rowNumber === rowNumber ? { ...tx, ...updates } : tx,
+      ),
     );
   };
 
-  const handleDuplicateAction = (rowNumber: number, action: "merge" | "keep" | "skip") => {
+  const handleDuplicateAction = (
+    rowNumber: number,
+    action: "merge" | "keep" | "skip",
+  ) => {
     // Mark this duplicate as handled
     setHandledDuplicates((prev) => new Set(prev).add(rowNumber));
+
+    // Store the action for this duplicate
+    setDuplicateActionsMap((prev) => new Map(prev).set(rowNumber, action));
 
     // If action is "skip", also add to excluded rows
     if (action === "skip") {
@@ -217,10 +287,17 @@ export function ReviewStep(props: ReviewStepProps) {
   };
 
   const handleCategoryChange = (rowNumber: number, categoryId: number) => {
-    handleTransactionUpdate(rowNumber, {
-      suggestedCategoryId: categoryId,
-      categoryConfidence: 100, // Manual selection = 100% confidence
-    });
+    setTransactionsState((prev) =>
+      prev.map((tx) =>
+        tx.rowNumber === rowNumber
+          ? {
+              ...tx,
+              suggestedCategoryId: categoryId,
+              categoryConfidence: 100, // Manual selection = 100% confidence
+            }
+          : tx,
+      ),
+    );
   };
 
   const handleSkipError = (rowNumber: number) => {
@@ -232,9 +309,12 @@ export function ReviewStep(props: ReviewStepProps) {
     setDateRangeEnd(end);
   };
 
-  const handleOpenChangeRateModal = (fromCurrency: string, toCurrency: string) => {
+  const handleOpenChangeRateModal = (
+    fromCurrency: string,
+    toCurrency: string,
+  ) => {
     const conversion = conversions?.find(
-      (c) => c.fromCurrency === fromCurrency && c.toCurrency === toCurrency
+      (c) => c.fromCurrency === fromCurrency && c.toCurrency === toCurrency,
     );
     if (conversion) {
       setSelectedConversion(conversion);
@@ -247,7 +327,7 @@ export function ReviewStep(props: ReviewStepProps) {
       onChangeRate(
         selectedConversion.fromCurrency,
         selectedConversion.toCurrency,
-        newRate
+        newRate,
       );
     }
     setShowChangeRateModal(false);
@@ -260,21 +340,59 @@ export function ReviewStep(props: ReviewStepProps) {
   };
 
   const handleImport = () => {
+    // Build duplicate actions array if any duplicates were handled manually
+    const duplicateActions =
+      duplicateStrategy ===
+        DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH &&
+      duplicateActionsMap.size > 0
+        ? Array.from(duplicateActionsMap.entries()).map(
+            ([rowNumber, action]): DuplicateAction => {
+              // Find the matched transaction ID for this duplicate
+              const match = duplicateMatches?.find(
+                (m) => m.importedTransaction?.rowNumber === rowNumber,
+              );
+
+              // Map action string to DuplicateActionType enum
+              let actionType: DuplicateActionType;
+              switch (action) {
+                case "merge":
+                  actionType = DuplicateActionType.DUPLICATE_ACTION_MERGE;
+                  break;
+                case "keep":
+                  actionType = DuplicateActionType.DUPLICATE_ACTION_KEEP_BOTH;
+                  break;
+                case "skip":
+                  actionType = DuplicateActionType.DUPLICATE_ACTION_SKIP;
+                  break;
+                default:
+                  actionType = DuplicateActionType.DUPLICATE_ACTION_UNSPECIFIED;
+              }
+
+              return {
+                importedRowNumber: rowNumber,
+                existingTransactionId: match?.existingTransaction?.id || 0,
+                action: actionType,
+              };
+            },
+          )
+        : undefined;
+
     if (useGroupedUI) {
       // New UI: exclude rows that are in excludedRows set
       const importableRows = filteredTransactions
         .filter((t) => t.isValid && !excludedRows.has(t.rowNumber))
         .map((t) => t.rowNumber);
-      onImport(importableRows);
+      onImport(importableRows, duplicateActions);
     } else {
       // Old UI: use selectedRows
-      onImport(Array.from(selectedRows));
+      onImport(Array.from(selectedRows), duplicateActions);
     }
   };
 
   // Calculate importable count
   const importableCount = useGroupedUI
-    ? groups.readyToImport.filter((tx) => !excludedRows.has(tx.rowNumber)).length
+    ? groups.readyToImport.filter((tx) => !excludedRows.has(tx.rowNumber))
+        .length
     : selectedRows.size;
 
   // Blocked count includes errors and unhandled duplicates
@@ -290,7 +408,8 @@ export function ReviewStep(props: ReviewStepProps) {
             Review Import
           </h2>
           <p className="text-sm text-neutral-600 dark:text-dark-text-secondary">
-            {transactionsState.length} transaction{transactionsState.length !== 1 ? "s" : ""} from statement
+            {transactionsState.length} transaction
+            {transactionsState.length !== 1 ? "s" : ""} from statement
           </p>
         </div>
 
@@ -303,13 +422,18 @@ export function ReviewStep(props: ReviewStepProps) {
         />
 
         {/* Duplicate Strategy Selector */}
-        {duplicateMatches && duplicateMatches.length > 0 && onDuplicateStrategyChange && (
-          <DuplicateStrategySelector
-            duplicateCount={duplicateMatches.length}
-            selectedStrategy={duplicateStrategy || DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL}
-            onStrategyChange={onDuplicateStrategyChange}
-          />
-        )}
+        {duplicateMatches &&
+          duplicateMatches.length > 0 &&
+          onDuplicateStrategyChange && (
+            <DuplicateStrategySelector
+              duplicateCount={duplicateMatches.length}
+              selectedStrategy={
+                duplicateStrategy ||
+                DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL
+              }
+              onStrategyChange={onDuplicateStrategyChange}
+            />
+          )}
 
         {/* Currency Conversion Section */}
         {conversions && conversions.length > 0 && (
@@ -331,16 +455,22 @@ export function ReviewStep(props: ReviewStepProps) {
             />
           )}
 
-          {/* Duplicate Section */}
-          {groups.hasDuplicates.length > 0 && duplicateMatches && (
-            <DuplicateSection
-              matches={duplicateMatches.filter(
-                (m) => !handledDuplicates.has(m.importedTransaction?.rowNumber || 0)
-              )}
-              onDuplicateHandled={handleDuplicateAction}
-              currency={currency}
-            />
-          )}
+          {/* Duplicate Section - Only show when strategy is REVIEW_EACH */}
+          {groups.hasDuplicates.length > 0 &&
+            duplicateMatches &&
+            duplicateStrategy ===
+              DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH && (
+              <DuplicateSection
+                matches={duplicateMatches.filter(
+                  (m) =>
+                    !handledDuplicates.has(
+                      m.importedTransaction?.rowNumber || 0,
+                    ),
+                )}
+                onDuplicateHandled={handleDuplicateAction}
+                currency={currency}
+              />
+            )}
 
           {/* Category Review Section */}
           {groups.needsCategoryReview.length > 0 && (
@@ -360,6 +490,7 @@ export function ReviewStep(props: ReviewStepProps) {
               onToggleExclude={handleToggleExclude}
               categories={categories}
               currency={currency}
+              onCategoryChange={handleCategoryChange}
             />
           )}
         </div>
@@ -388,12 +519,7 @@ export function ReviewStep(props: ReviewStepProps) {
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
-          <Button
-            variant="secondary"
-            onClick={onBack}
-            disabled={isLoading}
-            className="flex-1 sm:flex-initial"
-          >
+          <Button variant="secondary" onClick={onBack} disabled={isLoading}>
             Back
           </Button>
           <Button
@@ -401,7 +527,6 @@ export function ReviewStep(props: ReviewStepProps) {
             onClick={handleImport}
             disabled={importableCount === 0 || isLoading}
             loading={isLoading}
-            className="flex-1"
           >
             {isLoading
               ? "Importing..."
@@ -428,16 +553,19 @@ export function ReviewStep(props: ReviewStepProps) {
       {/* Instructions */}
       <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
         <p className="mb-2">
-          Review the parsed transactions below. Select the rows you want to import.
+          Review the parsed transactions below. Select the rows you want to
+          import.
         </p>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          Rows with errors cannot be imported. Duplicate transactions are detected
-          automatically.
+          Rows with errors cannot be imported. Duplicate transactions are
+          detected automatically.
         </p>
       </div>
 
       {/* Error Summary */}
-      {errorsForSummary.length > 0 && <ErrorSummary errors={errorsForSummary} />}
+      {errorsForSummary.length > 0 && (
+        <ErrorSummary errors={errorsForSummary} />
+      )}
 
       {/* Transaction Review Table */}
       <TransactionReviewTable
@@ -460,7 +588,10 @@ export function ReviewStep(props: ReviewStepProps) {
           disabled={selectedRows.size === 0 || isLoading}
           loading={isLoading}
         >
-          Import {selectedRows.size > 0 ? `${selectedRows.size} Transaction${selectedRows.size !== 1 ? "s" : ""}` : "Transactions"}
+          Import{" "}
+          {selectedRows.size > 0
+            ? `${selectedRows.size} Transaction${selectedRows.size !== 1 ? "s" : ""}`
+            : "Transactions"}
         </Button>
       </div>
     </div>

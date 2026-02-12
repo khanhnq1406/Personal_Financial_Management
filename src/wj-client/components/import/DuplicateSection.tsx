@@ -21,11 +21,26 @@ export const DuplicateSection = React.memo(function DuplicateSection({
   const [expanded, setExpanded] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Reset currentIndex if it's out of bounds
+  React.useEffect(() => {
+    if (currentIndex >= matches.length && matches.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [matches.length, currentIndex]);
+
   if (matches.length === 0) {
     return null;
   }
 
-  const currentMatch = matches[currentIndex];
+  // Safety check: ensure currentIndex is valid
+  const safeIndex = Math.min(currentIndex, matches.length - 1);
+  const currentMatch = matches[safeIndex];
+
+  // Safety check: ensure currentMatch exists
+  if (!currentMatch) {
+    return null;
+  }
+
   const imported = currentMatch.importedTransaction;
   const existing = currentMatch.existingTransaction;
 
@@ -33,8 +48,8 @@ export const DuplicateSection = React.memo(function DuplicateSection({
     onDuplicateHandled(imported?.rowNumber || 0, action);
 
     // Move to next duplicate
-    if (currentIndex < matches.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (safeIndex < matches.length - 1) {
+      setCurrentIndex(safeIndex + 1);
     } else {
       setExpanded(false); // All handled
     }
@@ -95,7 +110,7 @@ export const DuplicateSection = React.memo(function DuplicateSection({
           {/* Progress */}
           <div className="flex items-center justify-between text-sm">
             <p className="text-neutral-600 dark:text-dark-text-secondary">
-              Match {currentIndex + 1} of {matches.length}
+              Match {safeIndex + 1} of {matches.length}
             </p>
             <div className="flex gap-1">
               {matches.map((_, idx) => (
@@ -103,9 +118,9 @@ export const DuplicateSection = React.memo(function DuplicateSection({
                   key={idx}
                   className={cn(
                     "w-2 h-2 rounded-full transition-colors",
-                    idx === currentIndex
+                    idx === safeIndex
                       ? "bg-primary-600"
-                      : idx < currentIndex
+                      : idx < safeIndex
                         ? "bg-success-600"
                         : "bg-neutral-300 dark:bg-neutral-600"
                   )}
@@ -220,17 +235,17 @@ export const DuplicateSection = React.memo(function DuplicateSection({
           {/* Navigation */}
           <div className="flex gap-2">
             <button
-              onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-              disabled={currentIndex === 0}
+              onClick={() => setCurrentIndex(Math.max(0, safeIndex - 1))}
+              disabled={safeIndex === 0}
               className="flex-1 px-4 py-2 text-sm bg-neutral-200 dark:bg-dark-surface-hover text-neutral-700 dark:text-dark-text rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-300 dark:hover:bg-dark-surface-active transition-colors"
             >
               ← Previous
             </button>
             <button
               onClick={() =>
-                setCurrentIndex(Math.min(matches.length - 1, currentIndex + 1))
+                setCurrentIndex(Math.min(matches.length - 1, safeIndex + 1))
               }
-              disabled={currentIndex === matches.length - 1}
+              disabled={safeIndex === matches.length - 1}
               className="flex-1 px-4 py-2 text-sm bg-neutral-200 dark:bg-dark-surface-hover text-neutral-700 dark:text-dark-text rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-300 dark:hover:bg-dark-surface-active transition-colors"
             >
               Next →

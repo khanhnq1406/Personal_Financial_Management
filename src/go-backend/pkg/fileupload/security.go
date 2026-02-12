@@ -11,8 +11,8 @@ import (
 // Allowed MIME types for uploads
 var allowedMIMETypes = map[string][]string{
 	".csv":  {"text/csv", "text/plain", "application/csv"},
-	".xlsx": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-	".xls":  {"application/vnd.ms-excel"},
+	".xlsx": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip", "application/octet-stream"},
+	".xls":  {"application/vnd.ms-excel", "application/octet-stream"},
 	".pdf":  {"application/pdf"},
 }
 

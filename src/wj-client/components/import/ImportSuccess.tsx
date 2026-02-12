@@ -45,11 +45,11 @@ export function ImportSuccess({
   // Extract currency from summary money objects
   const currency = summary.totalIncome?.currency || summary.totalExpenses?.currency || "VND";
 
-  // Convert amounts from smallest unit to display unit
-  const totalIncome = (summary.totalIncome?.amount || 0) / 10000;
-  const totalExpenses = (summary.totalExpenses?.amount || 0) / 10000;
-  const netChange = (summary.netChange?.amount || 0) / 10000;
-  const newBalance = (summary.newWalletBalance?.amount || 0) / 10000;
+  // formatCurrency already handles conversion from smallest unit to display unit
+  const totalIncome = summary.totalIncome?.amount || 0;
+  const totalExpenses = summary.totalExpenses?.amount || 0;
+  const netChange = summary.netChange?.amount || 0;
+  const newBalance = summary.newWalletBalance?.amount || 0;
 
   if (showUndoConfirm) {
     return (

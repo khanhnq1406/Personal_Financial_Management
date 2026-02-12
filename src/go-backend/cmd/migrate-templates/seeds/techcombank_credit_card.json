@@ -5,10 +5,10 @@
   "statementType": "credit",
   "fileFormats": ["csv", "excel", "pdf"],
   "columnMapping": {
-    "dateColumn": ["Ngày giao dịch", "Trans Date", "Date", "Ngày"],
-    "amountColumn": ["Số tiền giao dịch", "Amount", "Số tiền", "Transaction Amount"],
-    "descriptionColumn": ["Mô tả giao dịch", "Description", "Nội dung", "Merchant Name"],
-    "referenceColumn": ["Mã tham chiếu", "Reference", "Ref Code"]
+    "dateColumn": ["Ngày giao dịch", "Trans Date", "Date", "Ngày", "Transaction Date"],
+    "amountColumn": ["Số tiền giao dịch", "Amount", "Số tiền", "Transaction Amount", "Debit", "Credit"],
+    "descriptionColumn": ["Mô tả giao dịch", "Description", "Nội dung", "Merchant Name", "Details"],
+    "referenceColumn": ["Mã tham chiếu", "Reference", "Ref Code", "Transaction No"]
   },
   "dateFormat": "DD/MM/YYYY",
   "amountFormat": {

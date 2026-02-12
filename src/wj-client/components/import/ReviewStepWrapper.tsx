@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { ReviewStep } from "./ReviewStep";
 import { ColumnMapping } from "./ColumnMappingStep";
-import { ParsedTransaction, DuplicateHandlingStrategy, ImportSummary, DuplicateMatch, CurrencyConversion, CurrencyInfo } from "@/gen/protobuf/v1/import";
+import { ParsedTransaction, DuplicateHandlingStrategy, ImportSummary, DuplicateMatch, CurrencyConversion, CurrencyInfo, DuplicateAction } from "@/gen/protobuf/v1/import";
 import { Button } from "@/components/Button";
-import { useMutationExecuteImport, useMutationParseStatement, useMutationDetectDuplicates, useMutationConvertCurrency } from "@/utils/generated/hooks";
-import { DuplicateReviewModal, DuplicateAction } from "./DuplicateReviewModal";
+import { useMutationExecuteImport, useMutationParseStatement, useMutationDetectDuplicates, useMutationConvertCurrency, useQueryListCategories } from "@/utils/generated/hooks";
+import { DuplicateReviewModal } from "./DuplicateReviewModal";
 
 export interface ReviewStepWrapperProps {
   file: File;
@@ -45,6 +45,12 @@ export function ReviewStepWrapper({
   const [duplicateActions, setDuplicateActions] = useState<DuplicateAction[]>([]);
   const [currencyInfo, setCurrencyInfo] = useState<CurrencyInfo | null>(null);
   const [conversions, setConversions] = useState<CurrencyConversion[]>([]);
+
+  // Fetch user's categories
+  const categoriesQuery = useQueryListCategories(
+    { pagination: { page: 1, pageSize: 1000, orderBy: "", order: "" } },
+    { staleTime: 5 * 60 * 1000 } // Cache for 5 minutes
+  );
 
   // Parse statement mutation (backend API)
   const parseStatementMutation = useMutationParseStatement({
@@ -175,14 +181,20 @@ export function ReviewStepWrapper({
     });
   };
 
-  const handleImport = (selectedRowNumbers: number[], strategy?: DuplicateHandlingStrategy) => {
+  const handleImport = (
+    selectedRowNumbers: number[],
+    inlineDuplicateActions?: DuplicateAction[],
+    strategy?: DuplicateHandlingStrategy
+  ) => {
     const strategyToUse = strategy !== undefined ? strategy : duplicateStrategy;
 
-    // Check if we need to show duplicate review modal
+    // If inline duplicate actions are provided, use them
+    // Otherwise, check if we need to show duplicate review modal
     if (strategyToUse === DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH &&
         duplicateMatches.length > 0 &&
+        !inlineDuplicateActions &&
         duplicateActions.length === 0) {
-      // Show modal for user to review duplicates
+      // Show modal for user to review duplicates (legacy flow)
       setShowDuplicateReview(true);
       return;
     }
@@ -198,6 +210,9 @@ export function ReviewStepWrapper({
       (num) => !selectedRowNumbers.includes(num)
     );
 
+    // Use inline actions if provided, otherwise use modal actions
+    const actionsToUse = inlineDuplicateActions || duplicateActions;
+
     // Execute import with duplicate actions if REVIEW_EACH strategy
     executeImportMutation.mutate({
       fileId,
@@ -208,7 +223,7 @@ export function ReviewStepWrapper({
       dateFilterStart: 0,
       dateFilterEnd: 0,
       duplicateActions: strategyToUse === DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH
-        ? duplicateActions
+        ? actionsToUse
         : [],
     });
   };
@@ -226,7 +241,7 @@ export function ReviewStepWrapper({
     setShowDuplicateReview(false);
     // Trigger import with the collected actions
     const allRowNumbers = transactions.map((t) => t.rowNumber);
-    handleImport(allRowNumbers, DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH);
+    handleImport(allRowNumbers, actions, DuplicateHandlingStrategy.DUPLICATE_STRATEGY_REVIEW_EACH);
   };
 
   const handleDuplicateReviewCancel = () => {
@@ -278,16 +293,22 @@ export function ReviewStepWrapper({
     );
   }
 
+  // Transform categories for ReviewStep
+  const categories = categoriesQuery.data?.categories?.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+  })) || [];
+
   return (
     <>
       <ReviewStep
         transactions={transactions}
-        onImport={(selectedRows) => handleImport(selectedRows)}
+        onImport={(selectedRows, duplicateActions) => handleImport(selectedRows, duplicateActions)}
         onBack={onBack}
         currency={currency}
         isLoading={executeImportMutation.isPending}
         useGroupedUI={true}
-        categories={[]}
+        categories={categories}
         duplicateMatches={duplicateMatches}
         duplicateStrategy={duplicateStrategy}
         onDuplicateStrategyChange={setDuplicateStrategy}

@@ -245,11 +245,7 @@ export function FileUploadStep({
       {/* Action Buttons */}
       <div className="flex gap-3 pt-2">
         {selectedFile && (
-          <Button
-            variant="secondary"
-            onClick={() => handleFileChange(null)}
-            className="flex-1 sm:flex-initial"
-          >
+          <Button variant="secondary" onClick={() => handleFileChange(null)}>
             Clear
           </Button>
         )}
@@ -258,7 +254,6 @@ export function FileUploadStep({
           onClick={onNext}
           disabled={!selectedFile || isUploading}
           loading={isUploading}
-          className="flex-1"
         >
           {isUploading ? "Uploading..." : "Next: Configure"}
         </Button>

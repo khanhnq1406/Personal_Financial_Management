@@ -20,6 +20,8 @@ type CSVParser struct {
 type ColumnMapping struct {
 	DateColumn        int
 	AmountColumn      int
+	DebitColumn       int // -1 if not present; for statements with separate debit/credit columns
+	CreditColumn      int // -1 if not present; for statements with separate debit/credit columns
 	DescriptionColumn int
 	TypeColumn        int           // -1 if not present
 	CategoryColumn    int           // -1 if not present

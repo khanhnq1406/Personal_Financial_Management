@@ -124,7 +124,7 @@ func (rl *ImportRateLimiter) Stop() {
 func ImportRateLimitMiddleware(limiter *ImportRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract user ID from context (set by auth middleware)
-		userIDInterface, exists := c.Get("userID")
+		userIDInterface, exists := c.Get("user_id")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,

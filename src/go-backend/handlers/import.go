@@ -55,7 +55,7 @@ func (h *ImportHandler) ListBankTemplates(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	handler.Success(c, response)
 }
 
 // UploadFile handles bank statement file upload.
@@ -283,6 +283,8 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		columnMapping = &parser.ColumnMapping{
 			DateColumn:        mapping.DateColumn,
 			AmountColumn:      mapping.AmountColumn,
+			DebitColumn:       -1, // Will be auto-detected if needed
+			CreditColumn:      -1, // Will be auto-detected if needed
 			DescriptionColumn: mapping.DescriptionColumn,
 			TypeColumn:        mapping.TypeColumn - 1,    // -1 if not present (0 index becomes -1)
 			CategoryColumn:    mapping.CategoryColumn - 1,
@@ -303,6 +305,8 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		columnMapping = &parser.ColumnMapping{
 			DateColumn:        dateCol,
 			AmountColumn:      amountCol,
+			DebitColumn:       -1, // Will be auto-detected if needed
+			CreditColumn:      -1, // Will be auto-detected if needed
 			DescriptionColumn: descCol,
 			TypeColumn:        typeCol - 1,    // -1 if not present
 			CategoryColumn:    catCol - 1,
@@ -355,8 +359,9 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		}
 	case ".xlsx", ".xls":
 		fileTypeStr = "excel"
-		// Use Excel parser
-		excelParser := parser.NewExcelParser(filePath, columnMapping)
+		// Use Excel parser with auto-detection (ignore template mapping for Excel files)
+		// Excel files have too much variation in layout to use fixed column mappings
+		excelParser := parser.NewExcelParser(filePath, nil)
 		defer excelParser.Close() // Clean up: close the Excel file
 
 		// Set specific sheet if provided
@@ -630,7 +635,7 @@ func (h *ImportHandler) ConvertCurrency(c *gin.Context) {
 }
 
 // ConfirmImport confirms and imports parsed transactions.
-// @Summary Confirm and import transactions
+// @Summary Execute import transactions
 // @Tags import
 // @Accept json
 // @Produce json
@@ -639,7 +644,7 @@ func (h *ImportHandler) ConvertCurrency(c *gin.Context) {
 // @Failure 400 {object} types.APIResponse
 // @Failure 401 {object} types.APIResponse
 // @Failure 500 {object} types.APIResponse
-// @Router /api/v1/import/confirm [post]
+// @Router /api/v1/import/execute [post]
 func (h *ImportHandler) ConfirmImport(c *gin.Context) {
 	// Get user ID from context
 	userID, ok := handler.GetUserID(c)

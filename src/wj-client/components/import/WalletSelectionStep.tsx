@@ -5,6 +5,7 @@ import { Button } from "@/components/Button";
 import { FormSelect } from "@/components/forms/FormSelect";
 import { useQueryListWallets } from "@/utils/generated/hooks";
 import { cn } from "@/lib/utils/cn";
+import { formatCurrency } from "@/utils/currency-formatter";
 
 export interface WalletSelectionStepProps {
   onWalletSelected: (walletId: number) => void;
@@ -113,8 +114,11 @@ export function WalletSelectionStep({
                   {wallet.walletName}
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
-                  Balance: {wallet.balance?.amount?.toLocaleString() || 0}{" "}
-                  {wallet.balance?.currency}
+                  Balance:{" "}
+                  {formatCurrency(
+                    wallet.balance?.amount || 0,
+                    wallet.balance?.currency || "VND",
+                  )}
                 </p>
               </div>
               {selectedWalletId === wallet.id && (

@@ -12,7 +12,10 @@ import {
 import { ReviewStepWrapper } from "@/components/import/ReviewStepWrapper";
 import { ImportSuccess } from "@/components/import/ImportSuccess";
 import { ImportSummary } from "@/gen/protobuf/v1/import";
-import { useMutationUploadStatementFile } from "@/utils/generated/hooks";
+import {
+  EVENT_WalletGetTotalBalance,
+  useMutationUploadStatementFile,
+} from "@/utils/generated/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { EVENT_TransactionListTransactions } from "@/utils/generated/hooks";
 
@@ -166,10 +169,21 @@ export function ImportTransactionsForm({
       // Extract just the base64 part
       const base64Data = result.split(",")[1];
 
+      // Map file extension to backend-expected fileType
+      const fileExt = selectedFile.name.split(".").pop()?.toLowerCase() || "";
+      let fileType = "";
+      if (fileExt === "csv") {
+        fileType = "csv";
+      } else if (fileExt === "xlsx" || fileExt === "xls") {
+        fileType = "excel";
+      } else if (fileExt === "pdf") {
+        fileType = "pdf";
+      }
+
       uploadFileMutation.mutate({
         fileData: base64Data as any, // Protobuf bytes field expects base64 string in JSON
         fileName: selectedFile.name,
-        fileType: selectedFile.name.split(".").pop() || "",
+        fileType: fileType,
         fileSize: selectedFile.size,
       });
     };
@@ -191,8 +205,8 @@ export function ImportTransactionsForm({
   const handleStep3Next = () => {
     // Skip column mapping for Excel and PDF files (backend handles parsing automatically)
     if (selectedFile) {
-      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-      if (fileExt === 'xlsx' || fileExt === 'xls' || fileExt === 'pdf') {
+      const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
+      if (fileExt === "xlsx" || fileExt === "xls" || fileExt === "pdf") {
         // For Excel/PDF, skip column mapping and go directly to review
         setCurrentStep(5);
         return;
@@ -219,12 +233,21 @@ export function ImportTransactionsForm({
     setImportSummary(summary);
     setImportBatchId(batchId);
     setCurrentStep(6); // Move to success screen
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_TransactionListTransactions],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_WalletGetTotalBalance],
+    });
   };
 
   const handleDone = () => {
     // Refresh transaction list
     queryClient.invalidateQueries({
       queryKey: [EVENT_TransactionListTransactions],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_WalletGetTotalBalance],
     });
     handleClose();
   };
@@ -233,6 +256,9 @@ export function ImportTransactionsForm({
     // Refresh and close
     queryClient.invalidateQueries({
       queryKey: [EVENT_TransactionListTransactions],
+    });
+    queryClient.invalidateQueries({
+      queryKey: [EVENT_WalletGetTotalBalance],
     });
     handleClose();
   };

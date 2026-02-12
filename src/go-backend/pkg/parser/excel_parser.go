@@ -195,20 +195,29 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 	var parsedRows []*ParsedRow
 	startRow := 0
 
-	// Skip header row if present
-	if p.hasHeader(rows[0]) {
-		startRow = 1
-	}
-
-	// If no explicit column mapping, try to auto-detect from header
+	// If no explicit column mapping, search for header row
 	mapping := p.columnMapping
-	if mapping == nil && startRow == 1 {
-		mapping = p.detectColumnsFromHeader(rows[0])
-	}
-
-	// If still no mapping, return error
 	if mapping == nil {
-		return nil, fmt.Errorf("column mapping is required. Either provide bankTemplateId or customMapping")
+		// Search for header row (up to first 50 rows to handle bank statement headers)
+		maxHeaderSearch := 50
+		if len(rows) < maxHeaderSearch {
+			maxHeaderSearch = len(rows)
+		}
+
+		for i := 0; i < maxHeaderSearch; i++ {
+			if p.hasHeader(rows[i]) {
+				mapping = p.detectColumnsFromHeader(rows[i])
+				if mapping != nil {
+					startRow = i + 1 // Start parsing after header
+					break
+				}
+			}
+		}
+
+		// If still no mapping found, return error
+		if mapping == nil {
+			return nil, fmt.Errorf("column mapping is required. Either provide bankTemplateId or customMapping")
+		}
 	}
 
 	// Parse each data row
@@ -374,7 +383,44 @@ func (p *ExcelParser) parseRow(sheetName string, rowNumber int, row []string, ma
 	}
 
 	// Parse amount using enhanced amount parser
-	if mapping.AmountColumn <= maxCol {
+	// Handle both single amount column and separate debit/credit columns
+	if mapping.DebitColumn != -1 && mapping.CreditColumn != -1 {
+		// Bank statement with separate debit/credit columns
+		debitStr := ""
+		creditStr := ""
+
+		if mapping.DebitColumn <= maxCol {
+			debitStr = strings.TrimSpace(row[mapping.DebitColumn])
+		}
+		if mapping.CreditColumn <= maxCol {
+			creditStr = strings.TrimSpace(row[mapping.CreditColumn])
+		}
+
+		amountParser := NewAmountParser(mapping.AmountFormat)
+
+		// Try debit first (negative amount)
+		if debitStr != "" {
+			amount, err := amountParser.Parse(debitStr)
+			if err != nil {
+				parsed.addError("amount", fmt.Sprintf("Invalid debit amount format: %v", err), "error")
+			} else {
+				// Debit is negative (expense/withdrawal)
+				parsed.Amount = -amount
+			}
+		} else if creditStr != "" {
+			// Try credit (positive amount)
+			amount, err := amountParser.Parse(creditStr)
+			if err != nil {
+				parsed.addError("amount", fmt.Sprintf("Invalid credit amount format: %v", err), "error")
+			} else {
+				// Credit is positive (income/deposit)
+				parsed.Amount = amount
+			}
+		} else {
+			parsed.addError("amount", "Amount is required", "error")
+		}
+	} else if mapping.AmountColumn != -1 && mapping.AmountColumn <= maxCol {
+		// Single amount column
 		amountStr := strings.TrimSpace(row[mapping.AmountColumn])
 		if amountStr == "" {
 			parsed.addError("amount", "Amount is required", "error")
@@ -479,6 +525,10 @@ func (p *ExcelParser) isSummaryRow(row []string) bool {
 		"opening balance", "beginning balance",
 		// Vietnamese keywords
 		"tổng", "tổng cộng", "số dư",
+		// Footer/explanation keywords
+		"phiếu này được in", "this statement", "description:", "diễn giải:",
+		"ngày giao dịch:", "transaction date:", "ghi chú", "note:",
+		"được in từ", "printed from",
 	}
 
 	rowText := strings.ToLower(strings.Join(row, " "))
@@ -497,6 +547,8 @@ func (p *ExcelParser) detectColumnsFromHeader(headerRow []string) *ColumnMapping
 	mapping := &ColumnMapping{
 		DateColumn:        -1,
 		AmountColumn:      -1,
+		DebitColumn:       -1,
+		CreditColumn:      -1,
 		DescriptionColumn: -1,
 		TypeColumn:        -1,
 		CategoryColumn:    -1,
@@ -507,12 +559,17 @@ func (p *ExcelParser) detectColumnsFromHeader(headerRow []string) *ColumnMapping
 	// Keywords for each column type (English + Vietnamese)
 	dateKeywords := []string{"date", "ngày", "ngay", "posting date", "transaction date"}
 	descKeywords := []string{"description", "diễn giải", "dien giai", "mô tả", "mo ta", "particulars", "details", "memo"}
-	amountKeywords := []string{"amount", "số tiền", "so tien", "debit", "credit", "withdrawals", "deposits", "value"}
-	refKeywords := []string{"reference", "số ct", "so ct", "ref", "transaction id", "ref no"}
+	amountKeywords := []string{"amount", "số tiền", "so tien", "withdrawals", "deposits", "value"}
+	// Note: "nợ" without spaces, not "no" (to avoid matching "Transaction No")
+	debitKeywords := []string{"debit", "nợ tktt", "nợ", "withdraw", "rút"}
+	creditKeywords := []string{"credit", "có tktt", "có", "deposit", "nạp"}
+	refKeywords := []string{"reference", "số ct", "so ct", "ref", "transaction id", "ref no", "số bút toán", "transaction no"}
 	typeKeywords := []string{"type", "loại", "loai", "transaction type"}
 
 	for i, cell := range headerRow {
-		cellLower := strings.ToLower(cell)
+		// Normalize cell text: replace newlines with spaces for better matching
+		cellNormalized := strings.ReplaceAll(cell, "\n", " ")
+		cellLower := strings.ToLower(cellNormalized)
 
 		// Check for date column
 		for _, keyword := range dateKeywords {
@@ -530,11 +587,29 @@ func (p *ExcelParser) detectColumnsFromHeader(headerRow []string) *ColumnMapping
 			}
 		}
 
-		// Check for amount column
-		for _, keyword := range amountKeywords {
-			if strings.Contains(cellLower, keyword) && mapping.AmountColumn == -1 {
-				mapping.AmountColumn = i
+		// Check for debit column (specific check before general amount)
+		for _, keyword := range debitKeywords {
+			if strings.Contains(cellLower, keyword) && mapping.DebitColumn == -1 {
+				mapping.DebitColumn = i
 				break
+			}
+		}
+
+		// Check for credit column (specific check before general amount)
+		for _, keyword := range creditKeywords {
+			if strings.Contains(cellLower, keyword) && mapping.CreditColumn == -1 {
+				mapping.CreditColumn = i
+				break
+			}
+		}
+
+		// Check for general amount column (only if debit/credit not found)
+		if mapping.DebitColumn == -1 && mapping.CreditColumn == -1 {
+			for _, keyword := range amountKeywords {
+				if strings.Contains(cellLower, keyword) && mapping.AmountColumn == -1 {
+					mapping.AmountColumn = i
+					break
+				}
 			}
 		}
 
@@ -556,7 +631,15 @@ func (p *ExcelParser) detectColumnsFromHeader(headerRow []string) *ColumnMapping
 	}
 
 	// Validate that required columns were found
-	if mapping.DateColumn == -1 || mapping.AmountColumn == -1 || mapping.DescriptionColumn == -1 {
+	// Either AmountColumn OR (DebitColumn AND CreditColumn) must be present
+	hasAmount := mapping.AmountColumn != -1
+	hasDebitCredit := mapping.DebitColumn != -1 && mapping.CreditColumn != -1
+
+	if mapping.DateColumn == -1 || mapping.DescriptionColumn == -1 {
+		return nil
+	}
+
+	if !hasAmount && !hasDebitCredit {
 		return nil
 	}
 

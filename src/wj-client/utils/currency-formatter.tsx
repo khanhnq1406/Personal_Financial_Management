@@ -29,10 +29,10 @@ export function formatCurrency(
   const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.VND;
 
   // Convert from smallest unit to major unit
-  const value =
-    config.decimals > 0
-      ? Number(amount) / Math.pow(10, config.decimals)
-      : Number(amount);
+  // All amounts are stored as ×10000 for 4 decimal precision
+  // For currencies with 0 decimals (VND, JPY), we need to divide by 10000
+  // For currencies with 2 decimals (USD, EUR), divide by 10000 to get the base value
+  const value = Number(amount) / 10000;
 
   const formatter = new Intl.NumberFormat(config.locale, {
     style: "currency",
@@ -69,10 +69,10 @@ export function formatCurrencyCompact(
   const symbol = getCurrencySymbol(currency);
 
   // Convert from smallest unit to major unit
-  const value =
-    config.decimals > 0
-      ? Number(amount) / Math.pow(10, config.decimals)
-      : Number(amount);
+  // All amounts are stored as ×10000 for 4 decimal precision
+  // For currencies with 0 decimals (VND, JPY), we need to divide by 10000
+  // For currencies with 2 decimals (USD, EUR), divide by 10000 to get the base value
+  const value = Number(amount) / 10000;
 
   const absValue = Math.abs(value);
 

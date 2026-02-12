@@ -248,7 +248,7 @@ func RegisterRoutes(
 		importsRestricted.POST("/parse", h.Import.ParseFile)
 		importsRestricted.POST("/convert-currency", h.Import.ConvertCurrency)
 		importsRestricted.POST("/detect-duplicates", h.Import.DetectDuplicates)
-		importsRestricted.POST("/confirm", h.Import.ConfirmImport)
+		importsRestricted.POST("/execute", h.Import.ConfirmImport) // Changed from /confirm to match protobuf
 		importsRestricted.POST("/:id/undo", h.Import.UndoImport)
 	}
 }

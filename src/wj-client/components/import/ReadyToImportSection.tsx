@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ParsedTransaction } from "@/gen/protobuf/v1/import";
 import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon, CheckIcon, MinusIcon } from "@/components/icons";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { Select, SelectOption } from "@/components/select/Select";
+import { FormSelect } from "../forms/FormSelect";
 
 export interface ReadyToImportSectionProps {
   transactions: ParsedTransaction[];
@@ -12,6 +14,7 @@ export interface ReadyToImportSectionProps {
   onToggleExclude: (rowNumber: number) => void;
   categories?: Array<{ id: number; name: string }>;
   currency?: string;
+  onCategoryChange?: (rowNumber: number, categoryId: number) => void;
 }
 
 export const ReadyToImportSection = React.memo(function ReadyToImportSection({
@@ -20,15 +23,24 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
   onToggleExclude,
   categories = [],
   currency = "VND",
+  onCategoryChange,
 }: ReadyToImportSectionProps) {
   const [expanded, setExpanded] = useState(false);
+
+  // Memoize category options
+  const categoryOptions = useMemo<SelectOption<string>[]>(() => {
+    return categories.map((cat) => ({
+      value: String(cat.id),
+      label: cat.name,
+    }));
+  }, [categories]);
 
   if (transactions.length === 0) {
     return null;
   }
 
   const selectedCount = transactions.filter(
-    (tx) => !excludedRows.has(tx.rowNumber)
+    (tx) => !excludedRows.has(tx.rowNumber),
   ).length;
 
   const allSelected = selectedCount === transactions.length;
@@ -66,7 +78,9 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
         className="w-full flex items-center justify-between p-4 bg-success-50 dark:bg-success-950 hover:bg-success-100 dark:hover:bg-success-900 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-2xl">✓</span>
+          <div className="w-8 h-8 rounded-full bg-success-600 dark:bg-success-700 flex items-center justify-center">
+            <CheckIcon size="sm" className="text-white" decorative />
+          </div>
           <div className="text-left">
             <h3 className="font-semibold text-base text-success-700 dark:text-success-300">
               {selectedCount} Ready to Import
@@ -80,7 +94,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
           size="sm"
           className={cn(
             "transition-transform text-success-600 dark:text-success-400",
-            expanded && "rotate-180"
+            expanded && "rotate-180",
           )}
           decorative
         />
@@ -101,7 +115,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                     ? "bg-primary-600 border-primary-600 dark:bg-primary-700 dark:border-primary-700"
                     : someSelected
                       ? "bg-primary-600 border-primary-600 dark:bg-primary-700 dark:border-primary-700"
-                      : "border-neutral-400 dark:border-neutral-500 hover:border-primary-500"
+                      : "border-neutral-400 dark:border-neutral-500 hover:border-primary-500",
                 )}
                 aria-label="Toggle all rows"
               >
@@ -129,7 +143,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                     "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
                     isChecked
                       ? "bg-white dark:bg-dark-surface border border-neutral-200 dark:border-dark-border"
-                      : "bg-neutral-100 dark:bg-dark-surface-hover opacity-60"
+                      : "bg-neutral-100 dark:bg-dark-surface-hover opacity-60",
                   )}
                 >
                   <button
@@ -139,7 +153,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                       "mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0",
                       isChecked
                         ? "bg-primary-600 border-primary-600 dark:bg-primary-700 dark:border-primary-700"
-                        : "border-neutral-400 dark:border-neutral-500"
+                        : "border-neutral-400 dark:border-neutral-500",
                     )}
                     aria-label={`Toggle row ${tx.rowNumber}`}
                   >
@@ -147,13 +161,16 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                       <CheckIcon size="sm" className="text-white" decorative />
                     )}
                   </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex justify-between items-start">
                       <p className="text-sm font-medium text-neutral-900 dark:text-dark-text truncate">
                         {tx.description}
                       </p>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-dark-text ml-2">
-                        {formatCurrency(tx.amount?.amount || 0, tx.amount?.currency || currency)}
+                        {formatCurrency(
+                          tx.amount?.amount || 0,
+                          tx.amount?.currency || currency,
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-dark-text-tertiary flex-wrap">
@@ -168,6 +185,28 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                         </>
                       )}
                     </div>
+
+                    {/* Editable category selector */}
+                    {onCategoryChange && categoryOptions.length > 0 && (
+                      <div
+                        className="pt-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <FormSelect
+                          options={categoryOptions}
+                          value={String(tx.suggestedCategoryId || "")}
+                          onChange={(value) => {
+                            const categoryId = parseInt(value);
+                            if (!isNaN(categoryId)) {
+                              onCategoryChange(tx.rowNumber, categoryId);
+                            }
+                          }}
+                          placeholder="Select category"
+                          className="w-full text-sm"
+                          portal
+                        />
+                      </div>
+                    )}
                   </div>
                 </label>
               );

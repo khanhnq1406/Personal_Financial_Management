@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon } from "@/components/icons";
 import { Select, SelectOption } from "@/components/select/Select";
 import { formatCurrency } from "@/utils/currency-formatter";
+import { FormSelect } from "../forms/FormSelect";
 
 export interface CategoryReviewSectionProps {
   transactions: ParsedTransaction[];
@@ -25,13 +26,10 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
 
   // Memoize category options to avoid recreating on every render
   const categoryOptions = useMemo<SelectOption<string>[]>(() => {
-    return [
-      { value: "0", label: "Uncategorized" },
-      ...categories.map((cat) => ({
-        value: String(cat.id),
-        label: cat.name,
-      })),
-    ];
+    return categories.map((cat) => ({
+      value: String(cat.id),
+      label: cat.name,
+    }));
   }, [categories]);
 
   if (transactions.length === 0) {
@@ -47,13 +45,19 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
   };
 
   const handleMarkAllUncategorized = () => {
+    // Find the "Uncategorized" category ID from the categories list
+    const uncategorizedCategory = categories.find(
+      (cat) => cat.name === "Uncategorized",
+    );
+    const uncategorizedId = uncategorizedCategory?.id || 0;
+
     transactions.forEach((tx) => {
-      onCategoryChange(tx.rowNumber, 0);
+      onCategoryChange(tx.rowNumber, uncategorizedId);
     });
   };
 
   const getCategoryName = (categoryId?: number) => {
-    if (!categoryId) return "Uncategorized";
+    if (categoryId === undefined || categoryId === null) return "Uncategorized";
     const category = categories.find((c) => c.id === categoryId);
     return category?.name || `Category ${categoryId}`;
   };
@@ -90,7 +94,7 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
           size="sm"
           className={cn(
             "transition-transform text-neutral-600 dark:text-neutral-400",
-            expanded && "rotate-180"
+            expanded && "rotate-180",
           )}
           decorative
         />
@@ -134,7 +138,10 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
                         {tx.description}
                       </p>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-dark-text ml-2">
-                        {formatCurrency(tx.amount?.amount || 0, tx.amount?.currency || currency)}
+                        {formatCurrency(
+                          tx.amount?.amount || 0,
+                          tx.amount?.currency || currency,
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-dark-text-tertiary">
@@ -156,7 +163,7 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
                       <span
                         className={cn(
                           "px-2 py-0.5 text-xs font-semibold rounded",
-                          getConfidenceBadgeClass(tx.categoryConfidence)
+                          getConfidenceBadgeClass(tx.categoryConfidence),
                         )}
                       >
                         {tx.categoryConfidence}%
@@ -165,12 +172,19 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
                   )}
 
                   {/* Category Selector */}
-                  <Select
+                  <FormSelect
                     options={categoryOptions}
-                    value={String(tx.suggestedCategoryId || 0)}
-                    onChange={(value) => onCategoryChange(tx.rowNumber, parseInt(value))}
+                    value={String(tx.suggestedCategoryId || "")}
+                    onChange={(value) => {
+                      const categoryId = parseInt(value);
+                      // Only update if we have a valid number (not NaN)
+                      if (!isNaN(categoryId)) {
+                        onCategoryChange(tx.rowNumber, categoryId);
+                      }
+                    }}
                     placeholder="Select category"
                     className="w-full"
+                    portal
                   />
                 </div>
               );
