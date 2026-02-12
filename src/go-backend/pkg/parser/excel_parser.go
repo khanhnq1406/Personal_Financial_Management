@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -39,10 +41,29 @@ func (p *ExcelParser) openFile() error {
 		return nil // Already open
 	}
 
-	f, err := excelize.OpenFile(p.filePath)
-	if err != nil {
-		return fmt.Errorf("failed to open Excel file: %w", err)
+	var f *excelize.File
+	var err error
+
+	// Check if filePath is a URL or local path
+	if strings.HasPrefix(p.filePath, "http://") || strings.HasPrefix(p.filePath, "https://") {
+		// Download file content first for URLs
+		data, err := FetchFileContent(context.Background(), p.filePath)
+		if err != nil {
+			return fmt.Errorf("failed to fetch Excel file: %w", err)
+		}
+		// Open from bytes
+		f, err = excelize.OpenReader(bytes.NewReader(data))
+		if err != nil {
+			return fmt.Errorf("failed to open Excel file: %w", err)
+		}
+	} else {
+		// Open from local file path
+		f, err = excelize.OpenFile(p.filePath)
+		if err != nil {
+			return fmt.Errorf("failed to open Excel file: %w", err)
+		}
 	}
+
 	p.file = f
 	return nil
 }

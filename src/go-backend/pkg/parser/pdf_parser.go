@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -28,24 +28,18 @@ func NewPDFParser(filePath string, mapping *ColumnMapping) *PDFParser {
 
 // ExtractTable extracts structured table data from PDF
 func (p *PDFParser) ExtractTable() ([]TableRow, error) {
-	// Open PDF file
-	f, err := os.Open(p.filePath)
+	// Open PDF file (supports both URLs and local paths)
+	f, err := FetchFileReaderWithSize(context.Background(), p.filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PDF: %w", err)
 	}
 	defer f.Close()
 
-	// Get file size
-	stat, err := f.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %w", err)
-	}
-
 	// Create PDF reader
-	reader, err := pdf.NewReader(f, stat.Size())
+	reader, err := pdf.NewReader(f, f.Size())
 	if err != nil {
 		// Try with encrypted reader (empty password)
-		reader, err = pdf.NewReaderEncrypted(f, stat.Size(), func() string { return "" })
+		reader, err = pdf.NewReaderEncrypted(f, f.Size(), func() string { return "" })
 		if err != nil {
 			return nil, fmt.Errorf("failed to create PDF reader: %w. PDF may be password-protected", err)
 		}
@@ -110,24 +104,18 @@ func (p *PDFParser) ExtractTable() ([]TableRow, error) {
 // extractCurrencyFromPDF extracts currency code from PDF metadata/header section
 // Looks for "Loại tiền" / "Currency:" labels and extracts the 3-letter ISO code
 func (p *PDFParser) extractCurrencyFromPDF() string {
-	// Open PDF file
-	f, err := os.Open(p.filePath)
+	// Open PDF file (supports both URLs and local paths)
+	f, err := FetchFileReaderWithSize(context.Background(), p.filePath)
 	if err != nil {
 		return "" // Fail silently, will use default
 	}
 	defer f.Close()
 
-	// Get file size
-	stat, err := f.Stat()
-	if err != nil {
-		return ""
-	}
-
 	// Create PDF reader
-	reader, err := pdf.NewReader(f, stat.Size())
+	reader, err := pdf.NewReader(f, f.Size())
 	if err != nil {
 		// Try with encrypted reader
-		reader, err = pdf.NewReaderEncrypted(f, stat.Size(), func() string { return "" })
+		reader, err = pdf.NewReaderEncrypted(f, f.Size(), func() string { return "" })
 		if err != nil {
 			return ""
 		}
@@ -617,21 +605,16 @@ func abs(x int) int {
 
 // parseVerticalFormatFromFile re-extracts PDF with vertical detection and parses
 func (p *PDFParser) parseVerticalFormatFromFile() ([]*ParsedRow, error) {
-	// Re-extract text elements from PDF
-	f, err := os.Open(p.filePath)
+	// Re-extract text elements from PDF (supports both URLs and local paths)
+	f, err := FetchFileReaderWithSize(context.Background(), p.filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PDF: %w", err)
 	}
 	defer f.Close()
 
-	stat, err := f.Stat()
+	reader, err := pdf.NewReader(f, f.Size())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file info: %w", err)
-	}
-
-	reader, err := pdf.NewReader(f, stat.Size())
-	if err != nil {
-		reader, err = pdf.NewReaderEncrypted(f, stat.Size(), func() string { return "" })
+		reader, err = pdf.NewReaderEncrypted(f, f.Size(), func() string { return "" })
 		if err != nil {
 			return nil, fmt.Errorf("failed to create PDF reader: %w", err)
 		}

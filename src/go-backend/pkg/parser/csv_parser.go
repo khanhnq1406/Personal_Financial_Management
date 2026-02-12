@@ -1,9 +1,9 @@
 package parser
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -60,8 +60,8 @@ func NewCSVParser(filePath string, mapping *ColumnMapping) *CSVParser {
 }
 
 func (p *CSVParser) Parse() ([]*ParsedRow, error) {
-	// Open the file
-	file, err := os.Open(p.filePath)
+	// Open the file (supports both URLs and local paths)
+	file, err := FetchFileReader(context.Background(), p.filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
