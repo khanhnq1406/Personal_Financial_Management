@@ -23,9 +23,11 @@ import (
 	"wealthjourney/handlers"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
+	"wealthjourney/pkg/fileupload"
 	"wealthjourney/pkg/jobs"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
+	"wealthjourney/pkg/storage"
 	"wealthjourney/pkg/types"
 	investmentv1 "wealthjourney/protobuf/v1"
 )
@@ -91,6 +93,28 @@ func main() {
 		underlyingRedisClient = redisClient.GetClient()
 		// Set Redis in handlers for auth middleware
 		handlers.SetRedis(redisClient)
+	}
+
+	// Initialize storage provider
+	var storageProvider storage.StorageProvider
+
+	if cfg.Storage.Provider == "supabase" {
+		log.Println("Initializing Supabase storage...")
+		storageProvider = storage.NewSupabaseStorage(
+			cfg.Storage.SupabaseURL,
+			cfg.Storage.SupabaseAPIKey,
+			cfg.Storage.SupabaseBucket,
+		)
+		log.Printf("Supabase storage initialized (bucket: %s)", cfg.Storage.SupabaseBucket)
+	} else {
+		log.Printf("Warning: Unknown storage provider '%s', file uploads will use legacy local storage", cfg.Storage.Provider)
+		// Keep storageProvider as nil to use legacy functions
+	}
+
+	// Initialize file upload service with storage provider
+	if storageProvider != nil {
+		fileupload.InitializeDefaultService(storageProvider)
+		log.Println("File upload service initialized with external storage")
 	}
 
 	// Initialize services
