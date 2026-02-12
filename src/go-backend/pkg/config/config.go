@@ -20,6 +20,7 @@ type Config struct {
 	YahooFinance YahooFinance
 	FX           FX
 	Import       Import
+	Storage      Storage
 }
 
 type Server struct {
@@ -97,6 +98,14 @@ type Import struct {
 	ValidationZeroAmountPolicy   string // How to handle zero amounts: "error", "warning", or "ignore"
 	ValidationLargeAmountThreshold int64  // Threshold for large amount warnings in VND (smallest unit)
 	ValidationOldDateThresholdDays int    // Number of days after which a date is considered old
+}
+
+type Storage struct {
+	Provider       string // "supabase" or "local" (for backward compatibility)
+	SupabaseURL    string
+	SupabaseAPIKey string
+	SupabaseBucket string
+	UploadDir      string // Local fallback directory
 }
 
 // Load loads configuration from environment variables
@@ -243,6 +252,13 @@ func Load() (*Config, error) {
 			ValidationZeroAmountPolicy:   validationZeroAmountPolicy,
 			ValidationLargeAmountThreshold: validationLargeAmountThreshold,
 			ValidationOldDateThresholdDays: validationOldDateThresholdDays,
+		},
+		Storage: Storage{
+			Provider:       getEnv("STORAGE_PROVIDER", "supabase"),
+			SupabaseURL:    getEnv("SUPABASE_URL", ""),
+			SupabaseAPIKey: getEnv("SUPABASE_API_KEY", ""),
+			SupabaseBucket: getEnv("SUPABASE_BUCKET", "wealthjourney-uploads"),
+			UploadDir:      getEnv("UPLOAD_DIR", "/tmp/wealthjourney-uploads"),
 		},
 	}
 
