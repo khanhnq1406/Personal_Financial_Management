@@ -1086,6 +1086,7 @@ func (s *importService) ConvertCurrency(ctx context.Context, userID int32, req *
 				Date:                tx.Date,
 				Amount:              &v1.Money{Amount: convertedAmount, Currency: walletCurrency},
 				Description:         tx.Description,
+				OriginalDescription: tx.OriginalDescription,
 				Type:                tx.Type,
 				SuggestedCategoryId: tx.SuggestedCategoryId,
 				CategoryConfidence:  tx.CategoryConfidence,

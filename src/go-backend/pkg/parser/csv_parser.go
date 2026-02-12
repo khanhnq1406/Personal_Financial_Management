@@ -33,15 +33,16 @@ type ColumnMapping struct {
 
 // ParsedRow represents a single parsed transaction row
 type ParsedRow struct {
-	RowNumber        int
-	Date             time.Time
-	Amount           int64  // Smallest currency unit (×10000 for 4 decimal precision)
-	Description      string
-	Type             string // "income" or "expense"
-	CategoryID       int32
-	ReferenceNum     string
-	ValidationErrors []ValidationError
-	IsValid          bool
+	RowNumber           int
+	Date                time.Time
+	Amount              int64  // Smallest currency unit (×10000 for 4 decimal precision)
+	Description         string // Cleaned description
+	OriginalDescription string // Original description from file before cleaning
+	Type                string // "income" or "expense"
+	CategoryID          int32
+	ReferenceNum        string
+	ValidationErrors    []ValidationError
+	IsValid             bool
 }
 
 // ValidationError represents a validation error for a specific field

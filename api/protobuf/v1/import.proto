@@ -191,6 +191,9 @@ message ParsedTransaction {
   double exchange_rate = 12 [json_name = "exchangeRate"];
   string exchange_rate_source = 13 [json_name = "exchangeRateSource"]; // "auto" or "manual"
   int64 exchange_rate_date = 14 [json_name = "exchangeRateDate"]; // Unix timestamp
+
+  // Original description from file before cleaning (field 4 is cleaned)
+  string original_description = 15 [json_name = "originalDescription"];
 }
 
 message ValidationError {

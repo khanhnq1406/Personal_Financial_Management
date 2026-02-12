@@ -450,14 +450,18 @@ func (p *ExcelParser) parseRow(sheetName string, rowNumber int, row []string, ma
 		description := strings.TrimSpace(row[mapping.DescriptionColumn])
 		if description == "" {
 			parsed.Description = "Imported Transaction"
+			parsed.OriginalDescription = ""
 			parsed.addError("description", "Description is empty, using default", "info")
 		} else {
+			// Store original description before cleaning
+			parsed.OriginalDescription = description
 			// Clean the description
 			cleaner := NewDescriptionCleaner()
 			parsed.Description = cleaner.Clean(description)
 		}
 	} else {
 		parsed.Description = "Imported Transaction"
+		parsed.OriginalDescription = ""
 		parsed.addError("description", "Description column not found", "info")
 	}
 

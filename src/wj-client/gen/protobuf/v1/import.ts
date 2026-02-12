@@ -282,6 +282,8 @@ export interface ParsedTransaction {
   exchangeRateSource: string;
   /** Unix timestamp */
   exchangeRateDate: number;
+  /** Original description from file before cleaning (field 4 is cleaned) */
+  originalDescription: string;
 }
 
 export interface ValidationError {
@@ -1366,6 +1368,7 @@ function createBaseParsedTransaction(): ParsedTransaction {
     exchangeRate: 0,
     exchangeRateSource: "",
     exchangeRateDate: 0,
+    originalDescription: "",
   };
 }
 
@@ -1412,6 +1415,9 @@ export const ParsedTransaction: MessageFns<ParsedTransaction> = {
     }
     if (message.exchangeRateDate !== 0) {
       writer.uint32(112).int64(message.exchangeRateDate);
+    }
+    if (message.originalDescription !== "") {
+      writer.uint32(122).string(message.originalDescription);
     }
     return writer;
   },
@@ -1535,6 +1541,14 @@ export const ParsedTransaction: MessageFns<ParsedTransaction> = {
           message.exchangeRateDate = longToNumber(reader.int64());
           continue;
         }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.originalDescription = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1600,6 +1614,11 @@ export const ParsedTransaction: MessageFns<ParsedTransaction> = {
         : isSet(object.exchange_rate_date)
         ? globalThis.Number(object.exchange_rate_date)
         : 0,
+      originalDescription: isSet(object.originalDescription)
+        ? globalThis.String(object.originalDescription)
+        : isSet(object.original_description)
+        ? globalThis.String(object.original_description)
+        : "",
     };
   },
 
@@ -1647,6 +1666,9 @@ export const ParsedTransaction: MessageFns<ParsedTransaction> = {
     if (message.exchangeRateDate !== 0) {
       obj.exchangeRateDate = Math.round(message.exchangeRateDate);
     }
+    if (message.originalDescription !== "") {
+      obj.originalDescription = message.originalDescription;
+    }
     return obj;
   },
 
@@ -1673,6 +1695,7 @@ export const ParsedTransaction: MessageFns<ParsedTransaction> = {
     message.exchangeRate = object.exchangeRate ?? 0;
     message.exchangeRateSource = object.exchangeRateSource ?? "";
     message.exchangeRateDate = object.exchangeRateDate ?? 0;
+    message.originalDescription = object.originalDescription ?? "";
     return message;
   },
 };

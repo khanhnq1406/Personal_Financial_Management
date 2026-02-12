@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/utils/currency-formatter";
 import { ParsedTransaction } from "@/gen/protobuf/v1/import";
@@ -12,6 +13,7 @@ export interface TransactionReviewTableProps {
   onToggleAll: () => void;
   duplicateMatches?: Map<number, { confidence: number; matchReason: string }>;
   currency?: string;
+  onDescriptionChange?: (rowNumber: number, newDescription: string) => void;
 }
 
 function CheckIcon({ className }: { className?: string }) {
@@ -45,11 +47,44 @@ export function TransactionReviewTable({
   onToggleAll,
   duplicateMatches,
   currency = "VND",
+  onDescriptionChange,
 }: TransactionReviewTableProps) {
+  const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
   const validTransactions = transactions.filter((t) => t.isValid);
   const allSelected = validTransactions.every((t) => selectedRows.has(t.rowNumber));
   const someSelected = validTransactions.some((t) => selectedRows.has(t.rowNumber));
   const selectedCount = selectedRows.size;
+
+  const handleStartEdit = (rowNumber: number, currentDescription: string) => {
+    setEditingRow(rowNumber);
+    setEditValue(currentDescription);
+  };
+
+  const handleSaveEdit = (rowNumber: number) => {
+    if (onDescriptionChange && editValue.trim()) {
+      onDescriptionChange(rowNumber, editValue.trim());
+    }
+    setEditingRow(null);
+    setEditValue("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRow(null);
+    setEditValue("");
+  };
+
+  const toggleExpanded = (rowNumber: number) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(rowNumber)) {
+      newExpanded.delete(rowNumber);
+    } else {
+      newExpanded.add(rowNumber);
+    }
+    setExpandedRows(newExpanded);
+  };
 
   const formatDate = (timestamp: number) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -170,8 +205,69 @@ export function TransactionReviewTable({
                     <td className="px-4 py-3 text-sm text-neutral-900 dark:text-dark-text">
                       {formatDate(transaction.date)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-neutral-900 dark:text-dark-text max-w-[300px] truncate">
-                      {transaction.description}
+                    <td className="px-4 py-3 text-sm text-neutral-900 dark:text-dark-text max-w-[300px]">
+                      {editingRow === transaction.rowNumber ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleSaveEdit(transaction.rowNumber);
+                              } else if (e.key === "Escape") {
+                                handleCancelEdit();
+                              }
+                            }}
+                            className="flex-1 px-2 py-1 border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSaveEdit(transaction.rowNumber)}
+                            className="p-1 text-green-600 hover:text-green-700 dark:text-green-400"
+                            title="Save"
+                          >
+                            <CheckIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 text-red-600 hover:text-red-700 dark:text-red-400"
+                            title="Cancel"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{transaction.description}</span>
+                            {onDescriptionChange && (
+                              <button
+                                onClick={() => handleStartEdit(transaction.rowNumber, transaction.description)}
+                                className="flex-shrink-0 text-primary-600 hover:text-primary-700 dark:text-primary-400 text-xs"
+                                title="Edit description"
+                              >
+                                ✎
+                              </button>
+                            )}
+                          </div>
+                          {transaction.originalDescription &&
+                            transaction.originalDescription !== transaction.description && (
+                              <button
+                                onClick={() => toggleExpanded(transaction.rowNumber)}
+                                className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 text-left"
+                              >
+                                {expandedRows.has(transaction.rowNumber) ? "▼" : "▶"} Original
+                              </button>
+                            )}
+                          {expandedRows.has(transaction.rowNumber) &&
+                            transaction.originalDescription && (
+                              <div className="text-xs text-neutral-600 dark:text-neutral-400 italic bg-neutral-50 dark:bg-dark-surface-hover p-2 rounded">
+                                {transaction.originalDescription}
+                              </div>
+                            )}
+                        </div>
+                      )}
                     </td>
                     <td
                       className={cn(
@@ -264,9 +360,84 @@ export function TransactionReviewTable({
                       <div className="text-sm text-neutral-600 dark:text-neutral-400">
                         Row {transaction.rowNumber}
                       </div>
-                      <div className="text-sm text-neutral-900 dark:text-dark-text mt-1">
-                        {transaction.description}
-                      </div>
+                      {editingRow === transaction.rowNumber ? (
+                        <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleSaveEdit(transaction.rowNumber);
+                              } else if (e.key === "Escape") {
+                                handleCancelEdit();
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full px-3 py-2 border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveEdit(transaction.rowNumber);
+                              }}
+                              className="flex-1 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelEdit();
+                              }}
+                              className="flex-1 px-3 py-1 bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-dark-text rounded hover:bg-neutral-400 dark:hover:bg-neutral-600"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-1 space-y-2">
+                          <div className="flex items-start gap-2">
+                            <div className="text-sm text-neutral-900 dark:text-dark-text flex-1">
+                              {transaction.description}
+                            </div>
+                            {onDescriptionChange && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartEdit(transaction.rowNumber, transaction.description);
+                                }}
+                                className="flex-shrink-0 p-1 text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                                title="Edit description"
+                              >
+                                ✎
+                              </button>
+                            )}
+                          </div>
+                          {transaction.originalDescription &&
+                            transaction.originalDescription !== transaction.description && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleExpanded(transaction.rowNumber);
+                                  }}
+                                  className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                                >
+                                  {expandedRows.has(transaction.rowNumber) ? "▼" : "▶"} Show original description
+                                </button>
+                                {expandedRows.has(transaction.rowNumber) && (
+                                  <div className="text-xs text-neutral-600 dark:text-neutral-400 italic bg-neutral-50 dark:bg-dark-surface-hover p-2 rounded">
+                                    {transaction.originalDescription}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                        </div>
+                      )}
                     </div>
                   </button>
                   {getStatusBadge(transaction)}

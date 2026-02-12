@@ -56,6 +56,8 @@ export interface ReviewStepReviewProps {
     toCurrency: string,
     newRate: number,
   ) => void;
+  // Description editing
+  onDescriptionChange?: (rowNumber: number, newDescription: string) => void;
 }
 
 export type ReviewStepProps = ReviewStepParseProps | ReviewStepReviewProps;
@@ -86,6 +88,7 @@ export function ReviewStep(props: ReviewStepProps) {
       : undefined;
   const conversions = "conversions" in props ? props.conversions : undefined;
   const onChangeRate = "onChangeRate" in props ? props.onChangeRate : undefined;
+  const onDescriptionChange = "onDescriptionChange" in props ? props.onDescriptionChange : undefined;
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
@@ -104,9 +107,48 @@ export function ReviewStep(props: ReviewStepProps) {
   const [selectedConversion, setSelectedConversion] =
     useState<CurrencyConversion | null>(null);
 
-  // Initialize transactions state
+  // Initialize transactions state and sync with parent updates
+  // Merge changes instead of replacing to preserve local category edits
   useEffect(() => {
-    setTransactionsState(transactions);
+    if (transactionsState.length === 0) {
+      // Initial load - just set the transactions
+      setTransactionsState(transactions);
+    } else {
+      // Merge updates from parent with local state
+      setTransactionsState((prev) => {
+        // Create a map of current local state by row number
+        const localStateMap = new Map(
+          prev.map((tx) => [tx.rowNumber, tx])
+        );
+
+        // Merge parent updates with local changes
+        const merged = transactions.map((parentTx) => {
+          const localTx = localStateMap.get(parentTx.rowNumber);
+          if (localTx) {
+            // Take parent updates but preserve local category changes
+            // Only override category if it was changed locally (different from parent)
+            const hasLocalCategoryChange =
+              localTx.suggestedCategoryId !== parentTx.suggestedCategoryId ||
+              localTx.categoryConfidence !== parentTx.categoryConfidence;
+
+            if (hasLocalCategoryChange) {
+              // User made local category changes - preserve them
+              return {
+                ...parentTx,
+                suggestedCategoryId: localTx.suggestedCategoryId,
+                categoryConfidence: localTx.categoryConfidence,
+              };
+            } else {
+              // No local changes - just use parent data
+              return parentTx;
+            }
+          }
+          return parentTx;
+        });
+
+        return merged;
+      });
+    }
   }, [transactions]);
 
   // Auto-select valid non-duplicate transactions by default
@@ -157,20 +199,19 @@ export function ReviewStep(props: ReviewStepProps) {
       duplicateStrategy ===
         DuplicateHandlingStrategy.DUPLICATE_STRATEGY_SKIP_ALL;
 
+    // Note: Do NOT filter by excludedRows here - let each section handle excluded state
+    // Otherwise, unchecking items causes them to disappear from their section
     const hasErrors = filteredTransactions.filter(
-      (tx) => !tx.isValid && !excludedRows.has(tx.rowNumber),
+      (tx) => !tx.isValid,
     );
 
     const hasDuplicates = filteredTransactions.filter(
-      (tx) =>
-        duplicateRowNumbers.has(tx.rowNumber) &&
-        !excludedRows.has(tx.rowNumber),
+      (tx) => duplicateRowNumbers.has(tx.rowNumber),
     );
 
     const needsCategoryReview = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
-        !excludedRows.has(tx.rowNumber) &&
         (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
         (tx.suggestedCategoryId === undefined ||
           isNaN(tx.suggestedCategoryId) ||
@@ -181,7 +222,6 @@ export function ReviewStep(props: ReviewStepProps) {
     const readyToImport = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
-        !excludedRows.has(tx.rowNumber) &&
         (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
         tx.suggestedCategoryId !== undefined &&
         !isNaN(tx.suggestedCategoryId) &&
@@ -277,26 +317,30 @@ export function ReviewStep(props: ReviewStepProps) {
   };
 
   const handleToggleExclude = (rowNumber: number) => {
-    const newExcluded = new Set(excludedRows);
-    if (newExcluded.has(rowNumber)) {
-      newExcluded.delete(rowNumber);
-    } else {
-      newExcluded.add(rowNumber);
-    }
-    setExcludedRows(newExcluded);
+    setExcludedRows((prev) => {
+      const newExcluded = new Set(prev);
+      if (newExcluded.has(rowNumber)) {
+        newExcluded.delete(rowNumber);
+      } else {
+        newExcluded.add(rowNumber);
+      }
+      return newExcluded;
+    });
   };
 
   const handleCategoryChange = (rowNumber: number, categoryId: number) => {
     setTransactionsState((prev) =>
-      prev.map((tx) =>
-        tx.rowNumber === rowNumber
-          ? {
-              ...tx,
-              suggestedCategoryId: categoryId,
-              categoryConfidence: 100, // Manual selection = 100% confidence
-            }
-          : tx,
-      ),
+      prev.map((tx) => {
+        if (tx.rowNumber === rowNumber) {
+          // Update category and set confidence to 100
+          return {
+            ...tx,
+            suggestedCategoryId: categoryId,
+            categoryConfidence: 100, // Manual selection = 100% confidence
+          };
+        }
+        return tx;
+      }),
     );
   };
 
@@ -491,6 +535,7 @@ export function ReviewStep(props: ReviewStepProps) {
               categories={categories}
               currency={currency}
               onCategoryChange={handleCategoryChange}
+              onDescriptionChange={onDescriptionChange}
             />
           )}
         </div>
@@ -575,6 +620,7 @@ export function ReviewStep(props: ReviewStepProps) {
         onToggleAll={handleToggleAll}
         duplicateMatches={duplicateMap}
         currency={currency}
+        onDescriptionChange={onDescriptionChange}
       />
 
       {/* Action Buttons */}

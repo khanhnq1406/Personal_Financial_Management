@@ -15,6 +15,7 @@ export interface ReadyToImportSectionProps {
   categories?: Array<{ id: number; name: string }>;
   currency?: string;
   onCategoryChange?: (rowNumber: number, categoryId: number) => void;
+  onDescriptionChange?: (rowNumber: number, newDescription: string) => void;
 }
 
 export const ReadyToImportSection = React.memo(function ReadyToImportSection({
@@ -24,8 +25,40 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
   categories = [],
   currency = "VND",
   onCategoryChange,
+  onDescriptionChange,
 }: ReadyToImportSectionProps) {
   const [expanded, setExpanded] = useState(false);
+  const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [expandedOriginal, setExpandedOriginal] = useState<Set<number>>(new Set());
+
+  const handleStartEdit = (rowNumber: number, currentDescription: string) => {
+    setEditingRow(rowNumber);
+    setEditValue(currentDescription);
+  };
+
+  const handleSaveEdit = (rowNumber: number) => {
+    if (onDescriptionChange && editValue.trim()) {
+      onDescriptionChange(rowNumber, editValue.trim());
+    }
+    setEditingRow(null);
+    setEditValue("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRow(null);
+    setEditValue("");
+  };
+
+  const toggleOriginal = (rowNumber: number) => {
+    const newExpanded = new Set(expandedOriginal);
+    if (newExpanded.has(rowNumber)) {
+      newExpanded.delete(rowNumber);
+    } else {
+      newExpanded.add(rowNumber);
+    }
+    setExpandedOriginal(newExpanded);
+  };
 
   // Memoize category options
   const categoryOptions = useMemo<SelectOption<string>[]>(() => {
@@ -105,10 +138,11 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
         <div className="p-4 space-y-3 bg-white dark:bg-dark-surface">
           {/* Select All */}
           <div className="flex items-center justify-between pb-2 border-b border-success-200 dark:border-success-800">
-            <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
-              <button
-                type="button"
-                onClick={handleSelectAll}
+            <div
+              className="flex items-center gap-2 cursor-pointer min-h-[44px]"
+              onClick={handleSelectAll}
+            >
+              <div
                 className={cn(
                   "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors",
                   allSelected
@@ -117,6 +151,8 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                       ? "bg-primary-600 border-primary-600 dark:bg-primary-700 dark:border-primary-700"
                       : "border-neutral-400 dark:border-neutral-500 hover:border-primary-500",
                 )}
+                role="checkbox"
+                aria-checked={allSelected ? "true" : someSelected ? "mixed" : "false"}
                 aria-label="Toggle all rows"
               >
                 {allSelected ? (
@@ -124,11 +160,11 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                 ) : someSelected ? (
                   <MinusIcon size="sm" className="text-white" decorative />
                 ) : null}
-              </button>
+              </div>
               <span className="text-sm font-medium text-neutral-900 dark:text-dark-text">
                 Select All ({selectedCount} of {transactions.length})
               </span>
-            </label>
+            </div>
           </div>
 
           {/* Transaction List */}
@@ -137,10 +173,10 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
               const isChecked = !excludedRows.has(tx.rowNumber);
 
               return (
-                <label
+                <div
                   key={tx.rowNumber}
                   className={cn(
-                    "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors",
+                    "flex items-start gap-3 p-3 rounded-lg transition-colors",
                     isChecked
                       ? "bg-white dark:bg-dark-surface border border-neutral-200 dark:border-dark-border"
                       : "bg-neutral-100 dark:bg-dark-surface-hover opacity-60",
@@ -150,7 +186,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                     type="button"
                     onClick={() => onToggleExclude(tx.rowNumber)}
                     className={cn(
-                      "mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0",
+                      "mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer",
                       isChecked
                         ? "bg-primary-600 border-primary-600 dark:bg-primary-700 dark:border-primary-700"
                         : "border-neutral-400 dark:border-neutral-500",
@@ -163,10 +199,87 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                   </button>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex justify-between items-start">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-dark-text truncate">
-                        {tx.description}
-                      </p>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-dark-text ml-2">
+                      <div className="flex-1 min-w-0 mr-2">
+                        {editingRow === tx.rowNumber ? (
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSaveEdit(tx.rowNumber);
+                                } else if (e.key === "Escape") {
+                                  handleCancelEdit();
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full px-2 py-1 text-sm border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-surface dark:border-dark-border dark:text-dark-text"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveEdit(tx.rowNumber);
+                                }}
+                                className="flex-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelEdit();
+                                }}
+                                className="flex-1 px-2 py-1 text-xs bg-neutral-300 dark:bg-neutral-700 text-neutral-900 dark:text-dark-text rounded hover:bg-neutral-400 dark:hover:bg-neutral-600"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-medium text-neutral-900 dark:text-dark-text truncate">
+                                {tx.description}
+                              </p>
+                              {onDescriptionChange && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEdit(tx.rowNumber, tx.description);
+                                  }}
+                                  className="flex-shrink-0 text-primary-600 hover:text-primary-700 dark:text-primary-400 text-xs"
+                                  title="Edit description"
+                                >
+                                  ✎
+                                </button>
+                              )}
+                            </div>
+                            {tx.originalDescription &&
+                              tx.originalDescription !== tx.description && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleOriginal(tx.rowNumber);
+                                    }}
+                                    className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                                  >
+                                    {expandedOriginal.has(tx.rowNumber) ? "▼" : "▶"} Original
+                                  </button>
+                                  {expandedOriginal.has(tx.rowNumber) && (
+                                    <div className="text-xs text-neutral-600 dark:text-neutral-400 italic bg-neutral-50 dark:bg-dark-surface-hover p-2 rounded mt-1">
+                                      {tx.originalDescription}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-dark-text ml-2 flex-shrink-0">
                         {formatCurrency(
                           tx.amount?.amount || 0,
                           tx.amount?.currency || currency,
@@ -208,7 +321,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                       </div>
                     )}
                   </div>
-                </label>
+                </div>
               );
             })}
           </div>

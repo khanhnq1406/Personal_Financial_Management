@@ -223,14 +223,18 @@ func (p *PDFParser) parseRow(rowNumber int, cells []string, mapping *ColumnMappi
 		description := strings.TrimSpace(cells[mapping.DescriptionColumn])
 		if description == "" {
 			parsed.Description = "Imported Transaction"
+			parsed.OriginalDescription = ""
 			parsed.addError("description", "Description is empty, using default", "info")
 		} else {
+			// Store original description before cleaning
+			parsed.OriginalDescription = description
 			// Clean the description
 			cleaner := NewDescriptionCleaner()
 			parsed.Description = cleaner.Clean(description)
 		}
 	} else {
 		parsed.Description = "Imported Transaction"
+		parsed.OriginalDescription = ""
 		parsed.addError("description", "Description column not found", "info")
 	}
 
@@ -623,13 +627,14 @@ func (p *PDFParser) parseVerticalFormat(tableRows []TableRow) ([]*ParsedRow, err
 		// Only create a transaction if we have at least date and amount
 		if hasDate && hasAmount {
 			parsed := &ParsedRow{
-				RowNumber:        i + 1,
-				Date:             date,
-				Amount:           amount,
-				Description:      description,
-				Type:             "", // Will be detected
-				IsValid:          true,
-				ValidationErrors: []ValidationError{},
+				RowNumber:           i + 1,
+				Date:                date,
+				Amount:              amount,
+				Description:         description,
+				OriginalDescription: description, // Store original before any cleaning
+				Type:                "", // Will be detected
+				IsValid:             true,
+				ValidationErrors:    []ValidationError{},
 			}
 
 			// Set default description if empty

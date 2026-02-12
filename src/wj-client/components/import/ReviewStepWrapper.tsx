@@ -45,6 +45,7 @@ export function ReviewStepWrapper({
   const [duplicateActions, setDuplicateActions] = useState<DuplicateAction[]>([]);
   const [currencyInfo, setCurrencyInfo] = useState<CurrencyInfo | null>(null);
   const [conversions, setConversions] = useState<CurrencyConversion[]>([]);
+  const [descriptionEdits, setDescriptionEdits] = useState<Map<number, string>>(new Map());
 
   // Fetch user's categories
   const categoriesQuery = useQueryListCategories(
@@ -267,6 +268,19 @@ export function ReviewStepWrapper({
     });
   };
 
+  const handleDescriptionChange = (rowNumber: number, newDescription: string) => {
+    const newEdits = new Map(descriptionEdits);
+    newEdits.set(rowNumber, newDescription);
+    setDescriptionEdits(newEdits);
+
+    // Update the transaction in the transactions array
+    setTransactions((prev) =>
+      prev.map((tx) =>
+        tx.rowNumber === rowNumber ? { ...tx, description: newDescription } : tx
+      )
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 py-8">
@@ -314,6 +328,7 @@ export function ReviewStepWrapper({
         onDuplicateStrategyChange={setDuplicateStrategy}
         conversions={conversions}
         onChangeRate={handleChangeRate}
+        onDescriptionChange={handleDescriptionChange}
       />
 
       {/* Duplicate Review Modal */}
