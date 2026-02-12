@@ -24,6 +24,7 @@ func Success(c *gin.Context, data interface{}) {
 		opts := protojson.MarshalOptions{
 			UseProtoNames:   false, // Use json_name from proto definition
 			EmitUnpopulated: false, // Don't emit zero values
+			UseEnumNumbers:  true,  // Serialize enums as numbers instead of strings
 		}
 		jsonBytes, err = opts.Marshal(pm)
 	} else {
@@ -55,6 +56,7 @@ func Created(c *gin.Context, data interface{}) {
 		opts := protojson.MarshalOptions{
 			UseProtoNames:   false, // Use json_name from proto definition
 			EmitUnpopulated: false, // Don't emit zero values
+			UseEnumNumbers:  true,  // Serialize enums as numbers instead of strings
 		}
 		jsonBytes, err = opts.Marshal(pm)
 	} else {
