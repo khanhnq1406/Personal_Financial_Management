@@ -1,6 +1,7 @@
 package fileupload
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"wealthjourney/pkg/storage"
 )
 
 const (
@@ -16,6 +18,15 @@ const (
 	MaxPDFSize   = 20 * 1024 * 1024 // 20MB
 	UploadDir    = "/tmp/wealthjourney-uploads"
 )
+
+// Global service instance (for backward compatibility)
+var defaultService *FileUploadService
+
+// InitializeDefaultService sets up the default file upload service.
+// This should be called during application startup.
+func InitializeDefaultService(storageProvider storage.StorageProvider) {
+	defaultService = NewFileUploadService(storageProvider)
+}
 
 type FileType string
 
@@ -34,6 +45,12 @@ type UploadResult struct {
 }
 
 func UploadFile(file multipart.File, header *multipart.FileHeader) (*UploadResult, error) {
+	// Use new service if initialized
+	if defaultService != nil {
+		return defaultService.Upload(context.Background(), file, header)
+	}
+
+	// Fallback to old implementation (for backward compatibility during migration)
 	// Validate file type
 	fileType, err := ValidateFileType(header.Filename)
 	if err != nil {
@@ -78,6 +95,12 @@ func UploadFile(file multipart.File, header *multipart.FileHeader) (*UploadResul
 }
 
 func UploadFileFromBytes(fileData []byte, fileName string, fileSize int64) (*UploadResult, error) {
+	// Use new service if initialized
+	if defaultService != nil {
+		return defaultService.UploadFromBytes(context.Background(), fileData, fileName, fileSize)
+	}
+
+	// Fallback to old implementation (for backward compatibility during migration)
 	// Validate file type
 	fileType, err := ValidateFileType(fileName)
 	if err != nil {
@@ -119,6 +142,16 @@ func UploadFileFromBytes(fileData []byte, fileName string, fileSize int64) (*Upl
 }
 
 func CleanupFile(fileID string) error {
+	// Use new service if initialized
+	if defaultService != nil {
+		// Try common extensions
+		for _, ext := range []string{".csv", ".xlsx", ".xls", ".pdf"} {
+			_ = defaultService.Cleanup(context.Background(), fileID, ext)
+		}
+		return nil
+	}
+
+	// Fallback to old implementation (for backward compatibility during migration)
 	// Find and delete file with any extension
 	matches, err := filepath.Glob(filepath.Join(UploadDir, fileID+".*"))
 	if err != nil {
