@@ -1,0 +1,69 @@
+{
+  "id": "vietinbank-credit-card",
+  "name": "Vietinbank Credit Card Statement",
+  "bankCode": "CTG",
+  "statementType": "credit",
+  "fileFormats": ["csv", "excel", "pdf"],
+  "columnMapping": {
+    "dateColumn": ["Ngày GD", "Ngày giao dịch", "Transaction Date"],
+    "amountColumn": ["Số tiền", "Amount (VND)", "Số tiền (VND)"],
+    "descriptionColumn": ["Nội dung giao dịch", "Description", "Địa điểm giao dịch"],
+    "referenceColumn": ["Số tham chiếu", "Approval Code", "Auth Code"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "minus",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "VIETINBANK",
+      "NGÂN HÀNG CÔNG THƯƠNG",
+      "Ngày GD",
+      "Số tiền",
+      "THẺ TÍN DỤNG"
+    ],
+    "footerKeywords": [
+      "Tổng tiền giao dịch",
+      "Số tiền phải thanh toán",
+      "Ngày đến hạn",
+      "Due Date",
+      "Kết thúc sao kê"
+    ],
+    "skipPatterns": [
+      "^Tổng cộng",
+      "^Total Amount",
+      "^Số dư",
+      "^Balance",
+      "^Phí thường niên",
+      "^Annual Fee Summary"
+    ]
+  },
+  "typeRules": {
+    "defaultType": "expense",
+    "incomeKeywords": [
+      "REFUND",
+      "HOÀN",
+      "ĐIỀU CHỈNH CỘNG"
+    ],
+    "expenseKeywords": [
+      "MUA HÀNG",
+      "THANH TOÁN",
+      "RÚT TIỀN MẶT",
+      "CASH ADVANCE",
+      "PHÍ DỊCH VỤ",
+      "SERVICE FEE"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for Vietinbank (CTG) credit card statements. Traditional state bank format with Vietnamese column names.",
+  "exampleColumns": {
+    "csv": "Ngày GD,Số tiền,Nội dung giao dịch,Số tham chiếu",
+    "excel": "Standard Excel format with currency formatting",
+    "pdf": "Traditional banking layout with detailed descriptions"
+  }
+}

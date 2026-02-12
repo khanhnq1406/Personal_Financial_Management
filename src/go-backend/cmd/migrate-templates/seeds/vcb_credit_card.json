@@ -1,0 +1,75 @@
+{
+  "id": "vcb-credit-card",
+  "name": "Vietcombank Credit Card Statement",
+  "bankCode": "VCB",
+  "statementType": "credit",
+  "fileFormats": ["csv", "excel", "pdf"],
+  "columnMapping": {
+    "dateColumn": ["Ngày giao dịch", "Transaction Date", "Ngay giao dich", "Date"],
+    "amountColumn": ["Số tiền", "Amount", "So tien", "Số tiền giao dịch"],
+    "descriptionColumn": ["Nội dung", "Description", "Noi dung", "Merchant", "Mô tả"],
+    "referenceColumn": ["Mã giao dịch", "Transaction ID", "Ma giao dich", "Ref No", "STK"]
+  },
+  "dateFormat": "DD/MM/YYYY",
+  "amountFormat": {
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "negativeFormat": "minus",
+    "currencySymbol": "VND"
+  },
+  "currency": "VND",
+  "detectionRules": {
+    "headerKeywords": [
+      "Ngày giao dịch",
+      "Số tiền",
+      "VIETCOMBANK",
+      "THẺ TÍN DỤNG",
+      "CREDIT CARD"
+    ],
+    "footerKeywords": [
+      "Tổng cộng",
+      "Total",
+      "Số dư cuối kỳ",
+      "Closing Balance",
+      "*** End of Statement ***",
+      "Hết báo cáo"
+    ],
+    "skipPatterns": [
+      "^TỔNG",
+      "^TOTAL",
+      "^Balance",
+      "^SỐ DƯ",
+      "Opening Balance",
+      "Closing Balance",
+      "Phí thường niên",
+      "Annual Fee"
+    ]
+  },
+  "typeRules": {
+    "defaultType": "expense",
+    "incomeKeywords": [
+      "REFUND",
+      "HOÀN TIỀN",
+      "CREDIT ADJUSTMENT",
+      "ĐIỀU CHỈNH CỘNG"
+    ],
+    "expenseKeywords": [
+      "PURCHASE",
+      "MUA HÀNG",
+      "THANH TOÁN",
+      "PAYMENT",
+      "WITHDRAWAL",
+      "RÚT TIỀN",
+      "CASH ADVANCE",
+      "PHÍ"
+    ]
+  },
+  "region": "VN",
+  "isActive": true,
+  "description": "Template for Vietcombank credit card statements. Supports CSV, Excel, and PDF formats. Default transaction type is expense (credit card spending).",
+  "exampleColumns": {
+    "csv": "Ngày giao dịch,Số tiền,Nội dung,Mã giao dịch",
+    "excel": "Same as CSV but with formatted cells",
+    "pdf": "Tabular format with transaction date, amount, and description"
+  }
+}

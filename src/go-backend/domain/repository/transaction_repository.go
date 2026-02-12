@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"wealthjourney/domain/models"
 	"wealthjourney/pkg/database"
@@ -81,6 +82,27 @@ func (r *transactionRepository) Update(ctx context.Context, tx *models.Transacti
 // Delete soft deletes a transaction by ID.
 func (r *transactionRepository) Delete(ctx context.Context, id int32) error {
 	return r.executeDelete(ctx, &models.Transaction{}, id, "transaction")
+}
+
+// DeleteWithTx deletes a transaction within a database transaction.
+func (r *transactionRepository) DeleteWithTx(ctx context.Context, dbTx interface{}, id int32) error {
+	tx, ok := dbTx.(*gorm.DB)
+	if !ok {
+		return apperrors.NewInternalErrorWithCause("invalid transaction type", nil)
+	}
+
+	result := tx.WithContext(ctx).
+		Model(&models.Transaction{}).
+		Where("id = ?", id).
+		Update("deleted_at", time.Now())
+
+	if result.Error != nil {
+		return apperrors.NewInternalErrorWithCause("failed to delete transaction", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return apperrors.NewNotFoundError("transaction")
+	}
+	return nil
 }
 
 // List retrieves transactions with filtering and pagination.
@@ -383,4 +405,113 @@ func (r *transactionRepository) GetCategoryBreakdown(ctx context.Context, userID
 	}
 
 	return results, nil
+}
+
+// BulkCreate creates multiple transactions atomically with wallet balance updates
+func (r *transactionRepository) BulkCreate(ctx context.Context, transactions []*models.Transaction) ([]int32, error) {
+	// Start database transaction
+	tx := r.db.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Group transactions by wallet for balance updates
+	walletDeltas := make(map[int32]int64)
+	for _, t := range transactions {
+		walletDeltas[t.WalletID] += t.Amount
+	}
+
+	// Lock wallets and validate balances
+	for walletID, delta := range walletDeltas {
+		var wallet models.Wallet
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", walletID).
+			First(&wallet).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to lock wallet", err)
+		}
+
+		newBalance := wallet.Balance + delta
+		if newBalance < 0 {
+			tx.Rollback()
+			return nil, apperrors.NewValidationError("Insufficient balance in wallet")
+		}
+	}
+
+	// Insert transactions in batches
+	const batchSize = 100
+	var createdIDs []int32
+
+	for i := 0; i < len(transactions); i += batchSize {
+		end := i + batchSize
+		if end > len(transactions) {
+			end = len(transactions)
+		}
+
+		batch := transactions[i:end]
+		if err := tx.CreateInBatches(batch, batchSize).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to create transaction batch", err)
+		}
+
+		for _, t := range batch {
+			createdIDs = append(createdIDs, t.ID)
+		}
+	}
+
+	// Update wallet balances
+	for walletID, delta := range walletDeltas {
+		if err := tx.Model(&models.Wallet{}).
+			Where("id = ?", walletID).
+			Update("balance", gorm.Expr("balance + ?", delta)).Error; err != nil {
+			tx.Rollback()
+			return nil, apperrors.NewInternalErrorWithCause("failed to update wallet balance", err)
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to commit transaction", err)
+	}
+
+	return createdIDs, nil
+}
+
+// FindByWalletAndDateRange retrieves transactions for a wallet within a date range.
+// Uses composite index (wallet_id, date, amount) for optimal performance.
+func (r *transactionRepository) FindByWalletAndDateRange(ctx context.Context, walletID int32, startDate, endDate time.Time) ([]*models.Transaction, error) {
+	var transactions []*models.Transaction
+
+	result := r.db.DB.WithContext(ctx).
+		Where("wallet_id = ? AND date >= ? AND date <= ? AND deleted_at IS NULL",
+			walletID, startDate, endDate).
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, apperrors.NewInternalErrorWithCause("failed to find transactions by date range", result.Error)
+	}
+
+	return transactions, nil
+}
+
+// FindByExternalID retrieves a transaction by its external reference ID.
+// Uses composite index (wallet_id, external_id) for optimal performance.
+func (r *transactionRepository) FindByExternalID(ctx context.Context, walletID int32, externalID string) (*models.Transaction, error) {
+	var transaction models.Transaction
+
+	result := r.db.DB.WithContext(ctx).
+		Where("wallet_id = ? AND external_id = ? AND deleted_at IS NULL",
+			walletID, externalID).
+		First(&transaction)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // Not found is not an error for duplicate detection
+		}
+		return nil, apperrors.NewInternalErrorWithCause("failed to find transaction by external ID", result.Error)
+	}
+
+	return &transaction, nil
 }

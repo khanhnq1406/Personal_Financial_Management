@@ -1,0 +1,520 @@
+syntax = "proto3";
+
+package wealthjourney.import.v1;
+
+import "google/api/annotations.proto";
+import "protobuf/v1/common.proto";
+import "protobuf/v1/transaction.proto";
+
+option go_package = "protobuf/v1";
+
+service ImportService {
+  // Upload file and initiate parsing
+  rpc UploadStatementFile(UploadStatementFileRequest) returns (UploadStatementFileResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/upload"
+      body: "*"
+    };
+  }
+
+  // Parse uploaded file with bank template
+  rpc ParseStatement(ParseStatementRequest) returns (ParseStatementResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/parse"
+      body: "*"
+    };
+  }
+
+  // Convert currencies for imported transactions
+  rpc ConvertCurrency(ConvertCurrencyRequest) returns (ConvertCurrencyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/convert-currency"
+      body: "*"
+    };
+  }
+
+  // Detect duplicates for imported transactions
+  rpc DetectDuplicates(DetectDuplicatesRequest) returns (DetectDuplicatesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/detect-duplicates"
+      body: "*"
+    };
+  }
+
+  // Execute import of reviewed transactions
+  rpc ExecuteImport(ExecuteImportRequest) returns (ExecuteImportResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/execute"
+      body: "*"
+    };
+  }
+
+  // List available bank templates
+  rpc ListBankTemplates(ListBankTemplatesRequest) returns (ListBankTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/templates"
+    };
+  }
+
+  // Get import history
+  rpc GetImportHistory(GetImportHistoryRequest) returns (GetImportHistoryResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/history"
+    };
+  }
+
+  // Undo import (within 24 hours)
+  rpc UndoImport(UndoImportRequest) returns (UndoImportResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/{import_id}/undo"
+    };
+  }
+
+  // List Excel sheets for multi-sheet files
+  rpc ListExcelSheets(ListExcelSheetsRequest) returns (ListExcelSheetsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/excel-sheets/{file_id}"
+    };
+  }
+
+  // User Template Management
+  rpc CreateUserTemplate(CreateUserTemplateRequest) returns (CreateUserTemplateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/user-templates"
+      body: "*"
+    };
+  }
+
+  rpc ListUserTemplates(ListUserTemplatesRequest) returns (ListUserTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/user-templates"
+    };
+  }
+
+  rpc GetUserTemplate(GetUserTemplateRequest) returns (GetUserTemplateResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/user-templates/{template_id}"
+    };
+  }
+
+  rpc UpdateUserTemplate(UpdateUserTemplateRequest) returns (UpdateUserTemplateResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/import/user-templates/{template_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteUserTemplate(DeleteUserTemplateRequest) returns (DeleteUserTemplateResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/import/user-templates/{template_id}"
+    };
+  }
+
+  // Background Job Management
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/jobs/{job_id}"
+    };
+  }
+
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/import/jobs/{job_id}/cancel"
+    };
+  }
+
+  rpc ListUserJobs(ListUserJobsRequest) returns (ListUserJobsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/import/jobs"
+    };
+  }
+}
+
+// Messages
+
+message UploadStatementFileRequest {
+  bytes file_data = 1 [json_name = "fileData"];
+  string file_name = 2 [json_name = "fileName"];
+  string file_type = 3 [json_name = "fileType"]; // csv, excel, pdf
+  int64 file_size = 4 [json_name = "fileSize"];
+}
+
+message UploadStatementFileResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string file_id = 3 [json_name = "fileId"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ParseStatementRequest {
+  string file_id = 1 [json_name = "fileId"];
+  string bank_template_id = 2 [json_name = "bankTemplateId"]; // Optional: e.g., "vcb-credit-card"
+  ColumnMapping custom_mapping = 3 [json_name = "customMapping"]; // For custom format
+  string sheet_name = 4 [json_name = "sheetName"]; // Optional: specific Excel sheet to parse
+  bool use_ocr = 5 [json_name = "useOcr"]; // Optional: enable OCR for scanned PDFs (not implemented yet)
+}
+
+message ColumnMapping {
+  string date_column = 1 [json_name = "dateColumn"];
+  string amount_column = 2 [json_name = "amountColumn"];
+  string description_column = 3 [json_name = "descriptionColumn"];
+  string type_column = 4 [json_name = "typeColumn"]; // Optional
+  string category_column = 5 [json_name = "categoryColumn"]; // Optional
+  string reference_column = 6 [json_name = "referenceColumn"]; // Optional
+  string date_format = 7 [json_name = "dateFormat"]; // e.g., "DD/MM/YYYY"
+  string currency = 8 [json_name = "currency"];
+}
+
+message ParseStatementResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ParsedTransaction transactions = 3 [json_name = "transactions"];
+  ParseStatistics statistics = 4 [json_name = "statistics"];
+  CurrencyInfo currency_info = 5 [json_name = "currencyInfo"];
+  string timestamp = 6 [json_name = "timestamp"];
+}
+
+message ParsedTransaction {
+  int32 row_number = 1 [json_name = "rowNumber"];
+  int64 date = 2 [json_name = "date"]; // Unix timestamp
+  wealthjourney.common.v1.Money amount = 3 [json_name = "amount"];
+  string description = 4 [json_name = "description"];
+  wealthjourney.transaction.v1.TransactionType type = 5 [json_name = "type"];
+  int32 suggested_category_id = 6 [json_name = "suggestedCategoryId"];
+  int32 category_confidence = 7 [json_name = "categoryConfidence"]; // 0-100
+  string reference_number = 8 [json_name = "referenceNumber"];
+  repeated ValidationError validation_errors = 9 [json_name = "validationErrors"];
+  bool is_valid = 10 [json_name = "isValid"];
+
+  // Currency conversion metadata (populated after ConvertCurrency call)
+  wealthjourney.common.v1.Money original_amount = 11 [json_name = "originalAmount"];
+  double exchange_rate = 12 [json_name = "exchangeRate"];
+  string exchange_rate_source = 13 [json_name = "exchangeRateSource"]; // "auto" or "manual"
+  int64 exchange_rate_date = 14 [json_name = "exchangeRateDate"]; // Unix timestamp
+
+  // Original description from file before cleaning (field 4 is cleaned)
+  string original_description = 15 [json_name = "originalDescription"];
+}
+
+message ValidationError {
+  string field = 1 [json_name = "field"];
+  string message = 2 [json_name = "message"];
+  string severity = 3 [json_name = "severity"]; // error, warning, info
+}
+
+message ParseStatistics {
+  int32 total_rows = 1 [json_name = "totalRows"];
+  int32 valid_rows = 2 [json_name = "validRows"];
+  int32 error_rows = 3 [json_name = "errorRows"];
+  int32 warning_rows = 4 [json_name = "warningRows"];
+}
+
+message DetectDuplicatesRequest {
+  repeated ParsedTransaction transactions = 1 [json_name = "transactions"];
+  int32 wallet_id = 2 [json_name = "walletId"];
+}
+
+message DetectDuplicatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated DuplicateMatch matches = 3 [json_name = "matches"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DuplicateMatch {
+  ParsedTransaction imported_transaction = 1 [json_name = "importedTransaction"];
+  wealthjourney.transaction.v1.Transaction existing_transaction = 2 [json_name = "existingTransaction"];
+  int32 confidence = 3 [json_name = "confidence"]; // 50-100 (Level 1-4)
+  string match_reason = 4 [json_name = "matchReason"];
+}
+
+message ExecuteImportRequest {
+  string file_id = 1 [json_name = "fileId"];
+  int32 wallet_id = 2 [json_name = "walletId"];
+  repeated ParsedTransaction transactions = 3 [json_name = "transactions"];
+  DuplicateHandlingStrategy strategy = 4 [json_name = "strategy"];
+  repeated int32 excluded_row_numbers = 5 [json_name = "excludedRowNumbers"]; // Rows user unchecked
+  int64 date_filter_start = 6 [json_name = "dateFilterStart"]; // Optional date range filter
+  int64 date_filter_end = 7 [json_name = "dateFilterEnd"];
+  repeated DuplicateAction duplicate_actions = 8 [json_name = "duplicateActions"]; // User decisions for REVIEW_EACH strategy
+}
+
+enum DuplicateHandlingStrategy {
+  DUPLICATE_STRATEGY_UNSPECIFIED = 0;
+  DUPLICATE_STRATEGY_AUTO_MERGE = 1;
+  DUPLICATE_STRATEGY_REVIEW_EACH = 2;
+  DUPLICATE_STRATEGY_KEEP_ALL = 3;
+  DUPLICATE_STRATEGY_SKIP_ALL = 4;
+}
+
+enum DuplicateActionType {
+  DUPLICATE_ACTION_UNSPECIFIED = 0;
+  DUPLICATE_ACTION_MERGE = 1;       // Update existing transaction with imported data
+  DUPLICATE_ACTION_KEEP_BOTH = 2;   // Import as new transaction
+  DUPLICATE_ACTION_SKIP = 3;        // Don't import
+  DUPLICATE_ACTION_NOT_DUPLICATE = 4; // False positive, treat as new
+}
+
+message DuplicateAction {
+  int32 imported_row_number = 1 [json_name = "importedRowNumber"]; // Row number from parsed transaction
+  int32 existing_transaction_id = 2 [json_name = "existingTransactionId"]; // ID of existing transaction
+  DuplicateActionType action = 3 [json_name = "action"]; // User's decision
+}
+
+message ExecuteImportResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string import_batch_id = 3 [json_name = "importBatchId"];
+  ImportSummary summary = 4 [json_name = "summary"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ImportSummary {
+  int32 total_imported = 1 [json_name = "totalImported"];
+  int32 total_skipped = 2 [json_name = "totalSkipped"];
+  int32 duplicates_merged = 3 [json_name = "duplicatesMerged"];
+  int32 duplicates_skipped = 4 [json_name = "duplicatesSkipped"];
+  wealthjourney.common.v1.Money total_income = 5 [json_name = "totalIncome"];
+  wealthjourney.common.v1.Money total_expenses = 6 [json_name = "totalExpenses"];
+  wealthjourney.common.v1.Money net_change = 7 [json_name = "netChange"];
+  wealthjourney.common.v1.Money new_wallet_balance = 8 [json_name = "newWalletBalance"];
+}
+
+message ListBankTemplatesRequest {}
+
+message ListBankTemplatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated BankTemplate templates = 3 [json_name = "templates"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message BankTemplate {
+  string id = 1 [json_name = "id"];
+  string name = 2 [json_name = "name"];
+  string bank_code = 3 [json_name = "bankCode"];
+  string statement_type = 4 [json_name = "statementType"]; // credit, debit, checking
+  repeated string file_formats = 5 [json_name = "fileFormats"];
+}
+
+message GetImportHistoryRequest {
+  wealthjourney.common.v1.PaginationParams pagination = 1 [json_name = "pagination"];
+}
+
+message GetImportHistoryResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ImportBatch batches = 3 [json_name = "batches"];
+  wealthjourney.common.v1.PaginationResult pagination = 4 [json_name = "pagination"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ImportBatch {
+  string id = 1 [json_name = "id"];
+  int32 user_id = 2 [json_name = "userId"];
+  int32 wallet_id = 3 [json_name = "walletId"];
+  string file_name = 4 [json_name = "fileName"];
+  string file_type = 5 [json_name = "fileType"];
+  string bank_template = 6 [json_name = "bankTemplate"];
+  int64 imported_at = 7 [json_name = "importedAt"];
+  ImportSummary summary = 8 [json_name = "summary"];
+  bool can_undo = 9 [json_name = "canUndo"];
+  int64 undo_expires_at = 10 [json_name = "undoExpiresAt"];
+}
+
+message UndoImportRequest {
+  string import_id = 1 [json_name = "importId"];
+}
+
+message UndoImportResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+// Currency conversion messages
+
+message CurrencyInfo {
+  string wallet_currency = 1 [json_name = "walletCurrency"];
+  repeated string currencies_found = 2 [json_name = "currenciesFound"];
+  bool needs_conversion = 3 [json_name = "needsConversion"];
+}
+
+message ConvertCurrencyRequest {
+  int32 wallet_id = 1 [json_name = "walletId"];
+  repeated ParsedTransaction transactions = 2 [json_name = "transactions"];
+  map<string, ManualExchangeRate> manual_rates = 3 [json_name = "manualRates"]; // currency -> rate
+}
+
+message ManualExchangeRate {
+  string from_currency = 1 [json_name = "fromCurrency"];
+  string to_currency = 2 [json_name = "toCurrency"];
+  double exchange_rate = 3 [json_name = "exchangeRate"];
+  int64 rate_date = 4 [json_name = "rateDate"]; // Unix timestamp
+}
+
+message ConvertCurrencyResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated CurrencyConversion conversions = 3 [json_name = "conversions"];
+  repeated ParsedTransaction converted_transactions = 4 [json_name = "convertedTransactions"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message ListExcelSheetsRequest {
+  string file_id = 1 [json_name = "fileId"];
+}
+
+message ListExcelSheetsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated string sheet_names = 3 [json_name = "sheetNames"];
+  string default_sheet = 4 [json_name = "defaultSheet"]; // Recommended sheet to use
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
+message CurrencyConversion {
+  string from_currency = 1 [json_name = "fromCurrency"];
+  string to_currency = 2 [json_name = "toCurrency"];
+  double exchange_rate = 3 [json_name = "exchangeRate"];
+  string rate_source = 4 [json_name = "rateSource"]; // "auto" or "manual"
+  int64 rate_date = 5 [json_name = "rateDate"]; // Unix timestamp
+  int32 transaction_count = 6 [json_name = "transactionCount"];
+  wealthjourney.common.v1.Money total_original = 7 [json_name = "totalOriginal"];
+  wealthjourney.common.v1.Money total_converted = 8 [json_name = "totalConverted"];
+}
+
+// User Template Management Messages
+
+message CreateUserTemplateRequest {
+  string template_name = 1 [json_name = "templateName"];
+  ColumnMapping column_mapping = 2 [json_name = "columnMapping"];
+  string date_format = 3 [json_name = "dateFormat"];
+  string currency = 4 [json_name = "currency"];
+  repeated string file_formats = 5 [json_name = "fileFormats"]; // ["csv", "excel", "pdf"]
+}
+
+message CreateUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ListUserTemplatesRequest {}
+
+message ListUserTemplatesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated UserTemplate templates = 3 [json_name = "templates"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message GetUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+}
+
+message GetUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message UpdateUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+  string template_name = 2 [json_name = "templateName"];
+  ColumnMapping column_mapping = 3 [json_name = "columnMapping"];
+  string date_format = 4 [json_name = "dateFormat"];
+  string currency = 5 [json_name = "currency"];
+  repeated string file_formats = 6 [json_name = "fileFormats"];
+}
+
+message UpdateUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  UserTemplate template = 3 [json_name = "template"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message DeleteUserTemplateRequest {
+  int32 template_id = 1 [json_name = "templateId"];
+}
+
+message DeleteUserTemplateResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message UserTemplate {
+  int32 id = 1 [json_name = "id"];
+  int32 user_id = 2 [json_name = "userId"];
+  string name = 3 [json_name = "name"];
+  ColumnMapping column_mapping = 4 [json_name = "columnMapping"];
+  string date_format = 5 [json_name = "dateFormat"];
+  string currency = 6 [json_name = "currency"];
+  repeated string file_formats = 7 [json_name = "fileFormats"];
+  int64 created_at = 8 [json_name = "createdAt"];
+  int64 updated_at = 9 [json_name = "updatedAt"];
+}
+
+// Background Job Status
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_QUEUED = 1;
+  JOB_STATUS_PROCESSING = 2;
+  JOB_STATUS_COMPLETED = 3;
+  JOB_STATUS_FAILED = 4;
+  JOB_STATUS_CANCELLED = 5;
+}
+
+message GetJobStatusRequest {
+  string job_id = 1 [json_name = "jobId"];
+}
+
+message GetJobStatusResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  ImportJobStatus job = 3 [json_name = "job"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message CancelJobRequest {
+  string job_id = 1 [json_name = "jobId"];
+}
+
+message CancelJobResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  string timestamp = 3 [json_name = "timestamp"];
+}
+
+message ListUserJobsRequest {
+  // Optional: filter by status
+  JobStatus status = 1 [json_name = "status"];
+}
+
+message ListUserJobsResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated ImportJobStatus jobs = 3 [json_name = "jobs"];
+  string timestamp = 4 [json_name = "timestamp"];
+}
+
+message ImportJobStatus {
+  string job_id = 1 [json_name = "jobId"];
+  int32 user_id = 2 [json_name = "userId"];
+  string file_id = 3 [json_name = "fileId"];
+  int32 wallet_id = 4 [json_name = "walletId"];
+  JobStatus status = 5 [json_name = "status"];
+  int32 progress = 6 [json_name = "progress"]; // 0-100
+  int32 processed_count = 7 [json_name = "processedCount"];
+  int32 total_count = 8 [json_name = "totalCount"];
+  ExecuteImportResponse result = 9 [json_name = "result"];
+  string error = 10 [json_name = "error"];
+  int64 created_at = 11 [json_name = "createdAt"];
+  int64 started_at = 12 [json_name = "startedAt"];
+  int64 completed_at = 13 [json_name = "completedAt"];
+  int64 expires_at = 14 [json_name = "expiresAt"];
+}

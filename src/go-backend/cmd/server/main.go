@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -22,9 +23,11 @@ import (
 	"wealthjourney/handlers"
 	"wealthjourney/pkg/config"
 	"wealthjourney/pkg/database"
+	"wealthjourney/pkg/fileupload"
 	"wealthjourney/pkg/jobs"
 	appmiddleware "wealthjourney/pkg/middleware"
 	"wealthjourney/pkg/redis"
+	"wealthjourney/pkg/storage"
 	"wealthjourney/pkg/types"
 	investmentv1 "wealthjourney/protobuf/v1"
 )
@@ -70,7 +73,12 @@ func main() {
 		InvestmentTransaction: repository.NewInvestmentTransactionRepository(db),
 		MarketData:            repository.NewMarketDataRepository(db),
 		FXRate:                repository.NewFXRateRepository(db),
+		ExchangeRate:          repository.NewExchangeRateRepository(db.DB),
 		PortfolioHistory:      repository.NewPortfolioHistoryRepository(db.DB),
+		Import:                repository.NewImportRepository(db),
+		MerchantRule:          repository.NewMerchantRuleRepository(db),
+		Keyword:               repository.NewKeywordRepository(db),
+		UserMapping:           repository.NewUserMappingRepository(db),
 	}
 
 	// Initialize redis (single instance for both handlers and auth server)
@@ -87,15 +95,140 @@ func main() {
 		handlers.SetRedis(redisClient)
 	}
 
+	// Initialize storage provider
+	var storageProvider storage.StorageProvider
+
+	if cfg.Storage.Provider == "supabase" {
+		log.Println("Initializing Supabase storage...")
+		storageProvider = storage.NewSupabaseStorage(
+			cfg.Storage.SupabaseURL,
+			cfg.Storage.SupabaseAPIKey,
+			cfg.Storage.SupabaseBucket,
+		)
+		log.Printf("Supabase storage initialized (bucket: %s)", cfg.Storage.SupabaseBucket)
+	} else {
+		log.Printf("Warning: Unknown storage provider '%s', file uploads will use legacy local storage", cfg.Storage.Provider)
+		// Keep storageProvider as nil to use legacy functions
+	}
+
+	// Initialize file upload service with storage provider
+	if storageProvider != nil {
+		fileupload.InitializeDefaultService(storageProvider)
+		log.Println("File upload service initialized with external storage")
+	}
+
 	// Initialize services
 	services := service.NewServices(repos, underlyingRedisClient)
-
-	// Initialize handlers
-	h := handlers.NewHandlers(services)
 
 	// Create context for background jobs cancellation
 	backgroundCtx, backgroundCancel := context.WithCancel(context.Background())
 	defer backgroundCancel()
+
+	// Initialize import job queue and worker pool
+	var importWorkerPool *jobs.WorkerPool
+	if redisClient != nil {
+		// Create Redis-based job queue
+		jobQueue := jobs.NewRedisImportQueue(underlyingRedisClient)
+
+		// Wrap the job queue with an adapter for the service layer
+		jobQueueAdapter := jobs.NewImportQueueAdapter(jobQueue)
+
+		// Create FX rate service for currency conversion (needed by import service)
+		// Note: We reuse the existing FXRate service from services
+		fxService := services.FXRate
+
+		// Create main import service with job queue for API handlers
+		mainImportService := service.NewImportService(
+			db,
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			jobQueueAdapter, // Main service can enqueue jobs (using adapter)
+		)
+
+		// Set the import service in the services struct
+		services.Import = mainImportService
+
+		// Create dedicated import service for workers (without job queue to prevent recursion)
+		workerImportService := service.NewImportService(
+			db,
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			nil, // Workers don't queue jobs recursively
+		)
+
+		// Start worker pool with 2 workers (can be configured via environment variable)
+		numWorkers := 2
+		if workerCountStr := os.Getenv("IMPORT_WORKER_COUNT"); workerCountStr != "" {
+			if count, err := strconv.Atoi(workerCountStr); err == nil && count > 0 {
+				numWorkers = count
+			}
+		}
+
+		importWorkerPool = jobs.NewWorkerPool(numWorkers, jobQueue, workerImportService)
+		importWorkerPool.Start()
+		log.Printf("Import worker pool started with %d workers", numWorkers)
+
+		// Schedule job cleanup every hour
+		go func() {
+			ticker := time.NewTicker(1 * time.Hour)
+			defer ticker.Stop()
+
+			log.Println("INFO: Background job - job cleanup started (runs every hour)")
+
+			for {
+				select {
+				case <-ticker.C:
+					cleanupCtx := context.Background()
+					deleted, err := jobQueue.CleanupExpiredJobs(cleanupCtx)
+					if err != nil {
+						log.Printf("ERROR: Job cleanup failed: %v", err)
+					} else {
+						log.Printf("INFO: Job cleanup completed: %d jobs deleted", deleted)
+					}
+				case <-backgroundCtx.Done():
+					log.Println("INFO: Job cleanup stopped")
+					return
+				}
+			}
+		}()
+	} else {
+		// Create import service without job queue if Redis is not available
+		fxService := services.FXRate
+		mainImportService := service.NewImportService(
+			db,
+			repos.Import,
+			repos.Transaction,
+			repos.Wallet,
+			repos.Category,
+			repos.MerchantRule,
+			repos.Keyword,
+			repos.UserMapping,
+			fxService,
+			nil, // No job queue
+		)
+		services.Import = mainImportService
+	}
+	defer func() {
+		if importWorkerPool != nil {
+			log.Println("Stopping import worker pool...")
+			importWorkerPool.Stop()
+		}
+	}()
+
+	// Initialize handlers (must be after worker pool setup)
+	h := handlers.NewHandlers(services, repos)
 
 	// Initialize session cleanup job (runs every 6 hours)
 	// This cleans up expired sessions from Redis and database
@@ -104,6 +237,37 @@ func main() {
 		go sessionCleanupJob.Start(backgroundCtx, 6*time.Hour)
 		log.Println("Background session cleanup job started (runs every 6 hours)")
 	}
+
+	// Initialize file cleanup job (runs every hour)
+	// This removes uploaded files older than 1 hour to prevent disk exhaustion
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		// Wait for server to be fully initialized
+		time.Sleep(5 * time.Second)
+
+		log.Println("Background file cleanup job started (runs every hour)")
+
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("Running file cleanup...")
+
+				cleanupCtx := context.Background()
+				deleted, err := services.Import.CleanupExpiredFiles(cleanupCtx)
+				if err != nil {
+					log.Printf("ERROR: File cleanup failed: %v", err)
+				} else {
+					log.Printf("INFO: File cleanup completed: %d files deleted", deleted)
+				}
+
+			case <-backgroundCtx.Done():
+				log.Println("Background file cleanup job stopped (shutting down)")
+				return
+			}
+		}
+	}()
 
 	// Initialize background price update job
 	// This runs every 15 minutes to update investment prices from Yahoo Finance
@@ -337,6 +501,37 @@ func main() {
 		CleanupInterval:   time.Minute,
 	})
 
+	// Initialize import rate limiter
+	// Use Redis-based rate limiter if Redis is available, otherwise fall back to in-memory
+	var importRateLimiter interface{}
+	if underlyingRedisClient != nil {
+		// Redis-based rate limiter (distributed, supports multiple instances)
+		importRateLimiterConfig := appmiddleware.ImportRateLimitConfig{
+			MaxImportsPerHour:         cfg.Import.MaxImportsPerHour,
+			UserWindow:                time.Hour,
+			MaxImportsPerHourPerIP:    cfg.Import.MaxImportsPerHourPerIP,
+			IPWindow:                  time.Hour,
+			MaxImportsPerDayPerWallet: cfg.Import.MaxImportsPerDayPerWallet,
+			WalletWindow:              24 * time.Hour,
+			UserPrefix:                "ratelimit:import:user",
+			IPPrefix:                  "ratelimit:import:ip",
+			WalletPrefix:              "ratelimit:import:wallet",
+		}
+		importRateLimiter = appmiddleware.NewRedisImportRateLimiter(underlyingRedisClient, importRateLimiterConfig)
+		log.Printf("Import rate limiting enabled (Redis): user=%d/hr, ip=%d/hr, wallet=%d/day",
+			cfg.Import.MaxImportsPerHour, cfg.Import.MaxImportsPerHourPerIP, cfg.Import.MaxImportsPerDayPerWallet)
+	} else {
+		// Fallback to in-memory rate limiter (single instance only)
+		inMemoryLimiter := appmiddleware.NewImportRateLimiter(
+			cfg.Import.MaxImportsPerHour,
+			time.Hour,
+		)
+		importRateLimiter = inMemoryLimiter
+		defer inMemoryLimiter.Stop()
+		log.Printf("Import rate limiting enabled (in-memory): user=%d/hr (Redis unavailable, IP and wallet limits disabled)",
+			cfg.Import.MaxImportsPerHour)
+	}
+
 	// Initialize Gin app
 	app := gin.New()
 
@@ -348,7 +543,7 @@ func main() {
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -371,7 +566,7 @@ func main() {
 	v1.Use(appmiddleware.RateLimitByIP(rateLimiter))
 
 	// Register routes
-	handlers.RegisterRoutes(v1, h, rateLimiter)
+	handlers.RegisterRoutes(v1, h, rateLimiter, importRateLimiter)
 
 	// Global 404 handler
 	app.NoRoute(func(c *gin.Context) {

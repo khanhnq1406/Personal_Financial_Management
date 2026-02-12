@@ -13,6 +13,7 @@ func RegisterRoutes(
 	v1 *gin.RouterGroup,
 	h *AllHandlers,
 	rateLimiter *appmiddleware.RateLimiter,
+	importRateLimiter interface{}, // Can be *ImportRateLimiter or *RedisImportRateLimiter
 ) {
 	// Auth routes (higher rate limit allowed for auth)
 	auth := v1.Group("/auth")
@@ -201,5 +202,53 @@ func RegisterRoutes(
 	portfolio.Use(AuthMiddleware())
 	{
 		portfolio.GET("/historical-values", h.Investment.GetHistoricalPortfolioValues)
+	}
+
+	// Import routes (protected)
+	imports := v1.Group("/import")
+	if rateLimiter != nil {
+		imports.Use(appmiddleware.RateLimitByUser(rateLimiter))
+	}
+	imports.Use(AuthMiddleware())
+	{
+		imports.GET("/templates", h.Import.ListBankTemplates)
+		imports.GET("/excel-sheets/:file_id", h.Import.ListExcelSheets)
+		imports.GET("/history", h.Import.ListImportBatches)
+		// User template routes (must come before :id parameterized route)
+		imports.GET("/user-templates", h.Import.ListUserTemplates)
+		imports.POST("/user-templates", h.Import.CreateUserTemplate)
+		imports.GET("/user-templates/:template_id", h.Import.GetUserTemplate)
+		imports.PUT("/user-templates/:template_id", h.Import.UpdateUserTemplate)
+		imports.DELETE("/user-templates/:template_id", h.Import.DeleteUserTemplate)
+		// Background job routes
+		imports.GET("/jobs", h.Import.ListUserJobs)
+		imports.GET("/jobs/:job_id", h.Import.GetJobStatus)
+		imports.POST("/jobs/:job_id/cancel", h.Import.CancelJob)
+		// Parameterized routes
+		imports.GET("/:id", h.Import.GetImportBatch)
+	}
+
+	// Import operations with strict rate limiting
+	// Supports both in-memory (ImportRateLimiter) and Redis-based (RedisImportRateLimiter) rate limiting
+	importsRestricted := v1.Group("/import")
+	importsRestricted.Use(AuthMiddleware())
+	if importRateLimiter != nil {
+		// Check type and apply appropriate middleware
+		switch limiter := importRateLimiter.(type) {
+		case *appmiddleware.ImportRateLimiter:
+			// In-memory rate limiter (legacy)
+			importsRestricted.Use(appmiddleware.ImportRateLimitMiddleware(limiter))
+		case *appmiddleware.RedisImportRateLimiter:
+			// Redis-based rate limiter (new, distributed)
+			importsRestricted.Use(appmiddleware.RedisImportRateLimitMiddleware(limiter))
+		}
+	}
+	{
+		importsRestricted.POST("/upload", h.Import.UploadFile)
+		importsRestricted.POST("/parse", h.Import.ParseFile)
+		importsRestricted.POST("/convert-currency", h.Import.ConvertCurrency)
+		importsRestricted.POST("/detect-duplicates", h.Import.DetectDuplicates)
+		importsRestricted.POST("/execute", h.Import.ConfirmImport) // Changed from /confirm to match protobuf
+		importsRestricted.POST("/:id/undo", h.Import.UndoImport)
 	}
 }

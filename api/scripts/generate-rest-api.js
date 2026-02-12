@@ -517,8 +517,12 @@ function generateAPIClient(services) {
             const fileJsonNameMap = globalJsonNameMap.get(method.protoFileName);
             const messageJsonNameMap = fileJsonNameMap?.get(method.requestType);
             const jsonName = messageJsonNameMap?.[protoFieldName];
-            // Use json_name if available, otherwise use the field name as-is (camelCase)
-            const paramName = jsonName || protoFieldName;
+            // Use json_name if available, otherwise convert snake_case to camelCase
+            let paramName = jsonName || protoFieldName;
+            // If no json_name and field is snake_case, convert to camelCase (protoc-gen-ts_proto convention)
+            if (!jsonName && protoFieldName.includes('_')) {
+              paramName = protoFieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+            }
             return `\${request.${paramName}}`;
           }
         );
@@ -535,17 +539,19 @@ function generateAPIClient(services) {
             apiCode.push(
               `      return apiClient.${httpMethod}(endpoint, request) as unknown as ${responseType};`
             );
-          } else {
+          } else if (httpBody) {
             apiCode.push(`      const endpoint = \`${pathTemplate}\`;`);
             apiCode.push(
-              `      const body = ${
-                httpBody === "*"
-                  ? "request"
-                  : `{ ${httpBody}: request.${httpBody} }`
-              };`
+              `      const body = { ${httpBody}: request.${httpBody} };`
             );
             apiCode.push(
               `      return apiClient.${httpMethod}(endpoint, body) as unknown as ${responseType};`
+            );
+          } else {
+            // No body specified, send empty body
+            apiCode.push(`      const endpoint = \`${pathTemplate}\`;`);
+            apiCode.push(
+              `      return apiClient.${httpMethod}(endpoint, {}) as unknown as ${responseType};`
             );
           }
         }
@@ -602,12 +608,17 @@ function generateAPIClient(services) {
             apiCode.push(
               `      return apiClient.${httpMethod}(\`${httpPath}\`, request) as unknown as ${responseType};`
             );
-          } else {
+          } else if (httpBody) {
             apiCode.push(
               `      const body = { ${httpBody}: request.${httpBody} };`
             );
             apiCode.push(
               `      return apiClient.${httpMethod}(\`${httpPath}\`, body) as unknown as ${responseType};`
+            );
+          } else {
+            // No body specified, send empty body for POST/PUT/PATCH
+            apiCode.push(
+              `      return apiClient.${httpMethod}(\`${httpPath}\`, {}) as unknown as ${responseType};`
             );
           }
         }

@@ -10,16 +10,25 @@ import (
 
 // Transaction represents a financial transaction in the system
 type Transaction struct {
-	ID         int32          `gorm:"primaryKey;autoIncrement" json:"id"`
-	WalletID   int32          `gorm:"not null;index" json:"walletId"`
-	CategoryID *int32         `gorm:"index" json:"categoryId"`
-	Amount     int64          `gorm:"type:bigint;not null" json:"amount"` // Stored in smallest currency unit
-	Currency   string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
-	Date       time.Time      `gorm:"not null;index" json:"date"`
-	Note       string         `gorm:"type:text" json:"note"`
-	CreatedAt  time.Time      `json:"createdAt"`
-	UpdatedAt  time.Time      `json:"updatedAt"`
-	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+	ID            int32          `gorm:"primaryKey;autoIncrement" json:"id"`
+	WalletID      int32          `gorm:"not null;index" json:"walletId"`
+	CategoryID    *int32         `gorm:"index" json:"categoryId"`
+	ImportBatchID *string        `gorm:"size:36;index" json:"importBatchId"`
+	Amount        int64          `gorm:"type:bigint;not null" json:"amount"` // Stored in smallest currency unit
+	Currency      string         `gorm:"size:3;not null;default:'VND'" json:"currency"`
+	Date          time.Time      `gorm:"not null;index" json:"date"`
+	Note          string         `gorm:"type:text" json:"note"`
+
+	// Currency conversion fields (for imported transactions)
+	OriginalAmount    *int64   `gorm:"type:bigint" json:"originalAmount,omitempty"`
+	OriginalCurrency  *string  `gorm:"size:3" json:"originalCurrency,omitempty"`
+	ExchangeRate      *float64 `gorm:"type:decimal(10,4)" json:"exchangeRate,omitempty"`
+	ExchangeRateDate  *time.Time `gorm:"type:date" json:"exchangeRateDate,omitempty"`
+	ExchangeRateSource *string `gorm:"size:20" json:"exchangeRateSource,omitempty"` // 'auto', 'manual'
+
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 
 	Wallet   *Wallet   `gorm:"foreignKey:WalletID" json:"wallet,omitempty"`
 	Category *Category `gorm:"foreignKey:CategoryID" json:"category,omitempty"`

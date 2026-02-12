@@ -37,3 +37,6 @@ Thumbs.db
 # proto/*.pb.go
 .vercel
 .env*.local
+
+server
+main

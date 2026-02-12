@@ -362,47 +362,4 @@ func TestWalletService_CurrencyConversionErrors(t *testing.T) {
 	})
 }
 
-// Helper function for absolute value
-func abs(x int64) int64 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-// Test helper functions (these would be implemented in a test_helpers.go file)
-func setupTestDB(t *testing.T) (*gorm.DB, func()) {
-	// TODO: Implement test database setup
-	// This should create a temporary database for testing
-	panic("implement me")
-}
-
-func setupTestRedis(t *testing.T) *redis.Client {
-	// TODO: Implement test Redis setup
-	panic("implement me")
-}
-
-func setupUserRepository(db *gorm.DB) repository.UserRepository {
-	// TODO: Implement
-	panic("implement me")
-}
-
-func setupWalletRepository(db *gorm.DB) repository.WalletRepository {
-	// TODO: Implement
-	panic("implement me")
-}
-
-func setupTransactionRepository(db *gorm.DB) repository.TransactionRepository {
-	// TODO: Implement
-	panic("implement me")
-}
-
-func setupCategoryRepository(db *gorm.DB) repository.CategoryRepository {
-	// TODO: Implement
-	panic("implement me")
-}
-
-func setupFXRateRepository(db *gorm.DB) repository.FXRateRepository {
-	// TODO: Implement
-	panic("implement me")
-}
+// Note: Helper functions (abs, setupTestDB, setupTestRedis, etc.) are defined in other test files
