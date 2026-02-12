@@ -212,3 +212,38 @@ func DeleteFile(filePath string) error {
 	}
 	return nil
 }
+
+// GetFileURL returns the URL for a file given its ID.
+// Returns (url, extension, error). URL can be either:
+// - A public/signed URL from Supabase storage
+// - A local file path (for backward compatibility)
+func GetFileURL(ctx context.Context, fileID string) (string, string, error) {
+	fmt.Printf("[DEBUG] GetFileURL: Looking for file with ID: %s\n", fileID)
+	fmt.Printf("[DEBUG] GetFileURL: defaultService is nil: %v\n", defaultService == nil)
+
+	// Try common extensions
+	for _, ext := range []string{".csv", ".xlsx", ".xls", ".pdf"} {
+		if defaultService != nil {
+			// Use storage provider to get URL
+			storageKey := fmt.Sprintf("uploads/%s%s", fileID, ext)
+			fmt.Printf("[DEBUG] GetFileURL: Trying storage key: %s\n", storageKey)
+			url, err := defaultService.storage.GetURL(ctx, storageKey)
+			if err == nil {
+				fmt.Printf("[DEBUG] GetFileURL: Found file! URL: %s, ext: %s\n", url, ext)
+				return url, ext, nil
+			}
+			fmt.Printf("[DEBUG] GetFileURL: Failed to get URL for %s: %v\n", storageKey, err)
+		} else {
+			// Fallback to local file path
+			localPath := filepath.Join(UploadDir, fileID+ext)
+			fmt.Printf("[DEBUG] GetFileURL: Trying local path: %s\n", localPath)
+			if _, err := os.Stat(localPath); err == nil {
+				fmt.Printf("[DEBUG] GetFileURL: Found local file: %s\n", localPath)
+				return localPath, ext, nil
+			}
+		}
+	}
+
+	fmt.Printf("[DEBUG] GetFileURL: File not found after trying all extensions\n")
+	return "", "", fmt.Errorf("file not found: %s", fileID)
+}

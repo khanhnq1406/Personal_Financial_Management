@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -243,15 +242,17 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
-	// Get file path from upload directory
-	// First, find the actual file with any extension
-	matches, err := filepath.Glob(filepath.Join(fileupload.UploadDir, req.FileId+".*"))
-	if err != nil || len(matches) == 0 {
+	fmt.Printf("[DEBUG] ParseFile: Received parse request for fileId: %s\n", req.FileId)
+
+	// Get file URL from storage (works with both Supabase and local storage)
+	fileURL, fileExt, err := fileupload.GetFileURL(c.Request.Context(), req.FileId)
+	if err != nil {
+		fmt.Printf("[DEBUG] ParseFile: GetFileURL failed: %v\n", err)
 		handler.BadRequest(c, apperrors.NewValidationError("uploaded file not found"))
 		return
 	}
-	filePath := matches[0]
-	fileExt := filepath.Ext(filePath)
+
+	fmt.Printf("[DEBUG] ParseFile: Got fileURL=%s, fileExt=%s\n", fileURL, fileExt)
 
 	// Get bank template or custom mapping
 	var columnMapping *parser.ColumnMapping
@@ -339,7 +340,7 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		fileTypeStr = "pdf"
 		// PDF parser supports auto-detection when columnMapping is nil
 		// It will attempt to detect columns from header row and extract currency
-		pdfParser := parser.NewPDFParser(filePath, columnMapping)
+		pdfParser := parser.NewPDFParser(fileURL, columnMapping)
 		parsedRows, err = pdfParser.Parse()
 		if err != nil {
 			metrics.ImportAttempts.WithLabelValues("error", fileTypeStr).Inc()
@@ -370,7 +371,7 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		fileTypeStr = "excel"
 		// Use Excel parser with auto-detection (ignore template mapping for Excel files)
 		// Excel files have too much variation in layout to use fixed column mappings
-		excelParser := parser.NewExcelParser(filePath, nil)
+		excelParser := parser.NewExcelParser(fileURL, nil)
 		defer excelParser.Close() // Clean up: close the Excel file
 
 		// Set specific sheet if provided
@@ -404,7 +405,7 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		columnMapping = excelParser.GetDetectedMapping()
 	default:
 		// Use CSV parser (default for .csv and any other text format)
-		csvParser := parser.NewCSVParser(filePath, columnMapping)
+		csvParser := parser.NewCSVParser(fileURL, columnMapping)
 		parsedRows, err = csvParser.Parse()
 		if err != nil {
 			metrics.ImportAttempts.WithLabelValues("error", fileTypeStr).Inc()
