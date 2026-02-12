@@ -1139,6 +1139,60 @@ func TestInvestmentService_UpdatePrices_Success(t *testing.T) {
 	mockMarketDataService.AssertExpectations(t)
 }
 
+// Test UpdatePrices - Custom investments should be skipped
+func TestInvestmentService_UpdatePrices_SkipsCustomInvestments(t *testing.T) {
+	ctx := context.Background()
+	userID := int32(1)
+
+	// Setup mocks
+	mockInvestmentRepo := new(MockInvestmentRepository)
+	mockWalletRepo := new(MockWalletRepository)
+	mockMarketDataService := new(MockMarketDataService)
+	mockUserRepo := new(MockUserRepository)
+	mockTxRepo := new(MockInvestmentTransactionRepository)
+	mockFXRateSvc := new(MockFXRateService)
+
+	service := NewInvestmentService(
+		mockInvestmentRepo,
+		mockWalletRepo,
+		mockTxRepo,
+		mockMarketDataService,
+		mockUserRepo,
+		mockFXRateSvc,
+		nil, // currencyCache not needed for this test
+		new(MockWalletService),
+	).(*investmentService)
+
+	// Create test wallets
+	wallet1 := &models.Wallet{ID: 1, UserID: userID, Type: int32(walletv1.WalletType_INVESTMENT), Currency: "USD"}
+	mockWalletRepo.On("ListByUserID", ctx, userID, mock.Anything).Return([]*models.Wallet{wallet1}, 1, nil)
+
+	// Create mixed investments (1 market-based, 1 custom)
+	marketInv := &models.Investment{ID: 1, WalletID: 1, Symbol: "AAPL", Currency: "USD", Type: int32(investmentv1.InvestmentType_INVESTMENT_TYPE_STOCK), IsCustom: false}
+	customInv := &models.Investment{ID: 2, WalletID: 1, Symbol: "MY-CUSTOM", Currency: "USD", Type: int32(investmentv1.InvestmentType_INVESTMENT_TYPE_OTHER), IsCustom: true}
+	mockInvestmentRepo.On("ListByWalletID", ctx, int32(1), mock.Anything, investmentv1.InvestmentType_INVESTMENT_TYPE_UNSPECIFIED).
+		Return([]*models.Investment{marketInv, customInv}, 2, nil)
+
+	req := &investmentv1.UpdatePricesRequest{
+		InvestmentIds: []int32{}, // Empty = update all
+		ForceRefresh:  false,
+	}
+
+	// Execute
+	response, err := service.UpdatePrices(ctx, userID, req)
+
+	// Verify - The function returns immediately with a message indicating how many investments are being updated
+	// The actual price updates happen asynchronously in a goroutine
+	assert.NoError(t, err)
+	assert.True(t, response.Success)
+	assert.Contains(t, response.Message, "1 investments") // Only 1 market-based investment queued for update
+	assert.NotContains(t, response.Message, "2 investments") // Should NOT show 2 (which would include custom)
+
+	// Verify only the synchronous repository calls were made (before goroutine)
+	mockWalletRepo.AssertExpectations(t)
+	mockInvestmentRepo.AssertExpectations(t)
+}
+
 func TestInvestmentService_DeleteInvestment_RefundsWalletBalance(t *testing.T) {
 	// Setup
 	mockWalletRepo := new(MockWalletRepository)

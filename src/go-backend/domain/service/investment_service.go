@@ -198,6 +198,7 @@ func (s *investmentService) CreateInvestment(ctx context.Context, userID int32, 
 		CurrentPrice: currentPrice, // 0 for custom investments, averageCost for market-based
 		RealizedPNL:  0,
 		PurchaseUnit: req.PurchaseUnit, // Store user's purchase unit for display
+		IsCustom:     req.IsCustom,     // Store custom flag for filtering in auto-updates
 	}
 
 	// 7. Persist investment
@@ -387,19 +388,47 @@ func (s *investmentService) UpdateInvestment(ctx context.Context, investmentID i
 		return nil, err
 	}
 
+	// Track if we need to update the investment
+	needsUpdate := false
+
 	// Update allowed fields
 	if req.Name != "" {
 		investment.Name = req.Name
+		needsUpdate = true
 	}
 
-	// Manual price override
-	if req.CurrentPrice > 0 {
-		investment.CurrentPrice = req.CurrentPrice
+	// Manual price override - use same method as auto-updates for consistency
+	if req.CurrentPrice >= 0 {
+		// Allow setting price to 0 (for custom investments or clearing stale prices)
+		// Use UpdatePrices repository method (same as auto-update path)
+		updates := []repository.PriceUpdate{
+			{
+				InvestmentID: investmentID,
+				Price:        req.CurrentPrice,
+				Timestamp:    time.Now().Unix(),
+			},
+		}
+
+		if err := s.investmentRepo.UpdatePrices(ctx, updates); err != nil {
+			return nil, apperrors.NewInternalErrorWithCause("failed to update investment price", err)
+		}
+
+		// Refresh investment to get recalculated values
+		investment, err = s.investmentRepo.GetByIDForUser(ctx, investmentID, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Printf("Manual price update: investment %d (%s) set to %d (user %d)",
+			investmentID, investment.Symbol, req.CurrentPrice, userID)
+		needsUpdate = false // Price already updated via UpdatePrices
 	}
 
-	// Update investment
-	if err := s.investmentRepo.Update(ctx, investment); err != nil {
-		return nil, err
+	// Update other fields if changed
+	if needsUpdate {
+		if err := s.investmentRepo.Update(ctx, investment); err != nil {
+			return nil, err
+		}
 	}
 
 	// Invalidate and repopulate currency cache
@@ -1530,26 +1559,45 @@ func (s *investmentService) UpdatePrices(ctx context.Context, userID int32, req 
 		}
 	}
 
-	// Filter by investment IDs if specified
+	// Filter by investment IDs if specified, and count custom investments
 	var investmentsToUpdate []*models.Investment
+	customCount := 0
+
 	if len(req.InvestmentIds) > 0 {
 		investmentIDMap := make(map[int32]bool)
 		for _, id := range req.InvestmentIds {
 			investmentIDMap[id] = true
 		}
 		for _, inv := range allInvestments {
+			if inv.IsCustom {
+				customCount++
+				continue
+			}
 			if investmentIDMap[inv.ID] {
 				investmentsToUpdate = append(investmentsToUpdate, inv)
 			}
 		}
 	} else {
-		investmentsToUpdate = allInvestments
+		// Filter out custom investments from all investments
+		for _, inv := range allInvestments {
+			if inv.IsCustom {
+				customCount++
+				continue
+			}
+			investmentsToUpdate = append(investmentsToUpdate, inv)
+		}
+	}
+
+	if customCount > 0 {
+		log.Printf("UpdatePrices: Skipping %d custom investments, updating %d market-based investments (user %d)",
+			customCount, len(investmentsToUpdate), userID)
 	}
 
 	if len(investmentsToUpdate) == 0 {
+		log.Printf("No market-based investments to update (user %d). %d custom investments were skipped.", userID, customCount)
 		return &investmentv1.UpdatePricesResponse{
 			Success:            true,
-			Message:            "No investments to update",
+			Message:            "No market-based investments to update",
 			UpdatedInvestments: []*investmentv1.Investment{},
 			Timestamp:          time.Now().Format(time.RFC3339),
 		}, nil

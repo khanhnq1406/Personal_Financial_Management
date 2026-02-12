@@ -247,7 +247,11 @@ export interface Investment {
     | Money
     | undefined;
   /** Average cost in user's preferred currency */
-  displayAverageCost: Money | undefined;
+  displayAverageCost:
+    | Money
+    | undefined;
+  /** True if manual entry without market data validation */
+  isCustom: boolean;
 }
 
 /** InvestmentTransaction represents a buy or sell transaction */
@@ -741,6 +745,7 @@ function createBaseInvestment(): Investment {
     purchaseUnit: "",
     displayCurrentPrice: undefined,
     displayAverageCost: undefined,
+    isCustom: false,
   };
 }
 
@@ -823,6 +828,9 @@ export const Investment: MessageFns<Investment> = {
     }
     if (message.displayAverageCost !== undefined) {
       Money.encode(message.displayAverageCost, writer.uint32(210).fork()).join();
+    }
+    if (message.isCustom !== false) {
+      writer.uint32(216).bool(message.isCustom);
     }
     return writer;
   },
@@ -1042,6 +1050,14 @@ export const Investment: MessageFns<Investment> = {
           message.displayAverageCost = Money.decode(reader, reader.uint32());
           continue;
         }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.isCustom = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1081,6 +1097,7 @@ export const Investment: MessageFns<Investment> = {
       purchaseUnit: isSet(object.purchaseUnit) ? globalThis.String(object.purchaseUnit) : "",
       displayCurrentPrice: isSet(object.displayCurrentPrice) ? Money.fromJSON(object.displayCurrentPrice) : undefined,
       displayAverageCost: isSet(object.displayAverageCost) ? Money.fromJSON(object.displayAverageCost) : undefined,
+      isCustom: isSet(object.isCustom) ? globalThis.Boolean(object.isCustom) : false,
     };
   },
 
@@ -1164,6 +1181,9 @@ export const Investment: MessageFns<Investment> = {
     if (message.displayAverageCost !== undefined) {
       obj.displayAverageCost = Money.toJSON(message.displayAverageCost);
     }
+    if (message.isCustom !== false) {
+      obj.isCustom = message.isCustom;
+    }
     return obj;
   },
 
@@ -1210,6 +1230,7 @@ export const Investment: MessageFns<Investment> = {
     message.displayAverageCost = (object.displayAverageCost !== undefined && object.displayAverageCost !== null)
       ? Money.fromPartial(object.displayAverageCost)
       : undefined;
+    message.isCustom = object.isCustom ?? false;
     return message;
   },
 };

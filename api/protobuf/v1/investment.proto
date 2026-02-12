@@ -36,6 +36,7 @@ message Investment {
   string purchaseUnit = 24 [json_name = "purchaseUnit"];  // User's purchase unit for display ("tael", "kg", "oz", "gram")
   wealthjourney.common.v1.Money displayCurrentPrice = 25 [json_name = "displayCurrentPrice"];  // Current price in user's preferred currency
   wealthjourney.common.v1.Money displayAverageCost = 26 [json_name = "displayAverageCost"];  // Average cost in user's preferred currency
+  bool isCustom = 27 [json_name = "isCustom"];  // True if manual entry without market data validation
 }
 
 enum InvestmentType {

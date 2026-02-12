@@ -26,6 +26,7 @@ type Investment struct {
 	RealizedPNL          int64                        `gorm:"type:bigint;default:0" json:"realizedPnl"`
 	TotalDividends       int64                        `gorm:"type:bigint;default:0" json:"totalDividends"`
 	PurchaseUnit         string                       `gorm:"size:10;default:'gram'" json:"purchaseUnit"`
+	IsCustom             bool                         `gorm:"type:boolean;not null;default:false" json:"isCustom"`
 	CreatedAt            time.Time                    `json:"createdAt"`
 	UpdatedAt            time.Time                    `json:"updatedAt"`
 	DeletedAt            gorm.DeletedAt               `gorm:"index" json:"-"`
@@ -120,6 +121,7 @@ func (i *Investment) ToProto() *v1.Investment {
 		RealizedPnl:          i.RealizedPNL,
 		TotalDividends:       i.TotalDividends,
 		PurchaseUnit:         i.PurchaseUnit,
+		IsCustom:             i.IsCustom,
 		CreatedAt:            i.CreatedAt.Unix(),
 		UpdatedAt:            i.UpdatedAt.Unix(),
 	}

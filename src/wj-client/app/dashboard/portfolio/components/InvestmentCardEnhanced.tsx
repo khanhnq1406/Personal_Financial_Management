@@ -210,7 +210,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                 {symbol}
               </h3>
               {isCustom && (
-                <span className="inline-block px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                <span className="inline-block px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded">
                   Custom
                 </span>
               )}
@@ -225,6 +225,12 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
               )}
             </div>
             <p className="text-sm text-neutral-600 truncate">{name}</p>
+            {isCustom && (
+              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <span>💡</span>
+                <span>Prices updated manually (not from market data)</span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
