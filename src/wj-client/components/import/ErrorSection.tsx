@@ -200,7 +200,8 @@ function formatDate(timestamp?: number): string {
 }
 
 function formatAmount(amount: number): string {
-  return (amount / 10000).toLocaleString("vi-VN");
+  // Amount is already in the smallest currency unit (VND), no division needed
+  return amount.toLocaleString("vi-VN");
 }
 
 function parseDate(dateStr: string): number {
