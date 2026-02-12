@@ -6,7 +6,7 @@ import { Button } from "@/components/Button";
 import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon } from "@/components/icons";
 import { Select, SelectOption } from "@/components/select/Select";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrencyImport } from "@/utils/currency-formatter";
 import { FormSelect } from "../forms/FormSelect";
 
 export interface CategoryReviewSectionProps {
@@ -143,7 +143,7 @@ export const CategoryReviewSection = React.memo(function CategoryReviewSection({
                         {tx.description}
                       </p>
                       <p className="text-base font-bold text-neutral-900 dark:text-dark-text">
-                        {formatCurrency(
+                        {formatCurrencyImport(
                           tx.amount?.amount || 0,
                           tx.amount?.currency || currency,
                         )}

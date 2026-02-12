@@ -557,8 +557,11 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 			}
 		}
 
-		// Calculate amount (stored in smallest currency unit)
-		amount := parsedTx.Amount.Amount
+		// Convert amount from parser format (×10000) to regular storage format (smallest currency unit)
+		// Parser stores amounts as ×10000 for precision, but regular transactions store in smallest unit
+		// For VND: parser=-990000000 (×10000) → regular=-99000 VND
+		// For USD: parser=12345000 (×10000) → regular=12345 cents ($123.45)
+		amount := parsedTx.Amount.Amount / 10000
 
 		// Validate amount is not zero
 		if amount == 0 {
@@ -599,7 +602,8 @@ func (s *importService) ExecuteImport(ctx context.Context, userID int32, req *v1
 
 		// Store currency conversion metadata if present
 		if parsedTx.OriginalAmount != nil && parsedTx.OriginalAmount.Amount != 0 {
-			originalAmount := parsedTx.OriginalAmount.Amount
+			// Convert original amount from parser format (×10000) to regular format
+			originalAmount := parsedTx.OriginalAmount.Amount / 10000
 			originalCurrency := parsedTx.OriginalAmount.Currency
 			exchangeRate := parsedTx.ExchangeRate
 			exchangeRateSource := parsedTx.ExchangeRateSource

@@ -6,6 +6,7 @@ import { FormInput } from "@/components/forms/FormInput";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon } from "@/components/icons";
+import { formatCurrencyImport } from "@/utils/currency-formatter";
 
 export interface ErrorSectionProps {
   transactions: ParsedTransaction[];
@@ -125,7 +126,7 @@ export const ErrorSection = React.memo(function ErrorSection({
                     label="Amount"
                     type="text"
                     inputMode="decimal"
-                    value={formatAmount(tx.amount?.amount || 0)}
+                    value={formatAmount(tx.amount?.amount || 0, tx.amount?.currency || currency)}
                     onChange={(e) =>
                       onTransactionUpdate(tx.rowNumber, {
                         amount: { amount: parseAmount(e.target.value), currency },
@@ -162,7 +163,7 @@ export const ErrorSection = React.memo(function ErrorSection({
                     <strong>Date:</strong> {formatDate(tx.date)}
                   </p>
                   <p>
-                    <strong>Amount:</strong> {formatAmount(tx.amount?.amount || 0)}
+                    <strong>Amount:</strong> {formatAmount(tx.amount?.amount || 0, tx.amount?.currency || currency)}
                   </p>
                   <p>
                     <strong>Description:</strong> {tx.description}
@@ -199,9 +200,9 @@ function formatDate(timestamp?: number): string {
   return `${day}/${month}/${year}`;
 }
 
-function formatAmount(amount: number): string {
-  // Amount is already in the smallest currency unit (VND), no division needed
-  return amount.toLocaleString("vi-VN");
+function formatAmount(amount: number, currency: string = "VND"): string {
+  // Import data uses ×10000 format, use formatCurrencyImport
+  return formatCurrencyImport(amount, currency);
 }
 
 function parseDate(dateStr: string): number {

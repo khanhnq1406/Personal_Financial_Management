@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { ParsedTransaction } from "@/gen/protobuf/v1/import";
 import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon, CheckIcon, MinusIcon } from "@/components/icons";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrencyImport } from "@/utils/currency-formatter";
 import { Select, SelectOption } from "@/components/select/Select";
 import { FormSelect } from "../forms/FormSelect";
 
@@ -280,7 +280,7 @@ export const ReadyToImportSection = React.memo(function ReadyToImportSection({
                         )}
                       </div>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-dark-text ml-2 flex-shrink-0">
-                        {formatCurrency(
+                        {formatCurrencyImport(
                           tx.amount?.amount || 0,
                           tx.amount?.currency || currency,
                         )}

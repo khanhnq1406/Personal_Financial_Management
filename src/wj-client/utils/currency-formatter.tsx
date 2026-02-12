@@ -138,6 +138,22 @@ export function formatExchangeRate(rate: number, currency: string): string {
 }
 
 /**
+ * Format currency for import/parser data that uses ×10000 storage format
+ * Import data stores amounts as ×10000 for 4 decimal precision
+ * @param amount - Amount in ×10000 format (e.g., 990000000 for 99,000 VND)
+ * @param currency - ISO 4217 currency code (default: "VND")
+ * @returns Formatted currency string
+ */
+export function formatCurrencyImport(
+  amount: number | bigint,
+  currency: string = "VND",
+): string {
+  // Import data uses ×10000 format, divide first then format normally
+  const normalizedAmount = Number(amount) / 10000;
+  return formatCurrency(normalizedAmount, currency);
+}
+
+/**
  * Legacy formatter for backward compatibility (VND only)
  * @deprecated Use formatCurrency(amount, currency) instead
  * This formatter is deprecated and will be removed in a future version.

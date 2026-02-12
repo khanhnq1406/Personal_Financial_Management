@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrencyImport } from "@/utils/currency-formatter";
 import { ParsedTransaction } from "@/gen/protobuf/v1/import";
 import { TransactionType } from "@/gen/protobuf/v1/transaction";
 
@@ -278,7 +278,7 @@ export function TransactionReviewTable({
                       {transaction.type === TransactionType.TRANSACTION_TYPE_INCOME
                         ? "+"
                         : "-"}
-                      {formatCurrency(
+                      {formatCurrencyImport(
                         transaction.amount?.amount || 0,
                         transaction.amount?.currency || currency,
                       )}
@@ -456,7 +456,7 @@ export function TransactionReviewTable({
                     {transaction.type === TransactionType.TRANSACTION_TYPE_INCOME
                       ? "+"
                       : "-"}
-                    {formatCurrency(
+                    {formatCurrencyImport(
                       transaction.amount?.amount || 0,
                       transaction.amount?.currency || currency,
                     )}
