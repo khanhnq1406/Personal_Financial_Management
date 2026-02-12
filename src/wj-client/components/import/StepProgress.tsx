@@ -1,0 +1,148 @@
+"use client";
+
+import { FC, ReactElement, cloneElement } from "react";
+
+interface Step {
+  number: number;
+  label: string;
+  icon: ReactElement;
+}
+
+interface StepProgressProps {
+  steps: Step[];
+  currentStep: number;
+  className?: string;
+}
+
+/**
+ * StepProgress - Shows user's progress through multi-step flow
+ *
+ * Mobile view:
+ * - "Step X of Y" text
+ * - Current step label
+ * - Progress bar
+ *
+ * Desktop view:
+ * - All steps horizontally with circles and labels
+ * - Completed steps: filled with checkmark
+ * - Current step: white with ring
+ * - Upcoming steps: white with neutral border
+ * - Connector lines between steps
+ */
+export const StepProgress: FC<StepProgressProps> = ({
+  steps,
+  currentStep,
+  className = "",
+}) => {
+  const totalSteps = steps.length;
+  const currentStepIndex = steps.findIndex((step) => step.number === currentStep);
+  const progressPercentage = ((currentStepIndex + 1) / totalSteps) * 100;
+  const currentStepData = steps[currentStepIndex];
+
+  return (
+    <div className={className}>
+      {/* Mobile view: Simple progress bar with step indicator */}
+      <div className="sm:hidden">
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span className="text-gray-600 font-medium">
+            Step {currentStepIndex + 1} of {totalSteps}
+          </span>
+          <span className="text-gray-900 font-semibold">
+            {currentStepData?.label}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-[#008148] h-2 rounded-full transition-all duration-500"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Desktop view: Full step indicators */}
+      <div className="hidden sm:block">
+        <div className="flex items-center justify-between">
+          {steps.map((step, index) => {
+            const isCompleted = step.number < currentStep;
+            const isCurrent = step.number === currentStep;
+            const isUpcoming = step.number > currentStep;
+
+            return (
+              <div key={step.number} className="flex items-center flex-1">
+                {/* Step circle and label */}
+                <div className="flex flex-col items-center relative">
+                  {/* Circle */}
+                  <div
+                    className={`
+                      w-10 h-10 rounded-full border-2 flex items-center justify-center
+                      transition-all duration-300
+                      ${
+                        isCompleted
+                          ? "bg-[#008148] border-[#008148]"
+                          : isCurrent
+                            ? "bg-white border-[#008148] ring-4 ring-[#008148]/10"
+                            : "bg-white border-gray-300"
+                      }
+                    `}
+                  >
+                    {isCompleted ? (
+                      // Checkmark for completed steps
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : (
+                      // Icon for current and upcoming steps
+                      cloneElement(step.icon, {
+                        className: `w-5 h-5 ${
+                          isCurrent ? "text-[#008148]" : "text-gray-400"
+                        }`,
+                      })
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <span
+                    className={`
+                      mt-2 text-xs font-medium text-center whitespace-nowrap
+                      ${
+                        isCurrent
+                          ? "text-[#008148]"
+                          : isCompleted
+                            ? "text-gray-700"
+                            : "text-gray-400"
+                      }
+                    `}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+
+                {/* Connector line (not shown after last step) */}
+                {index < steps.length - 1 && (
+                  <div className="flex-1 h-0.5 mx-4 relative top-[-16px]">
+                    <div
+                      className={`
+                        h-full transition-all duration-300
+                        ${isCompleted ? "bg-[#008148]" : "bg-gray-300"}
+                      `}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
