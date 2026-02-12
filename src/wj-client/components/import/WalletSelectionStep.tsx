@@ -153,10 +153,13 @@ export function WalletSelectionStep({
             <button
               key={wallet.id}
               onClick={() => handleSelectWallet(wallet.id)}
+              aria-label={`${wallet.walletName}, balance ${formatCurrency(wallet.balance?.amount || 0, wallet.balance?.currency || "VND")}. ${isSelected ? "Selected" : "Not selected"}`}
+              aria-pressed={isSelected}
               className={cn(
                 "relative min-h-[120px] p-5 rounded-2xl border-2 transition-all duration-200",
                 "flex flex-col justify-between text-left",
                 "hover:shadow-lg active:scale-[0.98]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
                 isSelected
                   ? "border-primary-500 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 shadow-lg"
                   : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-700",
