@@ -5,7 +5,7 @@ import { FC, ReactElement, cloneElement } from "react";
 interface Step {
   number: number;
   label: string;
-  icon: ReactElement;
+  icon?: ReactElement;
 }
 
 interface StepProgressProps {
