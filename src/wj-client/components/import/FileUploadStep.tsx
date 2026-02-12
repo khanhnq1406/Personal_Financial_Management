@@ -180,6 +180,15 @@ export function FileUploadStep({
 
       {/* Drag & Drop Area with improved design */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload file area. Click or drag and drop to select a file."
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            document.getElementById("file-input")?.click();
+          }
+        }}
         className={cn(
           "relative border-2 border-dashed rounded-2xl transition-all duration-300 ease-in-out",
           "min-h-[280px] sm:min-h-[320px] flex flex-col items-center justify-center p-6 sm:p-10",
@@ -213,6 +222,7 @@ export function FileUploadStep({
           accept=".xls,.xlsx,.pdf"
           onChange={handleInputChange}
           className="hidden"
+          aria-label="Upload bank statement file (Excel or PDF)"
         />
 
         {/* Upload State */}
