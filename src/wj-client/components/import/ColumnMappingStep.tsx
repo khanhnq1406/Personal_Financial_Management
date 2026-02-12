@@ -209,14 +209,11 @@ export function ColumnMappingStep({
             dateColumn: (dateColumn + 1).toString(),
             amountColumn: (amountColumn + 1).toString(),
             descriptionColumn: (descriptionColumn + 1).toString(),
-            typeColumn:
-              typeColumn >= 0 ? (typeColumn + 1).toString() : undefined,
+            typeColumn: typeColumn >= 0 ? (typeColumn + 1).toString() : "",
             categoryColumn:
-              categoryColumn >= 0 ? (categoryColumn + 1).toString() : undefined,
+              categoryColumn >= 0 ? (categoryColumn + 1).toString() : "",
             referenceColumn:
-              referenceColumn >= 0
-                ? (referenceColumn + 1).toString()
-                : undefined,
+              referenceColumn >= 0 ? (referenceColumn + 1).toString() : "",
             dateFormat,
             currency,
           },

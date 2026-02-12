@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import BaseCard from "@/components/BaseCard";
-import Button from "@/components/Button";
+import { BaseCard } from "@/components/BaseCard";
+import { Button } from "@/components/Button";
 import { ButtonType } from "@/app/constants";
 import {
   useQueryListUserTemplates,
   useMutationDeleteUserTemplate,
 } from "@/utils/generated/hooks";
-import { UserTemplate } from "@/gen/wealthjourney/import/v1/import_pb";
-import ConfirmationDialog from "@/components/modals/ConfirmationDialog";
+import { UserTemplate } from "@/gen/protobuf/v1/import";
+import { ConfirmationDialog } from "@/components/modals/ConfirmationDialog";
 import { formatDate } from "@/lib/utils/date";
 
 export default function ImportTemplatesPage() {
@@ -134,19 +134,20 @@ export default function ImportTemplatesPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setSelectedTemplate(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Template"
-        message={`Are you sure you want to delete the template "${selectedTemplate?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        confirmButtonType="danger"
-        isLoading={deleteMutation.isPending}
-      />
+      {showDeleteConfirm && (
+        <ConfirmationDialog
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setSelectedTemplate(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          title="Delete Template"
+          message={`Are you sure you want to delete the template "${selectedTemplate?.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          variant="danger"
+          isLoading={deleteMutation.isPending}
+        />
+      )}
     </div>
   );
 }
