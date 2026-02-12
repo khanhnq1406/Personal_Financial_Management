@@ -108,13 +108,20 @@ export const StepProgress: FC<StepProgressProps> = ({
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                    ) : (
+                    ) : step.icon ? (
                       // Icon for current and upcoming steps
                       cloneElement(step.icon, {
                         className: `w-5 h-5 ${
                           isCurrent ? "text-[#008148]" : "text-gray-400"
                         }`,
                       })
+                    ) : (
+                      // Fallback to step number if no icon
+                      <span className={`text-sm font-semibold ${
+                        isCurrent ? "text-[#008148]" : "text-gray-400"
+                      }`}>
+                        {step.number}
+                      </span>
                     )}
                   </div>
 
