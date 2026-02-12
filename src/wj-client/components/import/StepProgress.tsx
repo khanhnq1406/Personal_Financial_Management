@@ -1,11 +1,11 @@
 "use client";
 
-import { FC, ReactElement, cloneElement } from "react";
+import { FC, ReactNode } from "react";
 
 interface Step {
   number: number;
   label: string;
-  icon?: ReactElement;
+  icon?: ReactNode;
 }
 
 interface StepProgressProps {
