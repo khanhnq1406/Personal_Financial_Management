@@ -35,7 +35,9 @@ export const StepProgress: FC<StepProgressProps> = ({
   className = "",
 }) => {
   const totalSteps = steps.length;
-  const currentStepIndex = steps.findIndex((step) => step.number === currentStep);
+  const currentStepIndex = steps.findIndex(
+    (step) => step.number === currentStep,
+  );
   const progressPercentage = ((currentStepIndex + 1) / totalSteps) * 100;
   const currentStepData = steps[currentStepIndex];
 
@@ -57,7 +59,7 @@ export const StepProgress: FC<StepProgressProps> = ({
           aria-valuenow={currentStep}
           aria-valuemin={1}
           aria-valuemax={steps.length}
-          aria-label={`Step ${currentStep} of ${steps.length}: ${steps.find(s => s.number === currentStep)?.label}`}
+          aria-label={`Step ${currentStep} of ${steps.length}: ${steps.find((s) => s.number === currentStep)?.label}`}
         >
           <div
             className="bg-[#008148] h-2 rounded-full transition-all duration-500"
@@ -67,17 +69,20 @@ export const StepProgress: FC<StepProgressProps> = ({
       </div>
 
       {/* Desktop view: Full step indicators */}
-      <div className="hidden sm:block">
-        <ol className="flex items-center justify-between" aria-label="Import progress steps">
+      <div className="hidden sm:flex sm:justify-center">
+        <ol
+          className="flex items-center justify-center max-w-3xl w-full"
+          aria-label="Import progress steps"
+        >
           {steps.map((step, index) => {
             const isCompleted = step.number < currentStep;
             const isCurrent = step.number === currentStep;
             const isUpcoming = step.number > currentStep;
 
             return (
-              <li key={step.number} className="flex items-center flex-1">
+              <li key={step.number} className="flex items-center">
                 {/* Step circle and label */}
-                <div className="flex flex-col items-center relative">
+                <div className="flex flex-col items-center relative w-20">
                   {/* Circle */}
                   <div
                     className={`
@@ -110,16 +115,20 @@ export const StepProgress: FC<StepProgressProps> = ({
                       </svg>
                     ) : step.icon ? (
                       // Icon for current and upcoming steps
-                      <div className={`w-5 h-5 ${
-                        isCurrent ? "text-[#008148]" : "text-gray-400"
-                      }`}>
+                      <div
+                        className={`w-5 h-5 ${
+                          isCurrent ? "text-[#008148]" : "text-gray-400"
+                        }`}
+                      >
                         {step.icon}
                       </div>
                     ) : (
                       // Fallback to step number if no icon
-                      <span className={`text-sm font-semibold ${
-                        isCurrent ? "text-[#008148]" : "text-gray-400"
-                      }`}>
+                      <span
+                        className={`text-sm font-semibold ${
+                          isCurrent ? "text-[#008148]" : "text-gray-400"
+                        }`}
+                      >
                         {step.number}
                       </span>
                     )}
@@ -144,10 +153,10 @@ export const StepProgress: FC<StepProgressProps> = ({
 
                 {/* Connector line (not shown after last step) */}
                 {index < steps.length - 1 && (
-                  <div className="flex-1 h-0.5 mx-4 relative top-[-16px]">
+                  <div className="w-24 h-0.5 relative top-[-16px]">
                     <div
                       className={`
-                        h-full transition-all duration-300
+                        w-full h-full transition-all duration-300
                         ${isCompleted ? "bg-[#008148]" : "bg-gray-300"}
                       `}
                     />

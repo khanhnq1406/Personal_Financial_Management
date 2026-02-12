@@ -354,7 +354,7 @@ export function ImportTransactionsForm({
     >
       {/* Step Progress Indicator - Show on steps 1, 2, 5 only */}
       {(currentStep === 1 || currentStep === 2 || currentStep === 5) && (
-        <div className="mb-6 pb-6 border-b border-gray-200">
+        <div className="mb-6 pb-6 border-b border-gray-200 pt-1">
           <StepProgress steps={IMPORT_STEPS} currentStep={currentStep} />
         </div>
       )}
