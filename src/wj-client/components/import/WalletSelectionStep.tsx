@@ -2,10 +2,16 @@
 
 import { useState } from "react";
 import { Button } from "@/components/Button";
-import { FormSelect } from "@/components/forms/FormSelect";
 import { useQueryListWallets } from "@/utils/generated/hooks";
 import { cn } from "@/lib/utils/cn";
 import { formatCurrency } from "@/utils/currency-formatter";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+  WalletIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 export interface WalletSelectionStepProps {
   onWalletSelected: (walletId: number) => void;
@@ -39,11 +45,16 @@ export function WalletSelectionStep({
 
   if (isLoading) {
     return (
-      <div className="space-y-4 py-8">
-        <div className="flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          <p className="mt-4 text-neutral-600 dark:text-dark-text-secondary">
-            Loading wallets...
+      <div className="space-y-4 sm:space-y-6 py-8">
+        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-neutral-50 dark:bg-dark-surface-secondary p-8 sm:p-12">
+          <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mb-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+          <p className="text-lg font-medium text-neutral-900 dark:text-dark-text">
+            Loading your wallets...
+          </p>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-dark-text-secondary">
+            Please wait while we fetch your wallet information
           </p>
         </div>
       </div>
@@ -52,100 +63,181 @@ export function WalletSelectionStep({
 
   if (isError) {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-700 dark:text-red-300">
-            Failed to load wallets. {error?.message || "Please try again."}
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-red-50 dark:bg-red-950 border-2 border-red-200 dark:border-red-800 p-8 sm:p-12">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-4">
+            <ExclamationCircleIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">
+            Failed to Load Wallets
+          </h3>
+          <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+            {error?.message || "An unexpected error occurred. Please try again."}
           </p>
         </div>
-        <Button variant="secondary" onClick={onBack}>
-          Back
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            variant="secondary"
+            onClick={onBack}
+            className="min-h-[44px] px-6"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (wallets.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <p className="text-yellow-700 dark:text-yellow-300">
-            No wallets found. Please create a wallet first before importing
-            transactions.
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-yellow-50 dark:bg-yellow-950 border-2 border-yellow-200 dark:border-yellow-800 p-8 sm:p-12">
+          <div className="w-16 h-16 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-4">
+            <WalletIcon className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100">
+            No Wallets Available
+          </h3>
+          <p className="mt-2 text-sm text-yellow-700 dark:text-yellow-300 max-w-md">
+            You need to create at least one wallet before importing transactions.
+            Please go to the Wallets page to create your first wallet.
           </p>
         </div>
-        <Button variant="secondary" onClick={onBack}>
-          Back
-        </Button>
+        <div className="flex justify-center">
+          <Button
+            variant="secondary"
+            onClick={onBack}
+            className="min-h-[44px] px-6"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Instructions */}
-      <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-        <p className="mb-2">
-          Select the wallet where transactions will be imported.
-        </p>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          The wallet balance will be updated based on imported transactions.
+      {/* Hero Section */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 mb-2">
+          <WalletIcon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-dark-text">
+          Select Destination Wallet
+        </h2>
+        <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary max-w-lg mx-auto">
+          Choose the wallet where your imported transactions will be added. The
+          wallet balance will be updated automatically.
         </p>
       </div>
 
-      {/* Wallet List */}
-      <div className="space-y-2 max-h-[50vh] overflow-y-auto -mx-1 px-1">
-        {wallets.map((wallet) => (
-          <button
-            key={wallet.id}
-            onClick={() => handleSelectWallet(wallet.id)}
-            className={cn(
-              "w-full p-4 rounded-lg border-2 text-left transition-all duration-200",
-              "hover:border-primary-400 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
-              "active:scale-[0.99]",
-              selectedWalletId === wallet.id
-                ? "border-primary-600 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
-                : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-base text-neutral-900 dark:text-dark-text">
+      {/* Wallet Count Badge */}
+      <div className="flex items-center justify-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-100 dark:bg-dark-surface-secondary">
+          <WalletIcon className="w-4 h-4 text-neutral-600 dark:text-dark-text-secondary" />
+          <span className="text-sm font-medium text-neutral-700 dark:text-dark-text-secondary">
+            {wallets.length} wallet{wallets.length !== 1 ? "s" : ""} available
+          </span>
+        </div>
+      </div>
+
+      {/* Wallet Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-h-[50vh] overflow-y-auto -mx-1 px-1">
+        {wallets.map((wallet) => {
+          const isSelected = selectedWalletId === wallet.id;
+          return (
+            <button
+              key={wallet.id}
+              onClick={() => handleSelectWallet(wallet.id)}
+              className={cn(
+                "relative min-h-[120px] p-5 rounded-2xl border-2 transition-all duration-200",
+                "flex flex-col justify-between text-left",
+                "hover:shadow-lg active:scale-[0.98]",
+                isSelected
+                  ? "border-primary-500 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 shadow-lg"
+                  : "border-neutral-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-700",
+              )}
+            >
+              {/* Selection Indicator */}
+              {isSelected && (
+                <div className="absolute top-3 right-3">
+                  <div className="w-8 h-8 rounded-full bg-primary-600 dark:bg-primary-500 flex items-center justify-center shadow-md">
+                    <CheckCircleIcon className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Wallet Icon Badge */}
+              <div
+                className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center mb-3",
+                  isSelected
+                    ? "bg-primary-200 dark:bg-primary-800"
+                    : "bg-neutral-100 dark:bg-dark-surface-secondary",
+                )}
+              >
+                <WalletIcon
+                  className={cn(
+                    "w-6 h-6",
+                    isSelected
+                      ? "text-primary-700 dark:text-primary-300"
+                      : "text-neutral-600 dark:text-dark-text-secondary",
+                  )}
+                />
+              </div>
+
+              {/* Wallet Info */}
+              <div className="space-y-1.5">
+                <h3
+                  className={cn(
+                    "font-semibold text-base line-clamp-1",
+                    isSelected
+                      ? "text-primary-900 dark:text-primary-100"
+                      : "text-neutral-900 dark:text-dark-text",
+                  )}
+                >
                   {wallet.walletName}
                 </h3>
-                <p className="text-sm text-neutral-600 dark:text-dark-text-secondary mt-1">
-                  Balance:{" "}
+                <p
+                  className={cn(
+                    "text-sm font-medium",
+                    isSelected
+                      ? "text-primary-700 dark:text-primary-300"
+                      : "text-neutral-600 dark:text-dark-text-secondary",
+                  )}
+                >
                   {formatCurrency(
                     wallet.balance?.amount || 0,
                     wallet.balance?.currency || "VND",
                   )}
                 </p>
               </div>
-              {selectedWalletId === wallet.id && (
-                <svg
-                  className="w-6 h-6 text-primary-600 dark:text-primary-500 flex-shrink-0 ml-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 pt-2">
-        <Button variant="secondary" onClick={onBack}>
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <Button
+          variant="secondary"
+          onClick={onBack}
+          className="min-h-[44px] sm:w-auto"
+        >
+          <ArrowLeftIcon className="w-5 h-5 mr-2" />
           Back
         </Button>
-        <Button variant="primary" onClick={onNext} disabled={!selectedWalletId}>
-          Next: Review
+        <Button
+          variant="primary"
+          onClick={onNext}
+          disabled={!selectedWalletId}
+          className="min-h-[44px] flex-1 sm:flex-initial"
+        >
+          Continue
+          <ArrowRightIcon className="w-5 h-5 ml-2" />
         </Button>
       </div>
     </div>
