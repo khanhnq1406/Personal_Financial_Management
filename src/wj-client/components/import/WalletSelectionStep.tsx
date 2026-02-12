@@ -47,14 +47,15 @@ export function WalletSelectionStep({
     return (
       <div className="space-y-4 sm:space-y-6 py-8">
         <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-neutral-50 dark:bg-dark-surface-secondary p-8 sm:p-12">
-          <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mb-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="relative w-16 h-16 mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-primary-200 dark:border-primary-800"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary-600 dark:border-primary-500 border-t-transparent animate-spin"></div>
           </div>
           <p className="text-lg font-medium text-neutral-900 dark:text-dark-text">
             Loading your wallets...
           </p>
           <p className="mt-2 text-sm text-neutral-600 dark:text-dark-text-secondary">
-            Please wait while we fetch your wallet information
+            This will just take a moment
           </p>
         </div>
       </div>
@@ -64,7 +65,7 @@ export function WalletSelectionStep({
   if (isError) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-red-50 dark:bg-red-950 border-2 border-red-200 dark:border-red-800 p-8 sm:p-12">
+        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-danger-50 dark:bg-danger-950 border-2 border-danger-200 dark:border-danger-800 p-8 sm:p-12">
           <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mb-4">
             <ExclamationCircleIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
@@ -92,12 +93,12 @@ export function WalletSelectionStep({
   if (wallets.length === 0) {
     return (
       <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-yellow-50 dark:bg-yellow-950 border-2 border-yellow-200 dark:border-yellow-800 p-8 sm:p-12">
+        <div className="flex flex-col items-center justify-center text-center rounded-2xl bg-warning-50 dark:bg-warning-950 border-2 border-warning-200 dark:border-warning-800 p-8 sm:p-12">
           <div className="w-16 h-16 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-4">
             <WalletIcon className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
           </div>
           <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100">
-            No Wallets Available
+            No Wallets Found
           </h3>
           <p className="mt-2 text-sm text-yellow-700 dark:text-yellow-300 max-w-md">
             You need to create at least one wallet before importing transactions.
@@ -125,7 +126,7 @@ export function WalletSelectionStep({
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 mb-2">
           <WalletIcon className="w-8 h-8 text-primary-600 dark:text-primary-400" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-dark-text">
+        <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-dark-text">
           Select Destination Wallet
         </h2>
         <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary max-w-lg mx-auto">
@@ -164,7 +165,7 @@ export function WalletSelectionStep({
               {/* Selection Indicator */}
               {isSelected && (
                 <div className="absolute top-3 right-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-600 dark:bg-primary-500 flex items-center justify-center shadow-md">
+                  <div className="w-6 h-6 rounded-full bg-primary-600 dark:bg-primary-500 flex items-center justify-center shadow-md">
                     <CheckCircleIcon className="w-5 h-5 text-white" />
                   </div>
                 </div>
