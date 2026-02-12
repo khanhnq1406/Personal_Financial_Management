@@ -4,27 +4,40 @@ import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/Button";
 
+// File type icons mapping
+const FILE_TYPE_ICONS = {
+  excel: (
+    <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="#1D6F42"/>
+      <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x="12" y="16" fontSize="6" fill="white" textAnchor="middle" fontWeight="bold">XLS</text>
+    </svg>
+  ),
+  pdf: (
+    <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="#DC3545"/>
+      <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x="12" y="16" fontSize="6" fill="white" textAnchor="middle" fontWeight="bold">PDF</text>
+    </svg>
+  ),
+};
+
+const ACCEPTED_FILE_TYPES = {
+  "application/vnd.ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/pdf": [".pdf"],
+};
+
+const MAX_FILE_SIZE = {
+  excel: 10 * 1024 * 1024, // 10MB
+  pdf: 20 * 1024 * 1024, // 20MB
+};
+
 export interface FileUploadStepProps {
   onFileSelected: (file: File) => void;
   onNext: () => void;
   isUploading: boolean;
 }
-
-const ACCEPTED_FILE_TYPES = {
-  // CSV temporarily disabled - using auto-parse for Excel and PDF only
-  // "text/csv": [".csv"],
-  "application/vnd.ms-excel": [".xls"],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-    ".xlsx",
-  ],
-  "application/pdf": [".pdf"],
-};
-
-const MAX_FILE_SIZE = {
-  csv: 10 * 1024 * 1024, // 10MB
-  excel: 10 * 1024 * 1024, // 10MB
-  pdf: 20 * 1024 * 1024, // 20MB
-};
 
 export function FileUploadStep({
   onFileSelected,
@@ -36,14 +49,12 @@ export function FileUploadStep({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const validateFile = (file: File): string | null => {
-    // Check file type - CSV temporarily disabled
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!ext || !["xls", "xlsx", "pdf"].includes(ext)) {
       return "Invalid file type. Please upload Excel (.xlsx, .xls) or PDF file.";
     }
 
-    // Check file size
-    let maxSize = MAX_FILE_SIZE.csv;
+    let maxSize = MAX_FILE_SIZE.excel;
     if (["xls", "xlsx"].includes(ext)) {
       maxSize = MAX_FILE_SIZE.excel;
     } else if (ext === "pdf") {
@@ -126,30 +137,69 @@ export function FileUploadStep({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const getFileTypeIcon = () => {
+    if (!selectedFile) return null;
+    const ext = selectedFile.name.split(".").pop()?.toLowerCase();
+    if (ext === "pdf") return FILE_TYPE_ICONS.pdf;
+    if (ext === "xls" || ext === "xlsx") return FILE_TYPE_ICONS.excel;
+    return null;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Instructions */}
-      <div className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-        <p className="mb-2">
-          Upload your bank or credit card statement to import transactions.
-        </p>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          Supported formats: Excel (.xlsx, .xls), PDF • Max size: 10MB (Excel),
-          20MB (PDF)
+      {/* Hero Section */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 mb-3">
+          <svg className="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-dark-text">
+          Upload Bank Statement
+        </h2>
+        <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary max-w-md mx-auto">
+          Import transactions automatically from your Excel or PDF statement
         </p>
       </div>
 
-      {/* Drag & Drop Area */}
+      {/* File Type Support Pills */}
+      <div className="flex justify-center gap-2 flex-wrap">
+        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-success-100 text-success-700 dark:bg-success-900 dark:text-success-300">
+          <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Excel (.xlsx, .xls)
+        </span>
+        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-success-100 text-success-700 dark:bg-success-900 dark:text-success-300">
+          <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          PDF
+        </span>
+      </div>
+
+      {/* Drag & Drop Area with improved design */}
       <div
         className={cn(
-          "relative border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-all duration-200",
-          isDragOver
-            ? "border-primary-500 bg-primary-50 dark:bg-primary-950 dark:border-primary-600"
-            : selectedFile
-              ? "border-success-500 bg-success-50 dark:bg-success-950 dark:border-success-600"
-              : error
-                ? "border-danger-500 bg-danger-50 dark:bg-danger-950 dark:border-danger-600"
-                : "border-neutral-300 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-700 hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
+          "relative border-2 border-dashed rounded-2xl transition-all duration-300 ease-in-out",
+          "min-h-[280px] sm:min-h-[320px] flex flex-col items-center justify-center p-6 sm:p-10",
+          isDragOver && !selectedFile && [
+            "border-primary-500 bg-primary-50 dark:bg-primary-950",
+            "scale-[1.02] shadow-lg shadow-primary-200 dark:shadow-primary-900",
+          ],
+          selectedFile && [
+            "border-success-400 bg-success-50 dark:bg-success-950",
+            "shadow-md",
+          ],
+          error && [
+            "border-danger-400 bg-danger-50 dark:bg-danger-950",
+          ],
+          !selectedFile && !error && !isDragOver && [
+            "border-neutral-300 dark:border-dark-border",
+            "hover:border-primary-400 dark:hover:border-primary-600",
+            "hover:bg-neutral-50 dark:hover:bg-dark-surface-hover",
+            "hover:shadow-md",
+          ],
           "cursor-pointer active:scale-[0.99]",
         )}
         onDragOver={handleDragOver}
@@ -165,88 +215,118 @@ export function FileUploadStep({
           className="hidden"
         />
 
-        {/* Upload Icon */}
-        <div className="mb-4">
-          {selectedFile ? (
-            <svg
-              className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-success-600 dark:text-success-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-neutral-400 dark:text-dark-text-tertiary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-          )}
-        </div>
+        {/* Upload State */}
+        {!selectedFile && (
+          <div className="text-center space-y-4">
+            {/* Animated upload icon */}
+            <div className={cn(
+              "transition-transform duration-300",
+              isDragOver && "scale-110"
+            )}>
+              <svg
+                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-neutral-400 dark:text-dark-text-tertiary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            </div>
 
-        {/* Text */}
-        {selectedFile ? (
-          <div>
-            <p className="text-base sm:text-lg font-semibold text-success-700 dark:text-success-400 mb-1">
-              {selectedFile.name}
-            </p>
-            <p className="text-sm text-neutral-600 dark:text-dark-text-secondary">
-              {formatFileSize(selectedFile.size)} • Ready to upload
-            </p>
+            <div className="space-y-2">
+              <p className="text-lg sm:text-xl font-semibold text-neutral-700 dark:text-dark-text">
+                {isDragOver ? (
+                  <span className="text-primary-600 dark:text-primary-400">
+                    Drop your file here
+                  </span>
+                ) : (
+                  <>
+                    Drag & drop your file, or{" "}
+                    <span className="text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400">
+                      browse
+                    </span>
+                  </>
+                )}
+              </p>
+              <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
+                Maximum size: 10MB (Excel) • 20MB (PDF)
+              </p>
+            </div>
           </div>
-        ) : (
-          <div>
-            <p className="text-base sm:text-lg font-semibold text-neutral-700 dark:text-dark-text mb-2">
-              Drop your file here, or{" "}
-              <span className="text-primary-600 dark:text-primary-500">
-                browse
+        )}
+
+        {/* Selected File State */}
+        {selectedFile && (
+          <div className="text-center space-y-4 animate-in fade-in zoom-in duration-300">
+            {/* File icon */}
+            <div className="flex justify-center">
+              {getFileTypeIcon()}
+            </div>
+
+            {/* File info */}
+            <div className="space-y-1">
+              <p className="text-base sm:text-lg font-semibold text-success-700 dark:text-success-400">
+                {selectedFile.name}
+              </p>
+              <p className="text-sm text-neutral-600 dark:text-dark-text-secondary">
+                {formatFileSize(selectedFile.size)}
+              </p>
+            </div>
+
+            {/* Success checkmark */}
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-success-100 dark:bg-success-900">
+              <svg className="w-5 h-5 text-success-600 dark:text-success-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span className="ml-2 text-sm font-medium text-success-700 dark:text-success-300">
+                Ready to upload
               </span>
-            </p>
-            <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-              Excel or PDF up to 20MB
-            </p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Error Message */}
+      {/* Error Message with improved design */}
       {error && (
-        <div className="flex items-start gap-2 p-3 sm:p-4 bg-danger-50 dark:bg-danger-950 border border-danger-200 dark:border-danger-800 rounded-lg">
-          <svg
-            className="w-5 h-5 text-danger-600 dark:text-danger-400 flex-shrink-0 mt-0.5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+        <div className="flex items-start gap-3 p-4 bg-danger-50 dark:bg-danger-950 border border-danger-300 dark:border-danger-700 rounded-xl animate-in slide-in-from-top duration-300">
+          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-danger-600 dark:bg-danger-700 flex items-center justify-center mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-danger-800 dark:text-danger-200">
+              {error}
+            </p>
+          </div>
+          <button
+            onClick={() => setError("")}
+            className="flex-shrink-0 p-1 rounded-lg text-danger-600 dark:text-danger-400 hover:bg-danger-100 dark:hover:bg-danger-900 transition-colors"
+            aria-label="Dismiss error"
           >
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <p className="text-sm text-danger-700 dark:text-danger-300">
-            {error}
-          </p>
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons with improved mobile touch targets */}
       <div className="flex gap-3 pt-2">
         {selectedFile && (
-          <Button variant="secondary" onClick={() => handleFileChange(null)}>
+          <Button
+            variant="secondary"
+            onClick={() => handleFileChange(null)}
+            className="min-h-[44px]"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Clear
           </Button>
         )}
@@ -255,8 +335,24 @@ export function FileUploadStep({
           onClick={onNext}
           disabled={!selectedFile || isUploading}
           loading={isUploading}
+          className="flex-1 min-h-[44px] text-base font-semibold"
         >
-          {isUploading ? "Uploading..." : "Next: Configure"}
+          {isUploading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Uploading...
+            </>
+          ) : (
+            <>
+              Continue
+              <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </>
+          )}
         </Button>
       </div>
     </div>
