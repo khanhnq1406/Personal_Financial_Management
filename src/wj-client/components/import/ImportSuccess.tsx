@@ -43,7 +43,8 @@ export function ImportSuccess({
   };
 
   // Extract currency from summary money objects
-  const currency = summary.totalIncome?.currency || summary.totalExpenses?.currency || "VND";
+  const currency =
+    summary.totalIncome?.currency || summary.totalExpenses?.currency || "VND";
 
   // formatCurrency already handles conversion from smallest unit to display unit
   const totalIncome = summary.totalIncome?.amount || 0;
@@ -75,8 +76,8 @@ export function ImportSuccess({
             Undo Import?
           </h2>
           <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-            This will delete all {summary.totalImported} imported transactions and restore your
-            wallet balance.
+            This will delete all {summary.totalImported} imported transactions
+            and restore your wallet balance.
           </p>
         </div>
 
@@ -95,8 +96,18 @@ export function ImportSuccess({
             className="flex-1 min-h-[48px] flex items-center justify-center gap-2"
             disabled={undoMutation.isPending}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
             Cancel
           </Button>
@@ -106,8 +117,18 @@ export function ImportSuccess({
             className="flex-1 min-h-[48px] flex items-center justify-center gap-2 !bg-red-600 hover:!bg-red-700"
             loading={undoMutation.isPending}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
             </svg>
             Yes, Undo Import
           </Button>
@@ -139,7 +160,8 @@ export function ImportSuccess({
           Import Successful!
         </h2>
         <p className="text-sm sm:text-base text-neutral-600 dark:text-dark-text-secondary">
-          {summary.totalImported} transaction{summary.totalImported !== 1 ? "s" : ""} imported
+          {summary.totalImported || 0} transaction
+          {summary.totalImported !== 1 ? "s" : ""} imported
           {summary.totalSkipped > 0 && ` (${summary.totalSkipped} skipped)`}
         </p>
       </div>
@@ -148,10 +170,22 @@ export function ImportSuccess({
       <div className="grid grid-cols-2 gap-3">
         <div className="p-4 sm:p-5 bg-success-50 dark:bg-success-950 rounded-xl border border-success-200 dark:border-success-800 hover:shadow-md transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <svg className="w-4 h-4 text-success-600 dark:text-success-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-4 h-4 text-success-600 dark:text-success-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
-            <p className="text-xs font-medium text-success-600 dark:text-success-400">Income</p>
+            <p className="text-xs font-medium text-success-600 dark:text-success-400">
+              Income
+            </p>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-success-700 dark:text-success-300">
             {formatCurrency(totalIncome, currency)}
@@ -159,10 +193,22 @@ export function ImportSuccess({
         </div>
         <div className="p-4 sm:p-5 bg-danger-50 dark:bg-danger-950 rounded-xl border border-danger-200 dark:border-danger-800 hover:shadow-md transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <svg className="w-4 h-4 text-danger-600 dark:text-danger-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            <svg
+              className="w-4 h-4 text-danger-600 dark:text-danger-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M20 12H4"
+              />
             </svg>
-            <p className="text-xs font-medium text-danger-600 dark:text-danger-400">Expenses</p>
+            <p className="text-xs font-medium text-danger-600 dark:text-danger-400">
+              Expenses
+            </p>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-danger-700 dark:text-danger-300">
             {formatCurrency(Math.abs(totalExpenses), currency)}
@@ -170,10 +216,22 @@ export function ImportSuccess({
         </div>
         <div className="p-4 sm:p-5 bg-neutral-50 dark:bg-dark-surface-hover rounded-xl border border-neutral-200 dark:border-dark-border hover:shadow-md transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <svg className="w-4 h-4 text-neutral-600 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            <svg
+              className="w-4 h-4 text-neutral-600 dark:text-dark-text-secondary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
             </svg>
-            <p className="text-xs font-medium text-neutral-600 dark:text-dark-text-secondary">Net Change</p>
+            <p className="text-xs font-medium text-neutral-600 dark:text-dark-text-secondary">
+              Net Change
+            </p>
           </div>
           <p
             className={`text-xl sm:text-2xl font-bold ${
@@ -188,8 +246,18 @@ export function ImportSuccess({
         </div>
         <div className="p-4 sm:p-5 bg-neutral-50 dark:bg-dark-surface-hover rounded-xl border border-neutral-200 dark:border-dark-border hover:shadow-md transition-all">
           <div className="flex items-center gap-2 mb-2">
-            <svg className="w-4 h-4 text-neutral-600 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+            <svg
+              className="w-4 h-4 text-neutral-600 dark:text-dark-text-secondary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+              />
             </svg>
             <p className="text-xs font-medium text-neutral-600 dark:text-dark-text-secondary">
               New Balance
@@ -252,7 +320,8 @@ export function ImportSuccess({
               You can undo this import within 24 hours
             </p>
             <p className="text-xs text-warning-700 dark:text-warning-400 mt-1">
-              All imported transactions will be deleted and wallet balance will be restored.
+              All imported transactions will be deleted and wallet balance will
+              be restored.
             </p>
           </div>
         </div>
@@ -265,8 +334,18 @@ export function ImportSuccess({
           onClick={handleUndoClick}
           className="flex-1 min-h-[48px] flex items-center justify-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            />
           </svg>
           Undo Import
         </Button>
@@ -276,8 +355,18 @@ export function ImportSuccess({
           className="flex-1 min-h-[48px] flex items-center justify-center gap-2"
         >
           Done
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </Button>
       </div>

@@ -88,7 +88,8 @@ export function ReviewStep(props: ReviewStepProps) {
       : undefined;
   const conversions = "conversions" in props ? props.conversions : undefined;
   const onChangeRate = "onChangeRate" in props ? props.onChangeRate : undefined;
-  const onDescriptionChange = "onDescriptionChange" in props ? props.onDescriptionChange : undefined;
+  const onDescriptionChange =
+    "onDescriptionChange" in props ? props.onDescriptionChange : undefined;
 
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
@@ -117,9 +118,7 @@ export function ReviewStep(props: ReviewStepProps) {
       // Merge updates from parent with local state
       setTransactionsState((prev) => {
         // Create a map of current local state by row number
-        const localStateMap = new Map(
-          prev.map((tx) => [tx.rowNumber, tx])
-        );
+        const localStateMap = new Map(prev.map((tx) => [tx.rowNumber, tx]));
 
         // Merge parent updates with local changes
         const merged = transactions.map((parentTx) => {
@@ -201,17 +200,16 @@ export function ReviewStep(props: ReviewStepProps) {
 
     // Note: Do NOT filter by excludedRows here - let each section handle excluded state
     // Otherwise, unchecking items causes them to disappear from their section
-    const hasErrors = filteredTransactions.filter(
-      (tx) => !tx.isValid,
-    );
+    const hasErrors = filteredTransactions.filter((tx) => !tx.isValid);
 
-    const hasDuplicates = filteredTransactions.filter(
-      (tx) => duplicateRowNumbers.has(tx.rowNumber),
+    const hasDuplicates = filteredTransactions.filter((tx) =>
+      duplicateRowNumbers.has(tx.rowNumber),
     );
 
     const needsCategoryReview = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
+        !excludedRows.has(tx.rowNumber) && // Exclude handled duplicates (skip)
         (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
         (tx.suggestedCategoryId === undefined ||
           isNaN(tx.suggestedCategoryId) ||
@@ -222,6 +220,7 @@ export function ReviewStep(props: ReviewStepProps) {
     const readyToImport = filteredTransactions.filter(
       (tx) =>
         tx.isValid &&
+        !excludedRows.has(tx.rowNumber) && // Exclude handled duplicates (skip)
         (!shouldExcludeDuplicates || !duplicateRowNumbers.has(tx.rowNumber)) &&
         tx.suggestedCategoryId !== undefined &&
         !isNaN(tx.suggestedCategoryId) &&
