@@ -11,7 +11,8 @@ export interface FileUploadStepProps {
 }
 
 const ACCEPTED_FILE_TYPES = {
-  "text/csv": [".csv"],
+  // CSV temporarily disabled - using auto-parse for Excel and PDF only
+  // "text/csv": [".csv"],
   "application/vnd.ms-excel": [".xls"],
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
     ".xlsx",
@@ -35,10 +36,10 @@ export function FileUploadStep({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const validateFile = (file: File): string | null => {
-    // Check file type
+    // Check file type - CSV temporarily disabled
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!ext || !["csv", "xls", "xlsx", "pdf"].includes(ext)) {
-      return "Invalid file type. Please upload CSV, Excel (.xlsx, .xls), or PDF file.";
+    if (!ext || !["xls", "xlsx", "pdf"].includes(ext)) {
+      return "Invalid file type. Please upload Excel (.xlsx, .xls) or PDF file.";
     }
 
     // Check file size
@@ -133,8 +134,8 @@ export function FileUploadStep({
           Upload your bank or credit card statement to import transactions.
         </p>
         <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-          Supported formats: CSV, Excel (.xlsx, .xls), PDF • Max size: 10MB
-          (CSV/Excel), 20MB (PDF)
+          Supported formats: Excel (.xlsx, .xls), PDF • Max size: 10MB (Excel),
+          20MB (PDF)
         </p>
       </div>
 
@@ -159,7 +160,7 @@ export function FileUploadStep({
         <input
           id="file-input"
           type="file"
-          accept=".csv,.xls,.xlsx,.pdf"
+          accept=".xls,.xlsx,.pdf"
           onChange={handleInputChange}
           className="hidden"
         />
@@ -216,7 +217,7 @@ export function FileUploadStep({
               </span>
             </p>
             <p className="text-xs sm:text-sm text-neutral-500 dark:text-dark-text-tertiary">
-              CSV, Excel, or PDF up to 20MB
+              Excel or PDF up to 20MB
             </p>
           </div>
         )}

@@ -198,6 +198,9 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 	// If no explicit column mapping, search for header row
 	mapping := p.columnMapping
 	if mapping == nil {
+		// Extract currency from Excel metadata first (search first 50 rows)
+		extractedCurrency := p.extractCurrencyFromExcel(sheetName, 50)
+
 		// Search for header row (up to first 50 rows to handle bank statement headers)
 		maxHeaderSearch := 50
 		if len(rows) < maxHeaderSearch {
@@ -208,6 +211,10 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 			if p.hasHeader(rows[i]) {
 				mapping = p.detectColumnsFromHeader(rows[i])
 				if mapping != nil {
+					// Override currency with extracted value if found
+					if extractedCurrency != "" {
+						mapping.Currency = extractedCurrency
+					}
 					startRow = i + 1 // Start parsing after header
 					break
 				}
@@ -245,7 +252,16 @@ func (p *ExcelParser) Parse() ([]*ParsedRow, error) {
 		parsedRows = append(parsedRows, parsedRow)
 	}
 
+	// Store the detected mapping for later retrieval
+	p.columnMapping = mapping
+
 	return parsedRows, nil
+}
+
+// GetDetectedMapping returns the column mapping that was detected during parsing
+// This includes the extracted currency from the file metadata
+func (p *ExcelParser) GetDetectedMapping() *ColumnMapping {
+	return p.columnMapping
 }
 
 // isRowHidden checks if a specific row is hidden
@@ -544,6 +560,119 @@ func (p *ExcelParser) isSummaryRow(row []string) bool {
 	}
 
 	return false
+}
+
+// extractCurrencyFromExcel extracts currency code from Excel metadata/header section
+// Looks for "Loại tiền" / "Currency" labels and extracts the 3-letter ISO code
+func (p *ExcelParser) extractCurrencyFromExcel(sheetName string, maxRows int) string {
+	if p.file == nil {
+		return ""
+	}
+
+	// Valid ISO 4217 currency codes (3 uppercase letters)
+	validCurrencies := map[string]bool{
+		"VND": true, "USD": true, "EUR": true, "GBP": true,
+		"JPY": true, "CNY": true, "KRW": true, "THB": true,
+		"SGD": true, "MYR": true, "AUD": true, "CAD": true,
+		"CHF": true, "HKD": true, "NZD": true, "SEK": true,
+		// Add more as needed
+	}
+
+	// Currency keywords to search for (Vietnamese and English)
+	currencyKeywords := []string{
+		"loại tiền", "loai tien",
+		"currency",
+		"tiền tệ", "tien te",
+		"mã tiền", "ma tien",
+	}
+
+	// Get all rows from the sheet
+	rows, err := p.file.GetRows(sheetName)
+	if err != nil {
+		return ""
+	}
+
+	// Search first N rows for currency metadata (before transaction table)
+	searchLimit := maxRows
+	if len(rows) < searchLimit {
+		searchLimit = len(rows)
+	}
+
+	for rowIdx := 0; rowIdx < searchLimit; rowIdx++ {
+		row := rows[rowIdx]
+
+		for colIdx, cellValue := range row {
+			cellLower := strings.ToLower(strings.TrimSpace(cellValue))
+
+			// Check if this cell contains a currency keyword
+			foundKeyword := false
+			for _, keyword := range currencyKeywords {
+				if strings.Contains(cellLower, keyword) {
+					foundKeyword = true
+					break
+				}
+			}
+
+			if !foundKeyword {
+				continue
+			}
+
+			// Found a currency label! Now look for the currency value
+			// It could be in the same cell (e.g., "Currency: VND")
+			// Or in adjacent cells (next column or next row)
+
+			// Try to extract from the same cell
+			parts := strings.Fields(cellValue)
+			for _, part := range parts {
+				partUpper := strings.ToUpper(strings.Trim(part, "/:,"))
+				if len(partUpper) == 3 && validCurrencies[partUpper] {
+					return partUpper
+				}
+			}
+
+			// Try the next cell in the same row (right adjacent)
+			if colIdx+1 < len(row) {
+				nextCell := strings.ToUpper(strings.TrimSpace(row[colIdx+1]))
+				if len(nextCell) == 3 && validCurrencies[nextCell] {
+					return nextCell
+				}
+				// Also check if it's a longer string that starts with currency code
+				if len(nextCell) >= 3 {
+					prefix := nextCell[:3]
+					if validCurrencies[prefix] {
+						return prefix
+					}
+				}
+			}
+
+			// Try the cell below (next row, same column)
+			if rowIdx+1 < len(rows) {
+				nextRow := rows[rowIdx+1]
+				if colIdx < len(nextRow) {
+					belowCell := strings.ToUpper(strings.TrimSpace(nextRow[colIdx]))
+					if len(belowCell) == 3 && validCurrencies[belowCell] {
+						return belowCell
+					}
+					if len(belowCell) >= 3 {
+						prefix := belowCell[:3]
+						if validCurrencies[prefix] {
+							return prefix
+						}
+					}
+				}
+			}
+
+			// Try diagonal (next row, next column)
+			if rowIdx+1 < len(rows) && colIdx+1 < len(rows[rowIdx+1]) {
+				diagonalCell := strings.ToUpper(strings.TrimSpace(rows[rowIdx+1][colIdx+1]))
+				if len(diagonalCell) == 3 && validCurrencies[diagonalCell] {
+					return diagonalCell
+				}
+			}
+		}
+	}
+
+	return "" // Not found, will use default
 }
 
 // detectColumnsFromHeader attempts to auto-detect column mapping from header row

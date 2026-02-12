@@ -338,7 +338,7 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 	case ".pdf":
 		fileTypeStr = "pdf"
 		// PDF parser supports auto-detection when columnMapping is nil
-		// It will attempt to detect columns from header row
+		// It will attempt to detect columns from header row and extract currency
 		pdfParser := parser.NewPDFParser(filePath, columnMapping)
 		parsedRows, err = pdfParser.Parse()
 		if err != nil {
@@ -361,6 +361,10 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 
 			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
+		}
+		// Get the detected mapping (includes extracted currency from file metadata)
+		if columnMapping == nil {
+			columnMapping = pdfParser.GetDetectedMapping()
 		}
 	case ".xlsx", ".xls":
 		fileTypeStr = "excel"
@@ -396,6 +400,8 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			handler.BadRequest(c, apperrors.WrapWithUserMessage(err))
 			return
 		}
+		// Get the detected mapping (includes extracted currency from file metadata)
+		columnMapping = excelParser.GetDetectedMapping()
 	default:
 		// Use CSV parser (default for .csv and any other text format)
 		csvParser := parser.NewCSVParser(filePath, columnMapping)
@@ -465,12 +471,21 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		// Suggest category based on description
 		categorySuggestion := parser.SuggestCategory(row.Description, int32(txType))
 
+		// Get currency from the detected mapping (extracted from file metadata)
+		// For Excel/PDF: extracted by parsers from "Loại tiền" / "Currency" field
+		// For CSV: from bank template or custom mapping
+		// Fallback: "VND" if not specified
+		currency := "VND"
+		if columnMapping != nil && columnMapping.Currency != "" {
+			currency = columnMapping.Currency
+		}
+
 		transactions = append(transactions, &v1.ParsedTransaction{
 			RowNumber:   int32(row.RowNumber),
 			Date:        row.Date.Unix(),
 			Amount: &v1.Money{
 				Amount:   row.Amount,
-				Currency: columnMapping.Currency,
+				Currency: currency,
 			},
 			Description:         row.Description,
 			OriginalDescription: row.OriginalDescription,
@@ -491,16 +506,19 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 		}
 	}
 
-	// Get wallet to determine wallet currency
-	walletCurrency := columnMapping.Currency
-	if walletCurrency == "" {
-		walletCurrency = "VND" // Default
+	// Get the primary currency from the statement file (extracted from metadata)
+	// Note: Actual wallet currency will be determined later in ConvertCurrency step
+	// This is just an indicator for the frontend to show currency info
+	statementCurrency := "VND" // Default
+	if columnMapping != nil && columnMapping.Currency != "" {
+		statementCurrency = columnMapping.Currency
 	}
 
-	// Determine if conversion needed
+	// Determine if conversion might be needed (if multiple currencies detected)
+	// The actual conversion decision is made in ConvertCurrency after fetching wallet
 	needsConversion := false
 	for currency := range currenciesUsed {
-		if currency != walletCurrency {
+		if currency != statementCurrency {
 			needsConversion = true
 			break
 		}
@@ -524,7 +542,7 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			WarningRows: warningRows,
 		},
 		CurrencyInfo: &v1.CurrencyInfo{
-			WalletCurrency:  walletCurrency,
+			WalletCurrency:  statementCurrency, // Note: This is the statement currency, not actual wallet currency (determined later in ConvertCurrency)
 			CurrenciesFound: currencyList,
 			NeedsConversion: needsConversion,
 		},

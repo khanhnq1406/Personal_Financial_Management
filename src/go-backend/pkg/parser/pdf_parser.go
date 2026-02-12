@@ -107,6 +107,141 @@ func (p *PDFParser) ExtractTable() ([]TableRow, error) {
 	return rows, nil
 }
 
+// extractCurrencyFromPDF extracts currency code from PDF metadata/header section
+// Looks for "Loại tiền" / "Currency:" labels and extracts the 3-letter ISO code
+func (p *PDFParser) extractCurrencyFromPDF() string {
+	// Open PDF file
+	f, err := os.Open(p.filePath)
+	if err != nil {
+		return "" // Fail silently, will use default
+	}
+	defer f.Close()
+
+	// Get file size
+	stat, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+
+	// Create PDF reader
+	reader, err := pdf.NewReader(f, stat.Size())
+	if err != nil {
+		// Try with encrypted reader
+		reader, err = pdf.NewReaderEncrypted(f, stat.Size(), func() string { return "" })
+		if err != nil {
+			return ""
+		}
+	}
+
+	// Extract text from all pages
+	texts, err := reader.GetStyledTexts()
+	if err != nil {
+		return ""
+	}
+
+	// Convert to text elements with positions
+	type TextWithPos struct {
+		Text string
+		X    float64
+		Y    float64
+	}
+	var elements []TextWithPos
+	for _, text := range texts {
+		if text.S != "" {
+			elements = append(elements, TextWithPos{
+				Text: strings.TrimSpace(text.S),
+				X:    text.X,
+				Y:    text.Y,
+			})
+		}
+	}
+
+	// Sort by Y position (top to bottom), then by X position (left to right)
+	sort.Slice(elements, func(i, j int) bool {
+		// Group by Y with tolerance (±2 points for same line)
+		yDiff := elements[i].Y - elements[j].Y
+		if yDiff < 0 {
+			yDiff = -yDiff
+		}
+		if yDiff < 2.0 {
+			return elements[i].X < elements[j].X
+		}
+		return elements[i].Y < elements[j].Y
+	})
+
+	// Currency keywords to search for (Vietnamese and English)
+	currencyKeywords := []string{
+		"loại tiền", "loai tien",
+		"currency:",
+		"tiền tệ", "tien te",
+		"mã tiền", "ma tien",
+	}
+
+	// Valid ISO 4217 currency codes (3 uppercase letters)
+	validCurrencies := map[string]bool{
+		"VND": true, "USD": true, "EUR": true, "GBP": true,
+		"JPY": true, "CNY": true, "KRW": true, "THB": true,
+		"SGD": true, "MYR": true, "AUD": true, "CAD": true,
+		"CHF": true, "HKD": true, "NZD": true, "SEK": true,
+		// Add more as needed
+	}
+
+	// Search for currency field in the first 100 text elements (header section)
+	searchLimit := 100
+	if len(elements) < searchLimit {
+		searchLimit = len(elements)
+	}
+
+	for i := 0; i < searchLimit; i++ {
+		text := elements[i].Text
+		textLower := strings.ToLower(text)
+
+		// Check if this element contains a currency keyword
+		foundKeyword := false
+		for _, keyword := range currencyKeywords {
+			if strings.Contains(textLower, keyword) {
+				foundKeyword = true
+				break
+			}
+		}
+
+		if !foundKeyword {
+			continue
+		}
+
+		// Found a currency label! Now look for the currency value
+		// It could be in the same text element (e.g., "Currency: VND")
+		// Or in the next element (e.g., "Currency:" followed by "VND")
+
+		// Try to extract from the same text
+		parts := strings.Fields(text)
+		for _, part := range parts {
+			partUpper := strings.ToUpper(strings.Trim(part, "/:,"))
+			if len(partUpper) == 3 && validCurrencies[partUpper] {
+				return partUpper
+			}
+		}
+
+		// Try the next few elements (on the same line or nearby)
+		for j := i + 1; j < i+5 && j < len(elements); j++ {
+			nextText := strings.ToUpper(strings.TrimSpace(elements[j].Text))
+			// Check if it's a valid 3-letter currency code
+			if len(nextText) == 3 && validCurrencies[nextText] {
+				return nextText
+			}
+			// Also check if it's a longer string that starts with currency code
+			if len(nextText) >= 3 {
+				prefix := nextText[:3]
+				if validCurrencies[prefix] {
+					return prefix
+				}
+			}
+		}
+	}
+
+	return "" // Not found, will use default
+}
+
 // Parse converts PDF table to ParsedRow format (matching CSV parser output)
 func (p *PDFParser) Parse() ([]*ParsedRow, error) {
 	// Extract table from PDF
@@ -168,7 +303,16 @@ func (p *PDFParser) Parse() ([]*ParsedRow, error) {
 		return p.parseVerticalFormatFromFile()
 	}
 
+	// Store the detected mapping for later retrieval
+	p.columnMapping = mapping
+
 	return parsedRows, nil
+}
+
+// GetDetectedMapping returns the column mapping that was detected during parsing
+// This includes the extracted currency from the file metadata
+func (p *PDFParser) GetDetectedMapping() *ColumnMapping {
+	return p.columnMapping
 }
 
 // parseRow converts a table row to ParsedRow format
@@ -266,6 +410,12 @@ func (p *PDFParser) parseRow(rowNumber int, cells []string, mapping *ColumnMappi
 
 // detectColumnsFromHeader attempts to auto-detect column mapping from header row
 func (p *PDFParser) detectColumnsFromHeader(headerRow TableRow) *ColumnMapping {
+	// Try to extract currency from PDF metadata first
+	extractedCurrency := p.extractCurrencyFromPDF()
+	if extractedCurrency == "" {
+		extractedCurrency = "VND" // Fallback to VND if not found
+	}
+
 	mapping := &ColumnMapping{
 		DateColumn:        -1,
 		AmountColumn:      -1,
@@ -273,7 +423,7 @@ func (p *PDFParser) detectColumnsFromHeader(headerRow TableRow) *ColumnMapping {
 		TypeColumn:        -1,
 		CategoryColumn:    -1,
 		ReferenceColumn:   -1,
-		Currency:          "VND", // Default to VND
+		Currency:          extractedCurrency,
 	}
 
 	// Keywords for each column type (English + Vietnamese)

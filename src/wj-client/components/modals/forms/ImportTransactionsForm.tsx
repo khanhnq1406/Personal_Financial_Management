@@ -4,11 +4,12 @@ import { useState } from "react";
 import { BaseModal } from "@/components/modals/BaseModal";
 import { FileUploadStep } from "@/components/import/FileUploadStep";
 import { WalletSelectionStep } from "@/components/import/WalletSelectionStep";
-import { BankTemplateStep } from "@/components/import/BankTemplateStep";
-import {
-  ColumnMappingStep,
-  ColumnMapping,
-} from "@/components/import/ColumnMappingStep";
+// Bank Template and Column Mapping temporarily disabled for auto-parse
+// import { BankTemplateStep } from "@/components/import/BankTemplateStep";
+// import {
+//   ColumnMappingStep,
+//   ColumnMapping,
+// } from "@/components/import/ColumnMappingStep";
 import { ReviewStepWrapper } from "@/components/import/ReviewStepWrapper";
 import { ImportSuccess } from "@/components/import/ImportSuccess";
 import { ImportSummary } from "@/gen/protobuf/v1/import";
@@ -26,21 +27,21 @@ interface ImportTransactionsFormProps {
 /**
  * Import Transactions Form - Multi-step wizard for importing bank/credit card statements
  *
- * Complete implementation with 6 steps:
+ * Simplified implementation with 4 steps (CSV temporarily disabled):
  * - Step 1: File Upload (FileUploadStep) ✓
  * - Step 2: Wallet Selection (WalletSelectionStep) ✓
- * - Step 3: Bank Template Selection (BankTemplateStep) ✓
- * - Step 4: Column Mapping Configuration (ColumnMappingStep) ✓
- * - Step 5: Preview, Review & Execute Import (ReviewStepWrapper) ✓
- * - Step 6: Success Summary with Undo Option (ImportSuccess) ✓
+ * - Step 3: Preview, Review & Execute Import (ReviewStepWrapper) ✓
+ * - Step 4: Success Summary with Undo Option (ImportSuccess) ✓
  *
  * Features:
- * - Multi-format support (CSV, Excel, PDF)
- * - Auto-detection of column mappings
+ * - Multi-format support (Excel, PDF) - Auto-parse enabled
  * - Category suggestions based on transaction description
  * - Duplicate detection
  * - Wallet balance updates
  * - Import undo functionality (24-hour window)
+ *
+ * Note: Bank Template and Column Mapping steps are temporarily disabled
+ * as we use auto-parse for Excel and PDF files.
  */
 export function ImportTransactionsForm({
   onSuccess,
@@ -50,12 +51,13 @@ export function ImportTransactionsForm({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
-    null,
-  );
-  const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(
-    null,
-  );
+  // Template and column mapping temporarily disabled for auto-parse
+  // const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+  //   null,
+  // );
+  // const [columnMapping, setColumnMapping] = useState<ColumnMapping | null>(
+  //   null,
+  // );
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(
     null,
   );
@@ -89,10 +91,6 @@ export function ImportTransactionsForm({
         return "Import Transactions - Upload File";
       case 2:
         return "Import Transactions - Select Wallet";
-      case 3:
-        return "Import Transactions - Bank Template";
-      case 4:
-        return "Import Transactions - Column Mapping";
       case 5:
         return "Import Transactions - Review";
       case 6:
@@ -154,9 +152,10 @@ export function ImportTransactionsForm({
     setSelectedWalletId(walletId);
   };
 
-  const handleTemplateSelected = (templateId: string | null) => {
-    setSelectedTemplateId(templateId);
-  };
+  // Template selection temporarily disabled for auto-parse
+  // const handleTemplateSelected = (templateId: string | null) => {
+  //   setSelectedTemplateId(templateId);
+  // };
 
   const handleStep1Next = async () => {
     if (!selectedFile) return;
@@ -170,11 +169,10 @@ export function ImportTransactionsForm({
       const base64Data = result.split(",")[1];
 
       // Map file extension to backend-expected fileType
+      // CSV temporarily disabled - only Excel and PDF supported
       const fileExt = selectedFile.name.split(".").pop()?.toLowerCase() || "";
       let fileType = "";
-      if (fileExt === "csv") {
-        fileType = "csv";
-      } else if (fileExt === "xlsx" || fileExt === "xls") {
+      if (fileExt === "xlsx" || fileExt === "xls") {
         fileType = "excel";
       } else if (fileExt === "pdf") {
         fileType = "pdf";
@@ -195,38 +193,41 @@ export function ImportTransactionsForm({
   };
 
   const handleStep2Next = () => {
-    setCurrentStep(3); // Move to bank template selection
+    // Skip bank template and column mapping - go directly to review
+    setCurrentStep(5); // Move directly to review step
   };
 
-  const handleStep3Back = () => {
-    setCurrentStep(2);
-  };
+  // Steps 3 and 4 handlers temporarily disabled for auto-parse
+  // const handleStep3Back = () => {
+  //   setCurrentStep(2);
+  // };
 
-  const handleStep3Next = () => {
-    // Skip column mapping for Excel and PDF files (backend handles parsing automatically)
-    if (selectedFile) {
-      const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
-      if (fileExt === "xlsx" || fileExt === "xls" || fileExt === "pdf") {
-        // For Excel/PDF, skip column mapping and go directly to review
-        setCurrentStep(5);
-        return;
-      }
-    }
-    // For CSV files, go to column mapping
-    setCurrentStep(4);
-  };
+  // const handleStep3Next = () => {
+  //   // Skip column mapping for Excel and PDF files (backend handles parsing automatically)
+  //   if (selectedFile) {
+  //     const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
+  //     if (fileExt === "xlsx" || fileExt === "xls" || fileExt === "pdf") {
+  //       // For Excel/PDF, skip column mapping and go directly to review
+  //       setCurrentStep(5);
+  //       return;
+  //     }
+  //   }
+  //   // For CSV files, go to column mapping
+  //   setCurrentStep(4);
+  // };
 
-  const handleStep4Back = () => {
-    setCurrentStep(3);
-  };
+  // const handleStep4Back = () => {
+  //   setCurrentStep(3);
+  // };
 
-  const handleColumnMappingComplete = (mapping: ColumnMapping) => {
-    setColumnMapping(mapping);
-    setCurrentStep(5); // Move to review
-  };
+  // const handleColumnMappingComplete = (mapping: ColumnMapping) => {
+  //   setColumnMapping(mapping);
+  //   setCurrentStep(5); // Move to review
+  // };
 
   const handleStep5Back = () => {
-    setCurrentStep(4);
+    // Go back to wallet selection (step 2) since we skip steps 3 and 4
+    setCurrentStep(2);
   };
 
   const handleImportSuccess = (summary: ImportSummary, batchId: string) => {
@@ -332,26 +333,27 @@ export function ImportTransactionsForm({
         />
       )}
 
+      {/* Steps 3 and 4 temporarily disabled for auto-parse */}
       {/* Step 3: Bank Template Selection */}
-      {currentStep === 3 && (
+      {/* {currentStep === 3 && (
         <BankTemplateStep
           onTemplateSelected={handleTemplateSelected}
           onNext={handleStep3Next}
           onBack={handleStep3Back}
         />
-      )}
+      )} */}
 
       {/* Step 4: Column Mapping */}
-      {currentStep === 4 && selectedFile && (
+      {/* {currentStep === 4 && selectedFile && (
         <ColumnMappingStep
           file={selectedFile}
           templateId={selectedTemplateId}
           onMappingComplete={handleColumnMappingComplete}
           onBack={handleStep4Back}
         />
-      )}
+      )} */}
 
-      {/* Step 5: Review & Execute Import */}
+      {/* Step 5: Review & Execute Import (auto-parse enabled) */}
       {currentStep === 5 &&
         selectedFile &&
         uploadedFileId &&
@@ -360,8 +362,8 @@ export function ImportTransactionsForm({
             file={selectedFile}
             fileId={uploadedFileId}
             walletId={selectedWalletId}
-            columnMapping={columnMapping}
-            bankTemplateId={selectedTemplateId}
+            columnMapping={null} // Auto-parse enabled, no manual mapping
+            bankTemplateId={null} // Auto-parse enabled, no template
             onImportSuccess={handleImportSuccess}
             onBack={handleStep5Back}
             onError={handleImportError}

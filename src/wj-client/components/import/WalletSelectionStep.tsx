@@ -145,7 +145,7 @@ export function WalletSelectionStep({
           Back
         </Button>
         <Button variant="primary" onClick={onNext} disabled={!selectedWalletId}>
-          Next: Configure Mapping
+          Next: Review
         </Button>
       </div>
     </div>
