@@ -314,8 +314,12 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 			DateFormat:        req.CustomMapping.DateFormat,
 			Currency:          req.CustomMapping.Currency,
 		}
-	} else {
-		handler.BadRequest(c, apperrors.NewValidationError("either bankTemplateId or customMapping is required"))
+	}
+
+	// Validate column mapping requirement based on file type
+	// CSV files require explicit mapping, but PDF/Excel can use auto-detection
+	if columnMapping == nil && fileExt != ".pdf" && fileExt != ".xlsx" && fileExt != ".xls" {
+		handler.BadRequest(c, apperrors.NewValidationError("column mapping is required for CSV files. Please select a bank template or provide custom mapping"))
 		return
 	}
 
@@ -333,7 +337,8 @@ func (h *ImportHandler) ParseFile(c *gin.Context) {
 	switch fileExt {
 	case ".pdf":
 		fileTypeStr = "pdf"
-		// Use PDF parser
+		// PDF parser supports auto-detection when columnMapping is nil
+		// It will attempt to detect columns from header row
 		pdfParser := parser.NewPDFParser(filePath, columnMapping)
 		parsedRows, err = pdfParser.Parse()
 		if err != nil {

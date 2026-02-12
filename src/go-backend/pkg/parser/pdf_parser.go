@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -90,11 +91,17 @@ func (p *PDFParser) ExtractTable() ([]TableRow, error) {
 		elements[i].Y = maxY - elements[i].Y
 	}
 
-	// Use table detector to find structured data
+	// Try horizontal table detection first
 	detector := NewTableDetector(elements, nil) // Use default config
 	rows, err := detector.DetectTable()
 	if err != nil {
-		return nil, fmt.Errorf("failed to detect table structure: %w", err)
+		// If horizontal detection fails, try vertical (columnar) layout
+		// Some banks (e.g., Techcombank) use vertical columns instead of horizontal rows
+		verticalRows, vertErr := p.detectVerticalTable(elements)
+		if vertErr != nil {
+			return nil, fmt.Errorf("failed to detect table structure (tried both horizontal and vertical layouts): %w. This PDF format may not be supported. Please export as CSV or Excel for better compatibility", err)
+		}
+		return verticalRows, nil
 	}
 
 	return rows, nil
@@ -128,9 +135,10 @@ func (p *PDFParser) Parse() ([]*ParsedRow, error) {
 		mapping = p.detectColumnsFromHeader(tableRows[headerIndex])
 	}
 
-	// If still no mapping, return error
+	// If still no mapping, try to parse as vertical format (Techcombank-style)
+	// Need to re-extract with vertical detection
 	if mapping == nil {
-		return nil, fmt.Errorf("column mapping is required for PDF parsing")
+		return p.parseVerticalFormatFromFile()
 	}
 
 	// Parse each data row
@@ -152,6 +160,12 @@ func (p *PDFParser) Parse() ([]*ParsedRow, error) {
 		// Parse the row
 		parsedRow := p.parseRow(rowNumber, row.Cells, mapping)
 		parsedRows = append(parsedRows, parsedRow)
+	}
+
+	// If no valid transactions were parsed with horizontal layout, try vertical format
+	// This handles cases where a CSV template was used but the PDF has vertical layout
+	if len(parsedRows) == 0 {
+		return p.parseVerticalFormatFromFile()
 	}
 
 	return parsedRows, nil
@@ -358,5 +372,331 @@ func (p *PDFParser) isSummaryRow(cells []string) bool {
 		}
 	}
 
+	return false
+}
+
+// detectVerticalTable handles PDFs where transactions are arranged in vertical columns
+// instead of horizontal rows (e.g., Techcombank format)
+func (p *PDFParser) detectVerticalTable(elements []TextElement) ([]TableRow, error) {
+	// Group elements by X position (vertical columns)
+	type Column struct {
+		X        float64
+		Elements []TextElement
+	}
+
+	xTolerance := 5.0 // Increased to handle slight column misalignment in Techcombank PDFs
+	var columns []Column
+
+	for _, elem := range elements {
+		found := false
+		for i := range columns {
+			if absFloat(columns[i].X-elem.X) <= xTolerance {
+				columns[i].Elements = append(columns[i].Elements, elem)
+				found = true
+				break
+			}
+		}
+		if !found {
+			columns = append(columns, Column{X: elem.X, Elements: []TextElement{elem}})
+		}
+	}
+
+	// Need at least 3 columns (date, description, amount at minimum)
+	if len(columns) < 3 {
+		return nil, fmt.Errorf("insufficient columns for vertical layout: found %d, need at least 3", len(columns))
+	}
+
+	// Sort columns by X position (left to right)
+	sort.Slice(columns, func(i, j int) bool {
+		return columns[i].X < columns[j].X
+	})
+
+	// Each column represents a transaction
+	// Convert each column to a TableRow
+	var rows []TableRow
+
+	for _, col := range columns {
+		if len(col.Elements) == 0 {
+			continue
+		}
+
+		// Sort elements in column by Y position (top to bottom)
+		sort.Slice(col.Elements, func(i, j int) bool {
+			return col.Elements[i].Y < col.Elements[j].Y
+		})
+
+		// Extract cells from column elements
+		var cells []string
+		for _, elem := range col.Elements {
+			if elem.Text != "" {
+				cells = append(cells, elem.Text)
+			}
+		}
+
+		if len(cells) > 0 {
+			rows = append(rows, TableRow{
+				Y:          col.X, // Use X as "row" identifier
+				Cells:      cells,
+				CellBounds: []float64{col.X},
+			})
+		}
+	}
+
+	return rows, nil
+}
+
+// absFloat returns absolute value of float64
+func absFloat(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// abs returns absolute value of int
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// parseVerticalFormatFromFile re-extracts PDF with vertical detection and parses
+func (p *PDFParser) parseVerticalFormatFromFile() ([]*ParsedRow, error) {
+	// Re-extract text elements from PDF
+	f, err := os.Open(p.filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open PDF: %w", err)
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file info: %w", err)
+	}
+
+	reader, err := pdf.NewReader(f, stat.Size())
+	if err != nil {
+		reader, err = pdf.NewReaderEncrypted(f, stat.Size(), func() string { return "" })
+		if err != nil {
+			return nil, fmt.Errorf("failed to create PDF reader: %w", err)
+		}
+	}
+
+	texts, err := reader.GetStyledTexts()
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract text from PDF: %w", err)
+	}
+
+	// Convert to text elements
+	var elements []TextElement
+	for _, text := range texts {
+		if text.S == "" {
+			continue
+		}
+		elements = append(elements, TextElement{
+			X:        text.X,
+			Y:        text.Y,
+			Text:     text.S,
+			FontSize: text.FontSize,
+		})
+	}
+
+	// Detect vertical columns
+	verticalRows, err := p.detectVerticalTable(elements)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.parseVerticalFormat(verticalRows)
+}
+
+// parseVerticalFormat parses transactions from vertical column layout (Techcombank-style)
+// Each TableRow represents a vertical column with cells arranged from top to bottom
+func (p *PDFParser) parseVerticalFormat(tableRows []TableRow) ([]*ParsedRow, error) {
+	var parsedRows []*ParsedRow
+
+	// Common patterns in Techcombank vertical format:
+	// - Date: DD/MM/YYYY format
+	// - Amount: numbers with comma separators in Debit or Credit columns
+	// - Description: text fields
+	// - Debit/Credit: Detected from column headers "Nợ TKTT"/"Debit" vs "Có TKTT"/"Credit"
+
+	// First pass: Find the header column to identify debit and credit positions
+	debitKeywordY := -1
+	creditKeywordY := -1
+
+	for _, row := range tableRows {
+		for i, cell := range row.Cells {
+			cellLower := strings.ToLower(strings.TrimSpace(cell))
+
+			// Look for debit column header keywords
+			if (strings.Contains(cellLower, "nợ") && strings.Contains(cellLower, "tktt")) ||
+			   (cellLower == "debit" && !strings.Contains(cellLower, "credit")) {
+				// Remember which cell index this is (approximate Y position in vertical layout)
+				debitKeywordY = i
+			}
+
+			// Look for credit column header keywords
+			if (strings.Contains(cellLower, "có") && strings.Contains(cellLower, "tktt")) ||
+			   (strings.Contains(cellLower, "credit") && !strings.Contains(cellLower, "debit")) {
+				creditKeywordY = i
+			}
+		}
+	}
+
+	for i, row := range tableRows {
+		if len(row.Cells) < 3 {
+			// Need at least 3 cells to form a transaction
+			continue
+		}
+
+		// Try to extract date, description, and amount from the column
+		var date time.Time
+		var amount int64
+		var description string
+		var hasDate, hasAmount bool
+		var amountCellIndex int
+
+		dateParser := NewDateParser("")
+		amountParser := NewAmountParserWithAutoDetect()
+
+		// Scan cells in the column for date, description, and amount
+		// Note: Take FIRST valid amount to avoid capturing balance instead of transaction amount
+		for cellIdx, cell := range row.Cells {
+			cellTrimmed := strings.TrimSpace(cell)
+			if cellTrimmed == "" {
+				continue
+			}
+
+			// Try to parse as date
+			if !hasDate {
+				parsedDate, err := dateParser.Parse(cellTrimmed)
+				if err == nil {
+					date = parsedDate
+					hasDate = true
+					continue
+				}
+			}
+
+			// Try to parse as amount (look for numbers with commas)
+			// Take FIRST valid amount only (transaction amount, not balance)
+			if !hasAmount && strings.Contains(cellTrimmed, ",") {
+				parsedAmount, err := amountParser.Parse(cellTrimmed)
+				if err == nil && parsedAmount > 0 {
+					amount = parsedAmount
+					hasAmount = true
+					amountCellIndex = cellIdx // Remember which cell had the amount
+
+					continue // Skip adding amount to description
+				}
+			}
+
+			// Collect description text (skip very short cells, dates, and pure numbers)
+			if len(cellTrimmed) > 5 && !isNumeric(cellTrimmed) {
+				if description == "" {
+					description = cellTrimmed
+				} else if len(description) < 200 { // Limit description length
+					description += " " + cellTrimmed
+				}
+			}
+		}
+
+		// Determine if this is debit or credit based on which column the amount came from
+		// If we found the header positions, use them to determine debit/credit
+		isDebit := false
+		if hasAmount && debitKeywordY >= 0 && creditKeywordY >= 0 {
+			// Check if amount is closer to debit or credit column
+			debitDist := abs(amountCellIndex - debitKeywordY)
+			creditDist := abs(amountCellIndex - creditKeywordY)
+			isDebit = debitDist < creditDist
+		} else if hasAmount {
+			// Fallback: use description keywords if header positions not found
+			isDebit = p.isDebitAmount(row.Cells, "")
+		}
+
+		// If amount should be negative (debit/expense), negate it
+		if hasAmount && isDebit {
+			amount = -amount
+		}
+
+		// Only create a transaction if we have at least date and amount
+		if hasDate && hasAmount {
+			parsed := &ParsedRow{
+				RowNumber:        i + 1,
+				Date:             date,
+				Amount:           amount,
+				Description:      description,
+				Type:             "", // Will be detected
+				IsValid:          true,
+				ValidationErrors: []ValidationError{},
+			}
+
+			// Set default description if empty
+			if parsed.Description == "" {
+				parsed.Description = "Imported Transaction"
+			}
+
+			// Detect transaction type
+			detector := NewTypeDetector()
+			parsed.Type = detector.DetectType(parsed.Description, parsed.Amount)
+
+			// Validate
+			validationErrors := validator.ValidateTransaction(
+				parsed.Amount,
+				"VND", // Default currency
+				parsed.Description,
+				parsed.Date,
+			)
+
+			for _, ve := range validationErrors {
+				parsed.addError(ve.Field, ve.Message, ve.Severity)
+			}
+
+			parsedRows = append(parsedRows, parsed)
+		}
+	}
+
+	if len(parsedRows) == 0 {
+		return nil, fmt.Errorf("no valid transactions found in vertical format. The PDF may not follow a supported layout")
+	}
+
+	return parsedRows, nil
+}
+
+// isNumeric checks if a string contains only numbers, commas, and periods
+func isNumeric(s string) bool {
+	for _, r := range s {
+		if r != '0' && r != '1' && r != '2' && r != '3' && r != '4' &&
+			r != '5' && r != '6' && r != '7' && r != '8' && r != '9' &&
+			r != ',' && r != '.' && r != ' ' {
+			return false
+		}
+	}
+	return true
+}
+
+// isDebitAmount checks if an amount in a vertical column is a debit (expense)
+// In Techcombank format, look for debit-related keywords in the description
+func (p *PDFParser) isDebitAmount(cells []string, amountCell string) bool {
+	// Keywords that indicate expense/debit transactions
+	debitKeywords := []string{
+		"rut tien", "rút tiền", "rut", "withdraw",
+		"atm", "pos", "thanh toan", "payment",
+		"chuyen di", "chuyển đi", "transfer to",
+		"phi", "phí", "fee", "charge",
+		"mua", "purchase", "buy",
+	}
+
+	// Search all cells in this column for debit indicators
+	columnText := strings.ToLower(strings.Join(cells, " "))
+
+	for _, keyword := range debitKeywords {
+		if strings.Contains(columnText, keyword) {
+			return true
+		}
+	}
+
+	// Default to credit (income) if no debit indicators found
 	return false
 }

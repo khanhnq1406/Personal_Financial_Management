@@ -33,9 +33,9 @@ type TableDetectorConfig struct {
 
 // DefaultTableDetectorConfig provides default configuration
 var DefaultTableDetectorConfig = TableDetectorConfig{
-	YTolerance: 2.0,
+	YTolerance: 5.0, // Increased from 2.0 to handle more row variations
 	MinColumns: 3,
-	MinRows:    5,
+	MinRows:    3,   // Reduced from 5 to support shorter statements
 	HeaderKeywords: []string{
 		"date", "ngày", "ngay", "posting date", "transaction date",
 		"description", "diễn giải", "dien giai", "mô tả", "mo ta", "particulars",
@@ -74,14 +74,21 @@ func (td *TableDetector) DetectTable() ([]TableRow, error) {
 	rows := td.groupElementsByRow()
 
 	if len(rows) < td.config.MinRows {
-		return nil, fmt.Errorf("insufficient rows detected (%d), minimum required: %d", len(rows), td.config.MinRows)
+		return nil, fmt.Errorf("insufficient rows detected (%d), minimum required: %d. The PDF may have too few transaction rows or complex formatting", len(rows), td.config.MinRows)
 	}
 
 	// Step 2: Detect column boundaries across all rows
 	columnBoundaries := td.detectColumnBoundaries(rows)
 
 	if len(columnBoundaries) < td.config.MinColumns {
-		return nil, fmt.Errorf("insufficient columns detected (%d), minimum required: %d", len(columnBoundaries), td.config.MinColumns)
+		// Provide diagnostic information
+		totalElements := 0
+		for _, row := range rows {
+			totalElements += len(row)
+		}
+
+		return nil, fmt.Errorf("insufficient columns detected (%d), minimum required: %d. Found %d text elements in %d rows. This PDF may have inconsistent column alignment, merged cells, or may be a scanned image. Try exporting as CSV for better results",
+			len(columnBoundaries), td.config.MinColumns, totalElements, len(rows))
 	}
 
 	// Step 3: Align cells to columns
@@ -140,20 +147,24 @@ func (td *TableDetector) groupElementsByRow() [][]TextElement {
 
 // detectColumnBoundaries analyzes X positions across all rows to find column boundaries
 func (td *TableDetector) detectColumnBoundaries(rows [][]TextElement) []float64 {
-	// Collect all X positions
+	// Collect all X positions with more lenient rounding
 	xPositions := make(map[float64]int) // position -> frequency
 
 	for _, row := range rows {
 		for _, elem := range row {
-			// Round to nearest 0.5 to handle slight variations
-			roundedX := math.Round(elem.X * 2) / 2
+			// Round to nearest 5.0 to handle more variations in alignment
+			roundedX := math.Round(elem.X / 5.0) * 5.0
 			xPositions[roundedX]++
 		}
 	}
 
 	// Find positions that appear in multiple rows (likely column starts)
 	var boundaries []float64
-	minFrequency := len(rows) / 4 // Must appear in at least 25% of rows
+	// More lenient: 15% of rows OR at least 2 rows (whichever is lower)
+	minFrequency := len(rows) / 7 // ~15% of rows
+	if minFrequency < 2 {
+		minFrequency = 2
+	}
 
 	for pos, freq := range xPositions {
 		if freq >= minFrequency {
@@ -163,6 +174,17 @@ func (td *TableDetector) detectColumnBoundaries(rows [][]TextElement) []float64 
 
 	// Sort boundaries
 	sort.Float64s(boundaries)
+
+	// Merge boundaries that are too close together (within 10 units)
+	if len(boundaries) > 1 {
+		merged := []float64{boundaries[0]}
+		for i := 1; i < len(boundaries); i++ {
+			if boundaries[i]-merged[len(merged)-1] > 10 {
+				merged = append(merged, boundaries[i])
+			}
+		}
+		boundaries = merged
+	}
 
 	return boundaries
 }
