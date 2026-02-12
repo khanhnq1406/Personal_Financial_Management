@@ -145,89 +145,122 @@ export const DuplicateSection = React.memo(function DuplicateSection({
           </div>
 
           {/* Side-by-Side Comparison */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
             {/* Imported Transaction */}
-            <div className="p-3 bg-primary-50 dark:bg-primary-950 border border-primary-200 dark:border-primary-800 rounded-lg">
-              <h4 className="text-sm font-semibold mb-2 text-primary-700 dark:text-primary-300">
-                Imported Transaction
-              </h4>
-              <div className="space-y-1 text-sm text-neutral-900 dark:text-dark-text">
-                <p>
-                  <strong>Amount:</strong>{" "}
-                  {formatCurrency(imported?.amount?.amount || 0, imported?.amount?.currency || currency)}
-                </p>
-                <p>
-                  <strong>Date:</strong> {formatDate(imported?.date)}
-                </p>
-                <p>
-                  <strong>Description:</strong> {imported?.description}
-                </p>
+            <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 border border-primary-200 dark:border-primary-800 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📥</span>
+                  <h4 className="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                    Imported Transaction
+                  </h4>
+                </div>
+                <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-primary-600 text-white">
+                  NEW
+                </span>
+              </div>
+              <div className="space-y-0 text-sm text-neutral-900 dark:text-dark-text divide-y divide-primary-200 dark:divide-primary-800">
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Amount:</span>
+                  <span className="font-bold">
+                    {formatCurrency(imported?.amount?.amount || 0, imported?.amount?.currency || currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Date:</span>
+                  <span>{formatDate(imported?.date)}</span>
+                </div>
+                <div className="flex justify-between py-2 gap-3">
+                  <span className="font-medium">Description:</span>
+                  <span className="text-right">{imported?.description}</span>
+                </div>
                 {imported?.referenceNumber && (
-                  <p>
-                    <strong>Ref:</strong> {imported.referenceNumber}
-                  </p>
+                  <div className="flex justify-between py-2">
+                    <span className="font-medium">Ref:</span>
+                    <span>{imported.referenceNumber}</span>
+                  </div>
                 )}
-                {imported?.suggestedCategoryId ? (
-                  <p>
-                    <strong>Category:</strong> Category {imported.suggestedCategoryId}
-                  </p>
-                ) : (
-                  <p className="text-neutral-500 dark:text-neutral-400">
-                    <em>No category</em>
-                  </p>
-                )}
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Category:</span>
+                  {imported?.suggestedCategoryId ? (
+                    <span>Category {imported.suggestedCategoryId}</span>
+                  ) : (
+                    <span className="text-neutral-500 dark:text-neutral-400 italic">No category</span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Existing Transaction */}
-            <div className="p-3 bg-neutral-50 dark:bg-dark-surface-hover border border-neutral-200 dark:border-dark-border rounded-lg">
-              <h4 className="text-sm font-semibold mb-2 text-neutral-900 dark:text-dark-text">
-                Existing Transaction
-              </h4>
-              <div className="space-y-1 text-sm text-neutral-900 dark:text-dark-text">
-                <p>
-                  <strong>Amount:</strong>{" "}
-                  {formatCurrency(existing?.amount?.amount || 0, existing?.amount?.currency || currency)}
-                </p>
-                <p>
-                  <strong>Date:</strong> {formatDate(existing?.date)}
-                </p>
-                <p>
-                  <strong>Description:</strong> {existing?.note}
-                </p>
-                {existing?.categoryId && (
-                  <p>
-                    <strong>Category:</strong> Category {existing.categoryId}
-                  </p>
-                )}
+            <div className="p-4 bg-neutral-50 dark:bg-dark-surface-hover border border-neutral-200 dark:border-dark-border rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💾</span>
+                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-dark-text">
+                    Existing Transaction
+                  </h4>
+                </div>
+                <span className="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-neutral-600 text-white">
+                  EXISTING
+                </span>
+              </div>
+              <div className="space-y-0 text-sm text-neutral-900 dark:text-dark-text divide-y divide-neutral-200 dark:divide-dark-border">
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Amount:</span>
+                  <span className="font-bold">
+                    {formatCurrency(existing?.amount?.amount || 0, existing?.amount?.currency || currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Date:</span>
+                  <span>{formatDate(existing?.date)}</span>
+                </div>
+                <div className="flex justify-between py-2 gap-3">
+                  <span className="font-medium">Description:</span>
+                  <span className="text-right">{existing?.note}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="font-medium">Category:</span>
+                  {existing?.categoryId ? (
+                    <span>Category {existing.categoryId}</span>
+                  ) : (
+                    <span className="text-neutral-500 dark:text-neutral-400 italic">No category</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-2 sm:grid sm:grid-cols-3 sm:gap-3 sm:space-y-0">
             <Button
               variant="primary"
               onClick={() => handleAction("merge")}
               size="sm"
-              fullWidth={false}
+              fullWidth
+              className="min-h-[48px] text-base font-semibold"
             >
+              <span className="mr-1">🔗</span>
               Merge
             </Button>
             <Button
               variant="secondary"
               onClick={() => handleAction("keep")}
               size="sm"
-              fullWidth={false}
+              fullWidth
+              className="min-h-[48px] text-base font-semibold"
             >
+              <span className="mr-1">📋</span>
               Keep Both
             </Button>
             <Button
               variant="secondary"
               onClick={() => handleAction("skip")}
               size="sm"
-              fullWidth={false}
+              fullWidth
+              className="min-h-[48px] text-base font-semibold"
             >
+              <span className="mr-1">⏭️</span>
               Skip Import
             </Button>
           </div>
