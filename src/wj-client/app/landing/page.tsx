@@ -2,6 +2,7 @@
 
 import LandingHero from "@/components/landing/LandingHero";
 import LandingFeatures from "@/components/landing/LandingFeatures";
+import LandingBankImport from "@/components/landing/LandingBankImport";
 import LandingInvestmentFeatures from "@/components/landing/LandingInvestmentFeatures";
 import LandingComparison from "@/components/landing/LandingComparison";
 import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
@@ -21,6 +22,7 @@ export default function LandingPage() {
           <LandingHero />
           <LandingFeatures />
           <LandingInvestmentFeatures />
+          <LandingBankImport />
           <LandingComparison />
           {/* <LandingTestimonials /> */}
           <LandingHowItWorks />

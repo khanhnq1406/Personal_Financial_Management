@@ -36,6 +36,8 @@ export default function LandingNavbar() {
 
   const navLinks = [
     { name: "Features", href: "#features" },
+    { name: "Bank Import", href: "#bank-import" },
+    { name: "Investment Tracking", href: "#investment-tracking" },
     { name: "How It Works", href: "#how-it-works" },
     // { name: "Pricing", href: "#pricing" },
   ];

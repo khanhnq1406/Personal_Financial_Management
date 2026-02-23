@@ -30,7 +30,8 @@ const investmentFeatures = [
   },
   {
     title: "Gold & Silver Support",
-    description: "Unique support for precious metals with flexible unit conversions",
+    description:
+      "Unique support for precious metals with flexible unit conversions",
     items: [
       { icon: "🇻🇳", label: "SJC Gold (10 Types)" },
       { icon: "🌍", label: "World Gold (XAU)" },
@@ -66,7 +67,10 @@ export default function LandingInvestmentFeatures() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
-    <section className="py-16 sm:py-20 bg-gradient-to-br from-primary-50 via-white to-primary-50">
+    <section
+      id="investment-tracking"
+      className="py-16 sm:py-20 bg-gradient-to-br from-primary-50 via-white to-primary-50"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           ref={ref}
@@ -76,13 +80,17 @@ export default function LandingInvestmentFeatures() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            <span className="text-primary-600">All-In-One</span> Investment Tracking
+            <span className="text-primary-600">All-In-One</span> Investment
+            Tracking
           </h2>
           <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-4">
-            Why juggle Coinbase, Robinhood, spreadsheets, and gold dealers? Track{" "}
-            <strong>stocks, ETFs, mutual funds, crypto, gold, and silver</strong> in
-            one unified platform with FIFO accounting, real-time market data, and
-            powerful analytics.
+            Why juggle Coinbase, Robinhood, spreadsheets, and gold dealers?
+            Track{" "}
+            <strong>
+              stocks, ETFs, mutual funds, crypto, gold, and silver
+            </strong>{" "}
+            in one unified platform with FIFO accounting, real-time market data,
+            and powerful analytics.
           </p>
         </motion.div>
 
@@ -125,16 +133,19 @@ export default function LandingInvestmentFeatures() {
         <motion.div
           className="mt-12 sm:mt-16 bg-primary-600 rounded-xl p-6 sm:p-8 text-center text-white"
           initial={{ opacity: 0, scale: 0.95 }}
-          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+          animate={
+            isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }
+          }
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <h3 className="text-xl sm:text-2xl font-bold mb-3">
             One Portfolio. All Assets. Complete Picture.
           </h3>
           <p className="text-sm sm:text-base text-primary-100 max-w-3xl mx-auto leading-relaxed">
-            FIFO accounting across ALL asset types - stocks, ETFs, mutual funds, crypto, gold,
-            and silver. Track realized/unrealized PNL, cost basis, and your complete net worth
-            in one unified dashboard with automatic lot tracking.
+            FIFO accounting across ALL asset types - stocks, ETFs, mutual funds,
+            crypto, gold, and silver. Track realized/unrealized PNL, cost basis,
+            and your complete net worth in one unified dashboard with automatic
+            lot tracking.
           </p>
         </motion.div>
       </div>
