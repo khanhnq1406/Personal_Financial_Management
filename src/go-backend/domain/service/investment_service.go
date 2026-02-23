@@ -2211,7 +2211,11 @@ func (s *investmentService) calculatePerformers(ctx context.Context, userID int3
 			continue
 		}
 
-		// Convert to preferred currency if needed
+		// Calculate PNL percentage using original currency values
+		// This ensures percentage is accurate regardless of currency conversion
+		unrealizedPNLPercent := (float64(inv.UnrealizedPNL) / float64(inv.TotalCost)) * 100
+
+		// Convert unrealized PNL to preferred currency for display (but percentage already calculated)
 		unrealizedPNL := inv.UnrealizedPNL
 		if inv.Currency != preferredCurrency {
 			var err error
@@ -2221,9 +2225,6 @@ func (s *investmentService) calculatePerformers(ctx context.Context, userID int3
 				unrealizedPNL = inv.UnrealizedPNL
 			}
 		}
-
-		// Calculate PNL percentage
-		unrealizedPNLPercent := (float64(unrealizedPNL) / float64(inv.TotalCost)) * 100
 
 		performances = append(performances, investmentPerformance{
 			investment:           inv,
