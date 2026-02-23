@@ -4,7 +4,7 @@ import { Transaction, CategoryType } from "@/gen/protobuf/v1/transaction";
 import { TransactionItem } from "./TransactionItem";
 import { formatDateFriendly } from "@/lib/utils/transaction";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrency, parseAmount } from "@/utils/currency-formatter";
 
 type TransactionGroupProps = {
   date: string;
@@ -26,7 +26,7 @@ export const TransactionGroup = ({
   // Calculate daily total using signed amounts
   // Amounts are signed: positive for income, negative for expense
   const dailyTotal = transactions.reduce((total, transaction) => {
-    const amount = transaction.amount?.amount || 0;
+    const amount = parseAmount(transaction.amount?.amount);
     return total + amount; // Simply add the signed amount
   }, 0);
 

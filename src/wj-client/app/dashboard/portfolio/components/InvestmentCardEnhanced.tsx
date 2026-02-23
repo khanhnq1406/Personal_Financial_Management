@@ -45,6 +45,7 @@ export interface InvestmentCardData {
   displayCurrency?: string;
   walletName?: string;
   priceHistory?: { value: number; date: string }[];
+  isCustom: boolean;
 }
 
 /**
@@ -133,6 +134,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
     displayCurrency,
     walletName,
     priceHistory,
+    isCustom,
   } = investment;
 
   const nativeCurrency = currency || "USD";
@@ -140,11 +142,6 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
   const pnl = unrealizedPnl || 0;
   const pnlPercent = unrealizedPnlPercent || 0;
 
-  const isCustom = isCustomInvestment({
-    currentPrice: currentPrice || 0,
-    symbol,
-    type,
-  });
   const pnlDisplay = formatUnrealizedPNL(
     pnl,
     pnlPercent,

@@ -19,6 +19,7 @@ import { BaseCard } from "@/components/BaseCard";
 import {
   formatCurrency,
   formatCurrencyCompact,
+  parseAmount,
 } from "@/utils/currency-formatter";
 import {
   useQueryGetFinancialReport,
@@ -242,7 +243,7 @@ export default function ReportPageEnhanced() {
       .map((cat: CategoryBreakdownItem, index: number) => ({
         id: cat.categoryId?.toString() || "",
         name: cat.categoryName || "Unknown",
-        value: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+        value: parseAmount(cat.displayAmount?.amount || cat.totalAmount?.amount),
         color: getCategoryColor(index),
       }));
   }, [categoryBreakdown]);
@@ -277,7 +278,7 @@ export default function ReportPageEnhanced() {
       .map((cat: CategoryBreakdownItem) => ({
         id: cat.categoryId?.toString() || "",
         name: cat.categoryName || "Unknown",
-        amount: cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+        amount: parseAmount(cat.displayAmount?.amount || cat.totalAmount?.amount),
       }));
 
     // Previous period categories (if comparison is enabled and data is available)
@@ -291,7 +292,7 @@ export default function ReportPageEnhanced() {
         .forEach((cat: CategoryBreakdownItem) => {
           previousCategoriesMap.set(
             cat.categoryName || "Unknown",
-            cat.displayAmount?.amount || cat.totalAmount?.amount || 0,
+            parseAmount(cat.displayAmount?.amount || cat.totalAmount?.amount),
           );
         });
     }

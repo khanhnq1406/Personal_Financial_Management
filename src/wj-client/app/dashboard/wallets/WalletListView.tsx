@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrency, parseAmount } from "@/utils/currency-formatter";
 import { Wallet } from "@/gen/protobuf/v1/wallet";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/Button";
@@ -60,8 +60,8 @@ export const WalletListView = memo(function WalletListView({
       if (sortBy === "name") {
         comparison = a.walletName.localeCompare(b.walletName);
       } else if (sortBy === "balance") {
-        const balanceA = a.displayBalance?.amount ?? a.balance?.amount ?? 0;
-        const balanceB = b.displayBalance?.amount ?? b.balance?.amount ?? 0;
+        const balanceA = parseAmount(a.displayBalance?.amount ?? a.balance?.amount);
+        const balanceB = parseAmount(b.displayBalance?.amount ?? b.balance?.amount);
         comparison = balanceA - balanceB;
       } else if (sortBy === "type") {
         comparison = a.type - b.type;
@@ -76,8 +76,14 @@ export const WalletListView = memo(function WalletListView({
   // Calculate total balance
   const totalBalance = useMemo(() => {
     return processedWallets.reduce((sum, wallet) => {
-      const balance =
-        wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
+      const isInvestment = wallet.type === 1;
+      const baseBalance = parseAmount(
+        wallet.displayBalance?.amount ?? wallet.balance?.amount
+      );
+      // For investment wallets, use totalValue (balance + investment value)
+      const balance = isInvestment
+        ? parseAmount(wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount) || baseBalance
+        : baseBalance;
       return sum + balance;
     }, 0);
   }, [processedWallets]);
@@ -131,9 +137,14 @@ export const WalletListView = memo(function WalletListView({
           </div>
         ) : (
           processedWallets.map((wallet) => {
-            const balance =
-              wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0;
             const isInvestment = wallet.type === 1;
+            const baseBalance = parseAmount(
+              wallet.displayBalance?.amount ?? wallet.balance?.amount
+            );
+            // For investment wallets, use totalValue (balance + investment value)
+            const balance = isInvestment
+              ? parseAmount(wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount) || baseBalance
+              : baseBalance;
             const isSelected = selectedWallets?.has(wallet.id);
 
             return (

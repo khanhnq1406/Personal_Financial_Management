@@ -1,3 +1,14 @@
+/**
+ * Parse amount value to number (handles string amounts from API)
+ * @param amount - Amount value (could be string or number)
+ * @returns Parsed number value
+ */
+export function parseAmount(amount: string | number | bigint | undefined | null): number {
+  if (amount === undefined || amount === null) return 0;
+  if (typeof amount === 'string') return parseFloat(amount) || 0;
+  return Number(amount);
+}
+
 // Currency symbols and locale mappings
 const CURRENCY_CONFIG: Record<
   string,

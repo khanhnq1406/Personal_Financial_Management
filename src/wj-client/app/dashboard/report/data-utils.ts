@@ -11,7 +11,7 @@ import {
   MonthlyFinancialData,
 } from "@/gen/protobuf/v1/transaction";
 import { Money } from "@/gen/protobuf/v1/common";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrency, parseAmount } from "@/utils/currency-formatter";
 
 // Re-export PeriodType and DateRange for convenience
 export type { PeriodType, DateRange } from "./PeriodSelector";
@@ -165,7 +165,7 @@ export function toUnixTimestamp(date: Date): number {
  */
 function getMoneyAmount(money: Money | undefined): number {
   if (!money) return 0;
-  return money.amount || 0;
+  return parseAmount(money.amount);
 }
 
 /**
@@ -202,7 +202,12 @@ export function calculateSummaryData(
     : reportData.year;
 
   // Filter totals by date range
+  // Note: First entry in totals array may be the aggregate (no month field), so filter it out
   const filteredTotals = reportData.totals.filter((monthly) => {
+    // Skip entries without a month field (aggregate totals)
+    if (monthly.month === undefined || monthly.month === null) {
+      return false;
+    }
     const monthlyDate = new Date(year, monthly.month, 1);
     return monthlyDate >= start && monthlyDate <= end;
   });
@@ -263,14 +268,28 @@ export function calculateTrendData(
   }
 
   // Get date range for filtering
-  const { start, end } = getDateRangeForPeriod(period, customRange);
+  // For single month periods (this-month, last-month), show year-to-date for better trend visualization
+  let { start, end } = getDateRangeForPeriod(period, customRange);
+
+  // Expand range for single month periods to show more context
+  if (period === "this-month" || period === "last-month") {
+    const year = start.getFullYear();
+    // Show from start of year to end of selected period
+    start = new Date(year, 0, 1);
+  }
+
   const year = period.includes("last-year")
     ? start.getFullYear()
     : reportData.year;
 
   // Filter and map totals to trend data
+  // Note: First entry in totals array may be the aggregate (no month field), so filter it out
   const trendData: TrendData[] = reportData.totals
     .filter((monthly) => {
+      // Skip entries without a month field (aggregate totals)
+      if (monthly.month === undefined || monthly.month === null) {
+        return false;
+      }
       const monthlyDate = new Date(year, monthly.month, 1);
       return monthlyDate >= start && monthlyDate <= end;
     })
@@ -282,7 +301,7 @@ export function calculateTrendData(
       const net = income - expenses;
 
       return {
-        month: MONTH_NAMES[monthly.month] || `Month ${monthly.month + 1}`,
+        month: MONTH_NAMES[monthly.month!] || `Month ${monthly.month! + 1}`,
         income,
         expenses,
         net,
@@ -432,6 +451,10 @@ export function filterMonthlyTotalsByDateRange(
   year: number
 ): MonthlyFinancialData[] {
   return totals.filter((monthly) => {
+    // Skip entries without a month field (aggregate totals)
+    if (monthly.month === undefined || monthly.month === null) {
+      return false;
+    }
     const monthlyDate = new Date(year, monthly.month, 1);
     return monthlyDate >= startDate && monthlyDate <= endDate;
   });

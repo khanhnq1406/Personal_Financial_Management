@@ -519,7 +519,7 @@ export default function TransactionPage() {
                 aria-label="Toggle balance visibility"
                 onClick={handleHideBalance}
               >
-                <div className="text-white">
+                <div className="text-black">
                   {isHideBalance ? <EyeOffIcon /> : <EyeIcon />}
                 </div>
               </button>

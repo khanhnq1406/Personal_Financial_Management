@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { BaseCard } from "@/components/BaseCard";
 import { Budget, BudgetItem } from "@/gen/protobuf/v1/budget";
-import { formatCurrency } from "@/utils/currency-formatter";
+import { formatCurrency, parseAmount } from "@/utils/currency-formatter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQueryGetBudgetItems } from "@/utils/generated/hooks";
 import { BudgetItemCard } from "./BudgetItemCard";
@@ -116,11 +116,17 @@ export function BudgetCard({
   const budgetItems = getBudgetItems.data?.items ?? [];
 
   // Calculate total budget and spent amounts
-  const totalBudget = budget.displayTotal?.amount ?? budget.total?.amount ?? 0;
+  const totalBudget = budget.displayTotal?.amount
+    ? parseAmount(budget.displayTotal?.amount)
+    : (parseAmount(budget.total?.amount) ?? 0);
+
   const totalSpent = useMemo(() => {
     return budgetItems.reduce(
       (sum, item) =>
-        sum + (item.displayTotal?.amount ?? item.total?.amount ?? 0),
+        sum +
+        (item.displayTotal?.amount
+          ? parseAmount(item.displayTotal?.amount)
+          : (parseAmount(item.total?.amount) ?? 0)),
       0,
     );
   }, [budgetItems]);
