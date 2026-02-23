@@ -6,30 +6,31 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"wealthjourney/domain/models"
 	"wealthjourney/domain/repository"
-	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/cache"
+	apperrors "wealthjourney/pkg/errors"
 	"wealthjourney/pkg/types"
 	"wealthjourney/pkg/validator"
-	walletv1 "wealthjourney/protobuf/v1"
 	commonv1 "wealthjourney/protobuf/v1"
 	v1 "wealthjourney/protobuf/v1"
+	walletv1 "wealthjourney/protobuf/v1"
+
+	"github.com/go-redis/redis/v8"
 )
 
 // walletService implements WalletService.
 type walletService struct {
-	walletRepo       repository.WalletRepository
-	userRepo         repository.UserRepository
-	txRepo           repository.TransactionRepository
-	categoryRepo     repository.CategoryRepository
-	categoryService  CategoryService
-	fxRateSvc        FXRateService
-	currencyCache    *cache.CurrencyCache
-	investmentRepo   repository.InvestmentRepository
-	redisCache       *redis.Client
-	mapper           *WalletMapper
+	walletRepo      repository.WalletRepository
+	userRepo        repository.UserRepository
+	txRepo          repository.TransactionRepository
+	categoryRepo    repository.CategoryRepository
+	categoryService CategoryService
+	fxRateSvc       FXRateService
+	currencyCache   *cache.CurrencyCache
+	investmentRepo  repository.InvestmentRepository
+	redisCache      *redis.Client
+	mapper          *WalletMapper
 }
 
 // NewWalletService creates a new WalletService.
@@ -45,16 +46,16 @@ func NewWalletService(
 	redisCache *redis.Client,
 ) WalletService {
 	return &walletService{
-		walletRepo:       walletRepo,
-		userRepo:         userRepo,
-		txRepo:           txRepo,
-		categoryRepo:     categoryRepo,
-		categoryService:  categoryService,
-		fxRateSvc:        fxRateSvc,
-		currencyCache:    currencyCache,
-		investmentRepo:   investmentRepo,
-		redisCache:       redisCache,
-		mapper:           NewWalletMapper(),
+		walletRepo:      walletRepo,
+		userRepo:        userRepo,
+		txRepo:          txRepo,
+		categoryRepo:    categoryRepo,
+		categoryService: categoryService,
+		fxRateSvc:       fxRateSvc,
+		currencyCache:   currencyCache,
+		investmentRepo:  investmentRepo,
+		redisCache:      redisCache,
+		mapper:          NewWalletMapper(),
 	}
 }
 
@@ -384,10 +385,10 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 		// Invalidate currency cache
 		_ = s.invalidateWalletCache(ctx, userID, walletID)
 		return &walletv1.DeleteWalletResponse{
-			Success:               true,
-			Message:               "Wallet archived successfully",
-			Timestamp:             time.Now().Format(time.RFC3339),
-			TransactionsAffected:  txCount,
+			Success:              true,
+			Message:              "Wallet archived successfully",
+			Timestamp:            time.Now().Format(time.RFC3339),
+			TransactionsAffected: txCount,
 		}, nil
 
 	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_TRANSFER:
@@ -440,10 +441,10 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 		_ = s.invalidateWalletCache(ctx, userID, req.TargetWalletId)
 
 		return &walletv1.DeleteWalletResponse{
-			Success:               true,
-			Message:               fmt.Sprintf("Transferred %d transactions and deleted wallet", txCount),
-			Timestamp:             time.Now().Format(time.RFC3339),
-			TransactionsAffected:  txCount,
+			Success:              true,
+			Message:              fmt.Sprintf("Transferred %d transactions and deleted wallet", txCount),
+			Timestamp:            time.Now().Format(time.RFC3339),
+			TransactionsAffected: txCount,
 		}, nil
 
 	case walletv1.WalletDeletionOption_WALLET_DELETION_OPTION_DELETE_ONLY:
@@ -454,10 +455,10 @@ func (s *walletService) DeleteWallet(ctx context.Context, walletID int32, userID
 		// Invalidate currency cache
 		_ = s.invalidateWalletCache(ctx, userID, walletID)
 		return &walletv1.DeleteWalletResponse{
-			Success:               true,
-			Message:               fmt.Sprintf("Wallet deleted. %d transactions will be preserved but inaccessible", txCount),
-			Timestamp:             time.Now().Format(time.RFC3339),
-			TransactionsAffected:  txCount,
+			Success:              true,
+			Message:              fmt.Sprintf("Wallet deleted. %d transactions will be preserved but inaccessible", txCount),
+			Timestamp:            time.Now().Format(time.RFC3339),
+			TransactionsAffected: txCount,
 		}, nil
 
 	default:
@@ -863,8 +864,8 @@ func (s *walletService) GetTotalBalance(ctx context.Context, userID int32) (*wal
 
 	// Return response with display values
 	return &walletv1.GetTotalBalanceResponse{
-		Success:   true,
-		Message:   "Total balance retrieved successfully",
+		Success: true,
+		Message: "Total balance retrieved successfully",
 		Data: &walletv1.Money{
 			Amount:   totalCash,
 			Currency: baseCurrency,
@@ -953,9 +954,9 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 
 	// Get transactions for the period
 	txFilter := repository.TransactionFilter{
-		WalletIDs:  walletIDs,
-		StartDate:  &startTime,
-		EndDate:    &endTime,
+		WalletIDs: walletIDs,
+		StartDate: &startTime,
+		EndDate:   &endTime,
 	}
 
 	transactions, _, err := s.txRepo.List(ctx, userID, txFilter, repository.ListOptions{
@@ -968,22 +969,27 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 	}
 
 	// Get initial balance before the period
+	// Calculate by summing all transactions BEFORE the period start
 	initialBalance := int64(0)
 	for _, walletID := range walletIDs {
-		wallet, err := s.walletRepo.GetByID(ctx, walletID)
+		// Get all transactions before the period start
+		beforeFilter := repository.TransactionFilter{
+			WalletIDs: []int32{walletID},
+			EndDate:   &startTime, // All transactions before startTime
+		}
+		beforeTxs, _, err := s.txRepo.List(ctx, userID, beforeFilter, repository.ListOptions{
+			Limit: 10000, // Get all historical transactions
+		})
 		if err != nil {
+			log.Printf("Error fetching historical transactions for wallet %d: %v", walletID, err)
 			continue
 		}
 
-		// Calculate balance change during the period to find initial balance
-		// Amounts are now signed: positive for income, negative for expense
-		balanceChange := int64(0)
-		for _, tx := range transactions {
-			if tx.WalletID == walletID {
-				balanceChange += tx.Amount  // Add signed amount directly
-			}
+		// Sum all transactions before the period
+		// Amounts are signed: positive for income, negative for expense
+		for _, tx := range beforeTxs {
+			initialBalance += tx.Amount
 		}
-		initialBalance += wallet.Balance - balanceChange
 	}
 
 	// Generate data points
@@ -1007,9 +1013,9 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 					if tx.Amount > 0 {
 						dailyIncome += tx.Amount
 					} else {
-						dailyExpense += -tx.Amount  // Convert to positive for display
+						dailyExpense += -tx.Amount // Convert to positive for display
 					}
-					currentBalance += tx.Amount  // Add signed amount directly
+					currentBalance += tx.Amount // Add signed amount directly
 				}
 			}
 
@@ -1039,9 +1045,9 @@ func (s *walletService) GetBalanceHistory(ctx context.Context, userID int32, req
 					if tx.Amount > 0 {
 						monthlyIncome += tx.Amount
 					} else {
-						monthlyExpense += -tx.Amount  // Convert to positive for display
+						monthlyExpense += -tx.Amount // Convert to positive for display
 					}
-					currentBalance += tx.Amount  // Add signed amount directly
+					currentBalance += tx.Amount // Add signed amount directly
 				}
 			}
 
@@ -1105,9 +1111,9 @@ func (s *walletService) GetMonthlyDominance(ctx context.Context, userID int32, r
 
 	// Get transactions for the period for all wallets
 	txFilter := repository.TransactionFilter{
-		WalletIDs:  walletIDs,
-		StartDate:  &startTime,
-		EndDate:    &endTime,
+		WalletIDs: walletIDs,
+		StartDate: &startTime,
+		EndDate:   &endTime,
 	}
 
 	transactions, _, err := s.txRepo.List(ctx, userID, txFilter, repository.ListOptions{
@@ -1120,16 +1126,30 @@ func (s *walletService) GetMonthlyDominance(ctx context.Context, userID int32, r
 	}
 
 	// Calculate initial balance for each wallet before the period
-	// Transaction amounts are signed: positive for income, negative for expense
+	// Sum all transactions BEFORE the period start
 	initialBalances := make(map[int32]int64)
 	for _, wallet := range wallets {
-		balanceChange := int64(0)
-		for _, tx := range transactions {
-			if tx.WalletID == wallet.ID {
-				balanceChange += tx.Amount // Add signed amount directly
-			}
+		// Get all transactions before the period start
+		beforeFilter := repository.TransactionFilter{
+			WalletIDs: []int32{wallet.ID},
+			EndDate:   &startTime, // All transactions before startTime
 		}
-		initialBalances[wallet.ID] = wallet.Balance - balanceChange
+		beforeTxs, _, err := s.txRepo.List(ctx, userID, beforeFilter, repository.ListOptions{
+			Limit: 10000, // Get all historical transactions
+		})
+		if err != nil {
+			log.Printf("Error fetching historical transactions for wallet %d: %v", wallet.ID, err)
+			initialBalances[wallet.ID] = 0
+			continue
+		}
+
+		// Sum all transactions before the period
+		// Transaction amounts are signed: positive for income, negative for expense
+		walletInitialBalance := int64(0)
+		for _, tx := range beforeTxs {
+			walletInitialBalance += tx.Amount
+		}
+		initialBalances[wallet.ID] = walletInitialBalance
 	}
 
 	// Build response with monthly data for each wallet
