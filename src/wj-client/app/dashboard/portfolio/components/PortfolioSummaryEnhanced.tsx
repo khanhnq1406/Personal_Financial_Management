@@ -278,7 +278,7 @@ export const PortfolioSummaryEnhanced = memo(function PortfolioSummaryEnhanced({
         .filter((item) => item.totalValue !== undefined && item.totalValue > 0)
         .map((item, index) => ({
           name: INVESTMENT_TYPE_LABELS[item.type] || `Type ${item.type}`,
-          value: item.totalValue,
+          value: Number(item.totalValue),
           color: ASSET_COLORS[index % ASSET_COLORS.length],
         }));
     }

@@ -16,7 +16,10 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { BaseCard } from "@/components/BaseCard";
-import { formatCurrency, formatCurrencyCompact } from "@/utils/currency-formatter";
+import {
+  formatCurrency,
+  formatCurrencyCompact,
+} from "@/utils/currency-formatter";
 import {
   useQueryGetFinancialReport,
   useQueryGetCategoryBreakdown,
@@ -332,10 +335,10 @@ export default function ReportPageEnhanced() {
         if (options.includeCategories && options.includeCategories.length > 0) {
           const selectedIds = new Set(options.includeCategories);
           filteredExpenseCategories = expenseCategories.filter((cat) =>
-            selectedIds.has(cat.id)
+            selectedIds.has(cat.id),
           );
           filteredCategoryComparison = categoryComparisonData.filter((cat) =>
-            selectedIds.has(cat.categoryId)
+            selectedIds.has(cat.categoryId),
           );
         }
 
@@ -513,8 +516,7 @@ export default function ReportPageEnhanced() {
             </h3>
             <DonutChartSVG
               data={expenseCategories}
-              innerRadiusPercent={50}
-              outerRadiusPercent={75}
+              innerRadiusPercent={0}
               height={260}
               showLegend={true}
               legendPosition="right"
@@ -559,7 +561,10 @@ export default function ReportPageEnhanced() {
               height={260}
               showLegend={true}
               yAxisFormatter={(value) => formatCurrencyCompact(value, currency)}
-              tooltipFormatter={(value) => [formatCurrency(value, currency), ""]}
+              tooltipFormatter={(value) => [
+                formatCurrency(value, currency),
+                "",
+              ]}
               xAxisFormatter={(label) => label}
             />
           </BaseCard>

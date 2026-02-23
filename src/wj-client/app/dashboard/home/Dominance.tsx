@@ -17,7 +17,7 @@ export const Dominance = memo(function Dominance({
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { currency } = useCurrency();
 
-  // Fetch wallets for the dropdown
+  // Fetch wallets
   const { data: walletsData, isLoading: walletsLoading } = useQueryListWallets(
     {
       pagination: { page: 1, pageSize: 100, orderBy: "", order: "" },
@@ -25,11 +25,13 @@ export const Dominance = memo(function Dominance({
     { refetchOnMount: "always" },
   );
 
-  // Prepare chart data - use display balances in user's preferred currency
+  // Prepare chart data - use displayTotalValue which includes balance + investments
   const chartData =
     walletsData?.wallets?.map((wallet) => ({
       name: wallet.walletName,
-      value: wallet.displayBalance?.amount ?? wallet.balance?.amount ?? 0,
+      value: Number(
+        wallet.displayTotalValue?.amount ?? wallet.totalValue?.amount ?? 0,
+      ),
     })) ?? [];
 
   return (
@@ -44,6 +46,7 @@ export const Dominance = memo(function Dominance({
       <DonutChartSVG
         data={chartData}
         colors={pieChartColors}
+        innerRadiusPercent={0}
         showPercentageLabels={true}
         labelPosition="inside"
         showLegend={true}
