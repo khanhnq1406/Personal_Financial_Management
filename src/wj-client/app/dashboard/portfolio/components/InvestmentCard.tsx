@@ -138,11 +138,11 @@ export const InvestmentCard = memo(function InvestmentCard({
           <span className="text-sm text-neutral-600">Avg Cost</span>
           <div className="text-right">
             <div className="text-sm font-medium text-neutral-900">
-              {formatPrice(averageCost || 0, type, nativeCurrency, purchaseUnit)}
+              {formatPrice(averageCost || 0, type, nativeCurrency, purchaseUnit, symbol)}
             </div>
             {displayAverageCost && displayCurrency && (
               <div className="text-xs text-neutral-500">
-                ≈ {formatPrice(displayAverageCost.amount || 0, type, displayCcy, purchaseUnit)}
+                ≈ {formatPrice(displayAverageCost.amount || 0, type, displayCcy, purchaseUnit, symbol)}
               </div>
             )}
           </div>
@@ -153,11 +153,11 @@ export const InvestmentCard = memo(function InvestmentCard({
           <span className="text-sm text-neutral-600">Current Price</span>
           <div className="text-right">
             <div className="text-sm font-medium text-neutral-900">
-              {formatPrice(currentPrice || 0, type, nativeCurrency, purchaseUnit)}
+              {formatPrice(currentPrice || 0, type, nativeCurrency, purchaseUnit, symbol)}
             </div>
             {displayCurrentPrice && displayCurrency && (
               <div className="text-xs text-neutral-500">
-                ≈ {formatPrice(displayCurrentPrice.amount || 0, type, displayCcy, purchaseUnit)}
+                ≈ {formatPrice(displayCurrentPrice.amount || 0, type, displayCcy, purchaseUnit, symbol)}
               </div>
             )}
           </div>

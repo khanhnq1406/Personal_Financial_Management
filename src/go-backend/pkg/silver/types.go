@@ -25,20 +25,71 @@ type SilverType struct {
 }
 
 var SilverTypes = []SilverType{
+	// Tael-based (lượng) - VND × 1000
 	{
-		Code:     "AG_VND_Tael",
-		Name:     "Bạc Việt Nam (VND) - Lượng",
+		Code:     "GOLDENFUND_1L",
+		Name:     "Golden Fund 1 Lượng",
 		Currency: "VND",
 		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
 	},
 	{
-		Code:     "AG_VND_Kg",
-		Name:     "Bạc Việt Nam (VND) - Kg",
+		Code:     "GOLDENFUND_5L",
+		Name:     "Golden Fund 5 Lượng",
 		Currency: "VND",
 		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
 	},
 	{
-		Code:     "XAG",
+		Code:     "GOLDENFUND_10L",
+		Name:     "Golden Fund 10 Lượng",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "PHUQUY_1L",
+		Name:     "Phú Quý 1 Lượng",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "PHUQUY_5L",
+		Name:     "Phú Quý 5 Lượng",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "ANCARAT_1L",
+		Name:     "Ancarat 1 Lượng",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "ANCARAT_5L",
+		Name:     "Ancarat 5 Lượng",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	// Kg-based - VND × 1000
+	{
+		Code:     "GOLDENFUND_1KG",
+		Name:     "Golden Fund 1 Kg",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "PHUQUY_1KG",
+		Name:     "Phú Quý 1 Kg",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	{
+		Code:     "ANCARAT_1KG",
+		Name:     "Ancarat 1 Kg",
+		Currency: "VND",
+		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND,
+	},
+	// Ounce-based - USD (use Yahoo Finance)
+	{
+		Code:     "XAGUSD",
 		Name:     "Silver World (XAG/USD)",
 		Currency: "USD",
 		Type:     investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD,
@@ -58,22 +109,20 @@ func GetNativeStorageInfo(investmentType investmentv1.InvestmentType) (SilverUni
 }
 
 // GetPriceUnitForMarketData returns what unit market prices are in based on the symbol
-// For VND silver, the unit depends on the specific symbol:
-// - AG_VND_Tael: price per tael (from ancaraat API type "A4")
-// - AG_VND_Kg: price per kg (from ancaraat API type "K4")
-// - AG_VND (legacy): defaults to per tael
-// For USD silver (XAG): price per ounce
 func GetPriceUnitForMarketData(symbol string) SilverUnit {
-	switch symbol {
-	case "AG_VND_Tael", "AG_VND":
-		return UnitTael // ancarat API A4 price is per tael
-	case "AG_VND_Kg":
-		return UnitKg // ancarat API K4 price is per kg
-	case "XAG", "SI=F":
-		return UnitOunce // Yahoo Finance XAG is per ounce
-	default:
-		return UnitOunce // default to ounce for unknown symbols
+	// Check if ends with L (tael-based)
+	if len(symbol) > 2 && symbol[len(symbol)-1] == 'L' {
+		return UnitTael
 	}
+	// Check if ends with KG (kg-based)
+	if len(symbol) >= 2 && symbol[len(symbol)-2:] == "KG" {
+		return UnitKg
+	}
+	// XAGUSD or other USD silver
+	if symbol == "XAGUSD" || symbol == "SI=F" {
+		return UnitOunce
+	}
+	return UnitOunce
 }
 
 func IsSilverType(t investmentv1.InvestmentType) bool {
@@ -82,11 +131,6 @@ func IsSilverType(t investmentv1.InvestmentType) bool {
 }
 
 func GetSilverTypeByCode(code string) *SilverType {
-	// Handle legacy AG_VND code - return first VND type (tael)
-	if code == "AG_VND" {
-		return &SilverTypes[0]
-	}
-	// Handle new unit-specific codes
 	for _, st := range SilverTypes {
 		if st.Code == code {
 			return &st

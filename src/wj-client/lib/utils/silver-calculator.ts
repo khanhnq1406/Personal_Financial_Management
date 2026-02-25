@@ -13,7 +13,7 @@
 
 import { InvestmentType } from "@/gen/protobuf/v1/investment";
 
-export type SilverUnit = 'tael' | 'kg' | 'gram' | 'oz';
+export type SilverUnit = "tael" | "kg" | "gram" | "oz";
 
 // Constants for unit conversions
 const GRAMS_PER_TAEL = 37.5;
@@ -24,41 +24,32 @@ const GRAMS_PER_KG = 1000.0;
  * Silver type options for frontend dropdown
  */
 export interface SilverTypeOption {
-  value: string;      // "AG_VND", "XAG"
-  label: string;      // Display name
-  currency: string;   // "VND" or "USD"
-  type: number;       // InvestmentType enum value (10, 11)
-  availableUnits: SilverUnit[];  // Units user can input
+  value: string; // "AG_VND", "XAG"
+  label: string; // Display name
+  currency: string; // "VND" or "USD"
+  type: number; // InvestmentType enum value (10, 11)
+  availableUnits: SilverUnit[]; // Units user can input
 }
 
 // Vietnamese silver type options
-// Split by unit to allow separate investments for each unit preference
 export const SILVER_VND_OPTIONS: SilverTypeOption[] = [
-  {
-    value: "AG_VND_Tael",
-    label: "Bạc Việt Nam (VND) - Lượng",
-    currency: "VND",
-    type: 10,
-    availableUnits: ['tael']  // This investment is tracked in lượng
-  },
-  {
-    value: "AG_VND_Kg",
-    label: "Bạc Việt Nam (VND) - Kg",
-    currency: "VND",
-    type: 10,
-    availableUnits: ['kg']  // This investment is tracked in kg
-  },
+  // Tael-based (lượng)
+  { value: "GOLDENFUND_1L", label: "Golden Fund 1 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "GOLDENFUND_5L", label: "Golden Fund 5 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "GOLDENFUND_10L", label: "Golden Fund 10 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "PHUQUY_1L", label: "Phú Quý 1 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "PHUQUY_5L", label: "Phú Quý 5 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "ANCARAT_1L", label: "Ancarat 1 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  { value: "ANCARAT_5L", label: "Ancarat 5 Lượng", currency: "VND", type: 10, availableUnits: ['tael'] },
+  // Kg-based
+  { value: "GOLDENFUND_1KG", label: "Golden Fund 1 Kg", currency: "VND", type: 10, availableUnits: ['kg'] },
+  { value: "PHUQUY_1KG", label: "Phú Quý 1 Kg", currency: "VND", type: 10, availableUnits: ['kg'] },
+  { value: "ANCARAT_1KG", label: "Ancarat 1 Kg", currency: "VND", type: 10, availableUnits: ['kg'] },
 ];
 
 // World silver type options
 export const SILVER_USD_OPTIONS: SilverTypeOption[] = [
-  {
-    value: "XAG",
-    label: "Bạc Thế Giới (XAG/USD)",
-    currency: "USD",
-    type: 11,
-    availableUnits: ['oz']  // Only troy ounces for USD
-  },
+  { value: "XAGUSD", label: "Silver World (XAG/USD)", currency: "USD", type: 11, availableUnits: ['oz'] },
 ];
 
 /**
@@ -71,22 +62,22 @@ export const SILVER_USD_OPTIONS: SilverTypeOption[] = [
 export function convertSilverQuantity(
   quantity: number,
   from: SilverUnit,
-  to: SilverUnit
+  to: SilverUnit,
 ): number {
   // Convert to grams first (common base unit)
   let inGrams: number;
 
   switch (from) {
-    case 'tael':
+    case "tael":
       inGrams = quantity * GRAMS_PER_TAEL;
       break;
-    case 'kg':
+    case "kg":
       inGrams = quantity * GRAMS_PER_KG;
       break;
-    case 'oz':
+    case "oz":
       inGrams = quantity * GRAMS_PER_OUNCE;
       break;
-    case 'gram':
+    case "gram":
     default:
       inGrams = quantity;
       break;
@@ -94,13 +85,13 @@ export function convertSilverQuantity(
 
   // Convert from grams to target unit
   switch (to) {
-    case 'tael':
+    case "tael":
       return inGrams / GRAMS_PER_TAEL;
-    case 'kg':
+    case "kg":
       return inGrams / GRAMS_PER_KG;
-    case 'oz':
+    case "oz":
       return inGrams / GRAMS_PER_OUNCE;
-    case 'gram':
+    case "gram":
     default:
       return inGrams;
   }
@@ -113,21 +104,21 @@ export function convertSilverQuantity(
 export function convertSilverPricePerUnit(
   price: number,
   from: SilverUnit,
-  to: SilverUnit
+  to: SilverUnit,
 ): number {
   let quantityRatio: number;
 
   switch (from) {
-    case 'tael':
+    case "tael":
       quantityRatio = GRAMS_PER_TAEL;
       break;
-    case 'kg':
+    case "kg":
       quantityRatio = GRAMS_PER_KG;
       break;
-    case 'oz':
+    case "oz":
       quantityRatio = GRAMS_PER_OUNCE;
       break;
-    case 'gram':
+    case "gram":
     default:
       quantityRatio = 1;
       break;
@@ -136,13 +127,13 @@ export function convertSilverPricePerUnit(
   const pricePerGram = price / quantityRatio;
 
   switch (to) {
-    case 'tael':
+    case "tael":
       return pricePerGram * GRAMS_PER_TAEL;
-    case 'kg':
+    case "kg":
       return pricePerGram * GRAMS_PER_KG;
-    case 'oz':
+    case "oz":
       return pricePerGram * GRAMS_PER_OUNCE;
-    case 'gram':
+    case "gram":
     default:
       return pricePerGram;
   }
@@ -164,31 +155,33 @@ interface CalculateSilverParams {
 }
 
 interface CalculateSilverResult {
-  storedQuantity: number;       // Quantity in storage format (base unit × 10000)
-  totalCostNative: number;       // Total cost in investment's native currency
-  totalCostWallet: number;       // Total cost in wallet currency
-  averageCostNative: number;     // Average cost per base unit in native currency
-  purchaseUnit: SilverUnit;      // Remember user's input unit
+  storedQuantity: number; // Quantity in storage format (base unit × 10000)
+  totalCostNative: number; // Total cost in investment's native currency
+  totalCostWallet: number; // Total cost in wallet currency
+  averageCostNative: number; // Average cost per base unit in native currency
+  purchaseUnit: SilverUnit; // Remember user's input unit
 }
 
-export function calculateSilverFromUserInput(params: CalculateSilverParams): CalculateSilverResult {
+export function calculateSilverFromUserInput(
+  params: CalculateSilverParams,
+): CalculateSilverResult {
   // Determine storage unit based on investment type
-  const storageUnit: SilverUnit = params.investmentType === 10 ? 'gram' : 'oz';
-  const nativeCurrency = params.investmentType === 10 ? 'VND' : 'USD';
+  const storageUnit: SilverUnit = params.investmentType === 10 ? "gram" : "oz";
+  const nativeCurrency = params.investmentType === 10 ? "VND" : "USD";
 
   // LAYER 1: Unit conversion
   // Convert quantity to storage unit
   const quantityInStorage = convertSilverQuantity(
     params.quantity,
     params.quantityUnit,
-    storageUnit
+    storageUnit,
   );
 
   // Convert price to per-storage-unit
   const priceInStorage = convertSilverPricePerUnit(
     params.pricePerUnit,
     params.priceUnit,
-    storageUnit
+    storageUnit,
   );
 
   // Calculate total cost
@@ -203,20 +196,27 @@ export function calculateSilverFromUserInput(params: CalculateSilverParams): Cal
   let totalCostInWalletCurrency = totalCostInNativeCurrency;
   if (nativeCurrency !== params.walletCurrency && params.fxRate) {
     // Apply conversion (simplified - in real implementation, need proper FX rate)
-    totalCostInWalletCurrency = totalCostInNativeCurrency * (params.fxRate || 1);
+    totalCostInWalletCurrency =
+      totalCostInNativeCurrency * (params.fxRate || 1);
   }
 
   // Get currency multiplier (VND: 1, USD: 100)
   const getCurrencyMultiplier = (currency: string) => {
-    return currency === 'VND' ? 1 : 100;
+    return currency === "VND" ? 1 : 100;
   };
 
   return {
-    storedQuantity: Math.round(quantityInStorage * 10000),  // 4 decimal precision
-    totalCostNative: Math.round(totalCostInNativeCurrency * getCurrencyMultiplier(nativeCurrency)),
-    totalCostWallet: Math.round(totalCostInWalletCurrency * getCurrencyMultiplier(params.walletCurrency)),
-    averageCostNative: Math.round(priceInStorage * getCurrencyMultiplier(nativeCurrency)),
-    purchaseUnit: params.quantityUnit,  // Remember user's input unit
+    storedQuantity: Math.round(quantityInStorage * 10000), // 4 decimal precision
+    totalCostNative: Math.round(
+      totalCostInNativeCurrency * getCurrencyMultiplier(nativeCurrency),
+    ),
+    totalCostWallet: Math.round(
+      totalCostInWalletCurrency * getCurrencyMultiplier(params.walletCurrency),
+    ),
+    averageCostNative: Math.round(
+      priceInStorage * getCurrencyMultiplier(nativeCurrency),
+    ),
+    purchaseUnit: params.quantityUnit, // Remember user's input unit
   };
 }
 
@@ -227,16 +227,19 @@ export function calculateSilverFromUserInput(params: CalculateSilverParams): Cal
 export function formatSilverQuantityDisplay(
   storedQuantity: number,
   investmentType: InvestmentType,
-  purchaseUnit: SilverUnit
+  purchaseUnit: SilverUnit,
 ): { value: number; unit: SilverUnit } {
-  const storageUnit: SilverUnit = investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND ? 'gram' : 'oz';
+  const storageUnit: SilverUnit =
+    investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND
+      ? "gram"
+      : "oz";
   const quantityInStorage = storedQuantity / 10000;
 
   // Convert from storage unit to purchase unit for display
   const displayValue = convertSilverQuantity(
     quantityInStorage,
     storageUnit,
-    purchaseUnit
+    purchaseUnit,
   );
 
   return { value: displayValue, unit: purchaseUnit };
@@ -244,11 +247,16 @@ export function formatSilverQuantityDisplay(
 
 export function getSilverUnitLabel(unit: SilverUnit): string {
   switch (unit) {
-    case 'tael': return 'lượng';
-    case 'kg': return 'kg';
-    case 'oz': return 'oz';
-    case 'gram': return 'g';
-    default: return unit;
+    case "tael":
+      return "lượng";
+    case "kg":
+      return "kg";
+    case "oz":
+      return "oz";
+    case "gram":
+      return "g";
+    default:
+      return unit;
   }
 }
 
@@ -258,17 +266,24 @@ export function getSilverUnitLabel(unit: SilverUnit): string {
  */
 export function getSilverUnitLabelFull(unit: SilverUnit): string {
   switch (unit) {
-    case 'tael': return 'Tael (lượng)';
-    case 'kg': return 'Kg';
-    case 'oz': return 'Ounce';
-    case 'gram': return 'Gram';
-    default: return unit;
+    case "tael":
+      return "Tael (lượng)";
+    case "kg":
+      return "Kg";
+    case "oz":
+      return "Ounce";
+    case "gram":
+      return "Gram";
+    default:
+      return unit;
   }
 }
 
 export function isSilverType(type: InvestmentType): boolean {
-  return type === InvestmentType.INVESTMENT_TYPE_SILVER_VND ||
-         type === InvestmentType.INVESTMENT_TYPE_SILVER_USD;
+  return (
+    type === InvestmentType.INVESTMENT_TYPE_SILVER_VND ||
+    type === InvestmentType.INVESTMENT_TYPE_SILVER_USD
+  );
 }
 
 /**
@@ -276,38 +291,60 @@ export function isSilverType(type: InvestmentType): boolean {
  * @param investmentType - The investment type enum value
  * @returns Object with storage unit and native currency
  */
-export function getSilverStorageInfo(investmentType: number): { unit: SilverUnit; currency: string } {
+export function getSilverStorageInfo(investmentType: number): {
+  unit: SilverUnit;
+  currency: string;
+} {
   // SILVER_VND = 10, SILVER_USD = 11
   if (investmentType === 10) {
-    return { unit: 'gram' as SilverUnit, currency: 'VND' };
+    return { unit: "gram" as SilverUnit, currency: "VND" };
   } else if (investmentType === 11) {
-    return { unit: 'oz' as SilverUnit, currency: 'USD' };
+    return { unit: "oz" as SilverUnit, currency: "USD" };
   }
-  return { unit: 'gram' as SilverUnit, currency: 'USD' };
+  return { unit: "gram" as SilverUnit, currency: "USD" };
 }
 
 /**
  * Get the market price unit for a silver investment type
  * @param investmentType - The investment type enum value
+ * @param symbol - Optional symbol to determine unit from suffix (overrides investmentType)
  * @returns The unit that market prices are quoted in
  */
-export function getSilverMarketPriceUnit(investmentType: number): SilverUnit {
-  if (investmentType === 10) { // SILVER_VND
-    return 'tael' as SilverUnit; // VND silver prices are per tael
-  } else if (investmentType === 11) { // SILVER_USD
-    return 'oz' as SilverUnit; // World silver prices are per ounce
+export function getSilverMarketPriceUnit(
+  investmentType: number,
+  symbol?: string,
+): SilverUnit {
+  // If symbol is provided, determine unit from suffix (matches backend GetPriceUnitForMarketData)
+  if (symbol) {
+    if (symbol.endsWith("L")) {
+      return "tael" as SilverUnit;
+    }
+    if (symbol.endsWith("KG")) {
+      return "kg" as SilverUnit;
+    }
+    if (symbol === "XAGUSD" || symbol === "SI=F") {
+      return "oz" as SilverUnit;
+    }
   }
-  return 'oz' as SilverUnit;
+
+  if (investmentType === 10) {
+    // SILVER_VND
+    return "tael" as SilverUnit; // Default for VND silver
+  } else if (investmentType === 11) {
+    // SILVER_USD
+    return "oz" as SilverUnit;
+  }
+  return "oz" as SilverUnit;
 }
 
 export function getSilverTypeLabel(type: InvestmentType): string {
   switch (type) {
     case InvestmentType.INVESTMENT_TYPE_SILVER_VND:
-      return 'Silver (VND)';
+      return "Silver (VND)";
     case InvestmentType.INVESTMENT_TYPE_SILVER_USD:
-      return 'Silver (USD)';
+      return "Silver (USD)";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }
 
@@ -329,9 +366,13 @@ export function getSilverTypeOptions(currency: string): SilverTypeOption[] {
 export function formatSilverQuantity(
   storedQuantity: number,
   investmentType: InvestmentType,
-  purchaseUnit: SilverUnit
+  purchaseUnit: SilverUnit,
 ): string {
-  const { value, unit } = formatSilverQuantityDisplay(storedQuantity, investmentType, purchaseUnit);
+  const { value, unit } = formatSilverQuantityDisplay(
+    storedQuantity,
+    investmentType,
+    purchaseUnit,
+  );
   const unitLabel = getSilverUnitLabel(unit);
 
   return `${value.toFixed(4)} ${unitLabel}`;
@@ -350,8 +391,6 @@ export function formatSilverPrice(
   priceUnit: SilverUnit,
   investmentType?: InvestmentType
 ): string {
-  const storageUnit: SilverUnit = investmentType === InvestmentType.INVESTMENT_TYPE_SILVER_VND ? 'gram' : 'oz';
-
   // Convert from storage format to display format
   let priceForDisplay: number;
 

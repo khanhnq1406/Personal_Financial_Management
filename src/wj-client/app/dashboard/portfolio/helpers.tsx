@@ -12,6 +12,7 @@ import {
   getSilverTypeLabel,
   formatSilverQuantity as formatSilverQuantityUtil,
   formatSilverPrice as formatSilverPriceUtil,
+  getSilverMarketPriceUnit,
   SilverUnit,
 } from "@/lib/utils/silver-calculator";
 
@@ -49,15 +50,17 @@ export const formatPercent = (value: number): string => {
 };
 
 // Format prices with appropriate decimals based on investment type
-export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND", priceUnit?: string): string => {
+export const formatPrice = (price: number, type: InvestmentType, currency: string = "VND", priceUnit?: string, symbol?: string): string => {
   // Gold types: show price per unit (₫/lượng for VND gold, $/oz for USD gold)
   if (isGoldType(type)) {
     return formatGoldPrice(price, currency, undefined, type);
   }
 
-  // Silver types: show price per unit (₫/lượng for VND silver, $/oz for USD silver)
-  if (isSilverType(type) && priceUnit) {
-    return formatSilverPriceUtil(price, currency, priceUnit as SilverUnit, type);
+  // Silver types: show price per unit
+  // Use symbol to determine correct market price unit (tael for *_xL, kg for *_xKG, oz for XAGUSD)
+  if (isSilverType(type)) {
+    const marketUnit = getSilverMarketPriceUnit(type, symbol);
+    return formatSilverPriceUtil(price, currency, marketUnit, type);
   }
 
   // Use the multi-currency formatter from utils for other types

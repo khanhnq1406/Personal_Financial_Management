@@ -947,11 +947,11 @@ func getDisplayUnitForType(investmentType investmentv1.InvestmentType, symbol st
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_USD:
 		return "oz"
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
-		// For VND silver, unit depends on symbol
-		if symbol == "AG_VND_Kg" {
+		// For VND silver, unit depends on symbol suffix
+		if len(symbol) >= 2 && symbol[len(symbol)-2:] == "KG" {
 			return "kg"
 		}
-		return "tael" // AG_VND_Tael or legacy AG_VND
+		return "tael"
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:
 		return "oz"
 	default:
@@ -968,9 +968,9 @@ func convertToDecimal(amount int64, currency string) float64 {
 // convertPriceForDisplay converts price from storage format to display format.
 // For gold VND: storage is per gram, display is per tael (×37.5)
 // For gold USD: storage is per oz, display is per oz (no conversion)
-// For silver VND: storage is per gram, display depends on symbol:
-//   - AG_VND_Tael: display per tael (×37.5)
-//   - AG_VND_Kg: display per kg (×1000)
+// For silver VND: storage is per gram, display depends on symbol suffix:
+//   - *_L symbols: display per tael (×37.5)
+//   - *_KG symbols: display per kg (×1000)
 // For silver USD: storage is per oz, display is per oz (no conversion)
 func convertPriceForDisplay(storagePrice int64, currency string, investmentType investmentv1.InvestmentType, symbol string) int64 {
 	const gramsPerTael = 37.5
@@ -982,12 +982,10 @@ func convertPriceForDisplay(storagePrice int64, currency string, investmentType 
 		return int64(float64(storagePrice) * gramsPerTael)
 
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_VND:
-		// Silver VND: Storage per gram, Display depends on symbol
-		if symbol == "AG_VND_Kg" {
-			// Display per kg
+		// Silver VND: Storage per gram, Display depends on symbol suffix
+		if len(symbol) >= 2 && symbol[len(symbol)-2:] == "KG" {
 			return int64(float64(storagePrice) * gramsPerKg)
 		}
-		// Default: Display per tael (AG_VND_Tael or legacy AG_VND)
 		return int64(float64(storagePrice) * gramsPerTael)
 
 	case investmentv1.InvestmentType_INVESTMENT_TYPE_GOLD_USD, investmentv1.InvestmentType_INVESTMENT_TYPE_SILVER_USD:

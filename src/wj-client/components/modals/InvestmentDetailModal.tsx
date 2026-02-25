@@ -297,6 +297,7 @@ export function InvestmentDetailModal({
                   investment?.type || 0,
                   nativeCurrency,
                   investment?.purchaseUnit,
+                  investment?.symbol,
                 )}
               </span>
               {row.original.displayPrice && row.original.displayCurrency && (
@@ -307,6 +308,7 @@ export function InvestmentDetailModal({
                     investment?.type || 0,
                     row.original.displayCurrency,
                     investment?.purchaseUnit,
+                    investment?.symbol,
                   )}
                 </span>
               )}
@@ -447,6 +449,7 @@ export function InvestmentDetailModal({
             investment?.type || 0,
             investment?.currency || "USD",
             investment?.purchaseUnit,
+            investment?.symbol,
           ),
       },
       {
@@ -609,6 +612,7 @@ export function InvestmentDetailModal({
                     investment.type,
                     investment.currency || "USD",
                     investment.purchaseUnit,
+                    investment.symbol,
                   )}
                 </span>
               </div>
@@ -675,6 +679,7 @@ export function InvestmentDetailModal({
                           investment.type,
                           investment.currency || "USD",
                           investment.purchaseUnit,
+                          investment.symbol,
                         )}
                   </span>
                   <div className="mt-1">

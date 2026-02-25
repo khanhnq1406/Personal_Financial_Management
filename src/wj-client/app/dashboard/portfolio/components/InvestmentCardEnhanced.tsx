@@ -334,6 +334,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                       type,
                       nativeCurrency,
                       purchaseUnit,
+                      symbol,
                     )}
                   </div>
                   {displayAverageCost && displayCurrency && (
@@ -344,6 +345,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                         type,
                         displayCcy,
                         purchaseUnit,
+                        symbol,
                       )}
                     </div>
                   )}
@@ -365,6 +367,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                           type,
                           nativeCurrency,
                           purchaseUnit,
+                          symbol,
                         )}
                   </div>
                   {!isCustom && displayCurrentPrice && displayCurrency && (
@@ -375,6 +378,7 @@ export const InvestmentCardEnhanced = memo(function InvestmentCardEnhanced({
                         type,
                         displayCcy,
                         purchaseUnit,
+                        symbol,
                       )}
                     </div>
                   )}

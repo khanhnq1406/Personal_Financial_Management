@@ -9,10 +9,10 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"wealthjourney/pkg/cache"
-	"wealthjourney/pkg/gold"
+	"wealthjourney/pkg/vang247"
 )
 
-// GoldPriceService handles fetching gold prices from vang.today
+// GoldPriceService handles fetching gold prices from vang247
 type GoldPriceService interface {
 	FetchPriceForSymbol(ctx context.Context, symbol string) (*CachedGoldPrice, error)
 	FetchAllPrices(ctx context.Context) ([]*CachedGoldPrice, error)
@@ -32,14 +32,14 @@ type CachedGoldPrice struct {
 
 // goldPriceService implements GoldPriceService
 type goldPriceService struct {
-	client *gold.Client
+	client *vang247.Client
 	cache  *cache.GoldPriceCache
 }
 
 // NewGoldPriceService creates a new gold price service
 func NewGoldPriceService(redisClient *redis.Client) GoldPriceService {
 	return &goldPriceService{
-		client: gold.NewClient(10 * time.Second),
+		client: vang247.NewClient(10 * time.Second),
 		cache:  cache.NewGoldPriceCache(redisClient),
 	}
 }
@@ -61,42 +61,51 @@ func (s *goldPriceService) FetchPriceForSymbol(ctx context.Context, symbol strin
 		}, nil
 	}
 
-	// Fetch from API
-	apiPrice, err := s.client.FetchPriceByType(ctx, symbol)
+	// Fetch from vang247 API
+	apiPrice, err := s.client.FetchGoldPrice(ctx, symbol)
 	if err != nil {
-		return nil, fmt.Errorf("fetch price from API: %w", err)
+		return nil, fmt.Errorf("fetch price from vang247 API: %w", err)
 	}
 
-	// Convert float64 to smallest currency unit
-	// VND: No decimal places (multiply by 1)
-	// USD: 2 decimal places (multiply by 100)
-	var multiplier float64 = 1
+	// Convert vang247 price format to storage format
+	// VND prices are in VND x 1000, need to convert to VND x 1 (smallest unit)
+	// USD prices are already in USD x 1, need to convert to cents (x 100)
+	var buy, sell, changeBuy, changeSell int64
+
 	if apiPrice.Currency == "USD" {
-		multiplier = 100
+		buy = int64(apiPrice.Buy * 100)
+		sell = int64(apiPrice.Sell * 100)
+		changeBuy = int64(apiPrice.BuyChange * 100)
+		changeSell = int64(apiPrice.SellChange * 100)
+	} else {
+		buy = int64(apiPrice.Buy * 1000)
+		sell = int64(apiPrice.Sell * 1000)
+		changeBuy = int64(apiPrice.BuyChange * 1000)
+		changeSell = int64(apiPrice.SellChange * 1000)
 	}
 
 	price := &CachedGoldPrice{
-		TypeCode:   apiPrice.TypeCode,
+		TypeCode:   apiPrice.Name,
 		Name:       apiPrice.Name,
-		Buy:        int64(apiPrice.Buy * multiplier),
-		Sell:       int64(apiPrice.Sell * multiplier),
-		ChangeBuy:  int64(apiPrice.ChangeBuy * multiplier),
-		ChangeSell: int64(apiPrice.ChangeSell * multiplier),
+		Buy:        buy,
+		Sell:       sell,
+		ChangeBuy:  changeBuy,
+		ChangeSell: changeSell,
 		Currency:   apiPrice.Currency,
-		UpdateTime: time.Now(),
+		UpdateTime: apiPrice.UpdateAt,
 	}
 
 	// Cache the result (non-blocking)
 	go func() {
 		cachedPrice := &cache.CachedGoldPrice{
-			TypeCode:   apiPrice.TypeCode,
-			Name:       apiPrice.Name,
+			TypeCode:   price.TypeCode,
+			Name:       price.Name,
 			Buy:        price.Buy,
 			Sell:       price.Sell,
 			ChangeBuy:  price.ChangeBuy,
 			ChangeSell: price.ChangeSell,
-			Currency:   apiPrice.Currency,
-			UpdateTime: time.Now().Unix(),
+			Currency:   price.Currency,
+			UpdateTime: price.UpdateTime.Unix(),
 		}
 		if err := s.cache.Set(context.Background(), symbol, cachedPrice, cache.GoldPriceCacheTTL); err != nil {
 			log.Printf("Warning: failed to cache gold price for %s: %v", symbol, err)
@@ -108,33 +117,40 @@ func (s *goldPriceService) FetchPriceForSymbol(ctx context.Context, symbol strin
 
 // FetchAllPrices fetches all gold prices
 func (s *goldPriceService) FetchAllPrices(ctx context.Context) ([]*CachedGoldPrice, error) {
-	// Fetch from API
-	pricesMap, err := s.client.FetchPrices(ctx)
+	pricesResp, err := s.client.FetchPrices(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("fetch prices from API: %w", err)
+		return nil, fmt.Errorf("fetch prices from vang247 API: %w", err)
 	}
 
-	prices := make([]*CachedGoldPrice, 0, len(pricesMap))
-	for _, apiPrice := range pricesMap {
-		// Convert float64 to smallest currency unit
-		var multiplier float64 = 1
+	prices := make([]*CachedGoldPrice, 0, len(pricesResp.GoldPrices))
+
+	for _, apiPrice := range pricesResp.GoldPrices {
+		var buy, sell, changeBuy, changeSell int64
+
 		if apiPrice.Currency == "USD" {
-			multiplier = 100
+			buy = int64(apiPrice.Buy * 100)
+			sell = int64(apiPrice.Sell * 100)
+			changeBuy = int64(apiPrice.BuyChange * 100)
+			changeSell = int64(apiPrice.SellChange * 100)
+		} else {
+			buy = int64(apiPrice.Buy * 1000)
+			sell = int64(apiPrice.Sell * 1000)
+			changeBuy = int64(apiPrice.BuyChange * 1000)
+			changeSell = int64(apiPrice.SellChange * 1000)
 		}
 
 		price := &CachedGoldPrice{
-			TypeCode:   apiPrice.TypeCode,
+			TypeCode:   apiPrice.Name,
 			Name:       apiPrice.Name,
-			Buy:        int64(apiPrice.Buy * multiplier),
-			Sell:       int64(apiPrice.Sell * multiplier),
-			ChangeBuy:  int64(apiPrice.ChangeBuy * multiplier),
-			ChangeSell: int64(apiPrice.ChangeSell * multiplier),
+			Buy:        buy,
+			Sell:       sell,
+			ChangeBuy:  changeBuy,
+			ChangeSell: changeSell,
 			Currency:   apiPrice.Currency,
-			UpdateTime: time.Now(),
+			UpdateTime: apiPrice.UpdateAt,
 		}
 		prices = append(prices, price)
 
-		// Cache each price (non-blocking)
 		go func(p *CachedGoldPrice) {
 			cachedPrice := &cache.CachedGoldPrice{
 				TypeCode:   p.TypeCode,
@@ -142,9 +158,9 @@ func (s *goldPriceService) FetchAllPrices(ctx context.Context) ([]*CachedGoldPri
 				Buy:        p.Buy,
 				Sell:       p.Sell,
 				ChangeBuy:  p.ChangeBuy,
-				ChangeSell:  p.ChangeSell,
+				ChangeSell: p.ChangeSell,
 				Currency:   p.Currency,
-				UpdateTime: time.Now().Unix(),
+				UpdateTime: p.UpdateTime.Unix(),
 			}
 			if err := s.cache.Set(context.Background(), p.TypeCode, cachedPrice, cache.GoldPriceCacheTTL); err != nil {
 				log.Printf("Warning: failed to cache gold price for %s: %v", p.TypeCode, err)

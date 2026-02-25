@@ -122,6 +122,7 @@ function useInvestmentColumns(
                   row.type as any,
                   nativeCurrency,
                   row.purchaseUnit,
+                  row.symbol,
                 )}
               </span>
               {row.displayAverageCost && row.displayCurrency && (
@@ -132,6 +133,7 @@ function useInvestmentColumns(
                     row.type as any,
                     row.displayCurrency,
                     row.purchaseUnit,
+                    row.symbol,
                   )}
                 </span>
               )}
@@ -154,6 +156,7 @@ function useInvestmentColumns(
                   row.type as any,
                   nativeCurrency,
                   row.purchaseUnit,
+                  row.symbol,
                 )}
               </span>
               {row.displayCurrentPrice && row.displayCurrency && (
@@ -164,6 +167,7 @@ function useInvestmentColumns(
                     row.type as any,
                     row.displayCurrency,
                     row.purchaseUnit,
+                    row.symbol,
                   )}
                 </span>
               )}
@@ -319,6 +323,8 @@ function useMobileInvestmentColumns(
             row.averageCost || 0,
             row.type as any,
             row.currency || "USD",
+            row.purchaseUnit,
+            row.symbol,
           ),
       },
       {
@@ -329,6 +335,8 @@ function useMobileInvestmentColumns(
             row.currentPrice || 0,
             row.type as any,
             row.currency || "USD",
+            row.purchaseUnit,
+            row.symbol,
           ),
       },
       {

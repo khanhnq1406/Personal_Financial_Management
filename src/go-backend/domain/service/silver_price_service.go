@@ -9,11 +9,11 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"wealthjourney/pkg/cache"
-	"wealthjourney/pkg/silver"
+	"wealthjourney/pkg/vang247"
 	"wealthjourney/pkg/yahoo"
 )
 
-// SilverPriceService handles fetching silver prices from ancarat and Yahoo Finance
+// SilverPriceService handles fetching silver prices from vang247 and Yahoo Finance
 type SilverPriceService interface {
 	FetchPriceForSymbol(ctx context.Context, symbol string) (*CachedSilverPrice, error)
 	FetchAllPrices(ctx context.Context) ([]*CachedSilverPrice, error)
@@ -31,41 +31,25 @@ type CachedSilverPrice struct {
 
 // silverPriceService implements SilverPriceService
 type silverPriceService struct {
-	client *silver.Client
+	client *vang247.Client
 	cache  *cache.SilverPriceCache
 }
 
 // NewSilverPriceService creates a new silver price service
 func NewSilverPriceService(redisClient *redis.Client) SilverPriceService {
 	return &silverPriceService{
-		client: silver.NewClient(10 * time.Second),
+		client: vang247.NewClient(10 * time.Second),
 		cache:  cache.NewSilverPriceCache(redisClient),
 	}
 }
 
 // FetchPriceForSymbol fetches price for a specific silver symbol
 func (s *silverPriceService) FetchPriceForSymbol(ctx context.Context, symbol string) (*CachedSilverPrice, error) {
-	if symbol == "XAG" || symbol == "SI=F" {
-		// For USD silver, fetch from Yahoo Finance
+	// For XAGUSD, use Yahoo Finance
+	if symbol == "XAGUSD" || symbol == "SI=F" {
 		return s.fetchUSDSilverPrice(ctx)
 	}
 
-	// Determine the API type code based on symbol
-	// - AG_VND_Tael: use "A4" (1 lượng)
-	// - AG_VND_Kg: use "K4" (1 kg)
-	var typeCode string
-	switch symbol {
-	case "AG_VND_Tael":
-		typeCode = "A4" // Price per tael
-	case "AG_VND_Kg":
-		typeCode = "K4" // Price per kg
-	default:
-		// Legacy AG_VND or unknown - default to tael
-		typeCode = "A4" // Price per tael
-
-	}
-
-	// Use symbol-specific cache key (cache both tael and kg separately)
 	cacheKey := symbol
 
 	// Try cache first
@@ -79,24 +63,27 @@ func (s *silverPriceService) FetchPriceForSymbol(ctx context.Context, symbol str
 		}, nil
 	}
 
-	// Fetch from API using the correct type code
-	apiPrice, err := s.client.FetchPriceByType(ctx, typeCode)
+	// Fetch from vang247 API
+	apiPrice, err := s.client.FetchSilverPrice(ctx, symbol)
 	if err != nil {
-		return nil, fmt.Errorf("fetch price from API: %w", err)
+		return nil, fmt.Errorf("fetch price from vang247 API: %w", err)
 	}
 
-	// Convert float64 to smallest currency unit
-	// VND: No decimal places (multiply by 1)
+	// Convert vang247 price format to storage format
+	// VND prices are in VND x 1000, convert to VND x 1
+	buy := int64(apiPrice.Buy * 1000)
+	sell := int64(apiPrice.Sell * 1000)
+
 	price := &CachedSilverPrice{
 		TypeCode:   symbol,
 		Name:       apiPrice.Name,
-		Buy:        int64(apiPrice.Buy),
-		Sell:       int64(apiPrice.Sell),
+		Buy:        buy,
+		Sell:       sell,
 		Currency:   apiPrice.Currency,
-		UpdateTime: time.Now(),
+		UpdateTime: apiPrice.UpdateAt,
 	}
 
-	// Cache the result (non-blocking) - each symbol cached separately
+	// Cache the result (non-blocking)
 	go func() {
 		if err := s.cache.Set(context.Background(), cacheKey, price.Buy, "VND", cache.SilverPriceCacheTTL); err != nil {
 			log.Printf("Warning: failed to cache silver price for %s: %v", cacheKey, err)
@@ -110,10 +97,10 @@ func (s *silverPriceService) FetchPriceForSymbol(ctx context.Context, symbol str
 // XAG is the silver futures symbol on Yahoo Finance
 func (s *silverPriceService) fetchUSDSilverPrice(ctx context.Context) (*CachedSilverPrice, error) {
 	// Try cache first
-	cached, err := s.cache.Get(ctx, "XAG", "USD")
+	cached, err := s.cache.Get(ctx, "XAGUSD", "USD")
 	if err == nil && cached > 0 {
 		return &CachedSilverPrice{
-			TypeCode:   "XAG",
+			TypeCode:   "XAGUSD",
 			Name:       "Silver World (XAG/USD)",
 			Buy:        cached,
 			Currency:   "USD",
@@ -136,7 +123,7 @@ func (s *silverPriceService) fetchUSDSilverPrice(ctx context.Context) (*CachedSi
 	priceInCents := yahoo.ToSmallestCurrencyUnitByCurrency(quote.RegularMarketPrice, "USD")
 
 	price := &CachedSilverPrice{
-		TypeCode:   "XAG",
+		TypeCode:   "XAGUSD",
 		Name:       "Silver World (XAG/USD)",
 		Buy:        priceInCents,
 		Sell:       priceInCents, // Use same price for sell (no spread in futures data)
@@ -146,8 +133,8 @@ func (s *silverPriceService) fetchUSDSilverPrice(ctx context.Context) (*CachedSi
 
 	// Cache the result (non-blocking)
 	go func() {
-		if err := s.cache.Set(context.Background(), "XAG", price.Buy, "USD", cache.SilverPriceCacheTTL); err != nil {
-			log.Printf("Warning: failed to cache silver price for XAG: %v", err)
+		if err := s.cache.Set(context.Background(), "XAGUSD", price.Buy, "USD", cache.SilverPriceCacheTTL); err != nil {
+			log.Printf("Warning: failed to cache silver price for XAGUSD: %v", err)
 		}
 	}()
 
@@ -156,25 +143,32 @@ func (s *silverPriceService) fetchUSDSilverPrice(ctx context.Context) (*CachedSi
 
 // FetchAllPrices fetches all silver prices
 func (s *silverPriceService) FetchAllPrices(ctx context.Context) ([]*CachedSilverPrice, error) {
-	// Fetch VND silver prices from ancarat API
-	pricesMap, err := s.client.FetchPrices(ctx)
+	pricesResp, err := s.client.FetchPrices(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("fetch prices from API: %w", err)
+		return nil, fmt.Errorf("fetch prices from vang247 API: %w", err)
 	}
 
-	prices := make([]*CachedSilverPrice, 0, len(pricesMap)+1) // +1 for XAG
-	for _, apiPrice := range pricesMap {
+	prices := make([]*CachedSilverPrice, 0, len(pricesResp.SilverPrices)+1)
+
+	for _, apiPrice := range pricesResp.SilverPrices {
+		// Skip XAGUSD from vang247 (will fetch from Yahoo)
+		if apiPrice.Name == "XAGUSD" {
+			continue
+		}
+
+		buy := int64(apiPrice.Buy * 1000)
+		sell := int64(apiPrice.Sell * 1000)
+
 		price := &CachedSilverPrice{
-			TypeCode:   apiPrice.TypeCode,
+			TypeCode:   apiPrice.Name,
 			Name:       apiPrice.Name,
-			Buy:        int64(apiPrice.Buy),
-			Sell:       int64(apiPrice.Sell),
+			Buy:        buy,
+			Sell:       sell,
 			Currency:   apiPrice.Currency,
-			UpdateTime: time.Now(),
+			UpdateTime: apiPrice.UpdateAt,
 		}
 		prices = append(prices, price)
 
-		// Cache each price (non-blocking)
 		go func(p *CachedSilverPrice) {
 			if err := s.cache.Set(context.Background(), p.TypeCode, p.Buy, p.Currency, cache.SilverPriceCacheTTL); err != nil {
 				log.Printf("Warning: failed to cache silver price for %s: %v", p.TypeCode, err)
@@ -182,12 +176,12 @@ func (s *silverPriceService) FetchAllPrices(ctx context.Context) ([]*CachedSilve
 		}(price)
 	}
 
-	// Also fetch USD silver price
+	// Also fetch XAGUSD from Yahoo Finance
 	xagPrice, err := s.fetchUSDSilverPrice(ctx)
 	if err == nil {
 		prices = append(prices, xagPrice)
 	} else {
-		log.Printf("Warning: failed to fetch XAG price: %v", err)
+		log.Printf("Warning: failed to fetch XAGUSD price: %v", err)
 	}
 
 	return prices, nil

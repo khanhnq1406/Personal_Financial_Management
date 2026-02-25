@@ -31,17 +31,25 @@ export interface GoldTypeOption {
 
 // Vietnamese gold type options (from backend pkg/gold/types.go)
 export const GOLD_VND_OPTIONS: GoldTypeOption[] = [
-  { value: "SJL1L10", label: "SJC 9999", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "SJ9999", label: "Nhẫn SJC", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "DOHNL", label: "DOJI Hà Nội", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "DOHCML", label: "DOJI HCM", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "DOJINHTV", label: "DOJI Nữ Trang", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "BTSJC", label: "Bảo Tín SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "BT9999NTT", label: "Bảo Tín 9999", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "PQHNVM", label: "PNJ Hà Nội", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "PQHN24NTT", label: "PNJ 24K", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "VNGSJC", label: "VN Gold SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
-  { value: "VIETTINMSJC", label: "Viettin SJC", unit: "gram" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  // SJC Gold (tael-based)
+  { value: "SJC", label: "SJC 9999", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "SJC TD", label: "SJC Tự Do", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Eximbank", label: "Eximbank SJC", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "TPBank", label: "TPBank SJC", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Doji", label: "DOJI", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "VietinGold", label: "VietinBank Gold", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "ACBBank", label: "ACB Gold", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Mi hồng", label: "Mi Hồng Gold", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "BTMC", label: "Bảo Tín SJC", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  // Other Gold Types (tael-based)
+  { value: "999,9 TD", label: "Vàng 999.9 Tự Do", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "99,9 TD", label: "Vàng 99.9 Tự Do", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Vàng 95%", label: "Vàng 95%", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Doji_24K", label: "DOJI 24K", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "BTMC_24K", label: "Bảo Tín 24K", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "Mihong_999", label: "Mi Hồng 999", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "99,99% GF", label: "Golden Fund 99.99%", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
+  { value: "95% GF", label: "Golden Fund 95%", unit: "tael" as GoldUnit, currency: "VND", unitWeight: GRAMS_PER_TAEL, type: 8 },
 ];
 
 // World gold type options (from backend pkg/gold/types.go)
