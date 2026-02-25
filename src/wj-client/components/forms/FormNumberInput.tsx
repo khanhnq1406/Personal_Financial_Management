@@ -10,6 +10,11 @@ import {
   parseNumberWithCommas,
   isValidNumberInput,
 } from "@/lib/utils/number-format";
+import {
+  generateRecommendations,
+  DEFAULT_MULTIPLIERS,
+} from "@/lib/utils/number-recommendations";
+import { NumberSuggestions } from "./NumberSuggestions";
 
 interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
@@ -25,6 +30,28 @@ interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   suffix?: string;
   helperText?: string;
   useThousandSeparator?: boolean;
+
+  /**
+   * Enable recommended number suggestions (always visible when input has value)
+   * @default true
+   */
+  showRecommendations?: boolean;
+
+  /**
+   * Custom multipliers for recommendations (defaults to [1e3, 1e4, 1e5, 1e6, 1e7, 1e8])
+   */
+  recommendationMultipliers?: number[];
+
+  /**
+   * Maximum recommendations to show
+   * @default 6
+   */
+  maxRecommendations?: number;
+
+  /**
+   * Callback when recommendation selected
+   */
+  onRecommendationSelect?: (value: number) => void;
 }
 
 export const FormNumberInput = ({
@@ -40,6 +67,10 @@ export const FormNumberInput = ({
   suffix,
   helperText,
   useThousandSeparator = true,
+  showRecommendations = true,
+  recommendationMultipliers = DEFAULT_MULTIPLIERS,
+  maxRecommendations = 6,
+  onRecommendationSelect,
   ...props
 }: FormNumberInputProps) => {
   const {
@@ -49,6 +80,10 @@ export const FormNumberInput = ({
 
   // Local state for display value (with commas)
   const [displayValue, setDisplayValue] = useState<string>("");
+
+  // State for recommendations
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recommendations, setRecommendations] = useState<number[]>([]);
 
   // Initialize display value from form value
   useEffect(() => {
@@ -60,6 +95,27 @@ export const FormNumberInput = ({
       );
     }
   }, [value, useThousandSeparator]);
+
+  // Generate recommendations when display value changes
+  useEffect(() => {
+    if (showRecommendations && displayValue && !disabled) {
+      const recs = generateRecommendations(
+        displayValue,
+        recommendationMultipliers
+      );
+      setRecommendations(recs);
+      // Always show if recommendations exist (no focus dependency)
+      setShowSuggestions(recs.length > 0);
+    } else {
+      setShowSuggestions(false);
+      setRecommendations([]);
+    }
+  }, [
+    displayValue,
+    showRecommendations,
+    recommendationMultipliers,
+    disabled,
+  ]);
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,6 +164,22 @@ export const FormNumberInput = ({
     onBlur();
   };
 
+  // Handle recommendation selection
+  const handleSelectRecommendation = (value: number) => {
+    const formatted = formatNumberWithCommas(value);
+    setDisplayValue(formatted);
+    onChange(value); // Update form value
+    setShowSuggestions(false); // Hide after selection
+    onRecommendationSelect?.(value);
+  };
+
+  // Handle keyboard events
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  };
+
   const hasError = !!error;
   const errorId = `${props.name}-error`;
   const helperId = `${props.name}-helper`;
@@ -134,6 +206,7 @@ export const FormNumberInput = ({
           value={displayValue}
           onChange={handleChange}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           ref={ref}
           className={cn(
             "w-full text-sm sm:text-base min-h-[44px] sm:min-h-[48px]",
@@ -168,6 +241,14 @@ export const FormNumberInput = ({
           </span>
         )}
       </div>
+      {/* Number suggestions */}
+      {showRecommendations && showSuggestions && recommendations.length > 0 && (
+        <NumberSuggestions
+          recommendations={recommendations.slice(0, maxRecommendations)}
+          onSelect={handleSelectRecommendation}
+          currency={suffix}
+        />
+      )}
       {/* Helper text */}
       {helperText && !hasError && (
         <p
