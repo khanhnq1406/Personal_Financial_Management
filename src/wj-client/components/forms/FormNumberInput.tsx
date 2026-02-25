@@ -1,9 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { Label } from "./Label";
 import { ErrorMessage } from "./ErrorMessage";
 import { cn } from "@/lib/utils/cn";
+import {
+  formatNumberWithCommas,
+  parseNumberWithCommas,
+  isValidNumberInput,
+} from "@/lib/utils/number-format";
 
 interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   control: any; // Control type causes generic issues with RHF, using any as workaround
@@ -18,6 +24,7 @@ interface FormNumberInputProps extends Omit<UseControllerProps, "control"> {
   prefix?: string;
   suffix?: string;
   helperText?: string;
+  useThousandSeparator?: boolean;
 }
 
 export const FormNumberInput = ({
@@ -32,6 +39,7 @@ export const FormNumberInput = ({
   prefix,
   suffix,
   helperText,
+  useThousandSeparator = true,
   ...props
 }: FormNumberInputProps) => {
   const {
@@ -39,10 +47,65 @@ export const FormNumberInput = ({
     fieldState: { error },
   } = useController(props);
 
-  // Handle change to ensure number type
+  // Local state for display value (with commas)
+  const [displayValue, setDisplayValue] = useState<string>("");
+
+  // Initialize display value from form value
+  useEffect(() => {
+    if (value === null || value === undefined || value === "") {
+      setDisplayValue("");
+    } else {
+      setDisplayValue(
+        useThousandSeparator ? formatNumberWithCommas(value) : String(value)
+      );
+    }
+  }, [value, useThousandSeparator]);
+
+  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const numValue = parseFloat(e.target.value);
-    onChange(isNaN(numValue) ? "" : numValue);
+    const inputValue = e.target.value;
+
+    // Allow empty value
+    if (inputValue === "") {
+      setDisplayValue("");
+      onChange("");
+      return;
+    }
+
+    // Basic validation: only allow digits, decimal point, comma, and minus
+    // This prevents letters and special characters while allowing flexible typing
+    if (!/^-?[\d,]*\.?\d*$/.test(inputValue)) {
+      // Reject invalid characters
+      return;
+    }
+
+    // Parse and update form value (numeric)
+    const cleanValue = parseNumberWithCommas(inputValue);
+    const numValue = parseFloat(cleanValue);
+
+    // Allow valid numbers or trailing decimal point (for typing "100.")
+    if (!isNaN(numValue) || inputValue.endsWith(".")) {
+      // Keep raw input during typing to prevent cursor jumping
+      // Formatting happens on blur only
+      setDisplayValue(inputValue);
+      onChange(numValue);
+    }
+  };
+
+  // Handle blur to reformat display value
+  const handleBlur = () => {
+    // Reformat display value on blur
+    if (displayValue !== "" && useThousandSeparator) {
+      const cleanValue = parseNumberWithCommas(displayValue);
+      const numValue = parseFloat(cleanValue);
+
+      if (!isNaN(numValue)) {
+        setDisplayValue(formatNumberWithCommas(numValue));
+      }
+    }
+
+    // Call original onBlur
+    onBlur();
   };
 
   const hasError = !!error;
@@ -64,16 +127,13 @@ export const FormNumberInput = ({
         )}
         <input
           id={props.name}
-          type="number"
+          type="text"
           inputMode="decimal"
           placeholder={placeholder}
           disabled={disabled}
-          min={min}
-          max={max}
-          step={step}
-          value={value ?? ""}
+          value={displayValue}
           onChange={handleChange}
-          onBlur={onBlur}
+          onBlur={handleBlur}
           ref={ref}
           className={cn(
             "w-full text-sm sm:text-base min-h-[44px] sm:min-h-[48px]",

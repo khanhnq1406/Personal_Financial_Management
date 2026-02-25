@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { cn } from "@/lib/utils/cn";
+import { formatNumberWithCommas } from "@/lib/utils/number-format";
 
 export interface AmountKeypadProps {
   value: string;
@@ -51,17 +52,6 @@ export const AmountKeypad = memo(function AmountKeypad({
     [value, onChange, maxLength]
   );
 
-  const formatDisplay = useCallback(
-    (val: string) => {
-      if (!val) return "0";
-      // Add thousand separators for display
-      const parts = val.split(".");
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      return parts.join(".");
-    },
-    []
-  );
-
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {/* Display */}
@@ -71,7 +61,7 @@ export const AmountKeypad = memo(function AmountKeypad({
         </div>
         <div className="text-3xl font-bold text-gray-900 dark:text-dark-text flex items-center justify-center gap-1">
           <span className="text-lg">{currency}</span>
-          <span>{formatDisplay(value)}</span>
+          <span>{formatNumberWithCommas(value) || "0"}</span>
         </div>
       </div>
 
