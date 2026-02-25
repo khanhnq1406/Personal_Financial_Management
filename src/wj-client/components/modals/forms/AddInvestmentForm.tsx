@@ -335,6 +335,9 @@ export function AddInvestmentForm({
           ? "VND"
           : "USD";
       setValue("currency", targetCurrency);
+      // Pre-populate symbol/name to pass Zod validation (real guard is in onSubmit)
+      setValue("symbol", "GOLD");
+      setValue("name", "Gold Investment");
     }
   }, [isGoldInvestment, investmentType, setValue]);
 
@@ -367,6 +370,9 @@ export function AddInvestmentForm({
           ? "VND"
           : "USD";
       setValue("currency", targetCurrency);
+      // Pre-populate symbol/name to pass Zod validation (real guard is in onSubmit)
+      setValue("symbol", "SILVER");
+      setValue("name", "Silver Investment");
     }
   }, [isSilverInvestment, investmentType, setValue]);
 
@@ -586,6 +592,19 @@ export function AddInvestmentForm({
         </div>
       )}
 
+      {/* Type */}
+      <FormSelect
+        name="type"
+        control={control}
+        label="Investment Type"
+        options={investmentTypeOptions}
+        placeholder="Select investment type"
+        required
+        disabled={isSubmitting}
+        className="mb-4"
+        parseAsNumber={true}
+      />
+
       {/* Custom Investment Toggle - shown only for non-gold, non-silver investments */}
       {!isGoldInvestment && !isSilverInvestment && (
         <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
@@ -693,19 +712,6 @@ export function AddInvestmentForm({
           disabled={isSubmitting}
         />
       )}
-
-      {/* Type */}
-      <FormSelect
-        name="type"
-        control={control}
-        label="Investment Type"
-        options={investmentTypeOptions}
-        placeholder="Select investment type"
-        required
-        disabled={isSubmitting}
-        className="mb-4"
-        parseAsNumber={true}
-      />
 
       {/* Gold Type Selector - shown only for gold investments */}
       {isGoldInvestment && (
@@ -863,6 +869,7 @@ export function AddInvestmentForm({
               disabled={isSubmitting}
               min={0}
               step="0.01"
+              showRecommendations={false}
             />
             <p className="text-xs text-gray-500 -mt-2 ml-1">
               Amount of gold in{" "}
@@ -889,6 +896,7 @@ export function AddInvestmentForm({
                 min={0}
                 step="0.01"
                 className="mt-1"
+                showRecommendations={false}
               />
               <p className="text-xs text-gray-500 -mt-2 ml-1">
                 Amount of silver in{" "}
@@ -1142,7 +1150,6 @@ export function AddInvestmentForm({
       {/* Submit button */}
       <Button
         type={ButtonType.PRIMARY}
-        onClick={handleSubmit(onSubmit)}
         loading={createInvestmentMutation.isPending || isSubmitting}
         disabled={insufficientBalance}
         className="w-full"

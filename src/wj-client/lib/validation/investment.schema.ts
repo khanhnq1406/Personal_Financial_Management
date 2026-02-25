@@ -8,22 +8,19 @@ import {
  * Zod schema for investment creation
  */
 
+const GOLD_SILVER_TYPES = new Set<InvestmentType>([
+  InvestmentType.INVESTMENT_TYPE_GOLD_VND,
+  InvestmentType.INVESTMENT_TYPE_GOLD_USD,
+  InvestmentType.INVESTMENT_TYPE_SILVER_VND,
+  InvestmentType.INVESTMENT_TYPE_SILVER_USD,
+]);
+
 export const createInvestmentSchema = z
   .object({
     symbol: z
       .string()
       .min(1, "Symbol is required")
-      .max(20, "Symbol must be 20 characters or less")
-      .refine(
-        (val) => {
-          // Allow uppercase alphanumeric, dots, hyphens, and underscores
-          return /^[A-Za-z0-9._-]+$/.test(val);
-        },
-        {
-          message:
-            "Symbol should contain only letters, numbers, dots, underscores, and hyphens",
-        },
-      ),
+      .max(50, "Symbol must be 50 characters or less"),
     name: z
       .string()
       .min(1, "Name is required")
@@ -41,6 +38,17 @@ export const createInvestmentSchema = z
       return data.initialQuantity > 0;
     },
     { message: "Quantity must be greater than 0", path: ["initialQuantity"] },
+  )
+  .refine(
+    (data) => {
+      // Only enforce symbol format for non-gold/silver types (user-entered symbols)
+      if (GOLD_SILVER_TYPES.has(data.type)) return true;
+      return /^[A-Za-z0-9._-]+$/.test(data.symbol);
+    },
+    {
+      message: "Symbol should contain only letters, numbers, dots, underscores, and hyphens",
+      path: ["symbol"],
+    },
   );
 
 // Dynamic validation schema based on investment type (crypto vs others)

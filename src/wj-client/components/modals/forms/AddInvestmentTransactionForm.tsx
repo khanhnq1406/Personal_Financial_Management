@@ -512,6 +512,7 @@ export function AddInvestmentTransactionForm({
               ? "0.01"
               : quantityConfig.step
         }
+        showRecommendations={false}
       />
 
       {/* Price */}

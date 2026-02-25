@@ -1,5 +1,6 @@
 "use client";
 
+import { parseAmount } from "@/utils/currency-formatter";
 import React, { memo, useState, useEffect, useRef } from "react";
 
 /**
@@ -82,8 +83,8 @@ export const Sparkline = memo(function Sparkline({
     color ??
     (() => {
       if (data.length < 2) return "#10b981"; // Default green
-      const first = data[0].value;
-      const last = data[data.length - 1].value;
+      const first = parseAmount(data[0].value);
+      const last = parseAmount(data[data.length - 1].value);
       return last >= first ? "#10b981" : "#ef4444"; // Green if up, red if down
     })();
 
@@ -91,19 +92,31 @@ export const Sparkline = memo(function Sparkline({
     return null;
   }
 
-  // Calculate min and max values for scaling
-  const values = data.map((d) => d.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const valueRange = maxValue - minValue || 1; // Avoid division by zero
-
-  // Generate SVG path
+  // Single pass: parse values and track min/max
   const padding = 5;
   const chartWidth = width - padding * 2;
   const chartHeight = height - padding * 2;
 
-  const points = data.map((point, index) => {
-    const x = padding + (chartWidth * index) / (data.length - 1 || 1);
+  const parsed = data.reduce<{ value: number; label?: string }[]>(
+    (acc, d) => {
+      if (d.value !== undefined && d.value !== null) {
+        acc.push({ value: parseAmount(d.value), label: d.label });
+      }
+      return acc;
+    },
+    [],
+  );
+
+  let minValue = Infinity;
+  let maxValue = -Infinity;
+  for (const p of parsed) {
+    if (p.value < minValue) minValue = p.value;
+    if (p.value > maxValue) maxValue = p.value;
+  }
+  const valueRange = maxValue - minValue || 1; // Avoid division by zero
+
+  const points = parsed.map((point, index) => {
+    const x = padding + (chartWidth * index) / (parsed.length - 1 || 1);
     const y =
       padding +
       chartHeight -
@@ -123,7 +136,7 @@ export const Sparkline = memo(function Sparkline({
     ? `${pathData} L ${points[points.length - 1].x} ${height - padding} L ${padding} ${height - padding} Z`
     : "";
 
-  const gradientId = `sparkline-gradient-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = `sparkline-gradient-${Math.random().toString(36).slice(2, 11)}`;
 
   return (
     <div
@@ -132,11 +145,7 @@ export const Sparkline = memo(function Sparkline({
       style={{ width: "100%", height: `${height}px` }}
     >
       {width > 0 && (
-        <svg
-          width={width}
-          height={height}
-          style={{ display: "block" }}
-        >
+        <svg width={width} height={height} style={{ display: "block" }}>
           {showGradient && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
