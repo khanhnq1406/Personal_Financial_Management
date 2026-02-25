@@ -169,6 +169,25 @@ export default function DashboardLayout({
           <span className="font-medium">Portfolio</span>
         </ActiveLink>
         <ActiveLink
+          href={routes.prices}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span className="font-medium">Prices</span>
+        </ActiveLink>
+        <ActiveLink
           href={routes.report}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 touch-target animate-stagger-fade-in"
         >
@@ -401,11 +420,33 @@ export default function DashboardLayout({
                   }
                 />
                 <NavItem
+                  href={routes.prices}
+                  label="Prices"
+                  isExpanded={isExpanded}
+                  showTooltip={!isExpanded}
+                  animationDelay={120}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  }
+                />
+                <NavItem
                   href={routes.report}
                   label="Reports"
                   isExpanded={isExpanded}
                   showTooltip={!isExpanded}
-                  animationDelay={120}
+                  animationDelay={150}
                   icon={
                     <svg
                       className="w-5 h-5"
@@ -427,7 +468,7 @@ export default function DashboardLayout({
                   label="Budget"
                   isExpanded={isExpanded}
                   showTooltip={!isExpanded}
-                  animationDelay={150}
+                  animationDelay={180}
                   icon={
                     <svg
                       className="w-5 h-5"

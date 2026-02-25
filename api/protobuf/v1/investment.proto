@@ -210,6 +210,30 @@ message GetMarketPriceResponse {
   string timestamp = 4 [json_name = "timestamp"];
 }
 
+// PriceItem represents a single gold or silver price entry
+message PriceItem {
+  string typeCode = 1 [json_name = "typeCode"];
+  int64 buy = 2 [json_name = "buy"];
+  int64 sell = 3 [json_name = "sell"];
+  int64 changeBuy = 4 [json_name = "changeBuy"];
+  int64 changeSell = 5 [json_name = "changeSell"];
+  string currency = 6 [json_name = "currency"];
+  int64 updatedAt = 7 [json_name = "updatedAt"];
+  string name = 8 [json_name = "name"];
+}
+
+// GetMarketPricesRequest for fetching all gold and silver prices
+message GetMarketPricesRequest {}
+
+// GetMarketPricesResponse returns all gold and silver prices
+message GetMarketPricesResponse {
+  bool success = 1 [json_name = "success"];
+  string message = 2 [json_name = "message"];
+  repeated PriceItem gold = 3 [json_name = "gold"];
+  repeated PriceItem silver = 4 [json_name = "silver"];
+  string timestamp = 5 [json_name = "timestamp"];
+}
+
 // MarketPrice - Price data with freshness info
 message MarketPrice {
   string symbol = 1 [json_name = "symbol"];
@@ -353,6 +377,13 @@ service InvestmentService {
   rpc GetMarketPrice(GetMarketPriceRequest) returns (GetMarketPriceResponse) {
     option (google.api.http) = {
       get: "/api/v1/investments/market-price"
+    };
+  }
+
+  // GetMarketPrices returns all gold and silver prices in one call
+  rpc GetMarketPrices(GetMarketPricesRequest) returns (GetMarketPricesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/investments/market-prices"
     };
   }
 }

@@ -459,6 +459,31 @@ export interface GetMarketPriceResponse {
   timestamp: string;
 }
 
+/** PriceItem represents a single gold or silver price entry */
+export interface PriceItem {
+  typeCode: string;
+  buy: number;
+  sell: number;
+  changeBuy: number;
+  changeSell: number;
+  currency: string;
+  updatedAt: number;
+  name: string;
+}
+
+/** GetMarketPricesRequest for fetching all gold and silver prices */
+export interface GetMarketPricesRequest {
+}
+
+/** GetMarketPricesResponse returns all gold and silver prices */
+export interface GetMarketPricesResponse {
+  success: boolean;
+  message: string;
+  gold: PriceItem[];
+  silver: PriceItem[];
+  timestamp: string;
+}
+
 /** MarketPrice - Price data with freshness info */
 export interface MarketPrice {
   symbol: string;
@@ -3278,6 +3303,345 @@ export const GetMarketPriceResponse: MessageFns<GetMarketPriceResponse> = {
     message.data = (object.data !== undefined && object.data !== null)
       ? MarketPrice.fromPartial(object.data)
       : undefined;
+    message.timestamp = object.timestamp ?? "";
+    return message;
+  },
+};
+
+function createBasePriceItem(): PriceItem {
+  return { typeCode: "", buy: 0, sell: 0, changeBuy: 0, changeSell: 0, currency: "", updatedAt: 0, name: "" };
+}
+
+export const PriceItem: MessageFns<PriceItem> = {
+  encode(message: PriceItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.typeCode !== "") {
+      writer.uint32(10).string(message.typeCode);
+    }
+    if (message.buy !== 0) {
+      writer.uint32(16).int64(message.buy);
+    }
+    if (message.sell !== 0) {
+      writer.uint32(24).int64(message.sell);
+    }
+    if (message.changeBuy !== 0) {
+      writer.uint32(32).int64(message.changeBuy);
+    }
+    if (message.changeSell !== 0) {
+      writer.uint32(40).int64(message.changeSell);
+    }
+    if (message.currency !== "") {
+      writer.uint32(50).string(message.currency);
+    }
+    if (message.updatedAt !== 0) {
+      writer.uint32(56).int64(message.updatedAt);
+    }
+    if (message.name !== "") {
+      writer.uint32(66).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PriceItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePriceItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.typeCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.buy = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sell = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.changeBuy = longToNumber(reader.int64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.changeSell = longToNumber(reader.int64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.currency = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.updatedAt = longToNumber(reader.int64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PriceItem {
+    return {
+      typeCode: isSet(object.typeCode) ? globalThis.String(object.typeCode) : "",
+      buy: isSet(object.buy) ? globalThis.Number(object.buy) : 0,
+      sell: isSet(object.sell) ? globalThis.Number(object.sell) : 0,
+      changeBuy: isSet(object.changeBuy) ? globalThis.Number(object.changeBuy) : 0,
+      changeSell: isSet(object.changeSell) ? globalThis.Number(object.changeSell) : 0,
+      currency: isSet(object.currency) ? globalThis.String(object.currency) : "",
+      updatedAt: isSet(object.updatedAt) ? globalThis.Number(object.updatedAt) : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+    };
+  },
+
+  toJSON(message: PriceItem): unknown {
+    const obj: any = {};
+    if (message.typeCode !== "") {
+      obj.typeCode = message.typeCode;
+    }
+    if (message.buy !== 0) {
+      obj.buy = Math.round(message.buy);
+    }
+    if (message.sell !== 0) {
+      obj.sell = Math.round(message.sell);
+    }
+    if (message.changeBuy !== 0) {
+      obj.changeBuy = Math.round(message.changeBuy);
+    }
+    if (message.changeSell !== 0) {
+      obj.changeSell = Math.round(message.changeSell);
+    }
+    if (message.currency !== "") {
+      obj.currency = message.currency;
+    }
+    if (message.updatedAt !== 0) {
+      obj.updatedAt = Math.round(message.updatedAt);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PriceItem>): PriceItem {
+    return PriceItem.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PriceItem>): PriceItem {
+    const message = createBasePriceItem();
+    message.typeCode = object.typeCode ?? "";
+    message.buy = object.buy ?? 0;
+    message.sell = object.sell ?? 0;
+    message.changeBuy = object.changeBuy ?? 0;
+    message.changeSell = object.changeSell ?? 0;
+    message.currency = object.currency ?? "";
+    message.updatedAt = object.updatedAt ?? 0;
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseGetMarketPricesRequest(): GetMarketPricesRequest {
+  return {};
+}
+
+export const GetMarketPricesRequest: MessageFns<GetMarketPricesRequest> = {
+  encode(_: GetMarketPricesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetMarketPricesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetMarketPricesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetMarketPricesRequest {
+    return {};
+  },
+
+  toJSON(_: GetMarketPricesRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetMarketPricesRequest>): GetMarketPricesRequest {
+    return GetMarketPricesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetMarketPricesRequest>): GetMarketPricesRequest {
+    const message = createBaseGetMarketPricesRequest();
+    return message;
+  },
+};
+
+function createBaseGetMarketPricesResponse(): GetMarketPricesResponse {
+  return { success: false, message: "", gold: [], silver: [], timestamp: "" };
+}
+
+export const GetMarketPricesResponse: MessageFns<GetMarketPricesResponse> = {
+  encode(message: GetMarketPricesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.gold) {
+      PriceItem.encode(v!, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.silver) {
+      PriceItem.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(42).string(message.timestamp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetMarketPricesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetMarketPricesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.gold.push(PriceItem.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.silver.push(PriceItem.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetMarketPricesResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      gold: globalThis.Array.isArray(object?.gold) ? object.gold.map((e: any) => PriceItem.fromJSON(e)) : [],
+      silver: globalThis.Array.isArray(object?.silver) ? object.silver.map((e: any) => PriceItem.fromJSON(e)) : [],
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+    };
+  },
+
+  toJSON(message: GetMarketPricesResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.gold?.length) {
+      obj.gold = message.gold.map((e) => PriceItem.toJSON(e));
+    }
+    if (message.silver?.length) {
+      obj.silver = message.silver.map((e) => PriceItem.toJSON(e));
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetMarketPricesResponse>): GetMarketPricesResponse {
+    return GetMarketPricesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetMarketPricesResponse>): GetMarketPricesResponse {
+    const message = createBaseGetMarketPricesResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.gold = object.gold?.map((e) => PriceItem.fromPartial(e)) || [];
+    message.silver = object.silver?.map((e) => PriceItem.fromPartial(e)) || [];
     message.timestamp = object.timestamp ?? "";
     return message;
   },

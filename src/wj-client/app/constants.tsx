@@ -83,6 +83,7 @@ export const routes = {
   budget: `/dashboard/budget`,
   wallets: `/dashboard/wallets`,
   portfolio: `/dashboard/portfolio`,
+  prices: `/dashboard/prices`,
 };
 
 export const resources = "/resources/icons/";

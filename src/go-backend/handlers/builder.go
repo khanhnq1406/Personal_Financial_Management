@@ -5,6 +5,7 @@ import (
 	"wealthjourney/pkg/jobs"
 )
 
+
 // AllHandlers contains all handler instances.
 type AllHandlers struct {
 	Wallet      *WalletHandlers
@@ -14,9 +15,10 @@ type AllHandlers struct {
 	Category    *CategoryHandlers
 	Budget      *BudgetHandlers
 	Investment  *InvestmentHandlers
-	Gold        *GoldHandler
-	Silver      *SilverHandler
-	Import      *ImportHandler
+	Gold         *GoldHandler
+	Silver       *SilverHandler
+	MarketPrices *MarketPricesHandler
+	Import       *ImportHandler
 }
 
 // NewHandlers creates all handler instances with proper dependency injection.
@@ -35,6 +37,15 @@ func NewHandlers(services *service.Services, repos *service.Repositories) *AllHa
 	if deps != nil && deps.RDB != nil {
 		redisQueue := jobs.NewRedisImportQueue(deps.RDB.GetClient())
 		adaptedQueue = jobs.NewImportQueueAdapter(redisQueue)
+	}
+
+	// Create market prices handler (requires Redis for price caching)
+	var marketPricesHandler *MarketPricesHandler
+	if deps != nil && deps.RDB != nil {
+		marketPricesHandler = NewMarketPricesHandler(
+			service.NewGoldPriceService(deps.RDB.GetClient()),
+			service.NewSilverPriceService(deps.RDB.GetClient()),
+		)
 	}
 
 	// Create import service with categorization and currency conversion support
@@ -59,9 +70,10 @@ func NewHandlers(services *service.Services, repos *service.Repositories) *AllHa
 		Category:    NewCategoryHandlers(services.Category),
 		Budget:      NewBudgetHandlers(services.Budget),
 		Investment:  NewInvestmentHandlers(services.Investment, services.PortfolioHistory, services.MarketData),
-		Gold:        NewGoldHandler(),
-		Silver:      NewSilverHandler(),
-		Import:      NewImportHandler(repos.Import, importService),
+		Gold:         NewGoldHandler(),
+		Silver:       NewSilverHandler(),
+		MarketPrices: marketPricesHandler,
+		Import:       NewImportHandler(repos.Import, importService),
 	}
 }
 

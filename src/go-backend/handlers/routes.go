@@ -161,6 +161,10 @@ func RegisterRoutes(
 		investments.GET("/gold-types", h.Gold.GetGoldTypeCodes)
 		// Silver type codes (must come before :id parameterized route)
 		investments.GET("/silver-types", h.Silver.GetSilverTypeCodes)
+		// Market prices (gold + silver combined, must come before :id parameterized route)
+		if h.MarketPrices != nil {
+			investments.GET("/market-prices", h.MarketPrices.GetMarketPrices)
+		}
 		// Specific routes must come before :id parameterized route
 		// Investment transaction routes (use :id to be consistent with other routes)
 		investments.GET("/:id/transactions", h.Investment.ListTransactions)

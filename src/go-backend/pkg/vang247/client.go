@@ -62,7 +62,10 @@ func (c *Client) FetchPrices(ctx context.Context) (*PricesResponse, error) {
 		if entry.Name == "" {
 			continue
 		}
-		region := entry.Hanoi
+		region := entry.Saigon
+		if region.Buy == 0 || region.Sell == 0 {
+			region = entry.Hanoi
+		}
 		currency := "VND"
 		if entry.Name == "XAUUSD" {
 			currency = "USD"
@@ -83,7 +86,10 @@ func (c *Client) FetchPrices(ctx context.Context) (*PricesResponse, error) {
 		if entry.Name == "" || entry.Name == "XAUUSD" {
 			continue
 		}
-		region := entry.Hanoi
+		region := entry.Saigon
+		if region.Buy == 0 || region.Sell == 0 {
+			region = entry.Hanoi
+		}
 		goldPrices = append(goldPrices, GoldPrice{
 			Name:       entry.Name,
 			Buy:        region.Buy,
@@ -101,7 +107,10 @@ func (c *Client) FetchPrices(ctx context.Context) (*PricesResponse, error) {
 		if entry.Name == "" {
 			continue
 		}
-		region := entry.Hanoi
+		region := entry.Saigon
+		if region.Buy == 0 || region.Sell == 0 {
+			region = entry.Hanoi
+		}
 		currency := "VND"
 		if entry.Name == "XAGUSD" {
 			currency = "USD"
